@@ -25,6 +25,7 @@ import {
 import type { CookieOptions, Response } from 'express';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
+import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
 import type { AuthContext } from '../auth/auth-context.js';
 import { REFRESH_COOKIE_NAME, REFRESH_COOKIE_PATH } from '../auth/auth.constants.js';
 import { AuthService } from '../auth/auth.service.js';
@@ -53,6 +54,10 @@ export class AccountsController {
   @Get()
   @ApiOperation({ operationId: 'getAccount', summary: 'Get the authenticated account' })
   @ApiOkResponse({ type: AccountResponse })
+  @ApiErrorResponses(
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 404, description: 'RESOURCE_NOT_FOUND' },
+  )
   public getAccount(@CurrentAuth() auth: AuthContext) {
     return this.accountsService.getAccount(auth);
   }
@@ -61,6 +66,11 @@ export class AccountsController {
   @ApiOperation({ operationId: 'updateAccount', summary: 'Update the authenticated profile' })
   @ApiBody({ type: UpdateAccountDto })
   @ApiOkResponse({ type: AccountResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 404, description: 'RESOURCE_NOT_FOUND' },
+  )
   public updateAccount(@CurrentAuth() auth: AuthContext, @Body() input: UpdateAccountDto) {
     return this.accountsService.updateAccount(auth, input);
   }
@@ -73,6 +83,11 @@ export class AccountsController {
   })
   @ApiBody({ type: ChangePasswordDto })
   @ApiNoContentResponse()
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 422, description: 'CURRENT_PASSWORD_INCORRECT' },
+  )
   public async changePassword(
     @CurrentAuth() auth: AuthContext,
     @Body() input: ChangePasswordDto,
@@ -85,6 +100,10 @@ export class AccountsController {
   @Get('addresses')
   @ApiOperation({ operationId: 'listAccountAddresses', summary: 'List active customer addresses' })
   @ApiOkResponse({ type: AddressListResponse })
+  @ApiErrorResponses(
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+  )
   public listAddresses(@CurrentAuth() auth: AuthContext) {
     return this.accountsService.listAddresses(auth);
   }
@@ -93,6 +112,11 @@ export class AccountsController {
   @ApiOperation({ operationId: 'createAccountAddress', summary: 'Create a customer address' })
   @ApiBody({ type: CreateAddressDto })
   @ApiCreatedResponse({ type: AddressResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+  )
   public createAddress(@CurrentAuth() auth: AuthContext, @Body() input: CreateAddressDto) {
     return this.accountsService.createAddress(auth, input);
   }
@@ -104,6 +128,12 @@ export class AccountsController {
   })
   @ApiBody({ type: UpdateAddressDto })
   @ApiOkResponse({ type: AddressResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+    { status: 404, description: 'RESOURCE_NOT_FOUND' },
+  )
   public updateAddress(
     @CurrentAuth() auth: AuthContext,
     @Param('id', new ParseUUIDPipe()) addressId: string,
@@ -119,6 +149,12 @@ export class AccountsController {
     summary: 'Archive an owned customer address',
   })
   @ApiNoContentResponse()
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+    { status: 404, description: 'RESOURCE_NOT_FOUND' },
+  )
   public archiveAddress(
     @CurrentAuth() auth: AuthContext,
     @Param('id', new ParseUUIDPipe()) addressId: string,

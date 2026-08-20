@@ -14,6 +14,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { Inject } from '@nestjs/common';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
+import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
 import {
   AcceptEmployeeInvitationDto,
   ForgotPasswordDto,
@@ -48,6 +49,11 @@ export class AuthController {
   @ApiOperation({ operationId: 'registerAccount', summary: 'Register an active customer account' })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({ type: RegisteredAccountResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 409, description: 'DUPLICATE_RESOURCE' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public register(@Body() input: RegisterDto, @Req() request: Request) {
     return this.authService.register(input, requestMetadata(request));
   }
@@ -57,6 +63,12 @@ export class AuthController {
   @ApiOperation({ operationId: 'login', summary: 'Create an authenticated session' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({ type: AuthSessionResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'INVALID_CREDENTIALS' },
+    { status: 403, description: 'ACCOUNT_UNAVAILABLE' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public async login(
     @Body() input: LoginDto,
     @Req() request: Request,
@@ -78,6 +90,11 @@ export class AuthController {
   @ApiHeader({ name: CSRF_HEADER_NAME, required: true, schema: { enum: [CSRF_HEADER_VALUE] } })
   @ApiOperation({ operationId: 'refreshSession', summary: 'Rotate the refresh token generation' })
   @ApiOkResponse({ type: AuthSessionResponse })
+  @ApiErrorResponses(
+    { status: 401, description: 'AUTH_REQUIRED or SESSION_REVOKED' },
+    { status: 403, description: 'CSRF_VALIDATION_FAILED' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public async refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -97,6 +114,7 @@ export class AuthController {
   @ApiHeader({ name: CSRF_HEADER_NAME, required: true, schema: { enum: [CSRF_HEADER_VALUE] } })
   @ApiOperation({ operationId: 'logout', summary: 'Revoke the current refresh-token family' })
   @ApiNoContentResponse()
+  @ApiErrorResponses({ status: 403, description: 'CSRF_VALIDATION_FAILED' })
   public async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -110,6 +128,10 @@ export class AuthController {
   @ApiOperation({ operationId: 'forgotPassword', summary: 'Request a password-reset email' })
   @ApiBody({ type: ForgotPasswordDto })
   @ApiAcceptedResponse({ type: GenericAcceptedResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public forgotPassword(@Body() input: ForgotPasswordDto, @Req() request: Request) {
     return this.authService.forgotPassword(input.email, requestMetadata(request));
   }
@@ -122,6 +144,11 @@ export class AuthController {
   })
   @ApiBody({ type: ResetPasswordDto })
   @ApiNoContentResponse()
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 422, description: 'ONE_TIME_TOKEN_INVALID' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public resetPassword(@Body() input: ResetPasswordDto, @Req() request: Request): Promise<void> {
     return this.authService.resetPassword(input.token, input.newPassword, requestMetadata(request));
   }
@@ -134,6 +161,11 @@ export class AuthController {
   })
   @ApiBody({ type: AcceptEmployeeInvitationDto })
   @ApiNoContentResponse()
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 422, description: 'ONE_TIME_TOKEN_INVALID' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
   public acceptEmployeeInvitation(
     @Body() input: AcceptEmployeeInvitationDto,
     @Req() request: Request,

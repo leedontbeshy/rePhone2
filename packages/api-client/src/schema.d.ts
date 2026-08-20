@@ -277,6 +277,22 @@ export interface components {
         AddressResponse: {
             data: components["schemas"]["AddressDto"];
         };
+        ApiErrorBodyDto: {
+            /** @enum {string} */
+            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "DUPLICATE_RESOURCE" | "CONCURRENT_MODIFICATION" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
+            details: components["schemas"]["ApiErrorDetailDto"][];
+            message: string;
+            /** @description Correlation ID for diagnostics */
+            requestId: string;
+        };
+        ApiErrorDetailDto: {
+            code: string;
+            field?: string;
+            message: string;
+        };
+        ApiErrorResponseDto: {
+            error: components["schemas"]["ApiErrorBodyDto"];
+        };
         AuthSessionDto: {
             /** @description Short-lived JWT access token */
             accessToken: string;
@@ -416,6 +432,24 @@ export interface operations {
                     "application/json": components["schemas"]["AccountResponse"];
                 };
             };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     updateAccount: {
@@ -439,6 +473,33 @@ export interface operations {
                     "application/json": components["schemas"]["AccountResponse"];
                 };
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     listAccountAddresses: {
@@ -456,6 +517,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AddressListResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
         };
@@ -481,6 +560,33 @@ export interface operations {
                     "application/json": components["schemas"]["AddressResponse"];
                 };
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     archiveAccountAddress: {
@@ -497,6 +603,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
             };
         };
     };
@@ -521,6 +663,42 @@ export interface operations {
                     "application/json": components["schemas"]["AddressResponse"];
                 };
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     changePassword: {
@@ -541,6 +719,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CURRENT_PASSWORD_INCORRECT */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
             };
         };
     };
@@ -563,6 +768,35 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ONE_TIME_TOKEN_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     forgotPassword: {
@@ -584,6 +818,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenericAcceptedResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
         };
@@ -609,6 +863,44 @@ export interface operations {
                     "application/json": components["schemas"]["AuthSessionResponse"];
                 };
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_CREDENTIALS */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCOUNT_UNAVAILABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     logout: {
@@ -627,6 +919,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
             };
         };
     };
@@ -647,6 +948,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
         };
@@ -672,6 +1002,35 @@ export interface operations {
                     "application/json": components["schemas"]["RegisteredAccountResponse"];
                 };
             };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     resetPassword: {
@@ -692,6 +1051,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ONE_TIME_TOKEN_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
             };
         };
     };
