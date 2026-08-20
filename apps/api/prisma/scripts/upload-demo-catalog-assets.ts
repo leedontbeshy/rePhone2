@@ -9,7 +9,7 @@ import {
 
 loadDotenv({ path: fileURLToPath(new URL('../../../../.env', import.meta.url)), quiet: true });
 
-const storageUrl = requiredEnvironment('SUPABASE_URL').replace(/\/$/, '');
+const storageUrl = new URL(requiredEnvironment('SUPABASE_URL')).origin;
 const serviceRoleKey = requiredEnvironment('SUPABASE_SERVICE_ROLE_KEY');
 const publicBucket = requiredEnvironment('SUPABASE_PUBLIC_BUCKET');
 const requestHeaders = {

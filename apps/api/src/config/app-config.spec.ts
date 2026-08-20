@@ -27,13 +27,17 @@ function validEnvironment(): NodeJS.ProcessEnv {
 
 describe('loadConfig', () => {
   it('parses required values and applies P0 defaults', () => {
-    const config = loadConfig(validEnvironment());
+    const environment = validEnvironment();
+    environment.SUPABASE_URL = 'https://example.supabase.co/rest/v1/';
+
+    const config = loadConfig(environment);
 
     expect(config.environment).toBe('test');
     expect(config.api.port).toBe(4001);
     expect(config.auth.accessTtlSeconds).toBe(900);
     expect(config.scheduler.enabled).toBe(true);
     expect(config.logging.level).toBe('silent');
+    expect(config.storage.url).toBe('https://example.supabase.co');
   });
 
   it('reports variable names without exposing secret values', () => {
