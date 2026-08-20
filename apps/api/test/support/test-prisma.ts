@@ -10,3 +10,27 @@ export function createTestPrisma(): PrismaClient {
   }
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
+
+export async function resetTestDatabase(prisma: PrismaClient): Promise<void> {
+  const rows = await prisma.$queryRaw<Array<{ databaseName: string }>>`
+    SELECT current_database() AS "databaseName"
+  `;
+  const databaseName = rows[0]?.databaseName ?? '';
+  if (!databaseName.endsWith('_test')) {
+    throw new Error(`Refusing to truncate non-test database ${databaseName}`);
+  }
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE table_list text;
+    BEGIN
+      SELECT string_agg(format('%I.%I', schemaname, tablename), ', ')
+      INTO table_list
+      FROM pg_tables
+      WHERE schemaname = 'public'
+        AND tablename <> '_prisma_migrations';
+      IF table_list IS NOT NULL THEN
+        EXECUTE 'TRUNCATE TABLE ' || table_list || ' CASCADE';
+      END IF;
+    END $$;
+  `);
+}

@@ -1,0 +1,59 @@
+import { createApiClient, type components } from '@rephone/api-client';
+import { apiBaseUrl } from './api';
+import type { CatalogListQuery } from './catalog-query';
+
+const noStoreFetch: typeof globalThis.fetch = (input, init) =>
+  fetch(input, { ...init, cache: 'no-store' });
+
+const catalogClient = createApiClient({ baseUrl: apiBaseUrl, fetch: noStoreFetch });
+
+export type ProductListItem = components['schemas']['ProductListItemDto'];
+export type ProductDetail = components['schemas']['ProductDetailDto'];
+export type IphoneVariant = components['schemas']['IphoneVariantDto'];
+export type AccessoryVariant = components['schemas']['AccessoryVariantDto'];
+export type UsedIphoneDetail = components['schemas']['UsedIphoneDetailDto'];
+export type PublicMedia = components['schemas']['PublicMediaDto'];
+
+export class CatalogApiError extends Error {
+  public constructor(public readonly status: number) {
+    super(status === 404 ? 'Không tìm thấy sản phẩm.' : 'Không thể tải catalog lúc này.');
+    this.name = 'CatalogApiError';
+  }
+}
+
+export async function listPublicProducts(query: CatalogListQuery) {
+  const result = await catalogClient.GET('/api/v1/products', { params: { query } });
+  if (result.data === undefined) {
+    throw new CatalogApiError(result.response.status);
+  }
+  return result.data;
+}
+
+export async function getPublicProduct(slug: string): Promise<ProductDetail> {
+  const result = await catalogClient.GET('/api/v1/products/{slug}', {
+    params: { path: { slug } },
+  });
+  if (result.data === undefined) {
+    throw new CatalogApiError(result.response.status);
+  }
+  return result.data.data;
+}
+
+export async function getPublicUsedIphone(
+  slug: string,
+  inventoryCode: string,
+): Promise<UsedIphoneDetail> {
+  const result = await catalogClient.GET('/api/v1/products/{slug}/units/{inventoryCode}', {
+    params: { path: { slug, inventoryCode } },
+  });
+  if (result.data === undefined) {
+    throw new CatalogApiError(result.response.status);
+  }
+  return result.data.data;
+}
+
+export function isIphoneVariant(
+  variant: IphoneVariant | AccessoryVariant,
+): variant is IphoneVariant {
+  return 'availableUnits' in variant;
+}

@@ -4,6 +4,247 @@
  */
 
 export interface paths {
+    "/api/v1/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated account */
+        get: operations["getAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the authenticated profile */
+        patch: operations["updateAccount"];
+        trace?: never;
+    };
+    "/api/v1/account/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active customer addresses */
+        get: operations["listAccountAddresses"];
+        put?: never;
+        /** Create a customer address */
+        post: operations["createAccountAddress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Archive an owned customer address */
+        delete: operations["archiveAccountAddress"];
+        options?: never;
+        head?: never;
+        /** Update an owned customer address */
+        patch: operations["updateAccountAddress"];
+        trace?: never;
+    };
+    "/api/v1/account/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change password and revoke all sessions */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/accept-employee-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume an employee invitation and activate the account */
+        post: operations["acceptEmployeeInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a password-reset email */
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an authenticated session */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the current refresh-token family */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate the refresh token generation */
+        post: operations["refreshSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register an active customer account */
+        post: operations["registerAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a reset token and set a password */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse the grouped public catalog */
+        get: operations["listProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a public product detail */
+        get: operations["getProductBySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{slug}/units/{inventoryCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one exact public used iPhone unit */
+        get: operations["getUsedIphoneByInventoryCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -42,6 +283,147 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptEmployeeInvitationDto: {
+            password: string;
+            token: string;
+        };
+        AccessoryFulfillmentAvailabilityDto: {
+            inStock: boolean;
+            pickup: boolean;
+            shipping: boolean;
+        };
+        AccessoryVariantDto: {
+            attributes?: {
+                [key: string]: unknown;
+            } | null;
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            fulfillmentAvailability: components["schemas"]["AccessoryFulfillmentAvailabilityDto"];
+            /** Format: uuid */
+            id: string;
+            media: components["schemas"]["PublicMediaDto"][];
+            price: components["schemas"]["UnitPriceDto"];
+            sku: string;
+            warrantySummary: components["schemas"]["WarrantySummaryDto"];
+        };
+        AccountDto: {
+            /** Format: email */
+            email: string;
+            /** Format: date-time */
+            emailVerifiedAt?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            phone?: string | null;
+            /** @enum {string} */
+            role: "ADMIN" | "EMPLOYEE" | "CUSTOMER";
+            staffProfile?: components["schemas"]["StaffProfileDto"];
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        AccountResponse: {
+            data: components["schemas"]["AccountDto"];
+        };
+        AddressDto: {
+            addressLine: string;
+            /** Format: date-time */
+            createdAt: string;
+            district: string;
+            /** Format: uuid */
+            id: string;
+            isDefault: boolean;
+            label?: string | null;
+            phone: string;
+            postalCode?: string | null;
+            province: string;
+            receiverName: string;
+            /** Format: date-time */
+            updatedAt: string;
+            ward: string;
+        };
+        AddressListResponse: {
+            data: components["schemas"]["AddressDto"][];
+        };
+        AddressResponse: {
+            data: components["schemas"]["AddressDto"];
+        };
+        ApiErrorBodyDto: {
+            /** @enum {string} */
+            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "DUPLICATE_RESOURCE" | "CONCURRENT_MODIFICATION" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
+            details: components["schemas"]["ApiErrorDetailDto"][];
+            message: string;
+            /** @description Correlation ID for diagnostics */
+            requestId: string;
+        };
+        ApiErrorDetailDto: {
+            code: string;
+            field?: string;
+            message: string;
+        };
+        ApiErrorResponseDto: {
+            error: components["schemas"]["ApiErrorBodyDto"];
+        };
+        AuthSessionDto: {
+            /** @description Short-lived JWT access token */
+            accessToken: string;
+            /** @example 900 */
+            expiresIn: number;
+            user: components["schemas"]["AuthUserDto"];
+        };
+        AuthSessionResponse: {
+            data: components["schemas"]["AuthSessionDto"];
+        };
+        AuthUserDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            phone?: string | null;
+            /** @enum {string} */
+            role: "ADMIN" | "EMPLOYEE" | "CUSTOMER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        ChangePasswordDto: {
+            currentPassword: string;
+            newPassword: string;
+        };
+        CreateAddressDto: {
+            addressLine: string;
+            district: string;
+            /** @default false */
+            isDefault: boolean;
+            label?: string;
+            phone: string;
+            postalCode?: string;
+            province: string;
+            receiverName: string;
+            ward: string;
+        };
+        ForgotPasswordDto: {
+            /** @example customer@example.com */
+            email: string;
+        };
+        FulfillmentAvailabilityDto: {
+            pickup: boolean;
+            shipping: boolean;
+        };
+        FunctionalCheckDto: {
+            key: string;
+            label: string;
+            note?: string | null;
+            /** @enum {string} */
+            status: "PASS" | "FAIL" | "DEGRADED" | "NOT_TESTED" | "NOT_APPLICABLE" | "UNKNOWN";
+        };
+        GenericAcceptedDto: {
+            /** @example Nếu tài khoản phù hợp, hướng dẫn sẽ được gửi qua email. */
+            message: string;
+        };
+        GenericAcceptedResponse: {
+            data: components["schemas"]["GenericAcceptedDto"];
+        };
         HealthErrorResponse: {
             /**
              * @example error
@@ -56,6 +438,217 @@ export interface components {
              */
             status: "ok";
         };
+        IphoneVariantDto: {
+            availableUnits: components["schemas"]["UsedIphoneCardDto"][];
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            sku: string;
+            storageCapacityGb?: number | null;
+            warrantySummary: components["schemas"]["WarrantySummaryDto"];
+        };
+        LoginDto: {
+            /** @example customer@example.com */
+            email: string;
+            password: string;
+        };
+        MaskedIdentifierDto: {
+            /** @example •••• 1234 */
+            maskedValue: string;
+            /** @enum {string} */
+            type: "IMEI_1" | "IMEI_2" | "SERIAL" | "EID";
+        };
+        PaginationDto: {
+            page: number;
+            pageSize: number;
+            totalItems: number;
+            totalPages: number;
+        };
+        ProductDetailDto: {
+            brand: string;
+            chipset?: string | null;
+            description?: string | null;
+            /** Format: uuid */
+            id: string;
+            media: components["schemas"]["PublicMediaDto"][];
+            name: string;
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            ramGb?: number | null;
+            releaseYear?: number | null;
+            /** @example 6.10 */
+            screenSizeInches?: string | null;
+            slug: string;
+            variants: (components["schemas"]["IphoneVariantDto"] | components["schemas"]["AccessoryVariantDto"])[];
+        };
+        ProductDetailResponse: {
+            data: components["schemas"]["ProductDetailDto"];
+        };
+        ProductListItemDto: {
+            brand: string;
+            colorOptions: string[];
+            coverMedia?: components["schemas"]["PublicMediaDto"];
+            /** Format: uuid */
+            id: string;
+            inStock: boolean;
+            name: string;
+            price: components["schemas"]["ProductPriceRangeDto"];
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            releaseYear?: number | null;
+            slug: string;
+            storageOptions: number[];
+        };
+        ProductListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        ProductListResponse: {
+            data: components["schemas"]["ProductListItemDto"][];
+            meta: components["schemas"]["ProductListMetaDto"];
+        };
+        ProductPriceRangeDto: {
+            /** @example 13900000 */
+            compareAtPrice?: string;
+            /** @example 12500000 */
+            fromPrice?: string;
+        };
+        PublicMediaDto: {
+            altText: string;
+            height?: number;
+            /** Format: uri */
+            url: string;
+            width?: number;
+        };
+        RegisterDto: {
+            /** @example customer@example.com */
+            email: string;
+            /** @example Nguyễn Văn An */
+            fullName: string;
+            password: string;
+            /** @example 0900000000 */
+            phone?: string;
+        };
+        RegisteredAccountDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        RegisteredAccountResponse: {
+            data: components["schemas"]["RegisteredAccountDto"];
+        };
+        ResetPasswordDto: {
+            newPassword: string;
+            token: string;
+        };
+        StaffProfileDto: {
+            employeeCode: string;
+            /** Format: date */
+            hiredAt?: string | null;
+        };
+        UnitPriceDto: {
+            /** @example 13900000 */
+            compareAtPrice?: string;
+            /** @example 12500000 */
+            salePrice: string;
+        };
+        UpdateAccountDto: {
+            fullName?: string;
+            phone?: string | null;
+        };
+        UpdateAddressDto: {
+            addressLine?: string;
+            district?: string;
+            isDefault?: boolean;
+            label?: string | null;
+            phone?: string;
+            postalCode?: string | null;
+            province?: string;
+            receiverName?: string;
+            ward?: string;
+        };
+        UsedIphoneCardDto: {
+            batteryHealthPercent?: number | null;
+            carrierName?: string | null;
+            /** @enum {string} */
+            conditionGrade: "A" | "B" | "C";
+            fulfillmentAvailability: components["schemas"]["FulfillmentAvailabilityDto"];
+            inventoryCode: string;
+            modelNumber?: string | null;
+            price: components["schemas"]["UnitPriceDto"];
+            regionCode?: string | null;
+            /** @enum {string} */
+            repairHistoryStatus: "NONE_KNOWN" | "KNOWN" | "UNKNOWN";
+            /** @enum {string} */
+            simConfiguration: "SINGLE_PHYSICAL" | "DUAL_PHYSICAL" | "PHYSICAL_AND_ESIM" | "ESIM_ONLY" | "UNKNOWN";
+            /** @enum {string} */
+            simLockStatus: "UNLOCKED" | "CARRIER_LOCKED" | "UNKNOWN";
+            thumbnail?: components["schemas"]["PublicMediaDto"];
+            warrantyDays: number;
+        };
+        UsedIphoneDetailDto: {
+            product: components["schemas"]["UsedIphoneProductSummaryDto"];
+            unit: components["schemas"]["UsedIphoneUnitDto"];
+            variant: components["schemas"]["UsedIphoneVariantSummaryDto"];
+        };
+        UsedIphoneDetailResponse: {
+            data: components["schemas"]["UsedIphoneDetailDto"];
+        };
+        UsedIphoneProductSummaryDto: {
+            brand: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+        };
+        UsedIphoneUnitDto: {
+            batteryCycleCount?: number | null;
+            batteryHealthPercent?: number | null;
+            /** @enum {string} */
+            batteryReplacementStatus: "ORIGINAL" | "REPLACED" | "UNKNOWN";
+            carrierName?: string | null;
+            /** @enum {string} */
+            conditionGrade: "A" | "B" | "C";
+            cosmeticNotes?: string | null;
+            fulfillmentAvailability: components["schemas"]["FulfillmentAvailabilityDto"];
+            functionalChecks: components["schemas"]["FunctionalCheckDto"][];
+            inventoryCode: string;
+            maskedIdentifiers: components["schemas"]["MaskedIdentifierDto"][];
+            media: components["schemas"]["PublicMediaDto"][];
+            modelNumber?: string | null;
+            price: components["schemas"]["UnitPriceDto"];
+            regionCode?: string | null;
+            /** @enum {string} */
+            repairHistoryStatus: "NONE_KNOWN" | "KNOWN" | "UNKNOWN";
+            repairNotes?: string | null;
+            replacedParts?: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {string} */
+            simConfiguration: "SINGLE_PHYSICAL" | "DUAL_PHYSICAL" | "PHYSICAL_AND_ESIM" | "ESIM_ONLY" | "UNKNOWN";
+            /** @enum {string} */
+            simLockStatus: "UNLOCKED" | "CARRIER_LOCKED" | "UNKNOWN";
+            warrantyDays: number;
+        };
+        UsedIphoneVariantSummaryDto: {
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            sku: string;
+            storageCapacityGb?: number | null;
+        };
+        WarrantySummaryDto: {
+            days: number;
+            name: string;
+            terms: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -65,6 +658,821 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listAccountAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressListResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    createAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAddressDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    archiveAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    updateAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAddressDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CURRENT_PASSWORD_INCORRECT */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    acceptEmployeeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptEmployeeInvitationDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ONE_TIME_TOKEN_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordDto"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericAcceptedResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_CREDENTIALS */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCOUNT_UNAVAILABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Rephone-CSRF": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    refreshSession: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Rephone-CSRF": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    registerAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredAccountResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ONE_TIME_TOKEN_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listProducts: {
+        parameters: {
+            query?: {
+                q?: string;
+                productType?: "IPHONE" | "ACCESSORY";
+                releaseYear?: number;
+                storageCapacityGb?: number;
+                colorName?: string;
+                minPrice?: string;
+                maxPrice?: string;
+                inStock?: boolean;
+                page?: number;
+                pageSize?: number;
+                sortBy?: "createdAt" | "name" | "fromPrice" | "releaseYear";
+                sortOrder?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getProductBySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getUsedIphoneByInventoryCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inventoryCode: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsedIphoneDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     getLiveness: {
         parameters: {
             query?: never;

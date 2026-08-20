@@ -1,6 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: sẵn sàng triển khai<br>
+> Trạng thái: đang triển khai — Slice 03 đã nghiệm thu ngày 2026-08-20<br>
+> Bước kế tiếp: Slice 04 — Backoffice catalog và inventory intake/inspection<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -277,38 +278,51 @@ Nguồn: [Roles/permissions](docs/requirements/roles-and-permissions.md), [Authe
 
 ### Slice 03 — Public catalog
 
+> Trạng thái: ✅ Hoàn thành và đã đồng bộ lên nhánh `feat/slice-03-public-catalog`.<br>
+> Kế hoạch chi tiết: [Slice 03 — Public Catalog](docs/planning/2026-08-20-slice-03-public-catalog-plan.md).
+
 **Mục tiêu:** public browse/search/filter product và exact used-iPhone unit bằng projection an toàn.
 
 **Phụ thuộc:** Slice 01; có thể chạy song song cuối Slice 02 sau khi common auth/error ổn định.
 
 **Database và query**
 
-- [ ] Hoàn thiện read model cho `Product`, `ProductVariant`, `ProductMedia`, `InventoryUnit`, `InventoryInspection`, `StockLevel`.
-- [ ] Viết query product-grouped, stable pagination/sorting và visibility/availability predicate dùng lại được.
-- [ ] Chỉ thêm trigram/index mới sau benchmark seed-scale; P0 mặc định dùng index baseline.
+- [x] Hoàn thiện read model cho `Product`, `ProductVariant`, `ProductMedia`, `InventoryUnit`, `InventoryInspection`, `StockLevel`.
+- [x] Viết query product-grouped, stable pagination/sorting và visibility/availability predicate dùng lại được.
+- [x] Chỉ thêm trigram/index mới sau benchmark seed-scale; benchmark xác nhận index baseline đáp ứng P0 nên không tạo migration tối ưu mới.
 
 **Domain/application**
 
-- [ ] Phân biệt product type IPHONE/ACCESSORY và inventory mode SERIALIZED/QUANTITY.
-- [ ] Public iPhone chỉ hiện unit `AVAILABLE` thỏa active catalog/location, price, unit photo và current PASSED inspection.
-- [ ] Accessory availability suy ra từ `quantityOnHand - quantityReserved`.
-- [ ] Serializer mask identifier suffix; loại cost, raw identifier, location nội bộ và inspection note.
+- [x] Phân biệt product type IPHONE/ACCESSORY và inventory mode SERIALIZED/QUANTITY.
+- [x] Public iPhone chỉ hiện unit `AVAILABLE` thỏa active catalog/location, price, unit photo và current PASSED inspection.
+- [x] Accessory availability suy ra từ `quantityOnHand - quantityReserved`.
+- [x] Serializer mask identifier suffix; loại cost, raw identifier, location nội bộ và inspection note.
 
 **API/OpenAPI/UI**
 
-- [ ] Product list/search/filter/sort/pagination.
-- [ ] Product detail với iPhone variants/available units hoặc accessory variants.
-- [ ] Exact used-iPhone unit detail bằng public inventory code/path contract.
-- [ ] Generate typed catalog client; UI catalog/detail được nối ở tuần 4 hoặc sớm hơn nếu còn thời gian.
+- [x] Product list/search/filter/sort/pagination.
+- [x] Product detail với iPhone variants/available units hoặc accessory variants.
+- [x] Exact used-iPhone unit detail bằng public inventory code/path contract.
+- [x] Generate typed catalog client; UI catalog/detail đã nối ngay trong Slice 03.
 
 **Test bắt buộc**
 
-- [ ] DRAFT/ARCHIVED product, inactive variant và unavailable unit không lọt public result.
-- [ ] Filter model/dung lượng/màu/tình trạng, search và stable ordering đúng contract.
-- [ ] Pagination meta và giới hạn page/pageSize đúng.
-- [ ] Public DTO snapshot không chứa field internal/secret.
+- [x] DRAFT/ARCHIVED product, inactive variant và unavailable unit không lọt public result.
+- [x] Filter model/dung lượng/màu/tình trạng, search và stable ordering đúng contract.
+- [x] Pagination meta và giới hạn page/pageSize đúng.
+- [x] Public DTO snapshot không chứa field internal/secret.
 
-**Hoàn thành khi:** public catalog đọc từ database seed; client types build; query đáp ứng mục tiêu demo.
+**Kết quả nghiệm thu ngày 2026-08-20:**
+
+- Supabase project `evuggdjbhykxvcxobmsn` không còn migration pending; seed chạy lặp lại không nhân dữ liệu.
+- Catalog demo có 6 product `ACTIVE`, 8 variant `ACTIVE`, 5 unit `AVAILABLE`, 14 media PNG và không còn metadata SVG legacy.
+- Bucket public `rephone-public` có đủ 14/14 object; từng URL trả `200 image/png` và uploader replay an toàn.
+- Ba API list/detail/exact-unit, filter kết hợp và bốn route UI production smoke đều trả HTTP 200; public projection không lộ field cấm.
+- Benchmark concurrency 10 đạt p95: list 55,88 ms; filtered list 57,57 ms; product detail 116,70 ms; exact unit 76,11 ms, đều dưới mục tiêu 500 ms.
+- `pnpm verify` xanh: format, lint, typecheck, 22 API unit test, 5 integration test, 18 API E2E, OpenAPI/client generation và production build.
+- Implementation đã nghiệm thu tại commit `5792677`; các commit Slice 03 được tách theo concern và đồng bộ remote, không còn known blocker thuộc slice.
+
+**Hoàn thành khi:** ✅ Đạt — public catalog đọc từ database seed; client types build; query và storefront đáp ứng mục tiêu demo.
 
 Nguồn: [Catalog model](docs/architecture/catalog-inventory-model.md), [Public catalog endpoints](docs/api/public-catalog-endpoints.md), [Filtering/search](docs/api/filtering-and-search.md), [Pagination](docs/api/pagination.md), [Catalog data](docs/data-model/catalog-inventory.md).
 

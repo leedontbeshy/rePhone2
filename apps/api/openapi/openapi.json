@@ -1,6 +1,547 @@
 {
   "components": {
     "schemas": {
+      "AcceptEmployeeInvitationDto": {
+        "properties": {
+          "password": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "token": {
+            "minLength": 20,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ],
+        "type": "object"
+      },
+      "AccessoryFulfillmentAvailabilityDto": {
+        "properties": {
+          "inStock": {
+            "type": "boolean"
+          },
+          "pickup": {
+            "type": "boolean"
+          },
+          "shipping": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pickup",
+          "shipping",
+          "inStock"
+        ],
+        "type": "object"
+      },
+      "AccessoryVariantDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/AccessoryFulfillmentAvailabilityDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "warrantySummary": {
+            "$ref": "#/components/schemas/WarrantySummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName",
+          "price",
+          "warrantySummary",
+          "media",
+          "fulfillmentAvailability"
+        ],
+        "type": "object"
+      },
+      "AccountDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "emailVerifiedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "EMPLOYEE",
+              "CUSTOMER"
+            ],
+            "type": "string"
+          },
+          "staffProfile": {
+            "$ref": "#/components/schemas/StaffProfileDto"
+          },
+          "status": {
+            "enum": [
+              "PENDING_VERIFICATION",
+              "ACTIVE",
+              "SUSPENDED",
+              "DISABLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "role",
+          "status",
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "AccountResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AccountDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "AddressDto": {
+        "properties": {
+          "addressLine": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "label": {
+            "nullable": true,
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "postalCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "receiverName": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ward": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "receiverName",
+          "phone",
+          "addressLine",
+          "ward",
+          "district",
+          "province",
+          "isDefault",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "AddressListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AddressDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "AddressResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AddressDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ApiErrorBodyDto": {
+        "properties": {
+          "code": {
+            "enum": [
+              "VALIDATION_FAILED",
+              "MALFORMED_JSON",
+              "AUTH_REQUIRED",
+              "ACCESS_TOKEN_INVALID",
+              "INVALID_CREDENTIALS",
+              "SESSION_REVOKED",
+              "ACCOUNT_UNAVAILABLE",
+              "FORBIDDEN",
+              "CSRF_VALIDATION_FAILED",
+              "RESOURCE_NOT_FOUND",
+              "DUPLICATE_RESOURCE",
+              "CONCURRENT_MODIFICATION",
+              "ONE_TIME_TOKEN_INVALID",
+              "CURRENT_PASSWORD_INCORRECT",
+              "RATE_LIMITED",
+              "SERVICE_UNAVAILABLE",
+              "STORAGE_UNAVAILABLE",
+              "INTERNAL_ERROR"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetailDto"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "description": "Correlation ID for diagnostics",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "requestId"
+        ],
+        "type": "object"
+      },
+      "ApiErrorDetailDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ApiErrorResponseDto": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "AuthSessionDto": {
+        "properties": {
+          "accessToken": {
+            "description": "Short-lived JWT access token",
+            "type": "string"
+          },
+          "expiresIn": {
+            "example": 900,
+            "type": "number"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUserDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresIn",
+          "user"
+        ],
+        "type": "object"
+      },
+      "AuthSessionResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AuthSessionDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "AuthUserDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "phone": {
+            "nullable": true,
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "ADMIN",
+              "EMPLOYEE",
+              "CUSTOMER"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_VERIFICATION",
+              "ACTIVE",
+              "SUSPENDED",
+              "DISABLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "role",
+          "status",
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "ChangePasswordDto": {
+        "properties": {
+          "currentPassword": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "newPassword": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "type": "object"
+      },
+      "CreateAddressDto": {
+        "properties": {
+          "addressLine": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "isDefault": {
+            "default": false,
+            "type": "boolean"
+          },
+          "label": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "type": "string"
+          },
+          "postalCode": {
+            "maxLength": 32,
+            "type": "string"
+          },
+          "province": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "receiverName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiverName",
+          "phone",
+          "addressLine",
+          "ward",
+          "district",
+          "province"
+        ],
+        "type": "object"
+      },
+      "ForgotPasswordDto": {
+        "properties": {
+          "email": {
+            "example": "customer@example.com",
+            "maxLength": 320,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "FulfillmentAvailabilityDto": {
+        "properties": {
+          "pickup": {
+            "type": "boolean"
+          },
+          "shipping": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pickup",
+          "shipping"
+        ],
+        "type": "object"
+      },
+      "FunctionalCheckDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "DEGRADED",
+              "NOT_TESTED",
+              "NOT_APPLICABLE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "status"
+        ],
+        "type": "object"
+      },
+      "GenericAcceptedDto": {
+        "properties": {
+          "message": {
+            "example": "Nếu tài khoản phù hợp, hướng dẫn sẽ được gửi qua email.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "GenericAcceptedResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GenericAcceptedDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "HealthErrorResponse": {
         "properties": {
           "status": {
@@ -30,6 +571,833 @@
           "status"
         ],
         "type": "object"
+      },
+      "IphoneVariantDto": {
+        "properties": {
+          "availableUnits": {
+            "items": {
+              "$ref": "#/components/schemas/UsedIphoneCardDto"
+            },
+            "type": "array"
+          },
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "warrantySummary": {
+            "$ref": "#/components/schemas/WarrantySummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName",
+          "warrantySummary",
+          "availableUnits"
+        ],
+        "type": "object"
+      },
+      "LoginDto": {
+        "properties": {
+          "email": {
+            "example": "customer@example.com",
+            "maxLength": 320,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "MaskedIdentifierDto": {
+        "properties": {
+          "maskedValue": {
+            "example": "•••• 1234",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IMEI_1",
+              "IMEI_2",
+              "SERIAL",
+              "EID"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "maskedValue"
+        ],
+        "type": "object"
+      },
+      "PaginationDto": {
+        "properties": {
+          "page": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "pageSize": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "totalItems": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "ProductDetailDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "chipset": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "ramGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "releaseYear": {
+            "nullable": true,
+            "type": "number"
+          },
+          "screenSizeInches": {
+            "example": "6.10",
+            "nullable": true,
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "variants": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/IphoneVariantDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AccessoryVariantDto"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "productType",
+          "brand",
+          "name",
+          "media",
+          "variants"
+        ],
+        "type": "object"
+      },
+      "ProductDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProductDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ProductListItemDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "colorOptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "coverMedia": {
+            "$ref": "#/components/schemas/PublicMediaDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inStock": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPriceRangeDto"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "releaseYear": {
+            "nullable": true,
+            "type": "number"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "storageOptions": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "productType",
+          "brand",
+          "name",
+          "price",
+          "inStock",
+          "storageOptions",
+          "colorOptions"
+        ],
+        "type": "object"
+      },
+      "ProductListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "ProductListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProductListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ProductListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "ProductPriceRangeDto": {
+        "properties": {
+          "compareAtPrice": {
+            "example": "13900000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "fromPrice": {
+            "example": "12500000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicMediaDto": {
+        "properties": {
+          "altText": {
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "url",
+          "altText"
+        ],
+        "type": "object"
+      },
+      "RegisterDto": {
+        "properties": {
+          "email": {
+            "example": "customer@example.com",
+            "maxLength": 320,
+            "type": "string"
+          },
+          "fullName": {
+            "example": "Nguyễn Văn An",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "phone": {
+            "example": "0900000000",
+            "maxLength": 32,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "RegisteredAccountDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_VERIFICATION",
+              "ACTIVE",
+              "SUSPENDED",
+              "DISABLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "fullName",
+          "status"
+        ],
+        "type": "object"
+      },
+      "RegisteredAccountResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RegisteredAccountDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordDto": {
+        "properties": {
+          "newPassword": {
+            "maxLength": 128,
+            "minLength": 8,
+            "type": "string",
+            "writeOnly": true
+          },
+          "token": {
+            "minLength": 20,
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "token",
+          "newPassword"
+        ],
+        "type": "object"
+      },
+      "StaffProfileDto": {
+        "properties": {
+          "employeeCode": {
+            "type": "string"
+          },
+          "hiredAt": {
+            "format": "date",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "employeeCode"
+        ],
+        "type": "object"
+      },
+      "UnitPriceDto": {
+        "properties": {
+          "compareAtPrice": {
+            "example": "13900000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "salePrice": {
+            "example": "12500000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "salePrice"
+        ],
+        "type": "object"
+      },
+      "UpdateAccountDto": {
+        "properties": {
+          "fullName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateAddressDto": {
+        "properties": {
+          "addressLine": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "label": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "type": "string"
+          },
+          "postalCode": {
+            "maxLength": 32,
+            "nullable": true,
+            "type": "string"
+          },
+          "province": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "receiverName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UsedIphoneCardDto": {
+        "properties": {
+          "batteryHealthPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "carrierName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/FulfillmentAvailabilityDto"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "modelNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "regionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "repairHistoryStatus": {
+            "enum": [
+              "NONE_KNOWN",
+              "KNOWN",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "thumbnail": {
+            "$ref": "#/components/schemas/PublicMediaDto"
+          },
+          "warrantyDays": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "inventoryCode",
+          "simLockStatus",
+          "simConfiguration",
+          "price",
+          "conditionGrade",
+          "repairHistoryStatus",
+          "warrantyDays",
+          "fulfillmentAvailability"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneDetailDto": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/UsedIphoneProductSummaryDto"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/UsedIphoneUnitDto"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/UsedIphoneVariantSummaryDto"
+          }
+        },
+        "required": [
+          "product",
+          "variant",
+          "unit"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UsedIphoneDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneProductSummaryDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "brand"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneUnitDto": {
+        "properties": {
+          "batteryCycleCount": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "batteryHealthPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "batteryReplacementStatus": {
+            "enum": [
+              "ORIGINAL",
+              "REPLACED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "carrierName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string"
+          },
+          "cosmeticNotes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/FulfillmentAvailabilityDto"
+          },
+          "functionalChecks": {
+            "items": {
+              "$ref": "#/components/schemas/FunctionalCheckDto"
+            },
+            "type": "array"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "maskedIdentifiers": {
+            "items": {
+              "$ref": "#/components/schemas/MaskedIdentifierDto"
+            },
+            "type": "array"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "modelNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "regionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "repairHistoryStatus": {
+            "enum": [
+              "NONE_KNOWN",
+              "KNOWN",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "repairNotes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "replacedParts": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "warrantyDays": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "inventoryCode",
+          "simLockStatus",
+          "simConfiguration",
+          "price",
+          "conditionGrade",
+          "batteryReplacementStatus",
+          "repairHistoryStatus",
+          "functionalChecks",
+          "maskedIdentifiers",
+          "warrantyDays",
+          "fulfillmentAvailability",
+          "media"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneVariantSummaryDto": {
+        "properties": {
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "WarrantySummaryDto": {
+        "properties": {
+          "days": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "terms": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "days",
+          "terms"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -37,6 +1405,11 @@
         "bearerFormat": "JWT",
         "scheme": "bearer",
         "type": "http"
+      },
+      "rephone_refresh": {
+        "in": "cookie",
+        "name": "rephone_refresh",
+        "type": "apiKey"
       }
     }
   },
@@ -48,6 +1421,1186 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/account": {
+      "get": {
+        "operationId": "getAccount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get the authenticated account",
+        "tags": [
+          "account"
+        ]
+      },
+      "patch": {
+        "operationId": "updateAccount",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update the authenticated profile",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/account/addresses": {
+      "get": {
+        "operationId": "listAccountAddresses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List active customer addresses",
+        "tags": [
+          "account"
+        ]
+      },
+      "post": {
+        "operationId": "createAccountAddress",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a customer address",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/account/addresses/{id}": {
+      "delete": {
+        "operationId": "archiveAccountAddress",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Archive an owned customer address",
+        "tags": [
+          "account"
+        ]
+      },
+      "patch": {
+        "operationId": "updateAccountAddress",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Update an owned customer address",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/account/change-password": {
+      "post": {
+        "operationId": "changePassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CURRENT_PASSWORD_INCORRECT"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Change password and revoke all sessions",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/api/v1/auth/accept-employee-invitation": {
+      "post": {
+        "operationId": "acceptEmployeeInvitation",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptEmployeeInvitationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ONE_TIME_TOKEN_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consume an employee invitation and activate the account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericAcceptedResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Request a password-reset email",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIALS"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCOUNT_UNAVAILABLE"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create an authenticated session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CSRF_VALIDATION_FAILED"
+          }
+        },
+        "security": [
+          {
+            "rephone_refresh": []
+          }
+        ],
+        "summary": "Revoke the current refresh-token family",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "refreshSession",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": true,
+            "schema": {
+              "enum": [
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSessionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CSRF_VALIDATION_FAILED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "rephone_refresh": []
+          }
+        ],
+        "summary": "Rotate the refresh token generation",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "registerAccount",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisteredAccountResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register an active customer account",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ONE_TIME_TOKEN_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Consume a reset token and set a password",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "IPHONE",
+                "ACCESSORY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "releaseYear",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 2007,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "storageCapacityGb",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "colorName",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "required": false,
+            "schema": {
+              "maxLength": 15,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "required": false,
+            "schema": {
+              "maxLength": 15,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inStock",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "createdAt",
+                "name",
+                "fromPrice",
+                "releaseYear"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Browse the grouped public catalog",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/products/{slug}": {
+      "get": {
+        "operationId": "getProductBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 180,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Get a public product detail",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/products/{slug}/units/{inventoryCode}": {
+      "get": {
+        "operationId": "getUsedIphoneByInventoryCode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "inventoryCode",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 180,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsedIphoneDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Get one exact public used iPhone unit",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "operationId": "getLiveness",

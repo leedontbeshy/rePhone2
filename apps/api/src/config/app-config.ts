@@ -279,7 +279,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
       hmacKey: environment.IDENTIFIER_HMAC_KEY,
     },
     storage: {
-      url: environment.SUPABASE_URL,
+      url: new URL(environment.SUPABASE_URL).origin,
       serviceRoleKey: environment.SUPABASE_SERVICE_ROLE_KEY,
       publicBucket: environment.SUPABASE_PUBLIC_BUCKET,
       privateBucket: environment.SUPABASE_PRIVATE_BUCKET,
