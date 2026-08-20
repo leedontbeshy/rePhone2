@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiAcceptedResponse,
+  ApiBody,
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiHeader,
@@ -39,12 +40,13 @@ import { CsrfGuard } from './csrf.guard.js';
 @Controller('auth')
 export class AuthController {
   public constructor(
-    private readonly authService: AuthService,
+    @Inject(AuthService) private readonly authService: AuthService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Post('register')
   @ApiOperation({ operationId: 'registerAccount', summary: 'Register an active customer account' })
+  @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({ type: RegisteredAccountResponse })
   public register(@Body() input: RegisterDto, @Req() request: Request) {
     return this.authService.register(input, requestMetadata(request));
@@ -53,6 +55,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ operationId: 'login', summary: 'Create an authenticated session' })
+  @ApiBody({ type: LoginDto })
   @ApiOkResponse({ type: AuthSessionResponse })
   public async login(
     @Body() input: LoginDto,
@@ -105,6 +108,7 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ operationId: 'forgotPassword', summary: 'Request a password-reset email' })
+  @ApiBody({ type: ForgotPasswordDto })
   @ApiAcceptedResponse({ type: GenericAcceptedResponse })
   public forgotPassword(@Body() input: ForgotPasswordDto, @Req() request: Request) {
     return this.authService.forgotPassword(input.email, requestMetadata(request));
@@ -116,6 +120,7 @@ export class AuthController {
     operationId: 'resetPassword',
     summary: 'Consume a reset token and set a password',
   })
+  @ApiBody({ type: ResetPasswordDto })
   @ApiNoContentResponse()
   public resetPassword(@Body() input: ResetPasswordDto, @Req() request: Request): Promise<void> {
     return this.authService.resetPassword(input.token, input.newPassword, requestMetadata(request));
@@ -127,6 +132,7 @@ export class AuthController {
     operationId: 'acceptEmployeeInvitation',
     summary: 'Consume an employee invitation and activate the account',
   })
+  @ApiBody({ type: AcceptEmployeeInvitationDto })
   @ApiNoContentResponse()
   public acceptEmployeeInvitation(
     @Body() input: AcceptEmployeeInvitationDto,

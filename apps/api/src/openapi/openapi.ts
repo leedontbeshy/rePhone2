@@ -5,6 +5,7 @@ import {
   type OpenAPIObject,
   type OperationObject,
 } from '@nestjs/swagger';
+import { REFRESH_COOKIE_NAME } from '../modules/auth/auth.constants.js';
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
 
@@ -15,6 +16,11 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .setVersion('1.0.0')
     .addServer('http://localhost:4000', 'Local development')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addCookieAuth(
+      REFRESH_COOKIE_NAME,
+      { type: 'apiKey', in: 'cookie', name: REFRESH_COOKIE_NAME },
+      REFRESH_COOKIE_NAME,
+    )
     .build();
 
   return SwaggerModule.createDocument(app, options, {

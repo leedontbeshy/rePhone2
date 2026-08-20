@@ -4,6 +4,196 @@
  */
 
 export interface paths {
+    "/api/v1/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated account */
+        get: operations["getAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the authenticated profile */
+        patch: operations["updateAccount"];
+        trace?: never;
+    };
+    "/api/v1/account/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active customer addresses */
+        get: operations["listAccountAddresses"];
+        put?: never;
+        /** Create a customer address */
+        post: operations["createAccountAddress"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Archive an owned customer address */
+        delete: operations["archiveAccountAddress"];
+        options?: never;
+        head?: never;
+        /** Update an owned customer address */
+        patch: operations["updateAccountAddress"];
+        trace?: never;
+    };
+    "/api/v1/account/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change password and revoke all sessions */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/accept-employee-invitation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume an employee invitation and activate the account */
+        post: operations["acceptEmployeeInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a password-reset email */
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an authenticated session */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the current refresh-token family */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate the refresh token generation */
+        post: operations["refreshSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register an active customer account */
+        post: operations["registerAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a reset token and set a password */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -42,6 +232,100 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptEmployeeInvitationDto: {
+            password: string;
+            token: string;
+        };
+        AccountDto: {
+            /** Format: email */
+            email: string;
+            /** Format: date-time */
+            emailVerifiedAt?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            phone?: string | null;
+            /** @enum {string} */
+            role: "ADMIN" | "EMPLOYEE" | "CUSTOMER";
+            staffProfile?: components["schemas"]["StaffProfileDto"];
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        AccountResponse: {
+            data: components["schemas"]["AccountDto"];
+        };
+        AddressDto: {
+            addressLine: string;
+            /** Format: date-time */
+            createdAt: string;
+            district: string;
+            /** Format: uuid */
+            id: string;
+            isDefault: boolean;
+            label?: string | null;
+            phone: string;
+            postalCode?: string | null;
+            province: string;
+            receiverName: string;
+            /** Format: date-time */
+            updatedAt: string;
+            ward: string;
+        };
+        AddressListResponse: {
+            data: components["schemas"]["AddressDto"][];
+        };
+        AddressResponse: {
+            data: components["schemas"]["AddressDto"];
+        };
+        AuthSessionDto: {
+            /** @description Short-lived JWT access token */
+            accessToken: string;
+            /** @example 900 */
+            expiresIn: number;
+            user: components["schemas"]["AuthUserDto"];
+        };
+        AuthSessionResponse: {
+            data: components["schemas"]["AuthSessionDto"];
+        };
+        AuthUserDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            phone?: string | null;
+            /** @enum {string} */
+            role: "ADMIN" | "EMPLOYEE" | "CUSTOMER";
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        ChangePasswordDto: {
+            currentPassword: string;
+            newPassword: string;
+        };
+        CreateAddressDto: {
+            addressLine: string;
+            district: string;
+            /** @default false */
+            isDefault: boolean;
+            label?: string;
+            phone: string;
+            postalCode?: string;
+            province: string;
+            receiverName: string;
+            ward: string;
+        };
+        ForgotPasswordDto: {
+            /** @example customer@example.com */
+            email: string;
+        };
+        GenericAcceptedDto: {
+            /** @example Nếu tài khoản phù hợp, hướng dẫn sẽ được gửi qua email. */
+            message: string;
+        };
+        GenericAcceptedResponse: {
+            data: components["schemas"]["GenericAcceptedDto"];
+        };
         HealthErrorResponse: {
             /**
              * @example error
@@ -56,6 +340,56 @@ export interface components {
              */
             status: "ok";
         };
+        LoginDto: {
+            /** @example customer@example.com */
+            email: string;
+            password: string;
+        };
+        RegisterDto: {
+            /** @example customer@example.com */
+            email: string;
+            /** @example Nguyễn Văn An */
+            fullName: string;
+            password: string;
+            /** @example 0900000000 */
+            phone?: string;
+        };
+        RegisteredAccountDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        };
+        RegisteredAccountResponse: {
+            data: components["schemas"]["RegisteredAccountDto"];
+        };
+        ResetPasswordDto: {
+            newPassword: string;
+            token: string;
+        };
+        StaffProfileDto: {
+            employeeCode: string;
+            /** Format: date */
+            hiredAt?: string | null;
+        };
+        UpdateAccountDto: {
+            fullName?: string;
+            phone?: string | null;
+        };
+        UpdateAddressDto: {
+            addressLine?: string;
+            district?: string;
+            isDefault?: boolean;
+            label?: string | null;
+            phone?: string;
+            postalCode?: string | null;
+            province?: string;
+            receiverName?: string;
+            ward?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -65,6 +399,302 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAccountDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountResponse"];
+                };
+            };
+        };
+    };
+    listAccountAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressListResponse"];
+                };
+            };
+        };
+    };
+    createAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAddressDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+        };
+    };
+    archiveAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateAccountAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAddressDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressResponse"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    acceptEmployeeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptEmployeeInvitationDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordDto"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenericAcceptedResponse"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Rephone-CSRF": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    refreshSession: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Rephone-CSRF": "1";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSessionResponse"];
+                };
+            };
+        };
+    };
+    registerAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredAccountResponse"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getLiveness: {
         parameters: {
             query?: never;

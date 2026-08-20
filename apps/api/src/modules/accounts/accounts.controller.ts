@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -44,8 +45,8 @@ import { AccountsService } from './accounts.service.js';
 @Controller('account')
 export class AccountsController {
   public constructor(
-    private readonly accountsService: AccountsService,
-    private readonly authService: AuthService,
+    @Inject(AccountsService) private readonly accountsService: AccountsService,
+    @Inject(AuthService) private readonly authService: AuthService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -58,6 +59,7 @@ export class AccountsController {
 
   @Patch()
   @ApiOperation({ operationId: 'updateAccount', summary: 'Update the authenticated profile' })
+  @ApiBody({ type: UpdateAccountDto })
   @ApiOkResponse({ type: AccountResponse })
   public updateAccount(@CurrentAuth() auth: AuthContext, @Body() input: UpdateAccountDto) {
     return this.accountsService.updateAccount(auth, input);
@@ -69,6 +71,7 @@ export class AccountsController {
     operationId: 'changePassword',
     summary: 'Change password and revoke all sessions',
   })
+  @ApiBody({ type: ChangePasswordDto })
   @ApiNoContentResponse()
   public async changePassword(
     @CurrentAuth() auth: AuthContext,
@@ -88,6 +91,7 @@ export class AccountsController {
 
   @Post('addresses')
   @ApiOperation({ operationId: 'createAccountAddress', summary: 'Create a customer address' })
+  @ApiBody({ type: CreateAddressDto })
   @ApiCreatedResponse({ type: AddressResponse })
   public createAddress(@CurrentAuth() auth: AuthContext, @Body() input: CreateAddressDto) {
     return this.accountsService.createAddress(auth, input);
@@ -98,6 +102,7 @@ export class AccountsController {
     operationId: 'updateAccountAddress',
     summary: 'Update an owned customer address',
   })
+  @ApiBody({ type: UpdateAddressDto })
   @ApiOkResponse({ type: AddressResponse })
   public updateAddress(
     @CurrentAuth() auth: AuthContext,
