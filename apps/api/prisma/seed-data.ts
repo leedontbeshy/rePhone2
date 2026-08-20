@@ -1,5 +1,6 @@
 import type { PrismaClient } from '../src/generated/prisma/client.js';
 import { argon2id, hash } from 'argon2';
+import { seedPublicCatalog } from './seed-catalog.js';
 
 export async function seedDatabase(prisma: PrismaClient): Promise<void> {
   await seedIdentity(prisma);
@@ -88,6 +89,10 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
       },
     }),
   ]);
+
+  if (process.env.NODE_ENV !== 'production') {
+    await seedPublicCatalog(prisma);
+  }
 }
 
 async function seedIdentity(prisma: PrismaClient): Promise<void> {
