@@ -6,6 +6,7 @@ import type { AppConfig } from './config/app-config.js';
 import { PrismaModule } from './database/prisma.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { AccountsModule } from './modules/accounts/accounts.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
     }),
     PrismaModule,
     AuthModule,
+    AccountsModule,
     HealthModule,
   ],
 })
