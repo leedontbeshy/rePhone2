@@ -48,7 +48,7 @@ function encodeObjectPath(objectPath: string): string | null {
     objectPath.startsWith('/') ||
     objectPath.endsWith('/') ||
     objectPath.includes('\\') ||
-    /[\u0000-\u001f\u007f]/.test(objectPath)
+    hasControlCharacter(objectPath)
   ) {
     return null;
   }
@@ -57,4 +57,11 @@ function encodeObjectPath(objectPath: string): string | null {
     return null;
   }
   return segments.map((segment) => encodeURIComponent(segment)).join('/');
+}
+
+function hasControlCharacter(value: string): boolean {
+  return Array.from(value).some((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint !== undefined && (codePoint <= 0x1f || codePoint === 0x7f);
+  });
 }

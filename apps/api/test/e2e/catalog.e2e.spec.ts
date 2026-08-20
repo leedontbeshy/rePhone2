@@ -37,7 +37,7 @@ describe('public catalog HTTP contract', () => {
     const iphone13 = data.find((item) => property(item, 'slug') === 'iphone-13');
 
     expect(data).toHaveLength(6);
-    expect(response.body.meta.pagination).toEqual({
+    expect(property(property(response.body as unknown, 'meta'), 'pagination')).toEqual({
       page: 1,
       pageSize: 20,
       totalItems: 6,
@@ -81,7 +81,9 @@ describe('public catalog HTTP contract', () => {
       .query({ page: '2', pageSize: '100' })
       .expect(200);
     expect(successArray(emptyPage)).toEqual([]);
-    expect(emptyPage.body.meta.pagination.totalItems).toBe(6);
+    expect(
+      property(property(property(emptyPage.body as unknown, 'meta'), 'pagination'), 'totalItems'),
+    ).toBe(6);
   });
 
   it('rejects invalid catalog query input without coercing it', async () => {

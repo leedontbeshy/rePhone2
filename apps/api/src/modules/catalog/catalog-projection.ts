@@ -64,7 +64,7 @@ export function projectFunctionalChecks(checks: unknown): FunctionalCheckDto[] |
       key,
       label,
       status: rawItem.status,
-      ...(rawItem.note === undefined ? {} : { note: rawItem.note as string | null }),
+      ...(rawItem.note === undefined ? {} : { note: rawItem.note }),
     });
   }
   return projection;
