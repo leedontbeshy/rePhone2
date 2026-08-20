@@ -91,7 +91,8 @@ export class CatalogRepository {
             AND NOT EXISTS (
               SELECT 1
               FROM jsonb_each(i.checks -> 'items') check_item
-              WHERE check_item.value ->> 'status' NOT IN ('PASS', 'NOT_APPLICABLE')
+              WHERE jsonb_typeof(check_item.value) <> 'object'
+                OR COALESCE(check_item.value ->> 'status', '') NOT IN ('PASS', 'NOT_APPLICABLE')
             )
         ),
         iphone_offers AS (

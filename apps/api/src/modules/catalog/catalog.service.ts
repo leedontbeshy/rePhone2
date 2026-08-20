@@ -75,7 +75,7 @@ export class CatalogService {
 
   private toListItem(item: ProductListItemRecord): ProductListItemDto {
     const coverMedia =
-      item.coverMedia === null ? null : this.mediaUrlBuilder.build(item.coverMedia, item.name);
+      item.coverMedia === null ? undefined : this.projectMedia([item.coverMedia], item.name)[0];
     return {
       id: item.id,
       slug: item.slug,
@@ -83,7 +83,7 @@ export class CatalogService {
       brand: item.brand,
       name: item.name,
       releaseYear: item.releaseYear,
-      ...(coverMedia === null ? {} : { coverMedia }),
+      ...(coverMedia === undefined ? {} : { coverMedia }),
       price: {
         ...(item.fromPrice === null ? {} : { fromPrice: item.fromPrice }),
         ...(item.compareAtPrice === null ? {} : { compareAtPrice: item.compareAtPrice }),
@@ -102,7 +102,7 @@ export class CatalogService {
             .filter((variant) => variant.inventoryMode === 'SERIALIZED')
             .map((variant) => this.toIphoneVariant(product, variant, productMedia, defaults))
         : product.variants
-            .filter((variant) => variant.inventoryMode === 'QUANTITY')
+            .filter((variant) => variant.inventoryMode === 'QUANTITY' && variant.salePrice !== null)
             .map((variant) => this.toAccessoryVariant(product, variant, productMedia, defaults));
     return {
       id: product.id,
@@ -303,9 +303,17 @@ export class CatalogService {
   }
 
   private projectMedia(media: PublicMediaRecord[], fallbackAltText: string): PublicMediaDto[] {
-    return media
+    const projected = media
       .map((item) => this.mediaUrlBuilder.build(item, fallbackAltText))
       .filter((item): item is PublicMediaDto => item !== null);
+    const omittedCount = media.length - projected.length;
+    if (omittedCount > 0) {
+      this.logger.warn({
+        event: 'catalog.media.projection_omitted',
+        omittedCount,
+      });
+    }
+    return projected;
   }
 }
 
