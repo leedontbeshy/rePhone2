@@ -40,13 +40,13 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   public constructor(
-    private readonly prisma: PrismaService,
-    private readonly usersRepository: UsersRepository,
-    private readonly sessionsRepository: AuthSessionsRepository,
-    private readonly authTokensRepository: AuthTokensRepository,
-    private readonly passwordService: PasswordService,
-    private readonly tokenService: TokenService,
-    private readonly rateLimiter: AuthRateLimiter,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(UsersRepository) private readonly usersRepository: UsersRepository,
+    @Inject(AuthSessionsRepository) private readonly sessionsRepository: AuthSessionsRepository,
+    @Inject(AuthTokensRepository) private readonly authTokensRepository: AuthTokensRepository,
+    @Inject(PasswordService) private readonly passwordService: PasswordService,
+    @Inject(TokenService) private readonly tokenService: TokenService,
+    @Inject(AuthRateLimiter) private readonly rateLimiter: AuthRateLimiter,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(MAIL_PROVIDER) private readonly mailProvider: MailProvider,
   ) {}

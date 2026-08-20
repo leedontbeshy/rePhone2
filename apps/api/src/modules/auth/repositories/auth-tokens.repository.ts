@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import type { AuthTokenPurpose } from '../../../generated/prisma/enums.js';
 import { PrismaService } from '../../../database/prisma.service.js';
@@ -17,7 +17,7 @@ export interface LockedAuthToken {
 
 @Injectable()
 export class AuthTokensRepository {
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   public create(
     data: { userId: string; purpose: AuthTokenPurpose; tokenHash: string; expiresAt: Date },

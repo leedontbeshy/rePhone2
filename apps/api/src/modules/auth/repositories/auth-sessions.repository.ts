@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 
@@ -19,7 +19,7 @@ export interface LockedAuthSession {
 
 @Injectable()
 export class AuthSessionsRepository {
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   public create(
     data: {

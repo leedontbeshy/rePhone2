@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../database/prisma.service.js';
 
@@ -6,7 +6,7 @@ type DbClient = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class UsersRepository {
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   public findByNormalizedEmail(normalizedEmail: string, client: DbClient = this.prisma) {
     return client.user.findUnique({ where: { normalizedEmail } });

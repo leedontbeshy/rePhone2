@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiError } from '../../common/errors/api-error.js';
 import { AuthSessionsRepository } from './repositories/auth-sessions.repository.js';
@@ -7,8 +7,8 @@ import { TokenService } from './token.service.js';
 @Injectable()
 export class SessionGuard implements CanActivate {
   public constructor(
-    private readonly tokenService: TokenService,
-    private readonly sessionsRepository: AuthSessionsRepository,
+    @Inject(TokenService) private readonly tokenService: TokenService,
+    @Inject(AuthSessionsRepository) private readonly sessionsRepository: AuthSessionsRepository,
   ) {}
 
   public async canActivate(context: ExecutionContext): Promise<boolean> {

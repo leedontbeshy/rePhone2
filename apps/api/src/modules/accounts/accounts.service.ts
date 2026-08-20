@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { CustomerAddress, User } from '../../generated/prisma/client.js';
@@ -10,8 +10,8 @@ import { AccountsRepository } from './accounts.repository.js';
 @Injectable()
 export class AccountsService {
   public constructor(
-    private readonly prisma: PrismaService,
-    private readonly accountsRepository: AccountsRepository,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AccountsRepository) private readonly accountsRepository: AccountsRepository,
   ) {}
 
   public async getAccount(auth: AuthContext): Promise<AccountDto> {

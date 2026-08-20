@@ -18,7 +18,7 @@ export interface AccessTokenClaims {
 @Injectable()
 export class TokenService {
   public constructor(
-    private readonly jwtService: JwtService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
