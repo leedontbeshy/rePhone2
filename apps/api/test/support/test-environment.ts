@@ -10,6 +10,9 @@ export function setTestEnvironment(): void {
     DIRECT_URL:
       process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5433/rephone_test',
     JWT_ACCESS_SECRET: 'test-only-jwt-secret-with-at-least-thirty-two-bytes',
+    ARGON2_MEMORY_KIB: '8192',
+    ARGON2_TIME_COST: '1',
+    ARGON2_PARALLELISM: '1',
     IDENTIFIER_ENCRYPTION_KEY: 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=',
     IDENTIFIER_HMAC_KEY: 'YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=',
     SUPABASE_URL: 'https://example.supabase.co',
@@ -21,7 +24,7 @@ export function setTestEnvironment(): void {
     SMTP_PORT: '1025',
     SMTP_SECURE: 'false',
     MAIL_FROM: 'rePhone Test <no-reply@rephone.local>',
-    LOG_LEVEL: 'silent',
+    LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     SCHEDULER_ENABLED: 'false',
   });
 }
