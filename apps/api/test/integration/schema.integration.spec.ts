@@ -1,0 +1,122 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { seedDatabase } from '../../prisma/seed-data.js';
+import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { createTestPrisma } from '../support/test-prisma.js';
+
+interface CountResult {
+  count: number;
+}
+
+describe('database baseline', () => {
+  let prisma: PrismaClient;
+
+  beforeAll(() => {
+    prisma = createTestPrisma();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  it('deploys exactly 28 domain tables', async () => {
+    const result = await prisma.$queryRaw<CountResult[]>`
+      SELECT COUNT(*)::int AS count
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+        AND table_name <> '_prisma_migrations'
+    `;
+
+    expect(result[0]?.count).toBe(28);
+  });
+
+  it('contains the required SQL constraints and partial unique indexes', async () => {
+    const constraints = await prisma.$queryRaw<Array<{ conname: string }>>`
+      SELECT conname
+      FROM pg_constraint
+      WHERE conname IN (
+        'users_role_profile_check',
+        'stock_levels_quantities_check',
+        'inventory_reservations_target_check',
+        'product_media_owner_check',
+        'orders_money_check',
+        'store_settings_singleton_check'
+      )
+    `;
+    const indexes = await prisma.$queryRaw<Array<{ indexname: string }>>`
+      SELECT indexname
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND indexname IN (
+          'customer_addresses_one_default_active_per_user',
+          'inventory_inspections_one_current_per_unit',
+          'inventory_reservations_one_active_per_unit',
+          'carts_one_active_per_customer',
+          'after_sales_requests_one_open_per_order_item'
+        )
+    `;
+
+    expect(constraints.map(({ conname }: { conname: string }) => conname).sort()).toHaveLength(6);
+    expect(indexes.map(({ indexname }: { indexname: string }) => indexname).sort()).toHaveLength(5);
+  });
+
+  it('enforces representative singleton, owner XOR, and quantity checks', async () => {
+    await expect(
+      prisma.storeSettings.create({
+        data: {
+          key: 'NOT_STORE',
+          storeName: 'Invalid',
+          storePhone: '0900000000',
+          storeAddress: 'Invalid',
+          currency: 'VND',
+          timezone: 'Asia/Ho_Chi_Minh',
+          defaultShippingFee: '0',
+          shippingDepositAmount: '1',
+          pickupHoldMinutes: 1,
+          depositProofWindowMinutes: 1,
+          depositReviewWindowMinutes: 1,
+          defaultWarrantyDays: 0,
+          defaultWarrantyTerms: 'Invalid test row',
+          bankName: 'Demo',
+          bankAccountNumber: '0',
+          bankAccountHolder: 'Demo',
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      prisma.productMedia.create({
+        data: {
+          bucket: 'rephone-public-test',
+          objectPath: 'invalid/no-owner.jpg',
+          visibility: 'PUBLIC',
+          mimeType: 'image/jpeg',
+          fileSize: 100,
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(prisma.cart.create({ data: { status: 'ACTIVE' } })).rejects.toThrow();
+  });
+
+  it('seeds master data idempotently', async () => {
+    await seedDatabase(prisma);
+    await seedDatabase(prisma);
+
+    const [settings, locations, policies] = await Promise.all([
+      prisma.storeSettings.count({ where: { key: 'STORE' } }),
+      prisma.inventoryLocation.count({
+        where: { code: { in: ['HCM-STORE-01', 'HCM-WH-01'] } },
+      }),
+      prisma.warrantyPolicy.count({
+        where: { code: { in: ['IPHONE-90D', 'ACCESSORY-30D'] } },
+      }),
+    ]);
+
+    expect({ settings, locations, policies }).toEqual({
+      settings: 1,
+      locations: 2,
+      policies: 2,
+    });
+  });
+});
