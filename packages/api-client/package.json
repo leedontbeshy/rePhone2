@@ -1,0 +1,28 @@
+{
+  "name": "@rephone/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../apps/api/openapi/openapi.json -o src/schema.d.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

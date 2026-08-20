@@ -1,0 +1,159 @@
+{
+  "components": {
+    "schemas": {
+      "HealthErrorResponse": {
+        "properties": {
+          "status": {
+            "enum": [
+              "error"
+            ],
+            "example": "error",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "HealthOkResponse": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ok"
+            ],
+            "example": "ok",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "access-token": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "REST API contract for the rePhone P0 modular monolith.",
+    "title": "rePhone API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "getLiveness",
+        "parameters": [
+          {
+            "description": "UUID/ULID correlation ID; invalid values are replaced by the server.",
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOkResponse"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation ID used by response logs and diagnostics.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check whether the API process is live",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "parameters": [
+          {
+            "description": "UUID/ULID correlation ID; invalid values are replaced by the server.",
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOkResponse"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation ID used by response logs and diagnostics.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthErrorResponse"
+                }
+              }
+            },
+            "description": "",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Correlation ID used by response logs and diagnostics.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Check database readiness and migrations",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local development",
+      "url": "http://localhost:4000"
+    }
+  ],
+  "tags": []
+}
