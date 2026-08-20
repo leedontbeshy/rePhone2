@@ -40,6 +40,13 @@ import { TokenService } from './token.service.js';
         config.environment === 'test' ? new NoopMailProvider() : new SmtpMailProvider(config.mail),
     },
   ],
-  exports: [AuthService, PasswordService, SessionGuard, UsersRepository],
+  exports: [
+    AuthService,
+    PasswordService,
+    TokenService,
+    SessionGuard,
+    UsersRepository,
+    AuthSessionsRepository,
+  ],
 })
 export class AuthModule {}

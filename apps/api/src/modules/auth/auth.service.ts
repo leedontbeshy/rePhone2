@@ -132,21 +132,21 @@ export class AuthService {
         return { kind: 'missing' };
       }
       if (current.revokedAt !== null) {
-        await this.sessionsRepository.revokeFamily(current.tokenFamilyId, now, transaction);
+        await this.sessionsRepository.revokeFamily(current.tokenFamilyId, transaction);
         return { kind: 'reused' };
       }
       if (current.expiresAt <= now) {
-        await this.sessionsRepository.revoke(current.id, now, transaction);
+        await this.sessionsRepository.revoke(current.id, transaction);
         return { kind: 'revoked' };
       }
 
       const user = await this.usersRepository.findById(current.userId, transaction);
       if (user === null || user.status !== 'ACTIVE') {
-        await this.sessionsRepository.revokeAllForUser(current.userId, now, transaction);
+        await this.sessionsRepository.revokeAllForUser(current.userId, transaction);
         return { kind: 'revoked' };
       }
 
-      await this.sessionsRepository.revoke(current.id, now, transaction);
+      await this.sessionsRepository.revoke(current.id, transaction);
       const successor = await this.sessionsRepository.create(
         {
           userId: current.userId,
@@ -180,11 +180,10 @@ export class AuthService {
       return;
     }
     const tokenHash = this.tokenService.digestOpaqueToken(refreshToken);
-    const now = new Date();
     await this.prisma.$transaction(async (transaction) => {
       const session = await this.sessionsRepository.lockByRefreshTokenHash(tokenHash, transaction);
       if (session !== null) {
-        await this.sessionsRepository.revokeFamily(session.tokenFamilyId, now, transaction);
+        await this.sessionsRepository.revokeFamily(session.tokenFamilyId, transaction);
       }
     });
   }
@@ -255,7 +254,7 @@ export class AuthService {
         where: { id: user.id },
         data: { passwordHash, passwordChangedAt: now },
       });
-      await this.sessionsRepository.revokeAllForUser(user.id, now, transaction);
+      await this.sessionsRepository.revokeAllForUser(user.id, transaction);
       return true;
     });
 
@@ -338,7 +337,7 @@ export class AuthService {
         where: { id: userId },
         data: { passwordHash, passwordChangedAt: now },
       });
-      await this.sessionsRepository.revokeAllForUser(userId, now, transaction);
+      await this.sessionsRepository.revokeAllForUser(userId, transaction);
       await transaction.authToken.updateMany({
         where: { userId, consumedAt: null },
         data: { consumedAt: now },

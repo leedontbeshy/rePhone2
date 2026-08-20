@@ -62,24 +62,32 @@ export class AuthSessionsRepository {
     return sessions[0] ?? null;
   }
 
-  public revoke(id: string, revokedAt: Date, client: DbClient = this.prisma) {
-    return client.authSession.update({
-      where: { id },
-      data: { revokedAt, lastUsedAt: revokedAt },
-    });
+  public revoke(id: string, client: DbClient = this.prisma) {
+    return client.$executeRaw`
+      UPDATE auth_sessions
+      SET revoked_at = GREATEST(clock_timestamp(), created_at),
+          last_used_at = GREATEST(clock_timestamp(), created_at)
+      WHERE id = ${id}
+    `;
   }
 
-  public revokeFamily(tokenFamilyId: string, revokedAt: Date, client: DbClient = this.prisma) {
-    return client.authSession.updateMany({
-      where: { tokenFamilyId, revokedAt: null },
-      data: { revokedAt, lastUsedAt: revokedAt },
-    });
+  public revokeFamily(tokenFamilyId: string, client: DbClient = this.prisma) {
+    return client.$executeRaw`
+      UPDATE auth_sessions
+      SET revoked_at = GREATEST(clock_timestamp(), created_at),
+          last_used_at = GREATEST(clock_timestamp(), created_at)
+      WHERE token_family_id = ${tokenFamilyId}
+        AND revoked_at IS NULL
+    `;
   }
 
-  public revokeAllForUser(userId: string, revokedAt: Date, client: DbClient = this.prisma) {
-    return client.authSession.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt, lastUsedAt: revokedAt },
-    });
+  public revokeAllForUser(userId: string, client: DbClient = this.prisma) {
+    return client.$executeRaw`
+      UPDATE auth_sessions
+      SET revoked_at = GREATEST(clock_timestamp(), created_at),
+          last_used_at = GREATEST(clock_timestamp(), created_at)
+      WHERE user_id = ${userId}
+        AND revoked_at IS NULL
+    `;
   }
 }
