@@ -39,7 +39,7 @@
     "test:db:down": "docker compose --profile test stop postgres-test",
     "test:db:prepare": "pnpm --filter @rephone/api test:db:prepare",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db:prepare && pnpm test:integration && pnpm test:e2e && pnpm api:openapi && pnpm api:client && pnpm build",
-    "postinstall": "pnpm db:generate"
+    "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
