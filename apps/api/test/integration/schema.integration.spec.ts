@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { createTestPrisma } from '../support/test-prisma.js';
+import { setTestEnvironment } from '../support/test-environment.js';
 
 interface CountResult {
   count: number;
@@ -11,6 +12,7 @@ describe('database baseline', () => {
   let prisma: PrismaClient;
 
   beforeAll(() => {
+    setTestEnvironment();
     prisma = createTestPrisma();
   });
 
@@ -103,7 +105,7 @@ describe('database baseline', () => {
     await seedDatabase(prisma);
     await seedDatabase(prisma);
 
-    const [settings, locations, policies] = await Promise.all([
+    const [settings, locations, policies, users, addresses] = await Promise.all([
       prisma.storeSettings.count({ where: { key: 'STORE' } }),
       prisma.inventoryLocation.count({
         where: { code: { in: ['HCM-STORE-01', 'HCM-WH-01'] } },
@@ -111,12 +113,24 @@ describe('database baseline', () => {
       prisma.warrantyPolicy.count({
         where: { code: { in: ['IPHONE-90D', 'ACCESSORY-30D'] } },
       }),
+      prisma.user.count({
+        where: {
+          normalizedEmail: {
+            in: ['admin@rephone.local', 'employee@rephone.local', 'customer@rephone.local'],
+          },
+        },
+      }),
+      prisma.customerAddress.count({
+        where: { user: { normalizedEmail: 'customer@rephone.local' }, isDefault: true },
+      }),
     ]);
 
-    expect({ settings, locations, policies }).toEqual({
+    expect({ settings, locations, policies, users, addresses }).toEqual({
       settings: 1,
       locations: 2,
       policies: 2,
+      users: 3,
+      addresses: 1,
     });
   });
 });

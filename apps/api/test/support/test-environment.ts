@@ -26,5 +26,12 @@ export function setTestEnvironment(): void {
     MAIL_FROM: 'rePhone Test <no-reply@rephone.local>',
     LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'silent',
     SCHEDULER_ENABLED: 'false',
+    SEED_ADMIN_EMAIL: 'admin@rephone.local',
+    SEED_ADMIN_PASSWORD: 'AdminDemo123',
+    SEED_EMPLOYEE_EMAIL: 'employee@rephone.local',
+    SEED_EMPLOYEE_PASSWORD: 'EmployeeDemo123',
+    SEED_CUSTOMER_EMAIL: 'customer@rephone.local',
+    SEED_CUSTOMER_PASSWORD: 'CustomerDemo123',
+    SEED_DEMO_PHONE: '0900000000',
   });
 }
