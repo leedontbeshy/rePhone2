@@ -1,5 +1,10 @@
 import { createCipheriv, createHmac, randomBytes } from 'node:crypto';
 import { Prisma, type PrismaClient } from '../src/generated/prisma/client.js';
+import {
+  DEMO_CATALOG_ASSETS,
+  LEGACY_DEMO_CATALOG_OBJECT_PATHS,
+  type DemoCatalogAssetKey,
+} from './demo-catalog-assets.js';
 
 const PASSED_CHECK_KEYS = [
   'DISPLAY',
@@ -156,6 +161,7 @@ const ACCESSORY_VARIANTS = [
 const IPHONE_UNITS = [
   {
     sku: 'IP13-128-MID',
+    productSlug: 'iphone-13',
     inventoryCode: 'IP13-MID-001',
     serial: 'RPH13MID001',
     locationCode: 'HCM-STORE-01',
@@ -169,6 +175,7 @@ const IPHONE_UNITS = [
   },
   {
     sku: 'IP13-128-BLU',
+    productSlug: 'iphone-13',
     inventoryCode: 'IP13-BLU-001',
     serial: 'RPH13BLU001',
     locationCode: 'HCM-WH-01',
@@ -182,6 +189,7 @@ const IPHONE_UNITS = [
   },
   {
     sku: 'IP14P-128-BLK',
+    productSlug: 'iphone-14-pro',
     inventoryCode: 'IP14P-128-001',
     serial: 'RPH14P12801',
     locationCode: 'HCM-STORE-01',
@@ -195,6 +203,7 @@ const IPHONE_UNITS = [
   },
   {
     sku: 'IP14P-256-BLK',
+    productSlug: 'iphone-14-pro',
     inventoryCode: 'IP14P-256-001',
     serial: 'RPH14P25601',
     locationCode: 'HCM-WH-01',
@@ -208,6 +217,7 @@ const IPHONE_UNITS = [
   },
   {
     sku: 'IP15PM-256-NAT',
+    productSlug: 'iphone-15-pro-max',
     inventoryCode: 'IP15PM-256-001',
     serial: 'RPH15PM2561',
     locationCode: 'HCM-STORE-01',
@@ -223,6 +233,12 @@ const IPHONE_UNITS = [
 
 export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
   const publicBucket = requiredEnvironment('SUPABASE_PUBLIC_BUCKET');
+  await prisma.productMedia.deleteMany({
+    where: {
+      bucket: publicBucket,
+      objectPath: { in: LEGACY_DEMO_CATALOG_OBJECT_PATHS },
+    },
+  });
   const iphonePolicy = await prisma.warrantyPolicy.findUniqueOrThrow({
     where: { code: 'IPHONE-90D' },
   });
@@ -275,7 +291,8 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     await upsertMedia(prisma, {
       publicBucket,
       productId: product.id,
-      objectPath: `demo/catalog/products/${definition.slug}.svg`,
+      objectPath: `demo/catalog/products/${definition.slug}.png`,
+      assetKey: definition.slug,
       altText: definition.name,
     });
   }
@@ -350,7 +367,8 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     await upsertMedia(prisma, {
       publicBucket,
       variantId: variant.id,
-      objectPath: `demo/catalog/variants/${definition.sku.toLowerCase()}.svg`,
+      objectPath: `demo/catalog/variants/${definition.sku.toLowerCase()}.png`,
+      assetKey: definition.productSlug,
       altText: `${product.name} ${definition.displayName}`,
     });
     await seedStock(prisma, {
@@ -423,7 +441,8 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     await upsertMedia(prisma, {
       publicBucket,
       inventoryUnitId: unit.id,
-      objectPath: `demo/catalog/units/${definition.inventoryCode.toLowerCase()}.svg`,
+      objectPath: `demo/catalog/units/${definition.inventoryCode.toLowerCase()}.png`,
+      assetKey: definition.productSlug,
       altText: `${variant.displayName} — ${definition.inventoryCode}`,
     });
     await prisma.inventoryInspection.upsert({
@@ -526,12 +545,14 @@ async function upsertMedia(
   input: {
     publicBucket: string;
     objectPath: string;
+    assetKey: DemoCatalogAssetKey;
     altText: string;
     productId?: string;
     variantId?: string;
     inventoryUnitId?: string;
   },
 ): Promise<void> {
+  const asset = DEMO_CATALOG_ASSETS[input.assetKey];
   const owner = {
     ...(input.productId === undefined ? {} : { productId: input.productId }),
     ...(input.variantId === undefined ? {} : { variantId: input.variantId }),
@@ -542,10 +563,10 @@ async function upsertMedia(
     update: {
       ...owner,
       visibility: 'PUBLIC',
-      mimeType: 'image/svg+xml',
-      width: 1200,
-      height: 1200,
-      fileSize: 1024,
+      mimeType: asset.mimeType,
+      width: asset.width,
+      height: asset.height,
+      fileSize: asset.fileSize,
       sortOrder: 0,
       altText: input.altText,
     },
@@ -554,10 +575,10 @@ async function upsertMedia(
       bucket: input.publicBucket,
       objectPath: input.objectPath,
       visibility: 'PUBLIC',
-      mimeType: 'image/svg+xml',
-      width: 1200,
-      height: 1200,
-      fileSize: 1024,
+      mimeType: asset.mimeType,
+      width: asset.width,
+      height: asset.height,
+      fileSize: asset.fileSize,
       sortOrder: 0,
       altText: input.altText,
     },
