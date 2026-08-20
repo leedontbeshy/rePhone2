@@ -1,0 +1,55 @@
+{
+  "name": "rephone",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.18.3",
+  "engines": {
+    "node": ">=24.18.0 <25"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ],
+    "ignoredBuiltDependencies": [
+      "@scarf/scarf"
+    ]
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "cross-env NODE_ENV=production turbo run build",
+    "lint": "eslint . --max-warnings 0",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "pnpm --filter @rephone/api test:integration",
+    "test:e2e": "pnpm --filter @rephone/api test:e2e",
+    "api:openapi": "pnpm --filter @rephone/api openapi",
+    "api:client": "pnpm --filter @rephone/api-client generate",
+    "db:generate": "pnpm --filter @rephone/api db:generate",
+    "db:migrate": "pnpm --filter @rephone/api db:migrate",
+    "db:deploy": "pnpm --filter @rephone/api db:deploy",
+    "db:seed": "pnpm --filter @rephone/api db:seed",
+    "db:studio": "pnpm --filter @rephone/api db:studio",
+    "db:reset": "pnpm --filter @rephone/api db:reset",
+    "test:db:up": "docker compose --profile test up -d postgres-test",
+    "test:db:down": "docker compose --profile test stop postgres-test",
+    "test:db:prepare": "pnpm --filter @rephone/api test:db:prepare",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db:prepare && pnpm test:integration && pnpm test:e2e && pnpm api:openapi && pnpm api:client && pnpm build",
+    "postinstall": "pnpm db:generate"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@rephone/eslint-config": "workspace:*",
+    "@types/node": "^24.13.3",
+    "cross-env": "10.1.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6",
+    "turbo": "2.10.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.67.0"
+  }
+}

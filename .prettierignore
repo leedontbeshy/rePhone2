@@ -1,0 +1,14 @@
+node_modules/
+.turbo/
+.next/
+dist/
+coverage/
+apps/api/src/generated/prisma/
+apps/api/openapi/openapi.json
+apps/web/next-env.d.ts
+packages/api-client/src/schema.d.ts
+docs/
+uml/
+plan.md
+docs.7z
+pnpm-lock.yaml

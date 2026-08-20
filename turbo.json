@@ -1,0 +1,49 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env", ".env.*", ".env.example"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "DIRECT_URL",
+    "API_PUBLIC_URL",
+    "WEB_PUBLIC_URL",
+    "WEB_ORIGIN",
+    "NEXT_PUBLIC_API_BASE_URL",
+    "API_INTERNAL_BASE_URL"
+  ],
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build", "db:generate"],
+      "inputs": ["$TURBO_DEFAULT$", "../../apps/api/openapi/openapi.json"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck", "db:generate"]
+    },
+    "test": {
+      "dependsOn": ["^build", "db:generate"]
+    },
+    "db:generate": {
+      "cache": false,
+      "inputs": ["prisma/schema.prisma", "prisma.config.ts"],
+      "outputs": ["src/generated/prisma/**"]
+    },
+    "openapi": {
+      "cache": false,
+      "dependsOn": ["db:generate"],
+      "outputs": ["openapi/openapi.json"]
+    },
+    "generate": {
+      "cache": false,
+      "inputs": ["../../apps/api/openapi/openapi.json"],
+      "outputs": ["src/schema.d.ts"]
+    }
+  }
+}

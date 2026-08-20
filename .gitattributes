@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+*.drawio text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.7z binary

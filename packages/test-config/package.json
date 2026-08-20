@@ -1,0 +1,12 @@
+{
+  "name": "@rephone/test-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./vitest.ts"
+  },
+  "peerDependencies": {
+    "vitest": "^4.1.10"
+  }
+}
