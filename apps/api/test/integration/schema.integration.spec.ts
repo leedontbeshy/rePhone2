@@ -105,32 +105,51 @@ describe('database baseline', () => {
     await seedDatabase(prisma);
     await seedDatabase(prisma);
 
-    const [settings, locations, policies, users, addresses] = await Promise.all([
-      prisma.storeSettings.count({ where: { key: 'STORE' } }),
-      prisma.inventoryLocation.count({
-        where: { code: { in: ['HCM-STORE-01', 'HCM-WH-01'] } },
-      }),
-      prisma.warrantyPolicy.count({
-        where: { code: { in: ['IPHONE-90D', 'ACCESSORY-30D'] } },
-      }),
-      prisma.user.count({
-        where: {
-          normalizedEmail: {
-            in: ['admin@rephone.local', 'employee@rephone.local', 'customer@rephone.local'],
+    const [settings, locations, policies, users, addresses, products, variants, units, stock] =
+      await Promise.all([
+        prisma.storeSettings.count({ where: { key: 'STORE' } }),
+        prisma.inventoryLocation.count({
+          where: { code: { in: ['HCM-STORE-01', 'HCM-WH-01'] } },
+        }),
+        prisma.warrantyPolicy.count({
+          where: { code: { in: ['IPHONE-90D', 'ACCESSORY-30D'] } },
+        }),
+        prisma.user.count({
+          where: {
+            normalizedEmail: {
+              in: ['admin@rephone.local', 'employee@rephone.local', 'customer@rephone.local'],
+            },
           },
-        },
-      }),
-      prisma.customerAddress.count({
-        where: { user: { normalizedEmail: 'customer@rephone.local' }, isDefault: true },
-      }),
-    ]);
+        }),
+        prisma.customerAddress.count({
+          where: { user: { normalizedEmail: 'customer@rephone.local' }, isDefault: true },
+        }),
+        prisma.product.count({ where: { status: 'ACTIVE' } }),
+        prisma.productVariant.count({ where: { status: 'ACTIVE' } }),
+        prisma.inventoryUnit.count({ where: { lifecycleStatus: 'AVAILABLE' } }),
+        prisma.stockLevel.count({ where: { quantityOnHand: { gt: 0 } } }),
+      ]);
 
-    expect({ settings, locations, policies, users, addresses }).toEqual({
+    expect({
+      settings,
+      locations,
+      policies,
+      users,
+      addresses,
+      products,
+      variants,
+      units,
+      stock,
+    }).toEqual({
       settings: 1,
       locations: 2,
       policies: 2,
       users: 3,
       addresses: 1,
+      products: 6,
+      variants: 8,
+      units: 5,
+      stock: 6,
     });
   });
 });

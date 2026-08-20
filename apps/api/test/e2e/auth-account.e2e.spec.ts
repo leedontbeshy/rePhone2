@@ -5,7 +5,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AuthRateLimiter } from '../../src/modules/auth/auth-rate-limiter.service.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
-import { createTestPrisma } from '../support/test-prisma.js';
+import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
 
 const WEB_ORIGIN = 'http://localhost:3001';
@@ -31,10 +31,7 @@ describe('auth and account HTTP contract', () => {
 
   beforeEach(async () => {
     app.get(AuthRateLimiter).clear();
-    await prisma.customerAddress.deleteMany();
-    await prisma.authSession.deleteMany();
-    await prisma.authToken.deleteMany();
-    await prisma.user.deleteMany();
+    await resetTestDatabase(prisma);
   });
 
   afterAll(async () => {
