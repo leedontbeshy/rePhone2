@@ -9,10 +9,14 @@ export function HomeContent() {
   return (
     <main className="shell">
       <p className="eyebrow">rePhone P0</p>
-      <h1>Tài khoản đã sẵn sàng.</h1>
-      <p>
-        Slice 02 cung cấp đăng ký, đăng nhập, refresh-token rotation và quản lý tài khoản an toàn.
-      </p>
+      <h1>iPhone cũ, thông tin thật.</h1>
+      <p>Duyệt từng máy đang bán với ảnh, giá, pin, ngoại hình, kiểm định và bảo hành rõ ràng.</p>
+
+      <nav className="actions home-catalog-action" aria-label="Catalog">
+        <Link className="button primary" href="/products">
+          Xem catalog
+        </Link>
+      </nav>
 
       {status === 'loading' ? <div className="status">Đang khôi phục phiên…</div> : null}
       {status === 'anonymous' ? (
