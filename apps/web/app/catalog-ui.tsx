@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 import type { PublicMedia } from '../lib/catalog-api';
 
 export function CatalogHeader() {
@@ -22,7 +25,8 @@ export function MediaImage({
   media?: PublicMedia | undefined;
   className?: string | undefined;
 }) {
-  if (media === undefined) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (media === undefined || failedUrl === media.url) {
     return <div className={`media-placeholder ${className ?? ''}`} aria-hidden="true" />;
   }
   return (
@@ -32,6 +36,9 @@ export function MediaImage({
       alt={media.altText}
       width={media.width ?? 800}
       height={media.height ?? 800}
+      onError={() => {
+        setFailedUrl(media.url);
+      }}
     />
   );
 }
