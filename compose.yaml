@@ -1,0 +1,58 @@
+name: rephone
+
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_DB: rephone_dev
+      POSTGRES_USER: rephone
+      POSTGRES_PASSWORD: rephone
+      TZ: UTC
+    ports:
+      - '${POSTGRES_HOST_PORT:-5432}:5432'
+    volumes:
+      - rephone_pgdata18:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rephone -d rephone_dev']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  mailpit:
+    image: axllent/mailpit:v1.30.6
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  postgres-test:
+    image: postgres:18.4-alpine
+    profiles: ['test']
+    environment:
+      POSTGRES_DB: rephone_test
+      POSTGRES_USER: rephone
+      POSTGRES_PASSWORD: rephone
+      TZ: UTC
+    ports:
+      - '${POSTGRES_TEST_HOST_PORT:-5433}:5432'
+    volumes:
+      - rephone_pgtestdata18:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rephone -d rephone_test']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  rephone_pgdata18:
+  rephone_pgtestdata18:
