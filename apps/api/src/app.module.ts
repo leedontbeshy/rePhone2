@@ -5,6 +5,7 @@ import { APP_CONFIG, AppConfigModule } from './config/app-config.module.js';
 import type { AppConfig } from './config/app-config.js';
 import { PrismaModule } from './database/prisma.module.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { HealthModule } from './modules/health/health.module.js';
       useFactory: (config: AppConfig) => createLoggerParams(config),
     }),
     PrismaModule,
+    AuthModule,
     HealthModule,
   ],
 })

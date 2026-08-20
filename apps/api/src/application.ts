@@ -2,6 +2,7 @@ import { RequestMethod, ValidationPipe, type INestApplication } from '@nestjs/co
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded, type Express } from 'express';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { ApiExceptionFilter } from './common/http/api-exception.filter.js';
@@ -29,6 +30,7 @@ export async function createApplication(
   const express = app.getHttpAdapter().getInstance() as Express;
   express.set('trust proxy', config.api.trustProxy);
   app.use(helmet());
+  app.use(cookieParser());
   app.use(json({ limit: config.api.requestBodyLimit }));
   app.use(urlencoded({ extended: true, limit: config.api.requestBodyLimit }));
   app.enableCors({

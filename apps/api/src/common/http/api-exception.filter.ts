@@ -96,6 +96,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const { status, body } = serializeApiError(exception, requestId);
     const code = body.error.code;
 
+    if (exception instanceof ApiError) {
+      for (const [name, value] of Object.entries(exception.headers)) {
+        response.setHeader(name, value);
+      }
+    }
+
     const log = request.log;
     if (status >= 500) {
       log.error({ err: exception, event: 'http.request.failed', requestId, errorCode: code });
