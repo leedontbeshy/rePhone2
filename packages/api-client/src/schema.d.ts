@@ -194,6 +194,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse the grouped public catalog */
+        get: operations["listProducts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a public product detail */
+        get: operations["getProductBySlug"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{slug}/units/{inventoryCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one exact public used iPhone unit */
+        get: operations["getUsedIphoneByInventoryCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -235,6 +286,26 @@ export interface components {
         AcceptEmployeeInvitationDto: {
             password: string;
             token: string;
+        };
+        AccessoryFulfillmentAvailabilityDto: {
+            inStock: boolean;
+            pickup: boolean;
+            shipping: boolean;
+        };
+        AccessoryVariantDto: {
+            attributes?: {
+                [key: string]: unknown;
+            } | null;
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            fulfillmentAvailability: components["schemas"]["AccessoryFulfillmentAvailabilityDto"];
+            /** Format: uuid */
+            id: string;
+            media: components["schemas"]["PublicMediaDto"][];
+            price: components["schemas"]["UnitPriceDto"];
+            sku: string;
+            warrantySummary: components["schemas"]["WarrantySummaryDto"];
         };
         AccountDto: {
             /** Format: email */
@@ -335,6 +406,17 @@ export interface components {
             /** @example customer@example.com */
             email: string;
         };
+        FulfillmentAvailabilityDto: {
+            pickup: boolean;
+            shipping: boolean;
+        };
+        FunctionalCheckDto: {
+            key: string;
+            label: string;
+            note?: string | null;
+            /** @enum {string} */
+            status: "PASS" | "FAIL" | "DEGRADED" | "NOT_TESTED" | "NOT_APPLICABLE" | "UNKNOWN";
+        };
         GenericAcceptedDto: {
             /** @example Nếu tài khoản phù hợp, hướng dẫn sẽ được gửi qua email. */
             message: string;
@@ -356,10 +438,88 @@ export interface components {
              */
             status: "ok";
         };
+        IphoneVariantDto: {
+            availableUnits: components["schemas"]["UsedIphoneCardDto"][];
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            sku: string;
+            storageCapacityGb?: number | null;
+            warrantySummary: components["schemas"]["WarrantySummaryDto"];
+        };
         LoginDto: {
             /** @example customer@example.com */
             email: string;
             password: string;
+        };
+        MaskedIdentifierDto: {
+            /** @example •••• 1234 */
+            maskedValue: string;
+            /** @enum {string} */
+            type: "IMEI_1" | "IMEI_2" | "SERIAL" | "EID";
+        };
+        PaginationDto: {
+            page: number;
+            pageSize: number;
+            totalItems: number;
+            totalPages: number;
+        };
+        ProductDetailDto: {
+            brand: string;
+            chipset?: string | null;
+            description?: string | null;
+            /** Format: uuid */
+            id: string;
+            media: components["schemas"]["PublicMediaDto"][];
+            name: string;
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            ramGb?: number | null;
+            releaseYear?: number | null;
+            /** @example 6.10 */
+            screenSizeInches?: string | null;
+            slug: string;
+            variants: (components["schemas"]["IphoneVariantDto"] | components["schemas"]["AccessoryVariantDto"])[];
+        };
+        ProductDetailResponse: {
+            data: components["schemas"]["ProductDetailDto"];
+        };
+        ProductListItemDto: {
+            brand: string;
+            colorOptions: string[];
+            coverMedia?: components["schemas"]["PublicMediaDto"];
+            /** Format: uuid */
+            id: string;
+            inStock: boolean;
+            name: string;
+            price: components["schemas"]["ProductPriceRangeDto"];
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            releaseYear?: number | null;
+            slug: string;
+            storageOptions: number[];
+        };
+        ProductListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        ProductListResponse: {
+            data: components["schemas"]["ProductListItemDto"][];
+            meta: components["schemas"]["ProductListMetaDto"];
+        };
+        ProductPriceRangeDto: {
+            /** @example 13900000 */
+            compareAtPrice?: string;
+            /** @example 12500000 */
+            fromPrice?: string;
+        };
+        PublicMediaDto: {
+            altText: string;
+            height?: number;
+            /** Format: uri */
+            url: string;
+            width?: number;
         };
         RegisterDto: {
             /** @example customer@example.com */
@@ -391,6 +551,12 @@ export interface components {
             /** Format: date */
             hiredAt?: string | null;
         };
+        UnitPriceDto: {
+            /** @example 13900000 */
+            compareAtPrice?: string;
+            /** @example 12500000 */
+            salePrice: string;
+        };
         UpdateAccountDto: {
             fullName?: string;
             phone?: string | null;
@@ -405,6 +571,83 @@ export interface components {
             province?: string;
             receiverName?: string;
             ward?: string;
+        };
+        UsedIphoneCardDto: {
+            batteryHealthPercent?: number | null;
+            carrierName?: string | null;
+            /** @enum {string} */
+            conditionGrade: "A" | "B" | "C";
+            fulfillmentAvailability: components["schemas"]["FulfillmentAvailabilityDto"];
+            inventoryCode: string;
+            modelNumber?: string | null;
+            price: components["schemas"]["UnitPriceDto"];
+            regionCode?: string | null;
+            /** @enum {string} */
+            repairHistoryStatus: "NONE_KNOWN" | "KNOWN" | "UNKNOWN";
+            /** @enum {string} */
+            simConfiguration: "SINGLE_PHYSICAL" | "DUAL_PHYSICAL" | "PHYSICAL_AND_ESIM" | "ESIM_ONLY" | "UNKNOWN";
+            /** @enum {string} */
+            simLockStatus: "UNLOCKED" | "CARRIER_LOCKED" | "UNKNOWN";
+            thumbnail?: components["schemas"]["PublicMediaDto"];
+            warrantyDays: number;
+        };
+        UsedIphoneDetailDto: {
+            product: components["schemas"]["UsedIphoneProductSummaryDto"];
+            unit: components["schemas"]["UsedIphoneUnitDto"];
+            variant: components["schemas"]["UsedIphoneVariantSummaryDto"];
+        };
+        UsedIphoneDetailResponse: {
+            data: components["schemas"]["UsedIphoneDetailDto"];
+        };
+        UsedIphoneProductSummaryDto: {
+            brand: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+        };
+        UsedIphoneUnitDto: {
+            batteryCycleCount?: number | null;
+            batteryHealthPercent?: number | null;
+            /** @enum {string} */
+            batteryReplacementStatus: "ORIGINAL" | "REPLACED" | "UNKNOWN";
+            carrierName?: string | null;
+            /** @enum {string} */
+            conditionGrade: "A" | "B" | "C";
+            cosmeticNotes?: string | null;
+            fulfillmentAvailability: components["schemas"]["FulfillmentAvailabilityDto"];
+            functionalChecks: components["schemas"]["FunctionalCheckDto"][];
+            inventoryCode: string;
+            maskedIdentifiers: components["schemas"]["MaskedIdentifierDto"][];
+            media: components["schemas"]["PublicMediaDto"][];
+            modelNumber?: string | null;
+            price: components["schemas"]["UnitPriceDto"];
+            regionCode?: string | null;
+            /** @enum {string} */
+            repairHistoryStatus: "NONE_KNOWN" | "KNOWN" | "UNKNOWN";
+            repairNotes?: string | null;
+            replacedParts?: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {string} */
+            simConfiguration: "SINGLE_PHYSICAL" | "DUAL_PHYSICAL" | "PHYSICAL_AND_ESIM" | "ESIM_ONLY" | "UNKNOWN";
+            /** @enum {string} */
+            simLockStatus: "UNLOCKED" | "CARRIER_LOCKED" | "UNKNOWN";
+            warrantyDays: number;
+        };
+        UsedIphoneVariantSummaryDto: {
+            colorHex?: string | null;
+            colorName?: string | null;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            sku: string;
+            storageCapacityGb?: number | null;
+        };
+        WarrantySummaryDto: {
+            days: number;
+            name: string;
+            terms: string;
         };
     };
     responses: never;
@@ -1075,6 +1318,153 @@ export interface operations {
                 headers: {
                     /** @description Seconds until the current rate-limit window permits a retry. */
                     "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listProducts: {
+        parameters: {
+            query?: {
+                q?: string;
+                productType?: "IPHONE" | "ACCESSORY";
+                releaseYear?: number;
+                storageCapacityGb?: number;
+                colorName?: string;
+                minPrice?: string;
+                maxPrice?: string;
+                inStock?: boolean;
+                page?: number;
+                pageSize?: number;
+                sortBy?: "createdAt" | "name" | "fromPrice" | "releaseYear";
+                sortOrder?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getProductBySlug: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getUsedIphoneByInventoryCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inventoryCode: string;
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsedIphoneDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {

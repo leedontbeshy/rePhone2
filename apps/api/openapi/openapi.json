@@ -21,6 +21,77 @@
         ],
         "type": "object"
       },
+      "AccessoryFulfillmentAvailabilityDto": {
+        "properties": {
+          "inStock": {
+            "type": "boolean"
+          },
+          "pickup": {
+            "type": "boolean"
+          },
+          "shipping": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pickup",
+          "shipping",
+          "inStock"
+        ],
+        "type": "object"
+      },
+      "AccessoryVariantDto": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/AccessoryFulfillmentAvailabilityDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "warrantySummary": {
+            "$ref": "#/components/schemas/WarrantySummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName",
+          "price",
+          "warrantySummary",
+          "media",
+          "fulfillmentAvailability"
+        ],
+        "type": "object"
+      },
       "AccountDto": {
         "properties": {
           "email": {
@@ -402,6 +473,52 @@
         ],
         "type": "object"
       },
+      "FulfillmentAvailabilityDto": {
+        "properties": {
+          "pickup": {
+            "type": "boolean"
+          },
+          "shipping": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pickup",
+          "shipping"
+        ],
+        "type": "object"
+      },
+      "FunctionalCheckDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "DEGRADED",
+              "NOT_TESTED",
+              "NOT_APPLICABLE",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "status"
+        ],
+        "type": "object"
+      },
       "GenericAcceptedDto": {
         "properties": {
           "message": {
@@ -455,6 +572,49 @@
         ],
         "type": "object"
       },
+      "IphoneVariantDto": {
+        "properties": {
+          "availableUnits": {
+            "items": {
+              "$ref": "#/components/schemas/UsedIphoneCardDto"
+            },
+            "type": "array"
+          },
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "warrantySummary": {
+            "$ref": "#/components/schemas/WarrantySummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName",
+          "warrantySummary",
+          "availableUnits"
+        ],
+        "type": "object"
+      },
       "LoginDto": {
         "properties": {
           "email": {
@@ -472,6 +632,270 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "MaskedIdentifierDto": {
+        "properties": {
+          "maskedValue": {
+            "example": "•••• 1234",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IMEI_1",
+              "IMEI_2",
+              "SERIAL",
+              "EID"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "maskedValue"
+        ],
+        "type": "object"
+      },
+      "PaginationDto": {
+        "properties": {
+          "page": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "pageSize": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "totalItems": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "ProductDetailDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "chipset": {
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "ramGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "releaseYear": {
+            "nullable": true,
+            "type": "number"
+          },
+          "screenSizeInches": {
+            "example": "6.10",
+            "nullable": true,
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "variants": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/IphoneVariantDto"
+                },
+                {
+                  "$ref": "#/components/schemas/AccessoryVariantDto"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "productType",
+          "brand",
+          "name",
+          "media",
+          "variants"
+        ],
+        "type": "object"
+      },
+      "ProductDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProductDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ProductListItemDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "colorOptions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "coverMedia": {
+            "$ref": "#/components/schemas/PublicMediaDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inStock": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/ProductPriceRangeDto"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "releaseYear": {
+            "nullable": true,
+            "type": "number"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "storageOptions": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "productType",
+          "brand",
+          "name",
+          "price",
+          "inStock",
+          "storageOptions",
+          "colorOptions"
+        ],
+        "type": "object"
+      },
+      "ProductListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "ProductListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ProductListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ProductListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "ProductPriceRangeDto": {
+        "properties": {
+          "compareAtPrice": {
+            "example": "13900000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "fromPrice": {
+            "example": "12500000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicMediaDto": {
+        "properties": {
+          "altText": {
+            "type": "string"
+          },
+          "height": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          },
+          "width": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "url",
+          "altText"
         ],
         "type": "object"
       },
@@ -584,6 +1008,24 @@
         ],
         "type": "object"
       },
+      "UnitPriceDto": {
+        "properties": {
+          "compareAtPrice": {
+            "example": "13900000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "salePrice": {
+            "example": "12500000",
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "salePrice"
+        ],
+        "type": "object"
+      },
       "UpdateAccountDto": {
         "properties": {
           "fullName": {
@@ -638,6 +1080,323 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UsedIphoneCardDto": {
+        "properties": {
+          "batteryHealthPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "carrierName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/FulfillmentAvailabilityDto"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "modelNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "regionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "repairHistoryStatus": {
+            "enum": [
+              "NONE_KNOWN",
+              "KNOWN",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "thumbnail": {
+            "$ref": "#/components/schemas/PublicMediaDto"
+          },
+          "warrantyDays": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "inventoryCode",
+          "simLockStatus",
+          "simConfiguration",
+          "price",
+          "conditionGrade",
+          "repairHistoryStatus",
+          "warrantyDays",
+          "fulfillmentAvailability"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneDetailDto": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/UsedIphoneProductSummaryDto"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/UsedIphoneUnitDto"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/UsedIphoneVariantSummaryDto"
+          }
+        },
+        "required": [
+          "product",
+          "variant",
+          "unit"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UsedIphoneDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneProductSummaryDto": {
+        "properties": {
+          "brand": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "brand"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneUnitDto": {
+        "properties": {
+          "batteryCycleCount": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "batteryHealthPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
+          },
+          "batteryReplacementStatus": {
+            "enum": [
+              "ORIGINAL",
+              "REPLACED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "carrierName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string"
+          },
+          "cosmeticNotes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fulfillmentAvailability": {
+            "$ref": "#/components/schemas/FulfillmentAvailabilityDto"
+          },
+          "functionalChecks": {
+            "items": {
+              "$ref": "#/components/schemas/FunctionalCheckDto"
+            },
+            "type": "array"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "maskedIdentifiers": {
+            "items": {
+              "$ref": "#/components/schemas/MaskedIdentifierDto"
+            },
+            "type": "array"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/PublicMediaDto"
+            },
+            "type": "array"
+          },
+          "modelNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/components/schemas/UnitPriceDto"
+          },
+          "regionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "repairHistoryStatus": {
+            "enum": [
+              "NONE_KNOWN",
+              "KNOWN",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "repairNotes": {
+            "nullable": true,
+            "type": "string"
+          },
+          "replacedParts": {
+            "additionalProperties": true,
+            "nullable": true,
+            "type": "object"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "warrantyDays": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "inventoryCode",
+          "simLockStatus",
+          "simConfiguration",
+          "price",
+          "conditionGrade",
+          "batteryReplacementStatus",
+          "repairHistoryStatus",
+          "functionalChecks",
+          "maskedIdentifiers",
+          "warrantyDays",
+          "fulfillmentAvailability",
+          "media"
+        ],
+        "type": "object"
+      },
+      "UsedIphoneVariantSummaryDto": {
+        "properties": {
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "WarrantySummaryDto": {
+        "properties": {
+          "days": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "terms": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "days",
+          "terms"
+        ],
         "type": "object"
       }
     },
@@ -1539,6 +2298,306 @@
         "summary": "Consume a reset token and set a password",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "listProducts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "IPHONE",
+                "ACCESSORY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "releaseYear",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 2007,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "storageCapacityGb",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "colorName",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "required": false,
+            "schema": {
+              "maxLength": 15,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "required": false,
+            "schema": {
+              "maxLength": 15,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "inStock",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "createdAt",
+                "name",
+                "fromPrice",
+                "releaseYear"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Browse the grouped public catalog",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/products/{slug}": {
+      "get": {
+        "operationId": "getProductBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 180,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Get a public product detail",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/products/{slug}/units/{inventoryCode}": {
+      "get": {
+        "operationId": "getUsedIphoneByInventoryCode",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "inventoryCode",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "maxLength": 180,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsedIphoneDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Get one exact public used iPhone unit",
+        "tags": [
+          "catalog"
         ]
       }
     },
