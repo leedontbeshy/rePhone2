@@ -2,8 +2,31 @@ import { CallHandler, ExecutionContext, Injectable, type NestInterceptor } from 
 import type { Request, Response } from 'express';
 import { map, type Observable } from 'rxjs';
 
-export function serializeApiResponse<T>(data: T): { data: T } {
+export type SerializedApiResponse<T> =
+  { data: T } | { data: unknown[]; meta: { pagination: ApiPagination } };
+
+export function serializeApiResponse<T>(data: T): SerializedApiResponse<T> {
+  if (data instanceof PaginatedApiResult) {
+    return {
+      data: data.items,
+      meta: { pagination: data.pagination },
+    };
+  }
   return { data };
+}
+
+export interface ApiPagination {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export class PaginatedApiResult<T> {
+  public constructor(
+    public readonly items: T[],
+    public readonly pagination: ApiPagination,
+  ) {}
 }
 
 @Injectable()

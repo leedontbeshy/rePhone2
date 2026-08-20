@@ -54,7 +54,7 @@ export class ApiErrorResponseDto {
 }
 
 interface ApiErrorResponseDefinition {
-  status: 400 | 401 | 403 | 404 | 409 | 422 | 429;
+  status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500;
   description: string;
 }
 

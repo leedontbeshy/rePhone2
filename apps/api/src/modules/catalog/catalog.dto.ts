@@ -91,12 +91,14 @@ export class ProductListQueryDto {
   @ApiPropertyOptional({ type: String, pattern: '^[0-9]+$', example: '5000000' })
   @IsOptional()
   @IsString()
+  @MaxLength(15)
   @Matches(/^[0-9]+$/)
   public minPrice?: string;
 
   @ApiPropertyOptional({ type: String, pattern: '^[0-9]+$', example: '15000000' })
   @IsOptional()
   @IsString()
+  @MaxLength(15)
   @Matches(/^[0-9]+$/)
   public maxPrice?: string;
 
@@ -110,6 +112,7 @@ export class ProductListQueryDto {
   @Transform(strictInteger)
   @IsInt()
   @Min(1)
+  @Max(1_000_000)
   public page = 1;
 
   @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 100, default: 20 })
