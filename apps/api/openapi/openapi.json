@@ -10947,7 +10947,17 @@
     "/api/v1/backoffice/vouchers/{id}": {
       "get": {
         "operationId": "getBackofficeVoucher",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -11041,7 +11051,17 @@
       },
       "patch": {
         "operationId": "updateVoucher",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11147,7 +11167,17 @@
     "/api/v1/backoffice/vouchers/{id}/activate": {
       "post": {
         "operationId": "activateVoucher",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -11243,7 +11273,17 @@
     "/api/v1/backoffice/vouchers/{id}/archive": {
       "post": {
         "operationId": "archiveVoucher",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11349,7 +11389,17 @@
     "/api/v1/backoffice/vouchers/{id}/pause": {
       "post": {
         "operationId": "pauseVoucher",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11506,6 +11556,15 @@
               "maximum": 100,
               "minimum": 1,
               "type": "number"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -11671,6 +11730,10 @@
             "application/json": {
               "schema": {
                 "discriminator": {
+                  "mapping": {
+                    "ACCESSORY": "#/components/schemas/AddAccessoryCartItemDto",
+                    "IPHONE": "#/components/schemas/AddIphoneCartItemDto"
+                  },
                   "propertyName": "itemType"
                 },
                 "oneOf": [
@@ -11811,6 +11874,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -11899,6 +11971,15 @@
             "name": "X-Rephone-CSRF",
             "required": false,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -12522,6 +12603,10 @@
             "application/json": {
               "schema": {
                 "discriminator": {
+                  "mapping": {
+                    "ACCESSORY": "#/components/schemas/AddAccessoryWishlistItemDto",
+                    "IPHONE": "#/components/schemas/AddIphoneWishlistItemDto"
+                  },
                   "propertyName": "itemType"
                 },
                 "oneOf": [
@@ -12642,7 +12727,17 @@
     "/api/v1/wishlist/items/{itemId}": {
       "delete": {
         "operationId": "removeWishlistItem",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": ""

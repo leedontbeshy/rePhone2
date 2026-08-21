@@ -22,6 +22,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiSecurity,
   ApiTags,
   getSchemaPath,
@@ -84,7 +85,13 @@ export class CartController {
         { $ref: getSchemaPath(AddIphoneCartItemDto) },
         { $ref: getSchemaPath(AddAccessoryCartItemDto) },
       ],
-      discriminator: { propertyName: 'itemType' },
+      discriminator: {
+        propertyName: 'itemType',
+        mapping: {
+          IPHONE: getSchemaPath(AddIphoneCartItemDto),
+          ACCESSORY: getSchemaPath(AddAccessoryCartItemDto),
+        },
+      },
     },
   })
   @ApiHeader({
@@ -133,6 +140,7 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'updateCartItem', summary: 'Set accessory cart quantity' })
+  @ApiParam({ name: 'itemId', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateCartItemDto })
   @ApiHeader({
     name: 'X-Rephone-CSRF',
@@ -167,6 +175,7 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'removeCartItem', summary: 'Remove an owned cart item' })
+  @ApiParam({ name: 'itemId', type: String, format: 'uuid' })
   @ApiNoContentResponse()
   @ApiHeader({
     name: 'X-Rephone-CSRF',

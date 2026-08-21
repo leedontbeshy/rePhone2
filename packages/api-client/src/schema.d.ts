@@ -1083,7 +1083,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            itemType: "AddAccessoryCartItemDto";
+            itemType: "ACCESSORY";
             quantity: number;
             /** Format: uuid */
             variantId: string;
@@ -1093,7 +1093,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            itemType: "AddAccessoryWishlistItemDto";
+            itemType: "ACCESSORY";
             /** Format: uuid */
             variantId: string;
         };
@@ -1103,7 +1103,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            itemType: "AddIphoneCartItemDto";
+            itemType: "IPHONE";
         };
         AddIphoneWishlistItemDto: {
             inventoryCode: string;
@@ -1111,7 +1111,7 @@ export interface components {
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            itemType: "AddIphoneWishlistItemDto";
+            itemType: "IPHONE";
         };
         AddressDto: {
             addressLine: string;
@@ -6858,7 +6858,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6933,7 +6935,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -7012,7 +7016,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -7087,7 +7093,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -7166,7 +7174,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -7251,7 +7261,9 @@ export interface operations {
                 pageSize?: number;
             };
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -7458,7 +7470,9 @@ export interface operations {
                 /** @description Required with value 1 for guest cookie mutations; not required for Bearer. */
                 "X-Rephone-CSRF"?: string;
             };
-            path?: never;
+            path: {
+                itemId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -7525,7 +7539,9 @@ export interface operations {
                 /** @description Required with value 1 for guest cookie mutations; not required for Bearer. */
                 "X-Rephone-CSRF"?: string;
             };
-            path?: never;
+            path: {
+                itemId: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -7973,7 +7989,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                itemId: string;
+            };
             cookie?: never;
         };
         requestBody?: never;

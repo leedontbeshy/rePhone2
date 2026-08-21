@@ -61,6 +61,7 @@ describe('Slice 05 OpenAPI contract', () => {
       expect(byId.get(id)?.security).toEqual([{ 'access-token': [] }, { rephone_guest_cart: [] }]);
     }
     expect(byId.get('listPublicVouchers')?.security).toEqual([{}, { 'access-token': [] }]);
+    expect(byId.get('mergeCart')?.security).toEqual([{ 'access-token': [] }]);
     for (const id of EXPECTED_OPERATION_IDS.filter(
       (candidate) =>
         candidate.startsWith('getWishlist') ||
@@ -87,5 +88,18 @@ describe('Slice 05 OpenAPI contract', () => {
     expect(byId.get('listVoucherUsages')?.parameters?.map(({ name }) => name)).toEqual(
       expect.arrayContaining(['status', 'orderId', 'customerId', 'page', 'pageSize']),
     );
+    for (const [operationId, parameter] of [
+      ['updateCartItem', 'itemId'],
+      ['removeCartItem', 'itemId'],
+      ['removeWishlistItem', 'itemId'],
+      ['getBackofficeVoucher', 'id'],
+      ['updateVoucher', 'id'],
+      ['activateVoucher', 'id'],
+      ['pauseVoucher', 'id'],
+      ['archiveVoucher', 'id'],
+      ['listVoucherUsages', 'id'],
+    ] as const) {
+      expect(byId.get(operationId)?.parameters?.map(({ name }) => name)).toContain(parameter);
+    }
   });
 });

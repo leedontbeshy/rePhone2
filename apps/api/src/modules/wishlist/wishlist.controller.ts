@@ -19,6 +19,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
@@ -72,7 +73,13 @@ export class WishlistController {
         { $ref: getSchemaPath(AddIphoneWishlistItemDto) },
         { $ref: getSchemaPath(AddAccessoryWishlistItemDto) },
       ],
-      discriminator: { propertyName: 'itemType' },
+      discriminator: {
+        propertyName: 'itemType',
+        mapping: {
+          IPHONE: getSchemaPath(AddIphoneWishlistItemDto),
+          ACCESSORY: getSchemaPath(AddAccessoryWishlistItemDto),
+        },
+      },
     },
   })
   @ApiCreatedResponse({ type: WishlistItemResponse })
@@ -100,6 +107,7 @@ export class WishlistController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(CommerceRateLimitGuard)
   @ApiOperation({ operationId: 'removeWishlistItem', summary: 'Remove an owned wishlist item' })
+  @ApiParam({ name: 'itemId', type: String, format: 'uuid' })
   @ApiNoContentResponse()
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED' },

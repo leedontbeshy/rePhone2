@@ -19,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -122,6 +123,7 @@ export class BackofficeVouchersController {
     operationId: 'getBackofficeVoucher',
     summary: 'Get one voucher with usage counts',
   })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeVoucherResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
   public get(@Param() params: VoucherParamsDto) {
@@ -131,6 +133,7 @@ export class BackofficeVouchersController {
   @Patch(':id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateVoucher', summary: 'Update fields allowed by voucher state' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateVoucherDto })
   @ApiOkResponse({ type: BackofficeVoucherResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
@@ -147,6 +150,7 @@ export class BackofficeVouchersController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'activateVoucher', summary: 'Activate a draft or paused voucher' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeVoucherResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
   public activate(
@@ -161,6 +165,7 @@ export class BackofficeVouchersController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'pauseVoucher', summary: 'Pause an active voucher' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: VoucherReasonDto })
   @ApiOkResponse({ type: BackofficeVoucherResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
@@ -177,6 +182,7 @@ export class BackofficeVouchersController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'archiveVoucher', summary: 'Archive a voucher permanently' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: VoucherReasonDto })
   @ApiOkResponse({ type: BackofficeVoucherResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
@@ -191,6 +197,7 @@ export class BackofficeVouchersController {
 
   @Get(':id/usages')
   @ApiOperation({ operationId: 'listVoucherUsages', summary: 'List read-only voucher usages' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiVoucherUsageQueries()
   @ApiOkResponse({ type: VoucherUsageListResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
