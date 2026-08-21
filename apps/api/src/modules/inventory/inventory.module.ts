@@ -8,6 +8,9 @@ import { InventoryService } from './inventory.service.js';
 import { InspectionRepository } from './inspection.repository.js';
 import { InspectionService } from './inspection.service.js';
 import { InspectionsController, UnitInspectionsController } from './inspection.controller.js';
+import { StockController } from './stock.controller.js';
+import { StockRepository } from './stock.repository.js';
+import { StockService } from './stock.service.js';
 
 @Module({
   imports: [AuthModule, AuditModule],
@@ -16,6 +19,7 @@ import { InspectionsController, UnitInspectionsController } from './inspection.c
     InventoryLocationsController,
     UnitInspectionsController,
     InspectionsController,
+    StockController,
   ],
   providers: [
     IdentifierProtectionService,
@@ -23,6 +27,8 @@ import { InspectionsController, UnitInspectionsController } from './inspection.c
     InventoryService,
     InspectionRepository,
     InspectionService,
+    StockRepository,
+    StockService,
   ],
   exports: [InventoryService],
 })
