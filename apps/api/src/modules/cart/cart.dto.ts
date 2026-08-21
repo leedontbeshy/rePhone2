@@ -33,6 +33,17 @@ export class AddCartItemDto {
   public quantity?: number;
 }
 
+export class AddIphoneCartItemDto {
+  @ApiProperty({ enum: ['IPHONE'] }) public itemType!: 'IPHONE';
+  @ApiProperty({ type: String, minLength: 1, maxLength: 64 }) public inventoryCode!: string;
+}
+
+export class AddAccessoryCartItemDto {
+  @ApiProperty({ enum: ['ACCESSORY'] }) public itemType!: 'ACCESSORY';
+  @ApiProperty({ type: String, format: 'uuid' }) public variantId!: string;
+  @ApiProperty({ type: Number, minimum: 1, maximum: 99 }) public quantity!: number;
+}
+
 export class UpdateCartItemDto {
   @ApiProperty({ type: Number, minimum: 1, maximum: 99 })
   @IsInt()

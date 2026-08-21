@@ -15,10 +15,12 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
@@ -28,11 +30,17 @@ import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { SessionGuard } from '../auth/session.guard.js';
-import { AddWishlistItemDto, WishlistItemParamsDto } from './wishlist.dto.js';
+import {
+  AddAccessoryWishlistItemDto,
+  AddIphoneWishlistItemDto,
+  AddWishlistItemDto,
+  WishlistItemParamsDto,
+} from './wishlist.dto.js';
 import { WishlistItemResponse, WishlistListResponse } from './wishlist-response.dto.js';
 import { WishlistService } from './wishlist.service.js';
 
 @ApiTags('wishlist')
+@ApiExtraModels(AddIphoneWishlistItemDto, AddAccessoryWishlistItemDto)
 @ApiBearerAuth('access-token')
 @Roles('CUSTOMER')
 @UseGuards(SessionGuard, RolesGuard)
@@ -58,7 +66,15 @@ export class WishlistController {
     operationId: 'addWishlistItem',
     summary: 'Add an exact public offer to wishlist',
   })
-  @ApiBody({ type: AddWishlistItemDto })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(AddIphoneWishlistItemDto) },
+        { $ref: getSchemaPath(AddAccessoryWishlistItemDto) },
+      ],
+      discriminator: { propertyName: 'itemType' },
+    },
+  })
   @ApiCreatedResponse({ type: WishlistItemResponse })
   @ApiOkResponse({ type: WishlistItemResponse })
   @ApiErrorResponses(

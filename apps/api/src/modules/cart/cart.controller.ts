@@ -17,11 +17,14 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
+  ApiHeader,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiSecurity,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
@@ -35,11 +38,18 @@ import { OptionalSessionGuard } from '../auth/optional-session.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { SessionGuard } from '../auth/session.guard.js';
-import { AddCartItemDto, CartItemParamsDto, UpdateCartItemDto } from './cart.dto.js';
+import {
+  AddAccessoryCartItemDto,
+  AddCartItemDto,
+  AddIphoneCartItemDto,
+  CartItemParamsDto,
+  UpdateCartItemDto,
+} from './cart.dto.js';
 import { CartResponse } from './cart-response.dto.js';
 import { CartService } from './cart.service.js';
 
 @ApiTags('cart')
+@ApiExtraModels(AddIphoneCartItemDto, AddAccessoryCartItemDto)
 @Controller('cart')
 export class CartController {
   public constructor(
@@ -68,8 +78,29 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'addCartItem', summary: 'Set a desired cart target' })
-  @ApiBody({ type: AddCartItemDto })
-  @ApiCreatedResponse({ type: CartResponse })
+  @ApiBody({
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(AddIphoneCartItemDto) },
+        { $ref: getSchemaPath(AddAccessoryCartItemDto) },
+      ],
+      discriminator: { propertyName: 'itemType' },
+    },
+  })
+  @ApiHeader({
+    name: 'X-Rephone-CSRF',
+    required: false,
+    description: 'Required with value 1 for guest cookie mutations; not required for Bearer.',
+  })
+  @ApiCreatedResponse({
+    type: CartResponse,
+    headers: {
+      'Set-Cookie': {
+        description: 'Creates rephone_guest_cart on the first successful guest mutation.',
+        schema: { type: 'string' },
+      },
+    },
+  })
   @ApiOkResponse({ type: CartResponse })
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
@@ -103,6 +134,11 @@ export class CartController {
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'updateCartItem', summary: 'Set accessory cart quantity' })
   @ApiBody({ type: UpdateCartItemDto })
+  @ApiHeader({
+    name: 'X-Rephone-CSRF',
+    required: false,
+    description: 'Required with value 1 for guest cookie mutations; not required for Bearer.',
+  })
   @ApiOkResponse({ type: CartResponse })
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
@@ -132,6 +168,11 @@ export class CartController {
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'removeCartItem', summary: 'Remove an owned cart item' })
   @ApiNoContentResponse()
+  @ApiHeader({
+    name: 'X-Rephone-CSRF',
+    required: false,
+    description: 'Required with value 1 for guest cookie mutations; not required for Bearer.',
+  })
   @ApiErrorResponses(
     { status: 401, description: 'ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
     { status: 403, description: 'FORBIDDEN or CSRF_VALIDATION_FAILED' },

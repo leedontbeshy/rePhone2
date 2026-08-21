@@ -23,6 +23,16 @@ export class AddWishlistItemDto {
   public variantId?: string;
 }
 
+export class AddIphoneWishlistItemDto {
+  @ApiProperty({ enum: ['IPHONE'] }) public itemType!: 'IPHONE';
+  @ApiProperty({ type: String, minLength: 1, maxLength: 64 }) public inventoryCode!: string;
+}
+
+export class AddAccessoryWishlistItemDto {
+  @ApiProperty({ enum: ['ACCESSORY'] }) public itemType!: 'ACCESSORY';
+  @ApiProperty({ type: String, format: 'uuid' }) public variantId!: string;
+}
+
 export class WishlistItemParamsDto {
   @ApiProperty({ type: String, format: 'uuid' })
   @IsUUID()

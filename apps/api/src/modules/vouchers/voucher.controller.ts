@@ -1,4 +1,5 @@
 import {
+  applyDecorators,
   Body,
   Controller,
   Get,
@@ -18,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -70,6 +72,7 @@ export class PublicVouchersController {
     operationId: 'listPublicVouchers',
     summary: 'Discover currently active vouchers',
   })
+  @ApiPublicVoucherQueries()
   @ApiOkResponse({ type: PublicVoucherListResponse })
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED' },
@@ -93,6 +96,7 @@ export class BackofficeVouchersController {
     operationId: 'listBackofficeVouchers',
     summary: 'List vouchers for administration',
   })
+  @ApiBackofficeVoucherQueries()
   @ApiOkResponse({ type: BackofficeVoucherListResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
   public list(@Query() query: BackofficeVoucherListQueryDto) {
@@ -187,6 +191,7 @@ export class BackofficeVouchersController {
 
   @Get(':id/usages')
   @ApiOperation({ operationId: 'listVoucherUsages', summary: 'List read-only voucher usages' })
+  @ApiVoucherUsageQueries()
   @ApiOkResponse({ type: VoucherUsageListResponse })
   @ApiErrorResponses(...ADMIN_ERRORS)
   public listUsages(@Param() params: VoucherParamsDto, @Query() query: VoucherUsageListQueryDto) {
@@ -196,4 +201,58 @@ export class BackofficeVouchersController {
 
 function auditActor(auth: AuthContext, request: Request): AuditActorContext {
   return { actorUserId: auth.userId, ...requestContext(request) };
+}
+
+function ApiPublicVoucherQueries() {
+  return applyDecorators(
+    ApiQuery({ name: 'visibility', required: false, enum: ['PUBLIC', 'ACCOUNT_ONLY'] }),
+    ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 }),
+    ApiQuery({
+      name: 'pageSize',
+      required: false,
+      type: Number,
+      minimum: 1,
+      maximum: 100,
+      default: 20,
+    }),
+  );
+}
+
+function ApiBackofficeVoucherQueries() {
+  return applyDecorators(
+    ApiPublicVoucherQueries(),
+    ApiQuery({ name: 'q', required: false, type: String, maxLength: 100 }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'],
+    }),
+    ApiQuery({ name: 'discountType', required: false, enum: ['FIXED', 'PERCENT'] }),
+    ApiQuery({
+      name: 'scopeType',
+      required: false,
+      enum: ['ORDER', 'PRODUCT_TYPE', 'PRODUCTS', 'VARIANTS'],
+    }),
+  );
+}
+
+function ApiVoucherUsageQueries() {
+  return applyDecorators(
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['RESERVED', 'CONSUMED', 'RELEASED'],
+    }),
+    ApiQuery({ name: 'orderId', required: false, type: String, format: 'uuid' }),
+    ApiQuery({ name: 'customerId', required: false, type: String, format: 'uuid' }),
+    ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 }),
+    ApiQuery({
+      name: 'pageSize',
+      required: false,
+      type: Number,
+      minimum: 1,
+      maximum: 100,
+      default: 20,
+    }),
+  );
 }
