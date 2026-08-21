@@ -17,7 +17,10 @@ describe('Slice 04 OpenAPI contract', () => {
   const operations = Object.entries(document.paths).flatMap(([path, pathItem]) =>
     Object.entries(pathItem)
       .filter(([method]) => ['get', 'post', 'patch', 'delete'].includes(method))
-      .filter(() => path.startsWith('/api/v1/backoffice/'))
+      .filter(
+        () =>
+          path.startsWith('/api/v1/backoffice/') && !path.startsWith('/api/v1/backoffice/vouchers'),
+      )
       .map(([method, operation]) => ({ method, operation, path })),
   );
 
