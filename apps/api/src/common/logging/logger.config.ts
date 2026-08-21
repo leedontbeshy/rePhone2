@@ -7,6 +7,7 @@ const REDACTED_PATHS = [
   'req.headers.authorization',
   'req.headers.cookie',
   'req.headers.idempotency-key',
+  'req.headers.x-guest-order-token',
   'res.headers.set-cookie',
   '*.password',
   '*.currentPassword',
@@ -17,6 +18,10 @@ const REDACTED_PATHS = [
   '*.inviteToken',
   '*.resetToken',
   '*.guestToken',
+  '*.guestAccessToken',
+  '*.guestAccessTokenHash',
+  '*.guestTokenHash',
+  '*.guestTokenDigest',
   '*.jwt',
   '*.databaseUrl',
   '*.serviceRoleKey',
@@ -32,6 +37,8 @@ const REDACTED_PATHS = [
   '*.bytes',
   '*.bankAccountNumber',
   '*.shippingAddress',
+  '*.shippingAddressSnapshot',
+  '*.contact',
 ];
 
 export function createLoggerParams(config: AppConfig): Params {

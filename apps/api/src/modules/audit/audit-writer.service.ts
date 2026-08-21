@@ -1,18 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
-import type { AuditActorContext, AuditWriteInput } from './audit.types.js';
+import type { AuditWriteActorContext, AuditWriteInput } from './audit.types.js';
 
 @Injectable()
 export class AuditWriter {
   public write(
     transaction: Prisma.TransactionClient,
-    actor: AuditActorContext,
+    actor: AuditWriteActorContext,
     input: AuditWriteInput,
   ) {
     return transaction.auditLog.create({
       data: {
-        actorType: 'USER',
-        actorUserId: actor.actorUserId,
+        actorType: actor.actorType ?? 'USER',
+        actorUserId:
+          actor.actorType === 'GUEST' || actor.actorType === 'SYSTEM' ? null : actor.actorUserId,
         action: input.action,
         resourceType: input.resourceType,
         requestId: actor.requestId,
