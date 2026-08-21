@@ -19,6 +19,8 @@ import {
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
@@ -138,6 +140,16 @@ export class OrdersController {
   @Roles('CUSTOMER')
   @ApiBearerAuth('access-token')
   @ApiOperation({ operationId: 'listCustomerOrders', summary: 'List owned customer orders' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PLACED', 'CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED'],
+  })
+  @ApiQuery({ name: 'fulfillmentType', required: false, enum: ['PICKUP', 'SHIPPING'] })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, minimum: 1, maximum: 100 })
+  @ApiQuery({ name: 'sortBy', required: false, enum: ['placedAt', 'grandTotal', 'status'] })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   @ApiOkResponse({ type: OrderListResponse })
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED' },
@@ -160,6 +172,7 @@ export class OrdersController {
   @ApiSecurity('guestOrderToken')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'getCustomerOrder', summary: 'Get one owned order snapshot' })
+  @ApiParam({ name: 'orderNumber', type: String, example: 'RPH-20260821-23456789' })
   @ApiHeader({
     name: 'X-Guest-Order-Token',
     required: false,
@@ -190,6 +203,8 @@ export class OrdersController {
   @ApiSecurity('guestOrderToken')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'cancelCustomerOrder', summary: 'Cancel one owned order' })
+  @ApiParam({ name: 'orderNumber', type: String, example: 'RPH-20260821-23456789' })
+  @ApiBody({ type: CancelOrderDto })
   @ApiHeader({
     name: 'X-Guest-Order-Token',
     required: false,

@@ -1401,6 +1401,9 @@ export interface components {
         BackofficeVoucherResponse: {
             data: components["schemas"]["BackofficeVoucherDto"];
         };
+        CancelOrderDto: {
+            reason: string;
+        };
         CartDto: {
             estimatedSubtotal: string;
             /** Format: date-time */
@@ -8167,7 +8170,14 @@ export interface operations {
     };
     listCustomerOrders: {
         parameters: {
-            query?: never;
+            query?: {
+                sortOrder?: "asc" | "desc";
+                sortBy?: "placedAt" | "grandTotal" | "status";
+                pageSize?: number;
+                page?: number;
+                fulfillmentType?: "PICKUP" | "SHIPPING";
+                status?: "PLACED" | "CONFIRMED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8218,7 +8228,9 @@ export interface operations {
                 /** @description Raw guest token returned once by checkout create. */
                 "X-Guest-Order-Token"?: string;
             };
-            path?: never;
+            path: {
+                orderNumber: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -8289,10 +8301,16 @@ export interface operations {
                 /** @description Guest header-token authentication does not rely on cookies. */
                 "X-Guest-Order-Token"?: string;
             };
-            path?: never;
+            path: {
+                orderNumber: string;
+            };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelOrderDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
