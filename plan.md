@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 05 hoàn thành ngày 2026-08-21<br>
-> Bước tiếp theo: Slice 06 — Checkout, reservation và customer order<br>
+> Trạng thái: Slice 06 đang triển khai trên branch `feat/slice-06-checkout-reservation-order`<br>
+> Bước hiện tại: Checkout, reservation và customer order<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -432,6 +432,8 @@ Nguồn: [Backoffice catalog/inventory API](docs/api/backoffice-catalog-inventor
 Nguồn: [Cart/Wishlist endpoints](docs/api/cart-and-wishlist-endpoints.md), [Voucher endpoints](docs/api/voucher-endpoints.md), [Commerce data](docs/data-model/commerce.md), [Roles](docs/requirements/roles-and-permissions.md).
 
 ### Slice 06 — Checkout, reservation và customer order
+
+> 🚧 Đang triển khai. Thiết kế và work package đã chốt tại [Slice 06 implementation plan](docs/planning/2026-08-21-slice-06-checkout-reservation-order-plan.md).
 
 **Mục tiêu:** preview stateless và checkout atomic tạo đúng một order, reservation và snapshot với server pricing.
 
