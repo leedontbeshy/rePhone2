@@ -57,11 +57,20 @@ export class CheckoutVoucherGateway {
     voucherId: string,
     orderId: string,
     customerId: string | null,
+    now: Date,
     transaction: Prisma.TransactionClient,
   ): Promise<void> {
     await transaction.$queryRaw`SELECT id FROM vouchers WHERE id = ${voucherId}::uuid FOR UPDATE`;
     const voucher = await transaction.voucher.findUnique({ where: { id: voucherId } });
-    if (voucher === null) throw new ApiError('VOUCHER_NOT_APPLICABLE');
+    if (
+      voucher === null ||
+      voucher.status !== 'ACTIVE' ||
+      voucher.startsAt > now ||
+      voucher.endsAt <= now ||
+      (voucher.visibility === 'ACCOUNT_ONLY' && customerId === null)
+    ) {
+      throw new ApiError('VOUCHER_NOT_APPLICABLE');
+    }
     await this.assertQuota(voucher, customerId, transaction);
     await transaction.voucherUsage.create({
       data: { voucherId, orderId, customerId, status: 'RESERVED' },

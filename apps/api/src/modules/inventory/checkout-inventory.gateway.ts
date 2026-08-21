@@ -77,20 +77,21 @@ export class CheckoutInventoryGateway {
         ),
       ),
     ];
-    const [units, stockLevels] = await Promise.all([
+    const units =
       unitIds.length === 0
-        ? Promise.resolve([])
-        : transaction.inventoryUnit.findMany({
+        ? []
+        : await transaction.inventoryUnit.findMany({
             where: { id: { in: unitIds }, lifecycleStatus: 'AVAILABLE' },
             select: {
               id: true,
               locationId: true,
               reservations: { where: { status: 'ACTIVE' }, select: { id: true }, take: 1 },
             },
-          }),
+          });
+    const stockLevels =
       accessoryVariantIds.length === 0
-        ? Promise.resolve([])
-        : transaction.stockLevel.findMany({
+        ? []
+        : await transaction.stockLevel.findMany({
             where: {
               variantId: { in: accessoryVariantIds },
               locationId: { in: orderedLocations.map(({ id }) => id) },
@@ -102,8 +103,7 @@ export class CheckoutInventoryGateway {
               quantityOnHand: true,
               quantityReserved: true,
             },
-          }),
-    ]);
+          });
     const unitMap = new Map(units.map((unit) => [unit.id, unit]));
     const stockByLocationVariant = new Map(
       stockLevels.map((stock) => [`${stock.locationId}:${stock.variantId}`, stock]),

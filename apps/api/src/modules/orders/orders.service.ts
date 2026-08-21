@@ -214,6 +214,7 @@ export class OrdersService {
             calculation.voucher.id,
             order.id,
             identity.kind === 'CUSTOMER' ? identity.customerId : null,
+            calculation.now,
             transaction,
           );
         }
@@ -457,10 +458,12 @@ export class OrdersService {
       })),
       transaction,
     );
-    const [settings, allocation] = await Promise.all([
-      this.settings.read(transaction),
-      this.inventory.selectLocation(catalogLines, input.fulfillmentType, transaction),
-    ]);
+    const settings = await this.settings.read(transaction);
+    const allocation = await this.inventory.selectLocation(
+      catalogLines,
+      input.fulfillmentType,
+      transaction,
+    );
     const voucher = await this.vouchers.preview(
       input.voucherCode,
       catalogLines.map((line) => ({

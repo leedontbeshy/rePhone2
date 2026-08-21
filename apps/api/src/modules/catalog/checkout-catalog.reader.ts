@@ -47,41 +47,41 @@ export class CheckoutCatalogReader {
     const unitIds = targets.flatMap(({ inventoryUnitId }) =>
       inventoryUnitId === null ? [] : [inventoryUnitId],
     );
-    const [variants, units] = await Promise.all([
-      transaction.productVariant.findMany({
-        where: { id: { in: variantIds } },
-        select: {
-          id: true,
-          sku: true,
-          displayName: true,
-          storageCapacityGb: true,
-          colorName: true,
-          colorHex: true,
-          inventoryMode: true,
-          salePrice: true,
-          accessoryAttributes: true,
-          status: true,
-          archivedAt: true,
-          warrantyPolicy: {
-            select: { defaultDays: true, terms: true, status: true, archivedAt: true },
-          },
-          product: {
-            select: {
-              id: true,
-              type: true,
-              name: true,
-              status: true,
-              archivedAt: true,
-              warrantyPolicy: {
-                select: { defaultDays: true, terms: true, status: true, archivedAt: true },
-              },
+    const variants = await transaction.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: {
+        id: true,
+        sku: true,
+        displayName: true,
+        storageCapacityGb: true,
+        colorName: true,
+        colorHex: true,
+        inventoryMode: true,
+        salePrice: true,
+        accessoryAttributes: true,
+        status: true,
+        archivedAt: true,
+        warrantyPolicy: {
+          select: { defaultDays: true, terms: true, status: true, archivedAt: true },
+        },
+        product: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            status: true,
+            archivedAt: true,
+            warrantyPolicy: {
+              select: { defaultDays: true, terms: true, status: true, archivedAt: true },
             },
           },
         },
-      }),
+      },
+    });
+    const units =
       unitIds.length === 0
-        ? Promise.resolve([])
-        : transaction.inventoryUnit.findMany({
+        ? []
+        : await transaction.inventoryUnit.findMany({
             where: { id: { in: unitIds } },
             select: {
               id: true,
@@ -101,8 +101,7 @@ export class CheckoutCatalogReader {
                 take: 1,
               },
             },
-          }),
-    ]);
+          });
     const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
     const unitMap = new Map(units.map((unit) => [unit.id, unit]));
 
