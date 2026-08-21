@@ -523,6 +523,18 @@ export class InventoryService {
     return unit;
   }
 
+  public async assertCanDeleteUnitMedia(id: string, transaction: Prisma.TransactionClient) {
+    const unit = await this.repository.findUnit(id, transaction);
+    if (unit === null) throw new ApiError('RESOURCE_NOT_FOUND');
+    if (
+      (unit.lifecycleStatus === 'AVAILABLE' || unit._count.reservations > 0) &&
+      unit._count.media <= 1
+    ) {
+      throw new ApiError('INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET');
+    }
+    return unit;
+  }
+
   private protectInput(input: {
     imei1?: string;
     imei2?: string;
