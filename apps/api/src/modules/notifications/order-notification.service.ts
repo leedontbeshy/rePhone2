@@ -96,7 +96,7 @@ async function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promis
     return await Promise.race([
       promise,
       new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error('MailTimeout')), milliseconds);
+        timeout = setTimeout(() => { reject(new Error('MailTimeout')); }, milliseconds);
       }),
     ]);
   } finally {

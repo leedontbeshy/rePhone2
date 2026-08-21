@@ -37,9 +37,9 @@ export function checkoutChangedPreview(value: unknown): unknown {
   ) {
     return undefined;
   }
-  const details = value['error']['details'];
+  const details: unknown = value['error']['details'];
   if (!Array.isArray(details)) return undefined;
-  const detail = details.find(
+  const detail: unknown = (details as unknown[]).find(
     (candidate) => isRecord(candidate) && candidate['code'] === 'CHECKOUT_CHANGED',
   );
   return isRecord(detail) ? detail['current'] : undefined;

@@ -151,7 +151,7 @@ export default function CheckoutPage() {
   };
 
   const setField = (field: keyof typeof form, value: string) =>
-    setForm((current) => ({ ...current, [field]: value }));
+    { setForm((current) => ({ ...current, [field]: value })); };
 
   const noCart = !cartLoading && (cart === null || cart.items.length === 0);
   return (
@@ -205,7 +205,7 @@ export default function CheckoutPage() {
                   Họ tên
                   <input
                     value={form.fullName}
-                    onChange={(event) => setField('fullName', event.target.value)}
+                    onChange={(event) => { setField('fullName', event.target.value); }}
                   />
                 </label>
                 <label>
@@ -213,14 +213,14 @@ export default function CheckoutPage() {
                   <input
                     type="email"
                     value={form.email}
-                    onChange={(event) => setField('email', event.target.value)}
+                    onChange={(event) => { setField('email', event.target.value); }}
                   />
                 </label>
                 <label>
                   Điện thoại
                   <input
                     value={form.phone}
-                    onChange={(event) => setField('phone', event.target.value)}
+                    onChange={(event) => { setField('phone', event.target.value); }}
                   />
                 </label>
               </div>
@@ -231,7 +231,7 @@ export default function CheckoutPage() {
                       Địa chỉ đã lưu
                       <select
                         defaultValue=""
-                        onChange={(event) => chooseAddress(event.target.value)}
+                        onChange={(event) => { chooseAddress(event.target.value); }}
                       >
                         <option value="" disabled>
                           Chọn để sao chép vào form
@@ -248,49 +248,49 @@ export default function CheckoutPage() {
                     Người nhận
                     <input
                       value={form.receiverName}
-                      onChange={(event) => setField('receiverName', event.target.value)}
+                      onChange={(event) => { setField('receiverName', event.target.value); }}
                     />
                   </label>
                   <label>
                     SĐT người nhận
                     <input
                       value={form.receiverPhone}
-                      onChange={(event) => setField('receiverPhone', event.target.value)}
+                      onChange={(event) => { setField('receiverPhone', event.target.value); }}
                     />
                   </label>
                   <label className="field-wide">
                     Địa chỉ
                     <input
                       value={form.addressLine}
-                      onChange={(event) => setField('addressLine', event.target.value)}
+                      onChange={(event) => { setField('addressLine', event.target.value); }}
                     />
                   </label>
                   <label>
                     Phường/xã
                     <input
                       value={form.ward}
-                      onChange={(event) => setField('ward', event.target.value)}
+                      onChange={(event) => { setField('ward', event.target.value); }}
                     />
                   </label>
                   <label>
                     Quận/huyện
                     <input
                       value={form.district}
-                      onChange={(event) => setField('district', event.target.value)}
+                      onChange={(event) => { setField('district', event.target.value); }}
                     />
                   </label>
                   <label>
                     Tỉnh/thành
                     <input
                       value={form.province}
-                      onChange={(event) => setField('province', event.target.value)}
+                      onChange={(event) => { setField('province', event.target.value); }}
                     />
                   </label>
                   <label>
                     Mã bưu chính
                     <input
                       value={form.postalCode}
-                      onChange={(event) => setField('postalCode', event.target.value)}
+                      onChange={(event) => { setField('postalCode', event.target.value); }}
                     />
                   </label>
                 </div>
@@ -311,7 +311,7 @@ export default function CheckoutPage() {
                   <textarea
                     maxLength={500}
                     value={form.customerNote}
-                    onChange={(event) => setField('customerNote', event.target.value)}
+                    onChange={(event) => { setField('customerNote', event.target.value); }}
                   />
                 </label>
               </div>

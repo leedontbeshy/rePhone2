@@ -52,22 +52,13 @@ describe('Slice 06 OpenAPI contract', () => {
   });
 
   it('documents create replay statuses, guest token header and stable error statuses', () => {
-    expect(byId.get('createCheckout')?.responses).toEqual(
-      expect.objectContaining({ '200': expect.anything(), '201': expect.anything() }),
-    );
+    const responseStatuses = Object.keys(byId.get('createCheckout')?.responses ?? {});
+    expect(responseStatuses).toEqual(expect.arrayContaining(['200', '201']));
     for (const id of ['getCustomerOrder', 'cancelCustomerOrder']) {
       expect(byId.get(id)?.parameters?.map(({ name }) => name)).toContain('X-Guest-Order-Token');
     }
-    expect(byId.get('createCheckout')?.responses).toEqual(
-      expect.objectContaining({
-        '400': expect.anything(),
-        '401': expect.anything(),
-        '403': expect.anything(),
-        '409': expect.anything(),
-        '422': expect.anything(),
-        '429': expect.anything(),
-        '503': expect.anything(),
-      }),
+    expect(responseStatuses).toEqual(
+      expect.arrayContaining(['400', '401', '403', '409', '422', '429', '503']),
     );
   });
 });

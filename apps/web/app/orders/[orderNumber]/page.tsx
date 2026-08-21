@@ -57,7 +57,7 @@ export default function OrderDetailPage() {
     }
     if (status === 'loading') return;
     setLoading(true);
-    void loadOrder().finally(() => setLoading(false));
+    void loadOrder().finally(() => { setLoading(false); });
   }, [loadOrder, orderNumber, status]);
 
   const cancel = async () => {
@@ -234,7 +234,7 @@ export default function OrderDetailPage() {
                         minLength={5}
                         maxLength={500}
                         value={reason}
-                        onChange={(event) => setReason(event.target.value)}
+                        onChange={(event) => { setReason(event.target.value); }}
                       />
                     </label>
                     <button

@@ -15,18 +15,24 @@ export class OrderRateLimitGuard implements CanActivate {
   ) {}
 
   public canActivate(context: ExecutionContext): boolean {
-    const kind = this.reflector.getAllAndOverride<OrderRateLimitKind>(ORDER_RATE_LIMIT_KEY, [
+    const reflectedKind = this.reflector.getAllAndOverride<unknown>(ORDER_RATE_LIMIT_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (kind === undefined) return true;
+    if (!isOrderRateLimitKind(reflectedKind)) return true;
+    const kind = reflectedKind;
     const request = context.switchToHttp().getRequest<Request>();
     if (kind === 'GUEST_ORDER' && request.auth !== undefined) return true;
     const token = this.guestCartIdentity.readToken(request);
     const ip = request.ip || request.socket.remoteAddress || 'unknown';
+    const orderNumberParam = request.params.orderNumber;
+    const orderNumber =
+      typeof orderNumberParam === 'string'
+        ? orderNumberParam
+        : (orderNumberParam?.[0] ?? 'unknown');
     const actorKey =
       kind === 'GUEST_ORDER'
-        ? `ip:${ip}:order:${request.params.orderNumber ?? 'unknown'}`
+        ? `ip:${ip}:order:${orderNumber}`
         : request.auth !== undefined
           ? `customer:${request.auth.userId}`
           : token === undefined
@@ -35,4 +41,8 @@ export class OrderRateLimitGuard implements CanActivate {
     this.limiter.consume(kind, actorKey);
     return true;
   }
+}
+
+function isOrderRateLimitKind(value: unknown): value is OrderRateLimitKind {
+  return value === 'PREVIEW' || value === 'CREATE' || value === 'GUEST_ORDER';
 }

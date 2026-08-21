@@ -58,7 +58,7 @@ try {
   const failed = violations.filter(({ count }) => count > 0);
   process.stdout.write(`${JSON.stringify({ checks: violations }, null, 2)}\n`);
   if (failed.length > 0) {
-    throw new Error(`Slice 06 preflight found ${failed.length} violated invariant(s)`);
+    throw new Error(`Slice 06 preflight found ${failed.length.toString()} violated invariant(s)`);
   }
 } finally {
   await prisma.$disconnect();
