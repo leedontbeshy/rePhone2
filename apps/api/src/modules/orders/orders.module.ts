@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { CartModule } from '../cart/cart.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PaymentsModule } from '../payments/payments.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
@@ -24,6 +25,7 @@ import { OrdersService } from './orders.service.js';
     VouchersModule,
     PaymentsModule,
     SettingsModule,
+    NotificationsModule,
   ],
   controllers: [CheckoutsController, OrdersController],
   providers: [

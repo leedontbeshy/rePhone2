@@ -11,6 +11,7 @@ import type { AuditWriteActorContext } from '../audit/audit.types.js';
 import { CheckoutCartReader } from '../cart/checkout-cart.reader.js';
 import { CheckoutCatalogReader } from '../catalog/checkout-catalog.reader.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
+import { OrderNotificationService } from '../notifications/order-notification.service.js';
 import { CheckoutPaymentGateway } from '../payments/checkout-payment.gateway.js';
 import { CheckoutSettingsReader } from '../settings/checkout-settings.reader.js';
 import { CheckoutVoucherGateway } from '../vouchers/checkout-voucher.gateway.js';
@@ -70,6 +71,8 @@ export class OrdersService {
     @Inject(GuestOrderIdentityService)
     private readonly guestOrders: GuestOrderIdentityService,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
+    @Inject(OrderNotificationService)
+    private readonly notifications: OrderNotificationService,
   ) {}
 
   public preview(request: Request, input: CheckoutPreviewRequestDto): Promise<CheckoutPreviewDto> {
@@ -261,9 +264,13 @@ export class OrdersService {
         include: customerOrderInclude,
       }),
     );
+    const projectedOrder = projectOrder(order);
+    if (outcome.created) {
+      await this.notifications.sendPlaced(projectedOrder, rawGuestToken);
+    }
     return {
       result: {
-        order: projectOrder(order),
+        order: projectedOrder,
         ...(outcome.created && rawGuestToken !== undefined
           ? { guestAccessToken: rawGuestToken }
           : {}),
@@ -358,7 +365,7 @@ export class OrdersService {
     this.assertOrderAccess(request, initial);
     const actorIdentity = this.carts.resolveIdentity(request.auth, request);
     const actor = this.auditActor(actorIdentity, request);
-    const orderId = await this.transactions.run('orders.cancel', async (transaction) => {
+    const outcome = await this.transactions.run('orders.cancel', async (transaction) => {
       await transaction.$queryRaw`SELECT id FROM orders WHERE id = ${initial.id}::uuid FOR UPDATE`;
       const order = requireOrder(
         await transaction.order.findUnique({
@@ -367,7 +374,7 @@ export class OrdersService {
         }),
       );
       this.assertOrderAccess(request, order);
-      if (order.status === 'CANCELLED') return order.id;
+      if (order.status === 'CANCELLED') return { orderId: order.id, cancelled: false };
       if (
         order.status === 'COMPLETED' ||
         ['IN_TRANSIT', 'COMPLETED', 'FAILED', 'RETURNED'].includes(order.fulfillmentStatus) ||
@@ -416,16 +423,18 @@ export class OrdersService {
             : { refundId: finance.refund.id, refundAmount: finance.refund.amount }),
         },
       });
-      return order.id;
+      return { orderId: order.id, cancelled: true };
     });
-    return projectOrder(
+    const projectedOrder = projectOrder(
       requireOrder(
         await this.prisma.order.findUnique({
-          where: { id: orderId },
+          where: { id: outcome.orderId },
           include: customerOrderInclude,
         }),
       ),
     );
+    if (outcome.cancelled) await this.notifications.sendCancelled(projectedOrder);
+    return projectedOrder;
   }
 
   private async calculate(

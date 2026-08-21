@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { MAIL_PROVIDER } from '../../common/providers/mail-provider.js';
-import { NoopMailProvider, SmtpMailProvider } from '../../common/providers/smtp-mail.provider.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthRateLimiter } from './auth-rate-limiter.service.js';
 import { AuthService } from './auth.service.js';
@@ -26,6 +25,7 @@ import { SessionResolver } from './session-resolver.service.js';
 
 @Module({
   imports: [
+    NotificationsModule,
     JwtModule.registerAsync({
       inject: [APP_CONFIG],
       useFactory: (config: AppConfig) => ({ secret: config.auth.accessSecret }),
@@ -51,12 +51,6 @@ import { SessionResolver } from './session-resolver.service.js';
     UsersRepository,
     AuthSessionsRepository,
     AuthTokensRepository,
-    {
-      provide: MAIL_PROVIDER,
-      inject: [APP_CONFIG],
-      useFactory: (config: AppConfig) =>
-        config.environment === 'test' ? new NoopMailProvider() : new SmtpMailProvider(config.mail),
-    },
   ],
   exports: [
     AuthService,
