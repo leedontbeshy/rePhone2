@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CatalogHeader, Availability, MediaImage, Money } from '../../catalog-ui';
 import { CatalogApiError, getPublicProduct, isIphoneVariant } from '../../../lib/catalog-api';
+import { CommerceActions } from '../../commerce-actions';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -135,6 +136,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                             ? 'Có giao hàng'
                             : 'Tạm hết hàng giao'}
                         </p>
+                        <CommerceActions
+                          itemType="ACCESSORY"
+                          variantId={variant.id}
+                          available={variant.fulfillmentAvailability.inStock}
+                        />
                       </div>
                     </article>
                   ),

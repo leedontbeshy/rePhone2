@@ -116,6 +116,7 @@ describe('database baseline', () => {
       units,
       stock,
       media,
+      vouchers,
     ] = await Promise.all([
       prisma.storeSettings.count({ where: { key: 'STORE' } }),
       prisma.inventoryLocation.count({
@@ -141,6 +142,11 @@ describe('database baseline', () => {
       prisma.productMedia.count({
         where: { objectPath: { startsWith: 'demo/catalog/', endsWith: '.png' } },
       }),
+      prisma.voucher.count({
+        where: {
+          normalizedCode: { in: ['WELCOME100', 'IPHONE5', 'DEMO-DRAFT', 'DEMO-PAUSED'] },
+        },
+      }),
     ]);
 
     expect({
@@ -154,6 +160,7 @@ describe('database baseline', () => {
       units,
       stock,
       media,
+      vouchers,
     }).toEqual({
       settings: 1,
       locations: 2,
@@ -165,6 +172,7 @@ describe('database baseline', () => {
       units: 5,
       stock: 6,
       media: 14,
+      vouchers: 4,
     });
   });
 });

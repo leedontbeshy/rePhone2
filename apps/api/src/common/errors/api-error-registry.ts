@@ -79,6 +79,22 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Thiết bị chưa đáp ứng đủ điều kiện để mở bán.',
   },
+  CART_NOT_ACTIVE: {
+    status: HttpStatus.CONFLICT,
+    message: 'Giỏ hàng không còn ở trạng thái hoạt động.',
+  },
+  CART_ITEM_QUANTITY_FIXED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Số lượng thiết bị định danh luôn là một.',
+  },
+  VOUCHER_NOT_APPLICABLE: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Voucher không áp dụng được cho yêu cầu này.',
+  },
+  VOUCHER_USAGE_LIMIT_REACHED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Voucher đã hết lượt sử dụng.',
+  },
   ONE_TIME_TOKEN_INVALID: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Token không hợp lệ, đã hết hạn hoặc đã được sử dụng.',

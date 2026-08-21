@@ -5,7 +5,7 @@ import {
   type OpenAPIObject,
   type OperationObject,
 } from '@nestjs/swagger';
-import { REFRESH_COOKIE_NAME } from '../modules/auth/auth.constants.js';
+import { GUEST_CART_COOKIE_NAME, REFRESH_COOKIE_NAME } from '../modules/auth/auth.constants.js';
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
 
@@ -21,11 +21,37 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       { type: 'apiKey', in: 'cookie', name: REFRESH_COOKIE_NAME },
       REFRESH_COOKIE_NAME,
     )
+    .addCookieAuth(
+      GUEST_CART_COOKIE_NAME,
+      { type: 'apiKey', in: 'cookie', name: GUEST_CART_COOKIE_NAME },
+      GUEST_CART_COOKIE_NAME,
+    )
     .build();
 
-  return SwaggerModule.createDocument(app, options, {
+  const document = SwaggerModule.createDocument(app, options, {
     operationIdFactory: (_controllerKey, methodKey) => methodKey,
   });
+  applyOptionalCommerceSecurity(document);
+  return document;
+}
+
+function applyOptionalCommerceSecurity(document: OpenAPIObject): void {
+  const securityByOperationId: Record<string, Array<Record<string, string[]>>> = {
+    getCart: [{}, { 'access-token': [] }, { rephone_guest_cart: [] }],
+    addCartItem: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
+    updateCartItem: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
+    removeCartItem: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
+    mergeCart: [{ 'access-token': [] }],
+    listPublicVouchers: [{}, { 'access-token': [] }],
+  };
+  for (const pathItem of Object.values(document.paths)) {
+    for (const method of HTTP_METHODS) {
+      const operation: OperationObject | undefined = pathItem[method];
+      if (operation?.operationId === undefined) continue;
+      const security = securityByOperationId[operation.operationId];
+      if (security !== undefined) operation.security = security;
+    }
+  }
 }
 
 export function validateOpenApiDocument(document: OpenAPIObject): void {

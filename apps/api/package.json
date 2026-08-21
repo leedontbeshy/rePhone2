@@ -21,6 +21,7 @@
     "db:deploy": "prisma migrate deploy --config prisma.config.ts",
     "db:seed": "prisma db seed --config prisma.config.ts",
     "storage:seed:catalog": "tsx prisma/scripts/upload-demo-catalog-assets.ts",
+    "smoke:slice05": "tsx prisma/scripts/smoke-slice05.ts",
     "db:studio": "prisma studio --config prisma.config.ts",
     "db:reset": "tsx prisma/scripts/guarded-reset.ts",
     "openapi": "tsx src/openapi/generate-openapi.ts"
