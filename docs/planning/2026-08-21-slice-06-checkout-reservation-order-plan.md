@@ -1,5 +1,8 @@
 # Kế hoạch triển khai Slice 06 — Checkout, Reservation & Customer Order
 
+> Trạng thái: ✅ Hoàn thành ngày 2026-08-22 trên branch `feat/slice-06-checkout-reservation-order`.<br>
+> Bước tiếp theo: Slice 07 — Deposit proof, review và expiry.
+
 ## 1. Mục tiêu và Definition of Done
 
 Triển khai checkout stateless, tạo Order nguyên tử và cổng tra cứu đơn cho CUSTOMER/guest trên branch `feat/slice-06-checkout-reservation-order`, bắt đầu từ commit Slice 05 `c4a62a6`.
@@ -170,3 +173,12 @@ Chạy preflight, backup, `pnpm db:deploy`, deploy API/web, seed hai lần rồi
 - [Sales data](../data-model/sales.md)
 - [Transaction/concurrency](../architecture/transaction-and-concurrency.md)
 - [Testing strategy](../quality/testing-strategy.md)
+
+## Biên bản nghiệm thu
+
+- Đã triển khai đúng 5 operation checkout/order và generate lại OpenAPI cùng typed client; contract test xác nhận operationId/security/status không drift.
+- Migration `20260821180000_slice06_checkout_invariants` đã qua exact preflight, deploy thành công lên Supabase và seed hai lần liên tiếp vẫn idempotent.
+- Supabase smoke xanh cho guest SHIPPING và CUSTOMER PICKUP, gồm create/replay, token/list/detail, cancellation, reservation/payment terminalization và audit actor `GUEST`/`USER`.
+- Hai order smoke `RPH-20260822-X6C6VC49` và `RPH-20260822-QVGHPDFC` đã được hủy bằng application command; không để lại active reservation.
+- `pnpm verify` xanh ngày 2026-08-22: format, lint, typecheck, 57 unit test, 11 integration test, 42 E2E test, OpenAPI/client generation và API/Web production build.
+- Server local dùng cho smoke đã được dừng; không sửa `docs/decisions` và không còn known blocker thuộc Slice 06.
