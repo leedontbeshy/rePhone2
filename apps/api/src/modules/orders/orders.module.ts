@@ -10,6 +10,7 @@ import { VouchersModule } from '../vouchers/voucher.module.js';
 import { GuestOrderIdentityService } from './guest-order-identity.service.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
 import { OrderRateLimiter } from './order-rate-limiter.service.js';
+import { OrderMutationCsrfGuard } from './order-mutation-csrf.guard.js';
 import { CheckoutsController, OrdersController } from './orders.controller.js';
 import { OrdersService } from './orders.service.js';
 
@@ -25,7 +26,13 @@ import { OrdersService } from './orders.service.js';
     SettingsModule,
   ],
   controllers: [CheckoutsController, OrdersController],
-  providers: [OrdersService, GuestOrderIdentityService, OrderRateLimiter, OrderRateLimitGuard],
+  providers: [
+    OrdersService,
+    GuestOrderIdentityService,
+    OrderRateLimiter,
+    OrderRateLimitGuard,
+    OrderMutationCsrfGuard,
+  ],
   exports: [OrdersService],
 })
 export class OrdersModule {}

@@ -33,12 +33,14 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { SessionGuard } from '../auth/session.guard.js';
 import {
   CheckoutPreviewRequestDto,
+  CancelOrderDto,
   CreateCheckoutRequestDto,
   OrderListQueryDto,
   OrderNumberParamsDto,
 } from './order.dto.js';
 import { OrderRateLimit } from './order-rate-limit.decorator.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
+import { OrderMutationCsrfGuard } from './order-mutation-csrf.guard.js';
 import {
   CheckoutPreviewResponse,
   CheckoutResultResponse,
@@ -178,5 +180,42 @@ export class OrdersController {
   ) {
     response.setHeader('Cache-Control', 'no-store');
     return this.orders.detail(request, params.orderNumber);
+  }
+
+  @Post(':orderNumber/cancel')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OptionalSessionGuard, OrderMutationCsrfGuard, OrderRateLimitGuard)
+  @OrderRateLimit('GUEST_ORDER')
+  @ApiBearerAuth('access-token')
+  @ApiSecurity('guestOrderToken')
+  @ApiSecurity('rephone_guest_cart')
+  @ApiOperation({ operationId: 'cancelCustomerOrder', summary: 'Cancel one owned order' })
+  @ApiHeader({
+    name: 'X-Guest-Order-Token',
+    required: false,
+    description: 'Guest header-token authentication does not rely on cookies.',
+  })
+  @ApiHeader({
+    name: 'X-Rephone-CSRF',
+    required: false,
+    description: 'Required with value 1 only when authenticating by guest cart cookie.',
+  })
+  @ApiOkResponse({ type: OrderDetailResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
+    { status: 401, description: 'ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN or CSRF_VALIDATION_FAILED' },
+    { status: 404, description: 'ORDER_NOT_FOUND' },
+    { status: 409, description: 'INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
+  public async cancel(
+    @Req() request: Request,
+    @Param() params: OrderNumberParamsDto,
+    @Body() input: CancelOrderDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.orders.cancel(request, params.orderNumber, input.reason);
   }
 }

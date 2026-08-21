@@ -344,6 +344,90 @@ export class OrdersService {
     return projectOrder(order);
   }
 
+  public async cancel(
+    request: Request,
+    orderNumber: string,
+    reason: string,
+  ): Promise<OrderDetailDto> {
+    const initial = requireOrder(
+      await this.prisma.order.findUnique({
+        where: { orderNumber },
+        include: customerOrderInclude,
+      }),
+    );
+    this.assertOrderAccess(request, initial);
+    const actorIdentity = this.carts.resolveIdentity(request.auth, request);
+    const actor = this.auditActor(actorIdentity, request);
+    const orderId = await this.transactions.run('orders.cancel', async (transaction) => {
+      await transaction.$queryRaw`SELECT id FROM orders WHERE id = ${initial.id}::uuid FOR UPDATE`;
+      const order = requireOrder(
+        await transaction.order.findUnique({
+          where: { id: initial.id },
+          include: customerOrderInclude,
+        }),
+      );
+      this.assertOrderAccess(request, order);
+      if (order.status === 'CANCELLED') return order.id;
+      if (
+        order.status === 'COMPLETED' ||
+        ['IN_TRANSIT', 'COMPLETED', 'FAILED', 'RETURNED'].includes(order.fulfillmentStatus) ||
+        order.shipments.some(({ status }) => status === 'HANDED_TO_CARRIER')
+      ) {
+        throw new ApiError('INVALID_STATE_TRANSITION');
+      }
+
+      const finance = await this.payments.cancelAndPrepareRefund(
+        order.id,
+        order.customerId,
+        reason,
+        new Date(),
+        transaction,
+      );
+      const now = new Date();
+      const cancelled = await transaction.order.updateMany({
+        where: { id: order.id, status: { notIn: ['CANCELLED', 'COMPLETED'] } },
+        data: {
+          status: 'CANCELLED',
+          fulfillmentStatus: 'CANCELLED',
+          cancelReason: reason,
+          cancelledAt: now,
+        },
+      });
+      if (cancelled.count !== 1) throw new ApiError('INVALID_STATE_TRANSITION');
+      await transaction.shipment.updateMany({
+        where: { orderId: order.id, status: 'CREATED' },
+        data: { status: 'CANCELLED' },
+      });
+      await this.inventory.releaseOrderReservations(order.id, now, transaction);
+      await this.vouchers.release(order.id, now, transaction);
+      await this.audit.write(transaction, actor, {
+        action: 'order.cancelled',
+        resourceType: 'Order',
+        resourceId: order.id,
+        changes: {
+          before: { status: order.status, fulfillmentStatus: order.fulfillmentStatus },
+          after: { status: 'CANCELLED', fulfillmentStatus: 'CANCELLED' },
+        },
+        metadata: {
+          orderNumber: order.orderNumber,
+          reason,
+          ...(finance.refund === null
+            ? {}
+            : { refundId: finance.refund.id, refundAmount: finance.refund.amount }),
+        },
+      });
+      return order.id;
+    });
+    return projectOrder(
+      requireOrder(
+        await this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: customerOrderInclude,
+        }),
+      ),
+    );
+  }
+
   private async calculate(
     identity: CheckoutIdentity,
     input: CheckoutPreviewRequestDto,
