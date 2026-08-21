@@ -40,9 +40,13 @@ describe('database baseline', () => {
         'users_role_profile_check',
         'stock_levels_quantities_check',
         'inventory_reservations_target_check',
+        'inventory_reservations_active_hold_check',
         'product_media_owner_check',
         'orders_money_check',
-        'store_settings_singleton_check'
+        'orders_shipping_deposit_check',
+        'payments_checkout_deposit_check',
+        'store_settings_singleton_check',
+        'store_settings_bank_qr_pair_check'
       )
     `;
     const indexes = await prisma.$queryRaw<Array<{ indexname: string }>>`
@@ -58,7 +62,7 @@ describe('database baseline', () => {
         )
     `;
 
-    expect(constraints.map(({ conname }: { conname: string }) => conname).sort()).toHaveLength(6);
+    expect(constraints.map(({ conname }: { conname: string }) => conname).sort()).toHaveLength(10);
     expect(indexes.map(({ indexname }: { indexname: string }) => indexname).sort()).toHaveLength(5);
   });
 
@@ -174,5 +178,33 @@ describe('database baseline', () => {
       media: 14,
       vouchers: 4,
     });
+  });
+
+  it('does not reset operational inventory state when seed runs again', async () => {
+    await seedDatabase(prisma);
+    const unit = await prisma.inventoryUnit.findUniqueOrThrow({
+      where: { inventoryCode: 'IP13-MID-001' },
+    });
+    const stock = await prisma.stockLevel.findFirstOrThrow({
+      where: { variant: { sku: 'ACC-CABLE-USBC-LTG-1M' }, location: { code: 'HCM-STORE-01' } },
+    });
+    await prisma.inventoryUnit.update({
+      where: { id: unit.id },
+      data: { lifecycleStatus: 'QUARANTINED' },
+    });
+    await prisma.stockLevel.update({
+      where: { id: stock.id },
+      data: { quantityReserved: 3 },
+    });
+
+    await seedDatabase(prisma);
+
+    const [preservedUnit, preservedStock] = await Promise.all([
+      prisma.inventoryUnit.findUniqueOrThrow({ where: { id: unit.id } }),
+      prisma.stockLevel.findUniqueOrThrow({ where: { id: stock.id } }),
+    ]);
+    expect(preservedUnit.lifecycleStatus).toBe('QUARANTINED');
+    expect(preservedStock.quantityOnHand).toBe(stock.quantityOnHand);
+    expect(preservedStock.quantityReserved).toBe(3);
   });
 });
