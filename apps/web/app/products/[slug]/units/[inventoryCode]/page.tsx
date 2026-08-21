@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CatalogHeader, MediaImage, Money } from '../../../../catalog-ui';
 import { CatalogApiError, getPublicUsedIphone } from '../../../../../lib/catalog-api';
+import { CommerceActions } from '../../../../commerce-actions';
 
 interface UsedIphonePageProps {
   params: Promise<{ slug: string; inventoryCode: string }>;
@@ -71,6 +72,7 @@ export default async function UsedIphonePage({ params }: UsedIphonePageProps) {
                     : '– Không giao hàng'}
                 </span>
               </div>
+              <CommerceActions itemType="IPHONE" inventoryCode={unit.inventoryCode} />
             </div>
           </section>
 

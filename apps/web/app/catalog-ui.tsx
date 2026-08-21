@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import type { PublicMedia } from '../lib/catalog-api';
+import { useAuth } from './auth-provider';
+import { useCommerce } from './commerce-provider';
 
 export function CatalogHeader() {
+  const { status, user } = useAuth();
+  const { totalQuantity } = useCommerce();
   return (
     <header className="site-header">
       <Link className="brand" href="/">
@@ -12,7 +16,16 @@ export function CatalogHeader() {
       </Link>
       <nav aria-label="Điều hướng chính">
         <Link href="/products">Sản phẩm</Link>
-        <Link href="/login">Đăng nhập</Link>
+        <Link href="/vouchers">Voucher</Link>
+        {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
+          <Link href="/cart">
+            Giỏ hàng <span className="cart-badge">{totalQuantity}</span>
+          </Link>
+        ) : null}
+        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
+          <Link href="/wishlist">Wishlist</Link>
+        ) : null}
+        {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}
       </nav>
     </header>
   );
