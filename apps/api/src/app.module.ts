@@ -13,6 +13,7 @@ import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { MediaModule } from './modules/media/media.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { WishlistModule } from './modules/wishlist/wishlist.module.js';
+import { VouchersModule } from './modules/vouchers/voucher.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module.js';
     MediaModule,
     CartModule,
     WishlistModule,
+    VouchersModule,
     HealthModule,
   ],
 })
