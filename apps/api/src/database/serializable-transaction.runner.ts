@@ -14,6 +14,7 @@ export class SerializableTransactionRunner {
   public async run<T>(
     operation: string,
     work: (transaction: Prisma.TransactionClient) => Promise<T>,
+    retryableDomainError?: (error: unknown) => boolean,
   ): Promise<T> {
     for (let attempt = 1; attempt <= RETRY_DELAYS_MS.length + 1; attempt += 1) {
       try {
@@ -23,7 +24,7 @@ export class SerializableTransactionRunner {
           timeout: 5_000,
         });
       } catch (error) {
-        if (!isRetryableTransactionError(error)) {
+        if (!isRetryableTransactionError(error) && !(retryableDomainError?.(error) ?? false)) {
           throw error;
         }
         const retryDelay = RETRY_DELAYS_MS[attempt - 1];
