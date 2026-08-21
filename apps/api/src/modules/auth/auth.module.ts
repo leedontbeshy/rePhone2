@@ -14,6 +14,9 @@ import { AuthTokensRepository } from './repositories/auth-tokens.repository.js';
 import { UsersRepository } from './repositories/users.repository.js';
 import { SessionGuard } from './session.guard.js';
 import { TokenService } from './token.service.js';
+import { RolesGuard } from './roles.guard.js';
+import { BackofficeRateLimiter } from './backoffice-rate-limiter.service.js';
+import { BackofficeRateLimitGuard } from './backoffice-rate-limit.guard.js';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { TokenService } from './token.service.js';
     TokenService,
     CsrfGuard,
     SessionGuard,
+    RolesGuard,
+    BackofficeRateLimiter,
+    BackofficeRateLimitGuard,
     UsersRepository,
     AuthSessionsRepository,
     AuthTokensRepository,
@@ -45,6 +51,9 @@ import { TokenService } from './token.service.js';
     PasswordService,
     TokenService,
     SessionGuard,
+    RolesGuard,
+    BackofficeRateLimiter,
+    BackofficeRateLimitGuard,
     UsersRepository,
     AuthSessionsRepository,
   ],

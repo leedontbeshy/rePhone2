@@ -47,13 +47,37 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.NOT_FOUND,
     message: 'Không tìm thấy tài nguyên.',
   },
+  FILE_TOO_LARGE: {
+    status: HttpStatus.PAYLOAD_TOO_LARGE,
+    message: 'Tệp tải lên vượt quá giới hạn cho phép.',
+  },
+  UNSUPPORTED_FILE_TYPE: {
+    status: HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+    message: 'Định dạng tệp không được hỗ trợ.',
+  },
   DUPLICATE_RESOURCE: {
     status: HttpStatus.CONFLICT,
     message: 'Tài nguyên đã tồn tại.',
   },
+  INVALID_STATE_TRANSITION: {
+    status: HttpStatus.CONFLICT,
+    message: 'Tài nguyên không còn ở trạng thái cho phép thao tác này.',
+  },
   CONCURRENT_MODIFICATION: {
     status: HttpStatus.CONFLICT,
     message: 'Dữ liệu đã được thay đổi đồng thời. Vui lòng thử lại.',
+  },
+  INVENTORY_NOT_AVAILABLE: {
+    status: HttpStatus.CONFLICT,
+    message: 'Tồn kho không còn khả dụng.',
+  },
+  INVENTORY_INSPECTION_REQUIRED: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Thiết bị chưa có kết quả kiểm định đạt yêu cầu.',
+  },
+  INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Thiết bị chưa đáp ứng đủ điều kiện để mở bán.',
   },
   ONE_TIME_TOKEN_INVALID: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
