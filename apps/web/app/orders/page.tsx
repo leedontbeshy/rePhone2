@@ -32,7 +32,9 @@ export default function OrdersPage() {
         setOrders(result.data.data);
         setError(null);
       })
-      .finally(() => { setLoading(false); });
+      .finally(() => {
+        setLoading(false);
+      });
   }, [client, status, user?.role]);
 
   return (
