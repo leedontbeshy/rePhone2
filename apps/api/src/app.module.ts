@@ -8,6 +8,7 @@ import { HealthModule } from './modules/health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
+import { BackofficeCatalogModule } from './modules/backoffice-catalog/backoffice-catalog.module.js';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CatalogModule } from './modules/catalog/catalog.module.js';
     AuthModule,
     AccountsModule,
     CatalogModule,
+    BackofficeCatalogModule,
     HealthModule,
   ],
 })
