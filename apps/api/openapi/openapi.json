@@ -789,6 +789,78 @@
         ],
         "type": "object"
       },
+      "CurrentInspectionSummaryDto": {
+        "properties": {
+          "batteryHealthPercent": {
+            "nullable": true,
+            "type": "number"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inspectedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "overallResult": {
+            "enum": [
+              "PASSED",
+              "PARTIAL",
+              "FAILED",
+              "INCOMPLETE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "overallResult"
+        ],
+        "type": "object"
+      },
+      "DecryptedIdentifiersDto": {
+        "properties": {
+          "eid": {
+            "nullable": true,
+            "type": "string"
+          },
+          "imei1": {
+            "nullable": true,
+            "type": "string"
+          },
+          "imei2": {
+            "nullable": true,
+            "type": "string"
+          },
+          "serial": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DecryptedIdentifiersResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DecryptedIdentifiersDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "ForgotPasswordDto": {
         "properties": {
           "email": {
@@ -901,6 +973,408 @@
         ],
         "type": "object"
       },
+      "InventoryCostDto": {
+        "properties": {
+          "acquisitionCost": {
+            "nullable": true,
+            "type": "string"
+          },
+          "additionalCost": {
+            "type": "string"
+          },
+          "totalCost": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "additionalCost"
+        ],
+        "type": "object"
+      },
+      "InventoryCostResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InventoryCostDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "InventoryLocationDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "STORE",
+              "WAREHOUSE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "type",
+          "status"
+        ],
+        "type": "object"
+      },
+      "InventoryLocationListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryLocationDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "InventoryProductSummaryDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "status"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitDetailDto": {
+        "properties": {
+          "activeReservationCount": {
+            "type": "number"
+          },
+          "carrierName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "compareAtPrice": {
+            "nullable": true,
+            "type": "string"
+          },
+          "currentInspection": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentInspectionSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "lifecycleStatus": {
+            "enum": [
+              "RECEIVED",
+              "INSPECTING",
+              "AVAILABLE",
+              "IN_TRANSIT",
+              "SOLD",
+              "REPAIRING",
+              "QUARANTINED",
+              "WRITTEN_OFF"
+            ],
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/InventoryLocationDto"
+          },
+          "maskedIdentifiers": {
+            "items": {
+              "$ref": "#/components/schemas/MaskedBackofficeIdentifierDto"
+            },
+            "type": "array"
+          },
+          "mediaCount": {
+            "type": "number"
+          },
+          "modelNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "product": {
+            "$ref": "#/components/schemas/InventoryProductSummaryDto"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "regionCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "salePrice": {
+            "nullable": true,
+            "type": "string"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/InventoryVariantSummaryDto"
+          },
+          "warrantyDaysOverride": {
+            "nullable": true,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "inventoryCode",
+          "lifecycleStatus",
+          "product",
+          "variant",
+          "location",
+          "simLockStatus",
+          "maskedIdentifiers",
+          "activeReservationCount",
+          "mediaCount",
+          "receivedAt",
+          "updatedAt",
+          "simConfiguration"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitListItemDto": {
+        "properties": {
+          "activeReservationCount": {
+            "type": "number"
+          },
+          "compareAtPrice": {
+            "nullable": true,
+            "type": "string"
+          },
+          "currentInspection": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CurrentInspectionSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inventoryCode": {
+            "type": "string"
+          },
+          "lifecycleStatus": {
+            "enum": [
+              "RECEIVED",
+              "INSPECTING",
+              "AVAILABLE",
+              "IN_TRANSIT",
+              "SOLD",
+              "REPAIRING",
+              "QUARANTINED",
+              "WRITTEN_OFF"
+            ],
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/InventoryLocationDto"
+          },
+          "maskedIdentifiers": {
+            "items": {
+              "$ref": "#/components/schemas/MaskedBackofficeIdentifierDto"
+            },
+            "type": "array"
+          },
+          "mediaCount": {
+            "type": "number"
+          },
+          "product": {
+            "$ref": "#/components/schemas/InventoryProductSummaryDto"
+          },
+          "receivedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "salePrice": {
+            "nullable": true,
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/InventoryVariantSummaryDto"
+          }
+        },
+        "required": [
+          "id",
+          "inventoryCode",
+          "lifecycleStatus",
+          "product",
+          "variant",
+          "location",
+          "simLockStatus",
+          "maskedIdentifiers",
+          "activeReservationCount",
+          "mediaCount",
+          "receivedAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitListItemResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InventoryUnitListItemDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryUnitListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/InventoryUnitListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InventoryUnitDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "InventoryVariantSummaryDto": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "displayName",
+          "status"
+        ],
+        "type": "object"
+      },
       "IphoneVariantDto": {
         "properties": {
           "availableUnits": {
@@ -961,6 +1435,27 @@
         "required": [
           "email",
           "password"
+        ],
+        "type": "object"
+      },
+      "MaskedBackofficeIdentifierDto": {
+        "properties": {
+          "maskedValue": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IMEI_1",
+              "IMEI_2",
+              "SERIAL",
+              "EID"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "maskedValue"
         ],
         "type": "object"
       },
@@ -2627,6 +3122,1044 @@
         "summary": "Consume a reset token and set a password",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-locations": {
+      "get": {
+        "operationId": "listBackofficeInventoryLocations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryLocationListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-units": {
+      "get": {
+        "operationId": "listBackofficeInventoryUnits",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryUnitListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      },
+      "post": {
+        "operationId": "intakeBackofficeInventoryUnit",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryUnitResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-units/{id}": {
+      "get": {
+        "operationId": "getBackofficeInventoryUnit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryUnitResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      },
+      "patch": {
+        "operationId": "updateBackofficeInventoryUnit",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryUnitResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-units/{id}/cost": {
+      "get": {
+        "operationId": "getBackofficeInventoryCost",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCostResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      },
+      "patch": {
+        "operationId": "updateBackofficeInventoryCost",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCostResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-units/{id}/reveal-identifiers": {
+      "post": {
+        "operationId": "revealBackofficeInventoryIdentifiers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecryptedIdentifiersResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/inventory-units/lookup-identifier": {
+      "post": {
+        "operationId": "lookupBackofficeInventoryIdentifier",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryUnitListItemResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED or ACCESS_TOKEN_INVALID"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "Inventory domain requirement failed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-inventory"
         ]
       }
     },

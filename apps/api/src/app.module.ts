@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { AccountsModule } from './modules/accounts/accounts.module.js';
 import { CatalogModule } from './modules/catalog/catalog.module.js';
 import { BackofficeCatalogModule } from './modules/backoffice-catalog/backoffice-catalog.module.js';
+import { InventoryModule } from './modules/inventory/inventory.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { BackofficeCatalogModule } from './modules/backoffice-catalog/backoffice
     AccountsModule,
     CatalogModule,
     BackofficeCatalogModule,
+    InventoryModule,
     HealthModule,
   ],
 })
