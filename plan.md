@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: đang triển khai — Slice 03 đã nghiệm thu ngày 2026-08-20<br>
-> Bước kế tiếp: Slice 04 — Backoffice catalog và inventory intake/inspection<br>
+> Trạng thái: đang triển khai — Slice 04 bắt đầu ngày 2026-08-21<br>
+> Bước hiện tại: Backoffice catalog và inventory intake/inspection<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -327,6 +327,8 @@ Nguồn: [Roles/permissions](docs/requirements/roles-and-permissions.md), [Authe
 Nguồn: [Catalog model](docs/architecture/catalog-inventory-model.md), [Public catalog endpoints](docs/api/public-catalog-endpoints.md), [Filtering/search](docs/api/filtering-and-search.md), [Pagination](docs/api/pagination.md), [Catalog data](docs/data-model/catalog-inventory.md).
 
 ### Slice 04 — Backoffice catalog và inventory intake/inspection
+
+> Kế hoạch triển khai đã chốt: [Slice 04 — Backoffice Catalog & Inventory](docs/planning/2026-08-21-slice-04-backoffice-inventory-plan.md)
 
 **Mục tiêu:** staff tạo/publish catalog, nhập/kiểm định iPhone và quản lý accessory stock mà không bypass invariant.
 
