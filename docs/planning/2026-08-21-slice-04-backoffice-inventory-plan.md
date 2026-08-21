@@ -1,6 +1,6 @@
 # Slice 04 — Backoffice Catalog & Inventory
 
-> Trạng thái: đang triển khai  
+> Trạng thái: ✅ Hoàn thành ngày 2026-08-21<br>
 > Ngày chốt thiết kế: 2026-08-21  
 > Phụ thuộc: Slice 01–03  
 > Nguồn sự thật: các contract hiện hành trong [`docs`](../readme.md)
@@ -150,3 +150,15 @@ Quyết định đã khóa:
 - `docs` là nguồn sự thật; không sửa hoặc tạo thay thế `docs/decisions` đang thiếu trong checkout.
 
 Nguồn: [Roadmap](implementation-roadmap.md), [Seed/demo](seed-and-demo-scenarios.md), [Deployment](../operations/local-development-and-deployment.md).
+
+## 9. Kết quả bàn giao
+
+- Đã triển khai và generate đúng 40 operation backoffice; OpenAPI/client không drift.
+- Wizard `/backoffice/inventory/intake` hoàn tất luồng intake → upload → inspection → available → public detail và resume bằng `unitId` trên URL.
+- `pnpm verify` xanh với 37 unit test, 8 integration test và 26 API E2E, gồm RBAC, concurrency, security, media, stock và public catalog regression.
+- `pnpm db:deploy` trên Supabase không có migration pending; seed chạy hai lần idempotent.
+- Smoke Supabase thành công với unit `RPH-U-CKMN282D`: identifier được bảo vệ, ảnh PNG public đọc được, inspection current `COMPLETED/PASSED`, lifecycle `AVAILABLE`, public catalog đọc ngay sau commit.
+- ADMIN cost/audit và bốn movement `RECEIPT`/`TRANSFER`/`ADJUSTMENT_OUT`/`RETURN` đã được đối chiếu trực tiếp trên PostgreSQL.
+- Không có forward migration, database reset, thay đổi trong `docs/decisions`, orphan storage đã biết hoặc raw identifier/secret trong audit smoke.
+
+Bước tiếp theo theo roadmap: **Slice 05 — Cart, wishlist và voucher**.

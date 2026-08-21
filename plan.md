@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: đang triển khai — Slice 04 bắt đầu ngày 2026-08-21<br>
-> Bước hiện tại: Backoffice catalog và inventory intake/inspection<br>
+> Trạng thái: Slice 04 hoàn thành ngày 2026-08-21; sẵn sàng triển khai Slice 05<br>
+> Bước tiếp theo: Cart, wishlist và voucher<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -329,6 +329,8 @@ Nguồn: [Catalog model](docs/architecture/catalog-inventory-model.md), [Public 
 ### Slice 04 — Backoffice catalog và inventory intake/inspection
 
 > Kế hoạch triển khai đã chốt: [Slice 04 — Backoffice Catalog & Inventory](docs/planning/2026-08-21-slice-04-backoffice-inventory-plan.md)
+>
+> Trạng thái: ✅ Hoàn thành và đã đồng bộ lên nhánh `feat/slice-04-backoffice-inventory`.
 
 **Mục tiêu:** staff tạo/publish catalog, nhập/kiểm định iPhone và quản lý accessory stock mà không bypass invariant.
 
@@ -336,35 +338,45 @@ Nguồn: [Catalog model](docs/architecture/catalog-inventory-model.md), [Public 
 
 **Database và migration**
 
-- [ ] Hoàn thiện constraint cho product/variant/media, identifier HMAC, one current/draft inspection, StockLevel và StockMovement.
-- [ ] Dùng transaction advisory lock theo HMAC đã sort để chống cùng IMEI xuất hiện ở hai slot dưới concurrency.
-- [ ] ProductMedia enforce đúng một owner và unique `(bucket, objectPath)`.
+- [x] Hoàn thiện constraint cho product/variant/media, identifier HMAC, one current/draft inspection, StockLevel và StockMovement.
+- [x] Dùng transaction advisory lock theo HMAC đã sort để chống cùng IMEI xuất hiện ở hai slot dưới concurrency.
+- [x] ProductMedia enforce đúng một owner và unique `(bucket, objectPath)`.
 
 **Domain/application**
 
-- [ ] Product/variant create/update/publish/archive và media ownership command.
-- [ ] iPhone intake với AES-256-GCM, HMAC-SHA-256, key version, masked projection và admin-only cost.
-- [ ] Inspection DRAFT partial; COMPLETED immutable; current switch trong một transaction.
-- [ ] Availability command riêng; không tự chuyển AVAILABLE chỉ vì inspection PASSED.
-- [ ] Unit lifecycle/reinspection/transfer/write-off bằng named command.
-- [ ] Accessory receipt/transfer/adjust/return tạo StockMovement và counter atomically.
-- [ ] Identifier reveal chỉ cho staff/admin hợp lệ và luôn ghi audit.
+- [x] Product/variant create/update/publish/archive và media ownership command.
+- [x] iPhone intake với AES-256-GCM, HMAC-SHA-256, key version, masked projection và admin-only cost.
+- [x] Inspection DRAFT partial; COMPLETED immutable; current switch trong một transaction.
+- [x] Availability command riêng; không tự chuyển AVAILABLE chỉ vì inspection PASSED.
+- [x] Unit lifecycle/reinspection/transfer/write-off bằng named command.
+- [x] Accessory receipt/transfer/adjust/return tạo StockMovement và counter atomically.
+- [x] Identifier reveal chỉ cho staff/admin hợp lệ và luôn ghi audit.
 
 **API/OpenAPI/UI**
 
-- [ ] Triển khai backoffice catalog, variant, media, unit, inspection và stock movement endpoints P0.
-- [ ] Upload product/unit media qua backend; kiểm tra magic byte, size, count và object ownership.
-- [ ] UI demo tối thiểu: intake → draft inspection → complete → make available; các CRUD tiện ích khác có thể dùng API/Swagger.
+- [x] Triển khai backoffice catalog, variant, media, unit, inspection và stock movement endpoints P0.
+- [x] Upload product/unit media qua backend; kiểm tra magic byte, size, count và object ownership.
+- [x] UI demo tối thiểu: intake → draft inspection → complete → make available; các CRUD tiện ích khác có thể dùng API/Swagger.
 
 **Test bắt buộc**
 
-- [ ] Invalid product/type/inventory-mode combination bị reject.
-- [ ] PARTIAL/FAILED inspection không cho AVAILABLE; completed inspection không sửa được.
-- [ ] Duplicate IMEI/serial/EID, kể cả cross-slot concurrency, bị chặn.
-- [ ] Receipt/transfer/adjust/return cân bằng counter/movement và không âm.
-- [ ] EMPLOYEE không xem/sửa cost; reveal identifier có audit; public projection vẫn masked.
+- [x] Invalid product/type/inventory-mode combination bị reject.
+- [x] PARTIAL/FAILED inspection không cho AVAILABLE; completed inspection không sửa được.
+- [x] Duplicate IMEI/serial/EID, kể cả cross-slot concurrency, bị chặn.
+- [x] Receipt/transfer/adjust/return cân bằng counter/movement và không âm.
+- [x] EMPLOYEE không xem/sửa cost; reveal identifier có audit; public projection vẫn masked.
 
-**Hoàn thành khi:** employee đưa một máy RECEIVED qua inspection đến AVAILABLE và public catalog nhìn thấy máy đó.
+**Kết quả nghiệm thu ngày 2026-08-21:**
+
+- OpenAPI/generated client có đúng 40 operation backoffice, security metadata, multipart schema và các response 409/413/415/422/429/503; không drift sau generate.
+- Supabase không có migration pending nên rollout database là no-op; seed chạy liên tiếp hai lần vẫn idempotent và giữ stable demo IDs.
+- Smoke thật tạo unit `RPH-U-CKMN282D`, upload PNG owner-level lên Supabase Storage, complete inspection `PASSED`, chuyển `AVAILABLE` và đọc được ngay qua public catalog.
+- ADMIN đọc/cập nhật cost và tạo audit an toàn; EMPLOYEE/public projection không lộ cost, raw identifier, HMAC hay ciphertext.
+- Stock smoke commit đủ `RECEIPT`, `TRANSFER`, `ADJUSTMENT_OUT`, `RETURN`; counter/movement được đối chiếu sau commit.
+- `pnpm verify` xanh: format, lint, typecheck, 37 unit test, 8 integration test, 26 API E2E, OpenAPI/client generation và production build.
+- Không phát sinh forward migration, không dùng `db:reset`, không sửa `docs/decisions` và không còn known blocker thuộc Slice 04.
+
+**Hoàn thành khi:** ✅ Đạt — employee đưa một máy RECEIVED qua inspection đến AVAILABLE; PostgreSQL và Supabase Storage phản ánh dữ liệu ngay cho public catalog.
 
 Nguồn: [Backoffice catalog/inventory API](docs/api/backoffice-catalog-inventory-endpoints.md), [Inspection checklist](docs/architecture/iphone-inspection-checklist.md), [File pipeline](docs/architecture/file-upload-pipeline.md), [State machines](docs/architecture/state-machines.md), [Catalog/inventory data](docs/data-model/catalog-inventory.md).
 
