@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiError } from '../../common/errors/api-error.js';
+import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { requestContext } from '../../common/http/request-context.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -20,11 +21,16 @@ import {
   type CheckoutPricing,
 } from './checkout-pricing.js';
 import { GuestOrderIdentityService } from './guest-order-identity.service.js';
-import type { CheckoutPreviewRequestDto, CreateCheckoutRequestDto } from './order.dto.js';
+import type {
+  CheckoutPreviewRequestDto,
+  CreateCheckoutRequestDto,
+  OrderListQueryDto,
+} from './order.dto.js';
 import type {
   CheckoutPreviewDto,
   CheckoutResultDto,
   OrderDetailDto,
+  OrderListItemDto,
 } from './order-response.dto.js';
 import { customerOrderInclude, projectOrder, requireOrder } from './order-projector.js';
 import type { CheckoutCatalogLine } from '../catalog/checkout-catalog.reader.js';
@@ -266,6 +272,78 @@ export class OrdersService {
     };
   }
 
+  public async list(
+    auth: NonNullable<Request['auth']>,
+    query: OrderListQueryDto,
+  ): Promise<PaginatedApiResult<OrderListItemDto>> {
+    if (auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
+    const where: Prisma.OrderWhereInput = {
+      customerId: auth.userId,
+      ...(query.status === undefined ? {} : { status: query.status }),
+      ...(query.fulfillmentType === undefined ? {} : { fulfillmentType: query.fulfillmentType }),
+    };
+    const orderBy = [
+      { [query.sortBy]: query.sortOrder },
+      { id: query.sortOrder },
+    ] as Prisma.OrderOrderByWithRelationInput[];
+    const [orders, totalItems] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        select: {
+          orderNumber: true,
+          status: true,
+          fulfillmentStatus: true,
+          paymentStatus: true,
+          fulfillmentType: true,
+          grandTotal: true,
+          depositRequired: true,
+          balanceDue: true,
+          placedAt: true,
+          items: {
+            select: { productNameSnapshot: true, quantity: true },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          },
+        },
+        orderBy,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return new PaginatedApiResult(
+      orders.map((order) => ({
+        orderNumber: order.orderNumber,
+        status: order.status,
+        fulfillmentStatus: order.fulfillmentStatus,
+        paymentStatus: order.paymentStatus,
+        fulfillmentType: order.fulfillmentType,
+        firstItemName: order.items[0]?.productNameSnapshot ?? '',
+        totalItemQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
+        grandTotal: order.grandTotal.toString(),
+        depositRequired: order.depositRequired.toString(),
+        balanceDue: order.balanceDue.toString(),
+        placedAt: order.placedAt.toISOString(),
+      })),
+      {
+        page: query.page,
+        pageSize: query.pageSize,
+        totalItems,
+        totalPages: totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize),
+      },
+    );
+  }
+
+  public async detail(request: Request, orderNumber: string): Promise<OrderDetailDto> {
+    const order = requireOrder(
+      await this.prisma.order.findUnique({
+        where: { orderNumber },
+        include: customerOrderInclude,
+      }),
+    );
+    this.assertOrderAccess(request, order);
+    return projectOrder(order);
+  }
+
   private async calculate(
     identity: CheckoutIdentity,
     input: CheckoutPreviewRequestDto,
@@ -392,6 +470,24 @@ export class OrdersService {
     return identity.kind === 'CUSTOMER'
       ? { ...context, actorType: 'USER', actorUserId: identity.customerId }
       : { ...context, actorType: 'GUEST' };
+  }
+
+  private assertOrderAccess(request: Request, order: ReturnType<typeof requireOrder>): void {
+    if (request.auth !== undefined) {
+      if (request.auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
+      if (order.customerId !== request.auth.userId) throw new ApiError('ORDER_NOT_FOUND');
+      return;
+    }
+    const rawOrderToken = this.guestOrders.readToken(request);
+    if (this.guestOrders.matches(rawOrderToken, order.guestAccessTokenHash)) return;
+    const identity = this.carts.resolveIdentity(undefined, request);
+    const activeConvertedCookie =
+      identity.kind === 'GUEST' &&
+      identity.guestTokenHash !== undefined &&
+      order.sourceCart.status === 'CONVERTED' &&
+      order.sourceCart.guestTokenHash === identity.guestTokenHash &&
+      (order.sourceCart.expiresAt === null || order.sourceCart.expiresAt > new Date());
+    if (!activeConvertedCookie) throw new ApiError('ORDER_NOT_FOUND');
   }
 }
 

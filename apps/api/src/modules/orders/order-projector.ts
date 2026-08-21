@@ -8,6 +8,7 @@ export const customerOrderInclude = {
   refunds: { orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] },
   pickupLocation: { select: { code: true, name: true } },
   shipments: { orderBy: { attemptNumber: 'desc' as const }, take: 1 },
+  sourceCart: { select: { guestTokenHash: true, expiresAt: true, status: true } },
 } satisfies Prisma.OrderInclude;
 
 export type CustomerOrderRecord = Prisma.OrderGetPayload<{

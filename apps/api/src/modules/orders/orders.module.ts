@@ -10,7 +10,7 @@ import { VouchersModule } from '../vouchers/voucher.module.js';
 import { GuestOrderIdentityService } from './guest-order-identity.service.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
 import { OrderRateLimiter } from './order-rate-limiter.service.js';
-import { CheckoutsController } from './orders.controller.js';
+import { CheckoutsController, OrdersController } from './orders.controller.js';
 import { OrdersService } from './orders.service.js';
 
 @Module({
@@ -24,7 +24,7 @@ import { OrdersService } from './orders.service.js';
     PaymentsModule,
     SettingsModule,
   ],
-  controllers: [CheckoutsController],
+  controllers: [CheckoutsController, OrdersController],
   providers: [OrdersService, GuestOrderIdentityService, OrderRateLimiter, OrderRateLimitGuard],
   exports: [OrdersService],
 })

@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
+  Param,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -21,12 +24,27 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
+import type { AuthContext } from '../auth/auth-context.js';
+import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { GuestCommerceCsrfGuard } from '../auth/guest-commerce-csrf.guard.js';
 import { OptionalSessionGuard } from '../auth/optional-session.guard.js';
-import { CheckoutPreviewRequestDto, CreateCheckoutRequestDto } from './order.dto.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { SessionGuard } from '../auth/session.guard.js';
+import {
+  CheckoutPreviewRequestDto,
+  CreateCheckoutRequestDto,
+  OrderListQueryDto,
+  OrderNumberParamsDto,
+} from './order.dto.js';
 import { OrderRateLimit } from './order-rate-limit.decorator.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
-import { CheckoutPreviewResponse, CheckoutResultResponse } from './order-response.dto.js';
+import {
+  CheckoutPreviewResponse,
+  CheckoutResultResponse,
+  OrderDetailResponse,
+  OrderListResponse,
+} from './order-response.dto.js';
 import { OrdersService } from './orders.service.js';
 
 @ApiTags('checkout')
@@ -105,5 +123,60 @@ export class CheckoutsController {
     response.status(result.created ? HttpStatus.CREATED : HttpStatus.OK);
     response.setHeader('Cache-Control', 'no-store');
     return result.result;
+  }
+}
+
+@ApiTags('orders')
+@Controller('orders')
+export class OrdersController {
+  public constructor(@Inject(OrdersService) private readonly orders: OrdersService) {}
+
+  @Get()
+  @UseGuards(SessionGuard, RolesGuard)
+  @Roles('CUSTOMER')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ operationId: 'listCustomerOrders', summary: 'List owned customer orders' })
+  @ApiOkResponse({ type: OrderListResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED' },
+    { status: 401, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+  )
+  public async list(
+    @CurrentAuth() auth: AuthContext,
+    @Query() query: OrderListQueryDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.orders.list(auth, query);
+  }
+
+  @Get(':orderNumber')
+  @UseGuards(OptionalSessionGuard, OrderRateLimitGuard)
+  @OrderRateLimit('GUEST_ORDER')
+  @ApiBearerAuth('access-token')
+  @ApiSecurity('guestOrderToken')
+  @ApiSecurity('rephone_guest_cart')
+  @ApiOperation({ operationId: 'getCustomerOrder', summary: 'Get one owned order snapshot' })
+  @ApiHeader({
+    name: 'X-Guest-Order-Token',
+    required: false,
+    description: 'Raw guest token returned once by checkout create.',
+  })
+  @ApiOkResponse({ type: OrderDetailResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED' },
+    { status: 401, description: 'ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+    { status: 403, description: 'FORBIDDEN' },
+    { status: 404, description: 'ORDER_NOT_FOUND' },
+    { status: 429, description: 'RATE_LIMITED' },
+  )
+  public async detail(
+    @Req() request: Request,
+    @Param() params: OrderNumberParamsDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.orders.detail(request, params.orderNumber);
   }
 }

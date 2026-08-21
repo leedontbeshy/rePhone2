@@ -26,6 +26,7 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       { type: 'apiKey', in: 'cookie', name: GUEST_CART_COOKIE_NAME },
       GUEST_CART_COOKIE_NAME,
     )
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Guest-Order-Token' }, 'guestOrderToken')
     .build();
 
   const document = SwaggerModule.createDocument(app, options, {
@@ -43,6 +44,15 @@ function applyOptionalCommerceSecurity(document: OpenAPIObject): void {
     removeCartItem: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
     mergeCart: [{ 'access-token': [] }],
     listPublicVouchers: [{}, { 'access-token': [] }],
+    previewCheckout: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
+    createCheckout: [{ 'access-token': [] }, { rephone_guest_cart: [] }],
+    listCustomerOrders: [{ 'access-token': [] }],
+    getCustomerOrder: [{ 'access-token': [] }, { guestOrderToken: [] }, { rephone_guest_cart: [] }],
+    cancelCustomerOrder: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
   };
   for (const pathItem of Object.values(document.paths)) {
     for (const method of HTTP_METHODS) {

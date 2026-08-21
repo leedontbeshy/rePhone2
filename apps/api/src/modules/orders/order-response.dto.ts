@@ -164,3 +164,37 @@ export class CheckoutResultDto {
 export class CheckoutResultResponse {
   @ApiProperty({ type: () => CheckoutResultDto }) public data!: CheckoutResultDto;
 }
+
+export class OrderListItemDto {
+  @ApiProperty({ type: String }) public orderNumber!: string;
+  @ApiProperty({ type: String }) public status!: string;
+  @ApiProperty({ type: String }) public fulfillmentStatus!: string;
+  @ApiProperty({ type: String }) public paymentStatus!: string;
+  @ApiProperty({ enum: ['PICKUP', 'SHIPPING'] }) public fulfillmentType!: CheckoutFulfillmentType;
+  @ApiProperty({ type: String }) public firstItemName!: string;
+  @ApiProperty({ type: Number, minimum: 1 }) public totalItemQuantity!: number;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public grandTotal!: string;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public depositRequired!: string;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public balanceDue!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) public placedAt!: string;
+}
+
+export class OrderPaginationDto {
+  @ApiProperty({ type: Number }) public page!: number;
+  @ApiProperty({ type: Number }) public pageSize!: number;
+  @ApiProperty({ type: Number }) public totalItems!: number;
+  @ApiProperty({ type: Number }) public totalPages!: number;
+}
+
+export class OrderListMetaDto {
+  @ApiProperty({ type: () => OrderPaginationDto }) public pagination!: OrderPaginationDto;
+}
+
+export class OrderListResponse {
+  @ApiProperty({ type: () => [OrderListItemDto] }) public data!: OrderListItemDto[];
+  @ApiProperty({ type: () => OrderListMetaDto }) public meta!: OrderListMetaDto;
+}
+
+export class OrderDetailResponse {
+  @ApiProperty({ type: () => OrderDetailDto }) public data!: OrderDetailDto;
+}
