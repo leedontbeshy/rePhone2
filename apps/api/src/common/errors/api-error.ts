@@ -18,7 +18,11 @@ export type ApiErrorCode =
   | 'INVENTORY_INSPECTION_REQUIRED'
   | 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET'
   | 'CART_NOT_ACTIVE'
+  | 'CART_EMPTY'
+  | 'CART_NOT_FULFILLABLE'
   | 'CART_ITEM_QUANTITY_FIXED'
+  | 'CHECKOUT_REVIEW_REQUIRED'
+  | 'ORDER_NOT_FOUND'
   | 'VOUCHER_NOT_APPLICABLE'
   | 'VOUCHER_USAGE_LIMIT_REACHED'
   | 'ONE_TIME_TOKEN_INVALID'
@@ -32,6 +36,7 @@ export interface ApiErrorDetail {
   field?: string;
   code: string;
   message: string;
+  current?: unknown;
 }
 
 export class ApiError extends Error {

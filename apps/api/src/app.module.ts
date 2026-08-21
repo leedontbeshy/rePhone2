@@ -14,6 +14,8 @@ import { MediaModule } from './modules/media/media.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
 import { WishlistModule } from './modules/wishlist/wishlist.module.js';
 import { VouchersModule } from './modules/vouchers/voucher.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
+import { SettingsModule } from './modules/settings/settings.module.js';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { VouchersModule } from './modules/vouchers/voucher.module.js';
     CartModule,
     WishlistModule,
     VouchersModule,
+    PaymentsModule,
+    SettingsModule,
     HealthModule,
   ],
 })

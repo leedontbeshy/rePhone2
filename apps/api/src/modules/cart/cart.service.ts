@@ -83,8 +83,10 @@ export class CartService {
             priceAtAddition: offer.currentUnitPrice as string,
           },
         });
+        await touchCart(cart.id, transaction);
       } else if (existing.quantity !== quantity) {
         await transaction.cartItem.update({ where: { id: existing.id }, data: { quantity } });
+        await touchCart(cart.id, transaction);
       }
       return { cartId: cart.id, created: existing === undefined };
     });
@@ -114,6 +116,7 @@ export class CartService {
         throw new ApiError('CART_ITEM_QUANTITY_FIXED');
       }
       await transaction.cartItem.update({ where: { id: item.id }, data: { quantity } });
+      await touchCart(cart.id, transaction);
       return cart.id;
     });
     const cart = await this.carts.findActiveById(cartId);
@@ -131,6 +134,7 @@ export class CartService {
       const item = cart.items.find((candidate) => candidate.id === itemId);
       if (item === undefined) throw new ApiError('RESOURCE_NOT_FOUND');
       await transaction.cartItem.delete({ where: { id: item.id } });
+      await touchCart(cart.id, transaction);
     });
   }
 
@@ -192,6 +196,7 @@ export class CartService {
           if (quantity !== uncapped) cappedItemIds.add(existing.id);
         }
       }
+      await touchCart(customerCart.id, transaction);
       await transaction.cart.update({
         where: { id: activeGuest.id },
         data: { status: 'ABANDONED' },
@@ -376,4 +381,12 @@ function requireExistingIdentity(identity: CartIdentity): void {
   if (identity.customerId === undefined && identity.guestTokenHash === undefined) {
     throw new ApiError('RESOURCE_NOT_FOUND');
   }
+}
+
+function touchCart(cartId: string, transaction: Prisma.TransactionClient): Promise<unknown> {
+  return transaction.cart.update({
+    where: { id: cartId },
+    data: { updatedAt: new Date() },
+    select: { id: true },
+  });
 }
