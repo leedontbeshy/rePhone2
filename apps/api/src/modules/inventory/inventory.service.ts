@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { Prisma } from '../../generated/prisma/client.js';
+import type { InventoryLifecycleStatus, Prisma, UserRole } from '../../generated/prisma/client.js';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
@@ -13,6 +13,7 @@ import type {
   InventoryUnitListQueryDto,
   UpdateInventoryCostDto,
   UpdateInventoryUnitDto,
+  TransferInventoryUnitDto,
 } from './inventory.dto.js';
 import {
   IdentifierValidationError,
@@ -340,8 +341,177 @@ export class InventoryService {
     return toCost(unit);
   }
 
+  public async makeAvailable(id: string, actor: AuditActorContext) {
+    const unit = await this.transactions.run(
+      'inventory.unit.make-available',
+      async (transaction) => {
+        const existing = await this.repository.findUnit(id, transaction);
+        if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
+        if (existing.lifecycleStatus !== 'INSPECTING') {
+          throw new ApiError('INVALID_STATE_TRANSITION');
+        }
+        const inspection = existing.inspections[0];
+        if (
+          inspection === undefined ||
+          inspection.status !== 'COMPLETED' ||
+          inspection.overallResult !== 'PASSED'
+        ) {
+          throw new ApiError('INVENTORY_INSPECTION_REQUIRED');
+        }
+        if (existing._count.reservations > 0) throw new ApiError('INVENTORY_NOT_AVAILABLE');
+        const hasSellableIdentifier = existing.imei1Hmac !== null || existing.serialHmac !== null;
+        if (
+          existing.salePrice === null ||
+          existing.location.status !== 'ACTIVE' ||
+          existing.variant.status !== 'ACTIVE' ||
+          existing.variant.product.status !== 'ACTIVE' ||
+          !hasSellableIdentifier ||
+          existing._count.media < 1
+        ) {
+          throw new ApiError('INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET');
+        }
+        const updated = await this.repository.updateUnit(
+          id,
+          { lifecycleStatus: 'AVAILABLE' },
+          transaction,
+        );
+        await this.auditLifecycle(transaction, actor, existing, updated, 'made_available');
+        return updated;
+      },
+    );
+    return toDetail(unit);
+  }
+
+  public sendToRepair(id: string, reason: string, actor: AuditActorContext) {
+    return this.transition(
+      id,
+      ['INSPECTING', 'QUARANTINED'],
+      'REPAIRING',
+      'sent_to_repair',
+      reason,
+      actor,
+    );
+  }
+
+  public quarantine(id: string, reason: string, actor: AuditActorContext) {
+    return this.transition(
+      id,
+      ['RECEIVED', 'INSPECTING', 'REPAIRING'],
+      'QUARANTINED',
+      'quarantined',
+      reason,
+      actor,
+    );
+  }
+
+  public async writeOff(id: string, reason: string, actor: AuditActorContext, role: UserRole) {
+    const unit = await this.transactions.run('inventory.unit.write-off', async (transaction) => {
+      const existing = await this.repository.findUnit(id, transaction);
+      if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
+      if (
+        !['RECEIVED', 'INSPECTING', 'AVAILABLE', 'REPAIRING', 'QUARANTINED'].includes(
+          existing.lifecycleStatus,
+        )
+      ) {
+        throw new ApiError('INVALID_STATE_TRANSITION');
+      }
+      if (existing._count.reservations > 0) throw new ApiError('INVENTORY_NOT_AVAILABLE');
+      const hasCost =
+        existing.acquisitionCost !== null || existing.additionalCost.toString() !== '0';
+      if (hasCost && role !== 'ADMIN') throw new ApiError('FORBIDDEN');
+      const updated = await this.repository.updateUnit(
+        id,
+        { lifecycleStatus: 'WRITTEN_OFF' },
+        transaction,
+      );
+      await this.auditLifecycle(transaction, actor, existing, updated, 'written_off', reason);
+      return updated;
+    });
+    return toDetail(unit);
+  }
+
+  public async transfer(id: string, input: TransferInventoryUnitDto, actor: AuditActorContext) {
+    const unit = await this.transactions.run('inventory.unit.transfer', async (transaction) => {
+      const existing = await this.repository.findUnit(id, transaction);
+      if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
+      if (['IN_TRANSIT', 'SOLD', 'WRITTEN_OFF'].includes(existing.lifecycleStatus)) {
+        throw new ApiError('INVALID_STATE_TRANSITION');
+      }
+      if (existing._count.reservations > 0) throw new ApiError('INVENTORY_NOT_AVAILABLE');
+      const location = await transaction.inventoryLocation.findUnique({
+        where: { id: input.toLocationId },
+      });
+      if (location === null) throw new ApiError('RESOURCE_NOT_FOUND');
+      if (location.status !== 'ACTIVE' || location.id === existing.locationId) {
+        throw validation('toLocationId', 'INVALID_TRANSFER_LOCATION');
+      }
+      const updated = await this.repository.updateUnit(
+        id,
+        { locationId: location.id },
+        transaction,
+      );
+      await this.audit.write(transaction, actor, {
+        action: 'inventory.unit.transferred',
+        resourceType: 'InventoryUnit',
+        resourceId: id,
+        changes: {
+          before: { locationId: existing.locationId },
+          after: { locationId: updated.locationId },
+        },
+        ...(input.reason === undefined ? {} : { metadata: { reason: input.reason } }),
+      });
+      return updated;
+    });
+    return toDetail(unit);
+  }
+
   public listLocations() {
     return this.repository.listLocations();
+  }
+
+  private async transition(
+    id: string,
+    allowedSources: InventoryLifecycleStatus[],
+    target: InventoryLifecycleStatus,
+    action: string,
+    reason: string,
+    actor: AuditActorContext,
+  ) {
+    const unit = await this.transactions.run(`inventory.unit.${action}`, async (transaction) => {
+      const existing = await this.repository.findUnit(id, transaction);
+      if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
+      if (!allowedSources.includes(existing.lifecycleStatus)) {
+        throw new ApiError('INVALID_STATE_TRANSITION');
+      }
+      const updated = await this.repository.updateUnit(
+        id,
+        { lifecycleStatus: target },
+        transaction,
+      );
+      await this.auditLifecycle(transaction, actor, existing, updated, action, reason);
+      return updated;
+    });
+    return toDetail(unit);
+  }
+
+  private auditLifecycle(
+    transaction: Prisma.TransactionClient,
+    actor: AuditActorContext,
+    before: InventoryUnitRecord,
+    after: InventoryUnitRecord,
+    action: string,
+    reason?: string,
+  ) {
+    return this.audit.write(transaction, actor, {
+      action: `inventory.unit.${action}`,
+      resourceType: 'InventoryUnit',
+      resourceId: before.id,
+      changes: {
+        before: { lifecycleStatus: before.lifecycleStatus },
+        after: { lifecycleStatus: after.lifecycleStatus },
+      },
+      ...(reason === undefined ? {} : { metadata: { reason } }),
+    });
   }
 
   public async assertUnitMediaOwner(id: string, transaction?: Prisma.TransactionClient) {

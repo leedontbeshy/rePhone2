@@ -8,6 +8,10 @@ import type {
   LocationType,
   SimConfiguration,
   SimLockStatus,
+  BatteryReplacementStatus,
+  InspectionStatus,
+  InspectionType,
+  RepairHistoryStatus,
 } from '../../generated/prisma/enums.js';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
 
@@ -132,4 +136,44 @@ export class InventoryCostResponse {
 }
 export class InventoryLocationListResponse {
   @ApiProperty({ type: () => [InventoryLocationDto] }) public data!: InventoryLocationDto[];
+}
+
+export class InspectionSummaryDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ enum: ['INTAKE', 'RETURN', 'WARRANTY', 'PRE_SALE'] })
+  public inspectionType!: InspectionType;
+  @ApiProperty({ enum: ['DRAFT', 'COMPLETED'] }) public status!: InspectionStatus;
+  @ApiProperty({ enum: ['INCOMPLETE', 'PASSED', 'PARTIAL', 'FAILED'] })
+  public overallResult!: InspectionResult;
+  @ApiProperty({ type: Boolean }) public isCurrent!: boolean;
+  @ApiProperty({ type: String, format: 'uuid' }) public inspectorId!: string;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public inspectedAt!: Date | null;
+  @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
+  @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
+}
+
+export class InspectionDetailDto extends InspectionSummaryDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public inventoryUnitId!: string;
+  @ApiPropertyOptional({ type: Number, nullable: true }) public batteryHealthPercent!:
+    number | null;
+  @ApiPropertyOptional({ type: Number, nullable: true }) public batteryCycleCount!: number | null;
+  @ApiProperty({ enum: ['ORIGINAL', 'REPLACED', 'UNKNOWN'] })
+  public batteryReplacementStatus!: BatteryReplacementStatus;
+  @ApiPropertyOptional({ enum: ['A', 'B', 'C'], nullable: true })
+  public conditionGrade!: ConditionGrade | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) public cosmeticNotes!: string | null;
+  @ApiProperty({ type: Object }) public checks!: unknown;
+  @ApiProperty({ enum: ['NONE_KNOWN', 'KNOWN', 'UNKNOWN'] })
+  public repairHistoryStatus!: RepairHistoryStatus;
+  @ApiPropertyOptional({ type: String, nullable: true }) public repairNotes!: string | null;
+  @ApiPropertyOptional({ type: Object, nullable: true }) public replacedParts!: unknown;
+}
+
+export class InspectionListResponse {
+  @ApiProperty({ type: () => [InspectionSummaryDto] }) public data!: InspectionSummaryDto[];
+  @ApiProperty({ type: () => InventoryUnitListMetaDto }) public meta!: InventoryUnitListMetaDto;
+}
+export class InspectionResponse {
+  @ApiProperty({ type: () => InspectionDetailDto }) public data!: InspectionDetailDto;
 }

@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Header,
+  HttpCode,
+  HttpStatus,
   Inject,
   Param,
   Patch,
@@ -37,6 +39,7 @@ import {
   InventoryUnitListQueryDto,
   UpdateInventoryCostDto,
   UpdateInventoryUnitDto,
+  TransferInventoryUnitDto,
 } from './inventory.dto.js';
 import {
   DecryptedIdentifiersResponse,
@@ -145,6 +148,80 @@ export class InventoryController {
     @Req() request: Request,
   ) {
     return this.service.updateUnit(params.id, input, auditActor(auth, request));
+  }
+
+  @Post(':id/make-available')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'makeBackofficeInventoryUnitAvailable' })
+  @ApiOkResponse({ type: InventoryUnitResponse })
+  @ApiErrorResponses(...INVENTORY_ERRORS)
+  public makeAvailable(
+    @Param() params: InventoryResourceIdParamsDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.service.makeAvailable(params.id, auditActor(auth, request));
+  }
+
+  @Post(':id/send-to-repair')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'sendBackofficeInventoryUnitToRepair' })
+  @ApiOkResponse({ type: InventoryUnitResponse })
+  @ApiErrorResponses(...INVENTORY_ERRORS)
+  public sendToRepair(
+    @Param() params: InventoryResourceIdParamsDto,
+    @Body() input: InventoryReasonDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.service.sendToRepair(params.id, input.reason, auditActor(auth, request));
+  }
+
+  @Post(':id/quarantine')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'quarantineBackofficeInventoryUnit' })
+  @ApiOkResponse({ type: InventoryUnitResponse })
+  @ApiErrorResponses(...INVENTORY_ERRORS)
+  public quarantine(
+    @Param() params: InventoryResourceIdParamsDto,
+    @Body() input: InventoryReasonDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.service.quarantine(params.id, input.reason, auditActor(auth, request));
+  }
+
+  @Post(':id/write-off')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'writeOffBackofficeInventoryUnit' })
+  @ApiOkResponse({ type: InventoryUnitResponse })
+  @ApiErrorResponses(...INVENTORY_ERRORS)
+  public writeOff(
+    @Param() params: InventoryResourceIdParamsDto,
+    @Body() input: InventoryReasonDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.service.writeOff(params.id, input.reason, auditActor(auth, request), auth.role);
+  }
+
+  @Post(':id/transfer')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'transferBackofficeInventoryUnit' })
+  @ApiOkResponse({ type: InventoryUnitResponse })
+  @ApiErrorResponses(...INVENTORY_ERRORS)
+  public transfer(
+    @Param() params: InventoryResourceIdParamsDto,
+    @Body() input: TransferInventoryUnitDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.service.transfer(params.id, input, auditActor(auth, request));
   }
 
   @Post(':id/reveal-identifiers')

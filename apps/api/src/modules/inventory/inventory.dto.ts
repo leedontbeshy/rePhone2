@@ -1,7 +1,9 @@
 import { Transform } from 'class-transformer';
 import {
+  Allow,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -266,4 +268,95 @@ export class UpdateInventoryCostDto extends InventoryReasonDto {
   @ApiProperty({ type: String, pattern: '^[0-9]{1,15}$' })
   @Matches(/^\d{1,15}$/)
   public additionalCost!: string;
+}
+
+export class TransferInventoryUnitDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID()
+  public toLocationId!: string;
+
+  @ApiPropertyOptional({ type: String, minLength: 5, maxLength: 500 })
+  @IsOptional()
+  @Transform(optionalTrim)
+  @IsString()
+  @Length(5, 500)
+  public reason?: string;
+}
+
+export class InspectionListQueryDto {
+  @ApiPropertyOptional({ type: Number, default: 1, minimum: 1 })
+  @Transform(queryInteger)
+  @IsInt()
+  @Min(1)
+  public page = 1;
+
+  @ApiPropertyOptional({ type: Number, default: 20, minimum: 1, maximum: 100 })
+  @Transform(queryInteger)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  public pageSize = 20;
+}
+
+export class CreateInspectionDto {
+  @ApiProperty({ enum: ['INTAKE', 'RETURN', 'WARRANTY', 'PRE_SALE'] })
+  @IsIn(['INTAKE', 'RETURN', 'WARRANTY', 'PRE_SALE'])
+  public inspectionType!: 'INTAKE' | 'RETURN' | 'WARRANTY' | 'PRE_SALE';
+}
+
+export class UpdateInspectionDto {
+  @ApiPropertyOptional({ type: Number, minimum: 0, maximum: 100 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  public batteryHealthPercent?: number;
+
+  @ApiPropertyOptional({ type: Number, minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  public batteryCycleCount?: number;
+
+  @ApiPropertyOptional({ enum: ['ORIGINAL', 'REPLACED', 'UNKNOWN'] })
+  @IsOptional()
+  @IsIn(['ORIGINAL', 'REPLACED', 'UNKNOWN'])
+  public batteryReplacementStatus?: 'ORIGINAL' | 'REPLACED' | 'UNKNOWN';
+
+  @ApiPropertyOptional({ enum: ['A', 'B', 'C'] })
+  @IsOptional()
+  @IsIn(['A', 'B', 'C'])
+  public conditionGrade?: 'A' | 'B' | 'C';
+
+  @ApiPropertyOptional({ type: String, maxLength: 2_000 })
+  @IsOptional()
+  @Transform(optionalTrim)
+  @IsString()
+  @MaxLength(2_000)
+  public cosmeticNotes?: string;
+
+  @ApiPropertyOptional({
+    type: Object,
+    description: 'Versioned checklist object with schemaVersion=1 and partial items map',
+  })
+  @IsOptional()
+  @IsObject()
+  public checks?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ enum: ['NONE_KNOWN', 'KNOWN', 'UNKNOWN'] })
+  @IsOptional()
+  @IsIn(['NONE_KNOWN', 'KNOWN', 'UNKNOWN'])
+  public repairHistoryStatus?: 'NONE_KNOWN' | 'KNOWN' | 'UNKNOWN';
+
+  @ApiPropertyOptional({ type: String, maxLength: 2_000 })
+  @IsOptional()
+  @Transform(optionalTrim)
+  @IsString()
+  @MaxLength(2_000)
+  public repairNotes?: string;
+
+  @ApiPropertyOptional({ type: Object, nullable: true })
+  @IsOptional()
+  @Allow()
+  public replacedParts?: unknown;
 }
