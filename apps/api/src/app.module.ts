@@ -12,6 +12,7 @@ import { BackofficeCatalogModule } from './modules/backoffice-catalog/backoffice
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { MediaModule } from './modules/media/media.module.js';
 import { CartModule } from './modules/cart/cart.module.js';
+import { WishlistModule } from './modules/wishlist/wishlist.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CartModule } from './modules/cart/cart.module.js';
     InventoryModule,
     MediaModule,
     CartModule,
+    WishlistModule,
     HealthModule,
   ],
 })
