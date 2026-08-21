@@ -222,10 +222,14 @@ async function assertStockTarget(
   variantId: string,
   locationIds: string[],
 ): Promise<void> {
-  const [variant, locations] = await Promise.all([
-    transaction.productVariant.findUnique({ where: { id: variantId }, include: { product: true } }),
-    transaction.inventoryLocation.findMany({ where: { id: { in: locationIds } } }),
-  ]);
+  // A transaction client owns one PostgreSQL connection; keep its queries sequential.
+  const variant = await transaction.productVariant.findUnique({
+    where: { id: variantId },
+    include: { product: true },
+  });
+  const locations = await transaction.inventoryLocation.findMany({
+    where: { id: { in: locationIds } },
+  });
   if (variant === null || locations.length !== new Set(locationIds).size) {
     throw new ApiError('RESOURCE_NOT_FOUND');
   }

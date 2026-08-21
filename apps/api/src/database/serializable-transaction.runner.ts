@@ -41,15 +41,21 @@ export class SerializableTransactionRunner {
 }
 
 export function isRetryableTransactionError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-  const candidate = error as { code?: unknown; meta?: { code?: unknown } };
-  return (
-    candidate.code === 'P2034' ||
-    candidate.code === '40001' ||
-    candidate.code === '40P01' ||
-    candidate.meta?.code === '40001' ||
-    candidate.meta?.code === '40P01'
-  );
+  if (!isRecord(error)) return false;
+  if (error['code'] === 'P2034' || isPostgresRetryCode(error['code'])) return true;
+  const meta = error['meta'];
+  if (!isRecord(meta)) return false;
+  if (isPostgresRetryCode(meta['code'])) return true;
+  const adapter = meta['driverAdapterError'];
+  if (!isRecord(adapter)) return false;
+  const cause = adapter['cause'];
+  return isRecord(cause) && isPostgresRetryCode(cause['originalCode']);
+}
+
+function isPostgresRetryCode(value: unknown): boolean {
+  return value === '40001' || value === '40P01';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

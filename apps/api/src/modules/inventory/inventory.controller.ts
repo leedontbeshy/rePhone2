@@ -123,6 +123,7 @@ export class InventoryController {
   }
 
   @Post('lookup-identifier')
+  @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'lookupBackofficeInventoryIdentifier' })
   @ApiBody({ type: IdentifierLookupDto })
@@ -286,6 +287,7 @@ export class InventoryController {
   }
 
   @Post(':id/reveal-identifiers')
+  @HttpCode(HttpStatus.OK)
   @Header('Cache-Control', 'no-store')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'revealBackofficeInventoryIdentifiers' })

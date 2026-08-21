@@ -14,7 +14,21 @@ describe('SerializableTransactionRunner', () => {
   it('recognizes Prisma and PostgreSQL serialization/deadlock failures only', () => {
     expect(isRetryableTransactionError({ code: 'P2034' })).toBe(true);
     expect(isRetryableTransactionError({ meta: { code: '40001' } })).toBe(true);
+    expect(
+      isRetryableTransactionError({
+        code: 'P2010',
+        meta: {
+          driverAdapterError: { cause: { originalCode: '40001' } },
+        },
+      }),
+    ).toBe(true);
     expect(isRetryableTransactionError({ code: '40P01' })).toBe(true);
+    expect(
+      isRetryableTransactionError({
+        code: 'P2010',
+        meta: { driverAdapterError: { cause: { originalCode: '23505' } } },
+      }),
+    ).toBe(false);
     expect(isRetryableTransactionError({ code: 'P2002' })).toBe(false);
   });
 
