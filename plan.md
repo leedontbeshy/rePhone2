@@ -1,6 +1,6 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 04 hoàn thành ngày 2026-08-21; sẵn sàng triển khai Slice 05<br>
+> Trạng thái: Slice 04 hoàn thành; Slice 05 đang triển khai từ ngày 2026-08-21<br>
 > Bước tiếp theo: Cart, wishlist và voucher<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
@@ -381,6 +381,8 @@ Nguồn: [Catalog model](docs/architecture/catalog-inventory-model.md), [Public 
 Nguồn: [Backoffice catalog/inventory API](docs/api/backoffice-catalog-inventory-endpoints.md), [Inspection checklist](docs/architecture/iphone-inspection-checklist.md), [File pipeline](docs/architecture/file-upload-pipeline.md), [State machines](docs/architecture/state-machines.md), [Catalog/inventory data](docs/data-model/catalog-inventory.md).
 
 ### Slice 05 — Cart, wishlist và voucher
+
+> 🚧 Đang triển khai trên branch `feat/slice-05-cart-wishlist-voucher`. Thiết kế chi tiết: [Slice 05 implementation plan](docs/planning/2026-08-21-slice-05-cart-wishlist-voucher-plan.md).
 
 **Mục tiêu:** guest/customer chuẩn bị ý định mua nhưng chưa giữ tồn; voucher được validate deterministic.
 
