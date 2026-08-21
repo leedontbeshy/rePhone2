@@ -65,13 +65,14 @@ describe('Slice 05 commerce database invariants', () => {
   it('rejects fixed caps and non-positive percent caps', async () => {
     const now = new Date('2026-08-21T00:00:00.000Z');
     const later = new Date('2027-08-21T00:00:00.000Z');
-    const normalizedCodes = [`FIXED-${randomUUID()}`, `PERCENT-${randomUUID()}`];
+    const fixedCode = `FIXED-${randomUUID()}`;
+    const percentCode = `PERCENT-${randomUUID()}`;
 
     await expect(
       prisma.voucher.create({
         data: {
-          code: normalizedCodes[0]!,
-          normalizedCode: normalizedCodes[0]!,
+          code: fixedCode,
+          normalizedCode: fixedCode,
           name: 'Invalid fixed cap',
           discountType: 'FIXED',
           discountValue: 100_000,
@@ -87,8 +88,8 @@ describe('Slice 05 commerce database invariants', () => {
     await expect(
       prisma.voucher.create({
         data: {
-          code: normalizedCodes[1]!,
-          normalizedCode: normalizedCodes[1]!,
+          code: percentCode,
+          normalizedCode: percentCode,
           name: 'Invalid percent cap',
           discountType: 'PERCENT',
           discountValue: 10,

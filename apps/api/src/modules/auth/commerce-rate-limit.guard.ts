@@ -17,7 +17,7 @@ export class CommerceRateLimitGuard implements CanActivate {
     const actorKey =
       request.auth === undefined
         ? token === undefined
-          ? `ip:${request.ip}`
+          ? `ip:${request.ip ?? request.socket.remoteAddress ?? 'unknown'}`
           : `guest:${this.guestIdentity.digestToken(token)}`
         : `user:${request.auth.userId}`;
     this.limiter.consume(actorKey);

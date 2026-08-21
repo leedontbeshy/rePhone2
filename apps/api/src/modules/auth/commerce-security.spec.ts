@@ -51,9 +51,9 @@ describe('guest commerce security foundations', () => {
   it('allows missing Bearer but still delegates malformed Bearer to the resolver', async () => {
     const calls: Array<{ required: boolean }> = [];
     const guard = new OptionalSessionGuard({
-      resolve: async (_request: Request, required: boolean) => {
+      resolve: (_request: Request, required: boolean) => {
         calls.push({ required });
-        return undefined;
+        return Promise.resolve(undefined);
       },
     } as never);
 

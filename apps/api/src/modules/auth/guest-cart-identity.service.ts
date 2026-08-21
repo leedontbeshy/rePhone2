@@ -38,7 +38,8 @@ export class GuestCartIdentityService {
   }
 
   public clearCookieOptions(): CookieOptions {
-    const { maxAge: _maxAge, ...options } = this.cookieOptions();
+    const options = this.cookieOptions();
+    delete options.maxAge;
     return options;
   }
 }
