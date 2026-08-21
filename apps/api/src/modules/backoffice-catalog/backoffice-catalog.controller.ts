@@ -14,9 +14,12 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -69,6 +72,26 @@ export class BackofficeProductsController {
 
   @Get()
   @ApiOperation({ operationId: 'listBackofficeProducts' })
+  @ApiQuery({ name: 'q', required: false, type: String, maxLength: 100 })
+  @ApiQuery({ name: 'type', required: false, enum: ['IPHONE', 'ACCESSORY'] })
+  @ApiQuery({ name: 'status', required: false, enum: ['DRAFT', 'ACTIVE', 'ARCHIVED'] })
+  @ApiQuery({ name: 'releaseYear', required: false, type: Number, minimum: 2007, maximum: 2100 })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'updatedAt', 'name', 'releaseYear'],
+    default: 'updatedAt',
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], default: 'desc' })
   @ApiOkResponse({ type: BackofficeProductListResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public list(@Query() query: BackofficeProductListQueryDto) {
@@ -78,6 +101,7 @@ export class BackofficeProductsController {
   @Post()
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'createBackofficeProduct' })
+  @ApiBody({ type: CreateProductDto })
   @ApiCreatedResponse({ type: BackofficeProductResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public create(
@@ -90,6 +114,7 @@ export class BackofficeProductsController {
 
   @Get(':id')
   @ApiOperation({ operationId: 'getBackofficeProduct' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeProductResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public get(@Param() params: ResourceIdParamsDto) {
@@ -99,6 +124,8 @@ export class BackofficeProductsController {
   @Patch(':id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeProduct' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateProductDto })
   @ApiOkResponse({ type: BackofficeProductResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public update(
@@ -114,6 +141,7 @@ export class BackofficeProductsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'publishBackofficeProduct' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeProductResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public publish(
@@ -128,6 +156,8 @@ export class BackofficeProductsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'archiveBackofficeProduct' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: ArchiveReasonDto })
   @ApiOkResponse({ type: BackofficeProductResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public archive(
@@ -142,6 +172,8 @@ export class BackofficeProductsController {
   @Post(':productId/variants')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'createBackofficeVariant' })
+  @ApiParam({ name: 'productId', type: String, format: 'uuid' })
+  @ApiBody({ type: CreateVariantDto })
   @ApiCreatedResponse({ type: BackofficeVariantResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public createVariant(
@@ -167,6 +199,8 @@ export class BackofficeVariantsController {
   @Patch(':id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeVariant' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateVariantDto })
   @ApiOkResponse({ type: BackofficeVariantResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public update(
@@ -182,6 +216,7 @@ export class BackofficeVariantsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'activateBackofficeVariant' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeVariantResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public activate(
@@ -196,6 +231,8 @@ export class BackofficeVariantsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'archiveBackofficeVariant' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: ArchiveReasonDto })
   @ApiOkResponse({ type: BackofficeVariantResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
   public archive(

@@ -14,9 +14,12 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -59,6 +62,16 @@ export class UnitInspectionsController {
 
   @Get(':id/inspections')
   @ApiOperation({ operationId: 'listBackofficeInventoryInspections' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
   @ApiOkResponse({ type: InspectionListResponse })
   @ApiErrorResponses(...INSPECTION_ERRORS)
   public list(
@@ -71,6 +84,8 @@ export class UnitInspectionsController {
   @Post(':id/inspections')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'createBackofficeInventoryInspection' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: CreateInspectionDto })
   @ApiCreatedResponse({ type: InspectionResponse })
   @ApiErrorResponses(...INSPECTION_ERRORS)
   public create(
@@ -93,6 +108,7 @@ export class InspectionsController {
 
   @Get(':id')
   @ApiOperation({ operationId: 'getBackofficeInventoryInspection' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InspectionResponse })
   @ApiErrorResponses(...INSPECTION_ERRORS)
   public get(@Param() params: InventoryResourceIdParamsDto) {
@@ -102,6 +118,8 @@ export class InspectionsController {
   @Patch(':id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeInventoryInspection' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateInspectionDto })
   @ApiOkResponse({ type: InspectionResponse })
   @ApiErrorResponses(...INSPECTION_ERRORS)
   public update(
@@ -117,6 +135,7 @@ export class InspectionsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'completeBackofficeInventoryInspection' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InspectionResponse })
   @ApiErrorResponses(...INSPECTION_ERRORS)
   public complete(

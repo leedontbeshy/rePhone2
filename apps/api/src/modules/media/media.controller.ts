@@ -22,6 +22,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -103,6 +104,8 @@ export class MediaController {
   @Patch('product-media/:id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeProductMedia' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateProductMediaDto })
   @ApiOkResponse({ type: ProductMediaResponse })
   @ApiErrorResponses(...MEDIA_ERRORS)
   public update(
@@ -118,6 +121,7 @@ export class MediaController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'deleteBackofficeProductMedia' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiNoContentResponse()
   @ApiErrorResponses(...MEDIA_ERRORS)
   public delete(
@@ -153,6 +157,7 @@ function MediaUploadOperation(operationId: string) {
     );
     BackofficeRateLimit('upload')(target, propertyKey, descriptor);
     ApiConsumes('multipart/form-data')(target, propertyKey, descriptor);
+    ApiParam({ name: 'id', type: String, format: 'uuid' })(target, propertyKey, descriptor);
     ApiBody({
       schema: {
         type: 'object',

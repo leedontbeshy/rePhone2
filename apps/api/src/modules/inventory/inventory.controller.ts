@@ -15,9 +15,12 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -72,6 +75,47 @@ export class InventoryController {
 
   @Get()
   @ApiOperation({ operationId: 'listBackofficeInventoryUnits' })
+  @ApiQuery({ name: 'q', required: false, type: String, maxLength: 100 })
+  @ApiQuery({ name: 'productId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'variantId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'locationId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({
+    name: 'lifecycleStatus',
+    required: false,
+    enum: [
+      'RECEIVED',
+      'INSPECTING',
+      'AVAILABLE',
+      'IN_TRANSIT',
+      'SOLD',
+      'REPAIRING',
+      'QUARANTINED',
+      'WRITTEN_OFF',
+    ],
+  })
+  @ApiQuery({ name: 'conditionGrade', required: false, enum: ['A', 'B', 'C'] })
+  @ApiQuery({
+    name: 'simLockStatus',
+    required: false,
+    enum: ['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN'],
+  })
+  @ApiQuery({ name: 'minBatteryHealth', required: false, type: Number, minimum: 0, maximum: 100 })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['receivedAt', 'updatedAt', 'inventoryCode', 'salePrice'],
+    default: 'receivedAt',
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], default: 'desc' })
   @ApiOkResponse({ type: InventoryUnitListResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public list(@Query() query: InventoryUnitListQueryDto) {
@@ -81,6 +125,7 @@ export class InventoryController {
   @Post('lookup-identifier')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'lookupBackofficeInventoryIdentifier' })
+  @ApiBody({ type: IdentifierLookupDto })
   @ApiOkResponse({ type: InventoryUnitListItemResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public lookup(
@@ -94,6 +139,7 @@ export class InventoryController {
   @Post()
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'intakeBackofficeInventoryUnit' })
+  @ApiBody({ type: IntakeInventoryUnitDto })
   @ApiCreatedResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public intake(
@@ -107,6 +153,7 @@ export class InventoryController {
   @Get(':id/cost')
   @Roles('ADMIN')
   @ApiOperation({ operationId: 'getBackofficeInventoryCost' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InventoryCostResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public getCost(@Param() params: InventoryResourceIdParamsDto) {
@@ -117,6 +164,8 @@ export class InventoryController {
   @Roles('ADMIN')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeInventoryCost' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateInventoryCostDto })
   @ApiOkResponse({ type: InventoryCostResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public updateCost(
@@ -130,6 +179,7 @@ export class InventoryController {
 
   @Get(':id')
   @ApiOperation({ operationId: 'getBackofficeInventoryUnit' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public get(@Param() params: InventoryResourceIdParamsDto) {
@@ -139,6 +189,8 @@ export class InventoryController {
   @Patch(':id')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'updateBackofficeInventoryUnit' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateInventoryUnitDto })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public update(
@@ -154,6 +206,7 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'makeBackofficeInventoryUnitAvailable' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public makeAvailable(
@@ -168,6 +221,8 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'sendBackofficeInventoryUnitToRepair' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: InventoryReasonDto })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public sendToRepair(
@@ -183,6 +238,8 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'quarantineBackofficeInventoryUnit' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: InventoryReasonDto })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public quarantine(
@@ -198,6 +255,8 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'writeOffBackofficeInventoryUnit' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: InventoryReasonDto })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public writeOff(
@@ -213,6 +272,8 @@ export class InventoryController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'transferBackofficeInventoryUnit' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: TransferInventoryUnitDto })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public transfer(
@@ -228,6 +289,8 @@ export class InventoryController {
   @Header('Cache-Control', 'no-store')
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'revealBackofficeInventoryIdentifiers' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: InventoryReasonDto })
   @ApiOkResponse({ type: DecryptedIdentifiersResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
   public reveal(

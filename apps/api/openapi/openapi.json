@@ -238,6 +238,42 @@
         ],
         "type": "object"
       },
+      "AdjustStockDto": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "IN",
+              "OUT"
+            ],
+            "type": "string"
+          },
+          "locationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity",
+          "locationId",
+          "direction",
+          "reason"
+        ],
+        "type": "object"
+      },
       "ApiErrorBodyDto": {
         "properties": {
           "code": {
@@ -317,6 +353,19 @@
         },
         "required": [
           "error"
+        ],
+        "type": "object"
+      },
+      "ArchiveReasonDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -789,6 +838,133 @@
         ],
         "type": "object"
       },
+      "CreateInspectionDto": {
+        "properties": {
+          "inspectionType": {
+            "enum": [
+              "INTAKE",
+              "RETURN",
+              "WARRANTY",
+              "PRE_SALE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "inspectionType"
+        ],
+        "type": "object"
+      },
+      "CreateProductDto": {
+        "properties": {
+          "brand": {
+            "default": "Apple",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "chipset": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "ramGb": {
+            "maximum": 64,
+            "minimum": 1,
+            "type": "number"
+          },
+          "releaseYear": {
+            "maximum": 2100,
+            "minimum": 2007,
+            "type": "number"
+          },
+          "screenSizeInches": {
+            "pattern": "^[0-9]{1,2}(?:[.][0-9]{1,2})?$",
+            "type": "string"
+          },
+          "seoDescription": {
+            "type": "string"
+          },
+          "seoTitle": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 180,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "warrantyPolicyId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "brand",
+          "name",
+          "slug"
+        ],
+        "type": "object"
+      },
+      "CreateVariantDto": {
+        "properties": {
+          "accessoryAttributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "colorHex": {
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "type": "string"
+          },
+          "colorName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "compareAtPrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "salePrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "sku": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "warrantyPolicyId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sku",
+          "displayName"
+        ],
+        "type": "object"
+      },
       "CurrentInspectionSummaryDto": {
         "properties": {
           "batteryHealthPercent": {
@@ -970,6 +1146,32 @@
         },
         "required": [
           "status"
+        ],
+        "type": "object"
+      },
+      "IdentifierLookupDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IMEI",
+              "SERIAL",
+              "EID"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "type",
+          "value"
         ],
         "type": "object"
       },
@@ -1186,6 +1388,81 @@
         ],
         "type": "object"
       },
+      "IntakeInventoryUnitDto": {
+        "properties": {
+          "carrierName": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "compareAtPrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "eid": {
+            "type": "string"
+          },
+          "imei1": {
+            "type": "string"
+          },
+          "imei2": {
+            "type": "string"
+          },
+          "locationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "modelNumber": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "regionCode": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "salePrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "warrantyDaysOverride": {
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "variantId",
+          "locationId",
+          "simLockStatus",
+          "simConfiguration"
+        ],
+        "type": "object"
+      },
       "InventoryCostDto": {
         "properties": {
           "acquisitionCost": {
@@ -1292,6 +1569,19 @@
           "name",
           "slug",
           "status"
+        ],
+        "type": "object"
+      },
+      "InventoryReasonDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -2012,6 +2302,33 @@
         ],
         "type": "object"
       },
+      "ReceiveStockDto": {
+        "properties": {
+          "locationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity",
+          "locationId"
+        ],
+        "type": "object"
+      },
       "RegisterDto": {
         "properties": {
           "email": {
@@ -2102,6 +2419,44 @@
         "required": [
           "token",
           "newPassword"
+        ],
+        "type": "object"
+      },
+      "ReturnStockDto": {
+        "properties": {
+          "locationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "referenceId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "referenceType": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity",
+          "locationId",
+          "referenceType",
+          "referenceId",
+          "reason"
         ],
         "type": "object"
       },
@@ -2309,6 +2664,55 @@
         ],
         "type": "object"
       },
+      "TransferInventoryUnitDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "toLocationId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "toLocationId"
+        ],
+        "type": "object"
+      },
+      "TransferStockDto": {
+        "properties": {
+          "fromLocationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "toLocationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity",
+          "fromLocationId",
+          "toLocationId"
+        ],
+        "type": "object"
+      },
       "UnitPriceDto": {
         "properties": {
           "compareAtPrice": {
@@ -2378,6 +2782,263 @@
           },
           "ward": {
             "maxLength": 255,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateInspectionDto": {
+        "properties": {
+          "batteryCycleCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "batteryHealthPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "batteryReplacementStatus": {
+            "enum": [
+              "ORIGINAL",
+              "REPLACED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "checks": {
+            "description": "Versioned checklist object with schemaVersion=1 and partial items map",
+            "type": "object"
+          },
+          "conditionGrade": {
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ],
+            "type": "string"
+          },
+          "cosmeticNotes": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "repairHistoryStatus": {
+            "enum": [
+              "NONE_KNOWN",
+              "KNOWN",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "repairNotes": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "replacedParts": {
+            "nullable": true,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateInventoryCostDto": {
+        "properties": {
+          "acquisitionCost": {
+            "nullable": true,
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "additionalCost": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "additionalCost"
+        ],
+        "type": "object"
+      },
+      "UpdateInventoryUnitDto": {
+        "properties": {
+          "carrierName": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "compareAtPrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "eid": {
+            "type": "string"
+          },
+          "imei1": {
+            "type": "string"
+          },
+          "imei2": {
+            "type": "string"
+          },
+          "modelNumber": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "regionCode": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "salePrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "serial": {
+            "type": "string"
+          },
+          "simConfiguration": {
+            "enum": [
+              "SINGLE_PHYSICAL",
+              "DUAL_PHYSICAL",
+              "PHYSICAL_AND_ESIM",
+              "ESIM_ONLY",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "simLockStatus": {
+            "enum": [
+              "UNLOCKED",
+              "CARRIER_LOCKED",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "warrantyDaysOverride": {
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProductDto": {
+        "properties": {
+          "brand": {
+            "default": "Apple",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "chipset": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "ramGb": {
+            "maximum": 64,
+            "minimum": 1,
+            "type": "number"
+          },
+          "releaseYear": {
+            "maximum": 2100,
+            "minimum": 2007,
+            "type": "number"
+          },
+          "screenSizeInches": {
+            "pattern": "^[0-9]{1,2}(?:[.][0-9]{1,2})?$",
+            "type": "string"
+          },
+          "seoDescription": {
+            "type": "string"
+          },
+          "seoTitle": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "slug": {
+            "maxLength": 180,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "warrantyPolicyId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateProductMediaDto": {
+        "properties": {
+          "altText": {
+            "maxLength": 255,
+            "nullable": true,
+            "type": "string"
+          },
+          "sortOrder": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateVariantDto": {
+        "properties": {
+          "accessoryAttributes": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "colorHex": {
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "type": "string"
+          },
+          "colorName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "compareAtPrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "salePrice": {
+            "pattern": "^[0-9]{1,15}$",
+            "type": "string"
+          },
+          "sku": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "warrantyPolicyId": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -3605,7 +4266,17 @@
     "/api/v1/backoffice/inspections/{id}": {
       "get": {
         "operationId": "getBackofficeInventoryInspection",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3709,7 +4380,27 @@
       },
       "patch": {
         "operationId": "updateBackofficeInventoryInspection",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInspectionDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -3815,7 +4506,17 @@
     "/api/v1/backoffice/inspections/{id}/complete": {
       "post": {
         "operationId": "completeBackofficeInventoryInspection",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4037,7 +4738,145 @@
     "/api/v1/backoffice/inventory-units": {
       "get": {
         "operationId": "listBackofficeInventoryUnits",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "receivedAt",
+                "updatedAt",
+                "inventoryCode",
+                "salePrice"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minBatteryHealth",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "simLockStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "UNLOCKED",
+                "CARRIER_LOCKED",
+                "UNKNOWN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "conditionGrade",
+            "required": false,
+            "schema": {
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lifecycleStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "RECEIVED",
+                "INSPECTING",
+                "AVAILABLE",
+                "IN_TRANSIT",
+                "SOLD",
+                "REPAIRING",
+                "QUARANTINED",
+                "WRITTEN_OFF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "variantId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "productId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4152,6 +4991,16 @@
       "post": {
         "operationId": "intakeBackofficeInventoryUnit",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeInventoryUnitDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
@@ -4267,7 +5116,17 @@
     "/api/v1/backoffice/inventory-units/{id}": {
       "get": {
         "operationId": "getBackofficeInventoryUnit",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4381,7 +5240,27 @@
       },
       "patch": {
         "operationId": "updateBackofficeInventoryUnit",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryUnitDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -4497,7 +5376,17 @@
     "/api/v1/backoffice/inventory-units/{id}/cost": {
       "get": {
         "operationId": "getBackofficeInventoryCost",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4611,7 +5500,27 @@
       },
       "patch": {
         "operationId": "updateBackofficeInventoryCost",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryCostDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -4727,7 +5636,38 @@
     "/api/v1/backoffice/inventory-units/{id}/inspections": {
       "get": {
         "operationId": "listBackofficeInventoryInspections",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -4831,7 +5771,27 @@
       },
       "post": {
         "operationId": "createBackofficeInventoryInspection",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInspectionDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
@@ -4937,7 +5897,17 @@
     "/api/v1/backoffice/inventory-units/{id}/make-available": {
       "post": {
         "operationId": "makeBackofficeInventoryUnitAvailable",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -5053,7 +6023,17 @@
     "/api/v1/backoffice/inventory-units/{id}/media": {
       "post": {
         "operationId": "uploadBackofficeInventoryUnitMedia",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -5218,7 +6198,27 @@
     "/api/v1/backoffice/inventory-units/{id}/quarantine": {
       "post": {
         "operationId": "quarantineBackofficeInventoryUnit",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5334,7 +6334,27 @@
     "/api/v1/backoffice/inventory-units/{id}/reveal-identifiers": {
       "post": {
         "operationId": "revealBackofficeInventoryIdentifiers",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5450,7 +6470,27 @@
     "/api/v1/backoffice/inventory-units/{id}/send-to-repair": {
       "post": {
         "operationId": "sendBackofficeInventoryUnitToRepair",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5566,7 +6606,27 @@
     "/api/v1/backoffice/inventory-units/{id}/transfer": {
       "post": {
         "operationId": "transferBackofficeInventoryUnit",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferInventoryUnitDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5682,7 +6742,27 @@
     "/api/v1/backoffice/inventory-units/{id}/write-off": {
       "post": {
         "operationId": "writeOffBackofficeInventoryUnit",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5799,6 +6879,16 @@
       "post": {
         "operationId": "lookupBackofficeInventoryIdentifier",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifierLookupDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -5914,7 +7004,17 @@
     "/api/v1/backoffice/product-media/{id}": {
       "delete": {
         "operationId": "deleteBackofficeProductMedia",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": ""
@@ -6041,7 +7141,27 @@
       },
       "patch": {
         "operationId": "updateBackofficeProductMedia",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductMediaDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -6177,7 +7297,99 @@
     "/api/v1/backoffice/products": {
       "get": {
         "operationId": "listBackofficeProducts",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "createdAt",
+                "updatedAt",
+                "name",
+                "releaseYear"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "releaseYear",
+            "required": false,
+            "schema": {
+              "maximum": 2100,
+              "minimum": 2007,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "ACTIVE",
+                "ARCHIVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "IPHONE",
+                "ACCESSORY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6282,6 +7494,16 @@
       "post": {
         "operationId": "createBackofficeProduct",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
@@ -6387,7 +7609,17 @@
     "/api/v1/backoffice/products/{id}": {
       "get": {
         "operationId": "getBackofficeProduct",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6491,7 +7723,27 @@
       },
       "patch": {
         "operationId": "updateBackofficeProduct",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -6597,7 +7849,27 @@
     "/api/v1/backoffice/products/{id}/archive": {
       "post": {
         "operationId": "archiveBackofficeProduct",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -6703,7 +7975,17 @@
     "/api/v1/backoffice/products/{id}/media": {
       "post": {
         "operationId": "uploadBackofficeProductMedia",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -6868,7 +8150,17 @@
     "/api/v1/backoffice/products/{id}/publish": {
       "post": {
         "operationId": "publishBackofficeProduct",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6974,7 +8266,27 @@
     "/api/v1/backoffice/products/{productId}/variants": {
       "post": {
         "operationId": "createBackofficeVariant",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "productId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVariantDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
@@ -7080,7 +8392,55 @@
     "/api/v1/backoffice/stock-levels": {
       "get": {
         "operationId": "listBackofficeStockLevels",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lowStock",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "variantId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -7186,7 +8546,100 @@
     "/api/v1/backoffice/stock-movements": {
       "get": {
         "operationId": "listBackofficeStockMovements",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "referenceId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "referenceType",
+            "required": false,
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dateTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dateFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "enum": [
+                "RECEIPT",
+                "SALE",
+                "RETURN",
+                "TRANSFER",
+                "ADJUSTMENT_IN",
+                "ADJUSTMENT_OUT",
+                "WRITE_OFF"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "variantId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -7293,6 +8746,16 @@
       "post": {
         "operationId": "adjustBackofficeStock",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustStockDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7399,6 +8862,16 @@
       "post": {
         "operationId": "receiveBackofficeStock",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiveStockDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7505,6 +8978,16 @@
       "post": {
         "operationId": "returnBackofficeStock",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnStockDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7611,6 +9094,16 @@
       "post": {
         "operationId": "transferBackofficeStock",
         "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferStockDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7716,7 +9209,27 @@
     "/api/v1/backoffice/variants/{id}": {
       "patch": {
         "operationId": "updateBackofficeVariant",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVariantDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -7822,7 +9335,17 @@
     "/api/v1/backoffice/variants/{id}/activate": {
       "post": {
         "operationId": "activateBackofficeVariant",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -7928,7 +9451,27 @@
     "/api/v1/backoffice/variants/{id}/archive": {
       "post": {
         "operationId": "archiveBackofficeVariant",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveReasonDto"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -8034,7 +9577,17 @@
     "/api/v1/backoffice/variants/{id}/media": {
       "post": {
         "operationId": "uploadBackofficeVariantMedia",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {

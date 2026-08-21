@@ -10,7 +10,14 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
 import { requestContext } from '../../common/http/request-context.js';
@@ -57,6 +64,18 @@ export class StockController {
 
   @Get('stock-levels')
   @ApiOperation({ operationId: 'listBackofficeStockLevels' })
+  @ApiQuery({ name: 'variantId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'locationId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'lowStock', required: false, type: Boolean })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
   @ApiOkResponse({ type: StockLevelListResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public listLevels(@Query() query: StockLevelListQueryDto) {
@@ -65,6 +84,26 @@ export class StockController {
 
   @Get('stock-movements')
   @ApiOperation({ operationId: 'listBackofficeStockMovements' })
+  @ApiQuery({ name: 'variantId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'locationId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['RECEIPT', 'SALE', 'RETURN', 'TRANSFER', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'WRITE_OFF'],
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String, format: 'date-time' })
+  @ApiQuery({ name: 'dateTo', required: false, type: String, format: 'date-time' })
+  @ApiQuery({ name: 'referenceType', required: false, type: String, maxLength: 255 })
+  @ApiQuery({ name: 'referenceId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
   @ApiOkResponse({ type: StockMovementListResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public listMovements(@Query() query: StockMovementListQueryDto) {
@@ -75,6 +114,7 @@ export class StockController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'receiveBackofficeStock' })
+  @ApiBody({ type: ReceiveStockDto })
   @ApiOkResponse({ type: StockCommandResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public receive(
@@ -89,6 +129,7 @@ export class StockController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'transferBackofficeStock' })
+  @ApiBody({ type: TransferStockDto })
   @ApiOkResponse({ type: StockCommandResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public transfer(
@@ -103,6 +144,7 @@ export class StockController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'adjustBackofficeStock' })
+  @ApiBody({ type: AdjustStockDto })
   @ApiOkResponse({ type: StockCommandResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public adjust(
@@ -117,6 +159,7 @@ export class StockController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'returnBackofficeStock' })
+  @ApiBody({ type: ReturnStockDto })
   @ApiOkResponse({ type: StockCommandResponse })
   @ApiErrorResponses(...STOCK_ERRORS)
   public returnStock(
