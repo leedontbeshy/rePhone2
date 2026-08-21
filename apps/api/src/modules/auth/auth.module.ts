@@ -17,6 +17,12 @@ import { TokenService } from './token.service.js';
 import { RolesGuard } from './roles.guard.js';
 import { BackofficeRateLimiter } from './backoffice-rate-limiter.service.js';
 import { BackofficeRateLimitGuard } from './backoffice-rate-limit.guard.js';
+import { CommerceRateLimitGuard } from './commerce-rate-limit.guard.js';
+import { CommerceRateLimiter } from './commerce-rate-limiter.service.js';
+import { GuestCartIdentityService } from './guest-cart-identity.service.js';
+import { GuestCommerceCsrfGuard } from './guest-commerce-csrf.guard.js';
+import { OptionalSessionGuard } from './optional-session.guard.js';
+import { SessionResolver } from './session-resolver.service.js';
 
 @Module({
   imports: [
@@ -31,8 +37,14 @@ import { BackofficeRateLimitGuard } from './backoffice-rate-limit.guard.js';
     AuthRateLimiter,
     PasswordService,
     TokenService,
+    SessionResolver,
     CsrfGuard,
     SessionGuard,
+    OptionalSessionGuard,
+    GuestCartIdentityService,
+    GuestCommerceCsrfGuard,
+    CommerceRateLimiter,
+    CommerceRateLimitGuard,
     RolesGuard,
     BackofficeRateLimiter,
     BackofficeRateLimitGuard,
@@ -50,7 +62,13 @@ import { BackofficeRateLimitGuard } from './backoffice-rate-limit.guard.js';
     AuthService,
     PasswordService,
     TokenService,
+    SessionResolver,
     SessionGuard,
+    OptionalSessionGuard,
+    GuestCartIdentityService,
+    GuestCommerceCsrfGuard,
+    CommerceRateLimiter,
+    CommerceRateLimitGuard,
     RolesGuard,
     BackofficeRateLimiter,
     BackofficeRateLimitGuard,

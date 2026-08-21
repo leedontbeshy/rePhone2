@@ -5,7 +5,7 @@ import {
   type OpenAPIObject,
   type OperationObject,
 } from '@nestjs/swagger';
-import { REFRESH_COOKIE_NAME } from '../modules/auth/auth.constants.js';
+import { GUEST_CART_COOKIE_NAME, REFRESH_COOKIE_NAME } from '../modules/auth/auth.constants.js';
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
 
@@ -20,6 +20,11 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       REFRESH_COOKIE_NAME,
       { type: 'apiKey', in: 'cookie', name: REFRESH_COOKIE_NAME },
       REFRESH_COOKIE_NAME,
+    )
+    .addCookieAuth(
+      GUEST_CART_COOKIE_NAME,
+      { type: 'apiKey', in: 'cookie', name: GUEST_CART_COOKIE_NAME },
+      GUEST_CART_COOKIE_NAME,
     )
     .build();
 
