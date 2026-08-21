@@ -1,9 +1,10 @@
 # Slice 05 — Cart, Wishlist & Voucher
 
-> Trạng thái: 🚧 Đang triển khai  
-> Ngày chốt thiết kế: 2026-08-21  
-> Base commit: `fa4a22b`  
-> Phụ thuộc: Slice 02–04  
+> Trạng thái: ✅ Hoàn thành và đã đồng bộ lên `feat/slice-05-cart-wishlist-voucher`<br>
+> Ngày chốt thiết kế: 2026-08-21<br>
+> Ngày nghiệm thu: 2026-08-21<br>
+> Base commit: `fa4a22b`<br>
+> Phụ thuộc: Slice 02–04<br>
 > Nguồn sự thật: các contract hiện hành trong [`docs`](../readme.md)
 
 ## 1. Mục tiêu và Definition of Done
@@ -205,7 +206,17 @@ Checkpoint:
 
 Nguồn: [Local development/deployment](../operations/local-development-and-deployment.md), [Seed/demo scenarios](seed-and-demo-scenarios.md), [Database implementation](../architecture/database-implementation.md).
 
-## 12. Assumptions và decision log đã khóa
+## 12. Kết quả nghiệm thu
+
+- OpenAPI/generated client có đúng 17 operation mới; contract test khóa operationId, security OR, guest cookie scheme, discriminated cart input và response status.
+- Forward migration `20260821153000_slice05_commerce_invariants` được kiểm tra với 0 row vi phạm rồi deploy thành công lên Supabase; không chạy `db:reset`, down migration hoặc sửa baseline.
+- `pnpm db:seed` chạy hai lần và giữ đúng bốn stable ID cho `WELCOME100`, `IPHONE5`, `DEMO-DRAFT`, `DEMO-PAUSED`.
+- `pnpm smoke:slice05` xanh cho guest cookie/hash, cart set/update/remove, customer merge, wishlist, guest/customer voucher visibility, ADMIN lifecycle/usage read, EMPLOYEE 403 và invariant cart không tạo reservation. Script dùng dữ liệu tạm có mã duy nhất và dọn đúng record đã tạo.
+- Storefront production smoke trả HTTP 200 cho `/products`, exact accessory detail, `/cart`, `/wishlist`, `/vouchers`; CORS credentialed request cho `http://localhost:3000` đúng contract.
+- `pnpm verify` xanh với 46 API unit test, 10 database integration test, 36 API E2E, OpenAPI/client generation và API/Web production build.
+- Các work package được commit và push riêng; `docs/decisions` không thay đổi. Bước tiếp theo là Slice 06 — Checkout, reservation và customer order.
+
+## 13. Assumptions và decision log đã khóa
 
 - UI dùng cart page, không cart drawer.
 - Admin voucher thao tác qua Swagger/API.

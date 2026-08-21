@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 04 hoàn thành; Slice 05 đang triển khai từ ngày 2026-08-21<br>
-> Bước tiếp theo: Cart, wishlist và voucher<br>
+> Trạng thái: Slice 05 hoàn thành ngày 2026-08-21<br>
+> Bước tiếp theo: Slice 06 — Checkout, reservation và customer order<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -382,7 +382,7 @@ Nguồn: [Backoffice catalog/inventory API](docs/api/backoffice-catalog-inventor
 
 ### Slice 05 — Cart, wishlist và voucher
 
-> 🚧 Đang triển khai trên branch `feat/slice-05-cart-wishlist-voucher`. Thiết kế chi tiết: [Slice 05 implementation plan](docs/planning/2026-08-21-slice-05-cart-wishlist-voucher-plan.md).
+> ✅ Hoàn thành và đã đồng bộ lên branch `feat/slice-05-cart-wishlist-voucher`. Thiết kế và biên bản triển khai: [Slice 05 implementation plan](docs/planning/2026-08-21-slice-05-cart-wishlist-voucher-plan.md).
 
 **Mục tiêu:** guest/customer chuẩn bị ý định mua nhưng chưa giữ tồn; voucher được validate deterministic.
 
@@ -390,34 +390,44 @@ Nguồn: [Backoffice catalog/inventory API](docs/api/backoffice-catalog-inventor
 
 **Database và migration**
 
-- [ ] Enforce Cart owner XOR, một ACTIVE cart/customer hoặc guest hash, cart expiry và item uniqueness.
-- [ ] Serialized CartItem luôn quantity 1; accessory item unique theo variant.
-- [ ] Wishlist partial unique theo exact unit hoặc accessory variant.
-- [ ] Voucher time/discount/quota constraint; VoucherUsage chỉ do owning order use case mutate.
+- [x] Enforce Cart owner XOR, một ACTIVE cart/customer hoặc guest hash, cart expiry và item uniqueness.
+- [x] Serialized CartItem luôn quantity 1; accessory item unique theo variant.
+- [x] Wishlist partial unique theo exact unit hoặc accessory variant.
+- [x] Voucher time/discount/quota constraint; VoucherUsage chỉ do owning order use case mutate.
 
 **Domain/application**
 
-- [ ] Guest token random trong HttpOnly cookie `rephone_guest_cart`; DB chỉ lưu SHA-256 hash.
-- [ ] Cart get/add/set/remove; không tạo reservation và không tin availability/price cũ.
-- [ ] Guest → customer merge deterministic, không nhân serialized item.
-- [ ] Wishlist customer-only với ownership.
-- [ ] Voucher fixed/percent, minimum, max discount, visibility, scope, total/per-customer quota và lifecycle.
+- [x] Guest token random trong HttpOnly cookie `rephone_guest_cart`; DB chỉ lưu SHA-256 hash.
+- [x] Cart get/add/set/remove; không tạo reservation và không tin availability/price cũ.
+- [x] Guest → customer merge deterministic, không nhân serialized item.
+- [x] Wishlist customer-only với ownership.
+- [x] Voucher fixed/percent, minimum, max discount, visibility, scope, total/per-customer quota và lifecycle.
 
 **API/OpenAPI/UI**
 
-- [ ] Cart, merge và wishlist endpoints theo storefront contract.
-- [ ] Voucher public discovery và admin management endpoints; apply cuối cùng thuộc preview/checkout.
-- [ ] UI demo: cart drawer/page, quantity accessory, remove item, voucher input và warning khi stale.
+- [x] Cart, merge và wishlist endpoints theo storefront contract.
+- [x] Voucher public discovery và admin management endpoints; apply cuối cùng thuộc preview/checkout.
+- [x] UI demo: CTA iPhone/accessory, cart page, quantity accessory, remove item, warning stale, wishlist, voucher discovery và header badge; không có cart drawer hoặc voucher apply trong Slice 05.
 
 **Test bắt buộc**
 
-- [ ] Guest cookie không cấp quyền order và merge không nhân item.
-- [ ] Serialized quantity khác 1 bị reject; unavailable item trả conflict/warning đúng.
-- [ ] Customer A không đọc/sửa cart/wishlist của B.
-- [ ] Voucher date/scope/minimum/visibility/formula và lifecycle đúng.
-- [ ] Money allocation VND deterministic; không dùng floating point.
+- [x] Guest cookie không cấp quyền order và merge không nhân item.
+- [x] Serialized quantity khác 1 bị reject; unavailable item trả conflict/warning đúng.
+- [x] Customer A không đọc/sửa cart/wishlist của B.
+- [x] Voucher date/scope/minimum/visibility/formula và lifecycle đúng.
+- [x] Money allocation VND deterministic; không dùng floating point.
 
-**Hoàn thành khi:** guest/customer tạo được cart hợp lệ, merge sau login và nhận voucher result nhất quán.
+**Kết quả nghiệm thu ngày 2026-08-21:**
+
+- OpenAPI/generated client có đúng 17 operation mới, operationId unique, security OR cho Bearer/cookie, schema discriminated union và response contract không drift.
+- Forward migration `20260821153000_slice05_commerce_invariants` được preflight với 0 row vi phạm và deploy thành công lên Supabase; không reset hoặc down migration.
+- Seed chạy liên tiếp hai lần, giữ đúng bốn voucher stable `WELCOME100`, `IPHONE5`, `DEMO-DRAFT`, `DEMO-PAUSED` và không nhân bản.
+- Supabase HTTP smoke xanh cho guest cookie/hash, cart set/update/remove, customer merge, wishlist, voucher visibility, ADMIN lifecycle/usage read, EMPLOYEE 403 và invariant không tạo reservation; dữ liệu smoke được dọn theo exact ID/hash.
+- Storefront production smoke trả HTTP 200 cho `/products`, exact accessory detail, `/cart`, `/wishlist`, `/vouchers`; credentialed CORS trả đúng origin và header commerce/CTA có trong HTML.
+- `pnpm verify` xanh: 46 API unit test, 10 integration test, 36 API E2E, OpenAPI/client generation và API/Web production build.
+- Các concern được commit/push riêng lên remote; không sửa `docs/decisions` và không còn known blocker thuộc Slice 05.
+
+**Hoàn thành khi:** ✅ Đạt — guest/customer tạo cart hợp lệ, merge sau login, quản lý wishlist và khám phá voucher theo visibility; cart không reserve tồn và Slice 06 có thể bắt đầu.
 
 Nguồn: [Cart/Wishlist endpoints](docs/api/cart-and-wishlist-endpoints.md), [Voucher endpoints](docs/api/voucher-endpoints.md), [Commerce data](docs/data-model/commerce.md), [Roles](docs/requirements/roles-and-permissions.md).
 
