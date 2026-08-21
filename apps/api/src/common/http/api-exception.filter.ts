@@ -19,10 +19,13 @@ export interface ErrorEnvelope {
 }
 
 const HTTP_STATUS_ERROR_CODES: Readonly<Partial<Record<number, ApiErrorCode>>> = {
+  [HttpStatus.BAD_REQUEST]: 'VALIDATION_FAILED',
   [HttpStatus.NOT_FOUND]: 'RESOURCE_NOT_FOUND',
   [HttpStatus.UNAUTHORIZED]: 'AUTH_REQUIRED',
   [HttpStatus.FORBIDDEN]: 'FORBIDDEN',
   [HttpStatus.TOO_MANY_REQUESTS]: 'RATE_LIMITED',
+  [HttpStatus.PAYLOAD_TOO_LARGE]: 'FILE_TOO_LARGE',
+  [HttpStatus.UNSUPPORTED_MEDIA_TYPE]: 'UNSUPPORTED_FILE_TYPE',
   [HttpStatus.SERVICE_UNAVAILABLE]: 'SERVICE_UNAVAILABLE',
 };
 

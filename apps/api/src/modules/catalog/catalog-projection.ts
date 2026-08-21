@@ -1,38 +1,10 @@
-import type {
-  FunctionalCheckDto,
-  FunctionalCheckStatus,
-  MaskedIdentifierDto,
-} from './catalog-response.dto.js';
+import type { FunctionalCheckDto, MaskedIdentifierDto } from './catalog-response.dto.js';
+import {
+  IPHONE_CHECKLIST_V1,
+  isFunctionalCheckStatus,
+} from '../../common/domain/iphone-inspection-checklist.js';
 
-const CHECK_STATUSES = new Set<FunctionalCheckStatus>([
-  'PASS',
-  'FAIL',
-  'DEGRADED',
-  'NOT_TESTED',
-  'NOT_APPLICABLE',
-  'UNKNOWN',
-]);
-
-export const IPHONE_CHECKLIST_V1 = [
-  ['DISPLAY', 'Màn hình hiển thị'],
-  ['TOUCHSCREEN', 'Cảm ứng'],
-  ['FRONT_CAMERA', 'Camera trước'],
-  ['REAR_CAMERA', 'Camera sau'],
-  ['FACE_ID_TOUCH_ID', 'Face ID/Touch ID'],
-  ['SPEAKER', 'Loa'],
-  ['MICROPHONE', 'Micro'],
-  ['BUTTONS', 'Phím vật lý'],
-  ['VIBRATION_HAPTICS', 'Rung/Haptic'],
-  ['WIFI', 'Wi-Fi'],
-  ['BLUETOOTH', 'Bluetooth'],
-  ['CELLULAR', 'Sóng di động'],
-  ['CHARGING_PORT', 'Cổng sạc'],
-  ['WIRELESS_CHARGING', 'Sạc không dây'],
-  ['BATTERY_FUNCTION', 'Hoạt động pin'],
-  ['GPS_LOCATION', 'GPS/Định vị'],
-  ['SENSORS', 'Cảm biến'],
-  ['CONNECTORS_OTHER', 'Kết nối khác'],
-] as const;
+export { IPHONE_CHECKLIST_V1 } from '../../common/domain/iphone-inspection-checklist.js';
 
 interface ChecklistItemInput {
   status?: unknown;
@@ -92,10 +64,6 @@ function maskedIdentifier(
     return null;
   }
   return { type, maskedValue: `•••• ${suffix}` };
-}
-
-function isFunctionalCheckStatus(value: unknown): value is FunctionalCheckStatus {
-  return typeof value === 'string' && CHECK_STATUSES.has(value as FunctionalCheckStatus);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

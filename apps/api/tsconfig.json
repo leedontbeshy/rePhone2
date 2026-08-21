@@ -8,7 +8,8 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "noEmit": false,
     "sourceMap": true,
-    "declaration": false
+    "declaration": false,
+    "types": ["node", "multer"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts", "prisma.config.ts", "vitest*.ts"],
   "exclude": ["node_modules", "dist"]

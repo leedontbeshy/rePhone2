@@ -1,5 +1,5 @@
-import { createCipheriv, createHmac, randomBytes } from 'node:crypto';
 import { Prisma, type PrismaClient } from '../src/generated/prisma/client.js';
+import { IdentifierCodec } from '../src/modules/inventory/identifier-protection.js';
 import {
   DEMO_CATALOG_ASSETS,
   LEGACY_DEMO_CATALOG_OBJECT_PATHS,
@@ -232,6 +232,10 @@ const IPHONE_UNITS = [
 ] as const;
 
 export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
+  const identifierCodec = new IdentifierCodec(
+    requiredEnvironment('IDENTIFIER_ENCRYPTION_KEY'),
+    requiredEnvironment('IDENTIFIER_HMAC_KEY'),
+  );
   const publicBucket = requiredEnvironment('SUPABASE_PUBLIC_BUCKET');
   await prisma.productMedia.deleteMany({
     where: {
@@ -400,7 +404,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     if (location === null) {
       throw new Error(`Unknown catalog seed location ${definition.locationCode}`);
     }
-    const protectedSerial = protectIdentifier(definition.serial);
+    const protectedSerial = identifierCodec.protect('SERIAL', definition.serial);
     const unit = await prisma.inventoryUnit.upsert({
       where: { inventoryCode: definition.inventoryCode },
       update: {
@@ -632,28 +636,6 @@ async function seedStock(
       createdById: input.employeeId,
     },
   });
-}
-
-function protectIdentifier(plaintext: string): {
-  encrypted: string;
-  hmac: string;
-  suffix: string;
-} {
-  const normalized = plaintext.trim().toUpperCase().replace(/\s+/g, '');
-  const encryptionKey = Buffer.from(requiredEnvironment('IDENTIFIER_ENCRYPTION_KEY'), 'base64');
-  const hmacKey = Buffer.from(requiredEnvironment('IDENTIFIER_HMAC_KEY'), 'base64');
-  if (encryptionKey.length !== 32 || hmacKey.length < 32) {
-    throw new Error('Catalog seed identifier keys are invalid');
-  }
-  const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', encryptionKey, iv);
-  const ciphertext = Buffer.concat([cipher.update(normalized, 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return {
-    encrypted: `v1:${iv.toString('base64url')}:${tag.toString('base64url')}:${ciphertext.toString('base64url')}`,
-    hmac: createHmac('sha256', hmacKey).update(normalized, 'utf8').digest('hex'),
-    suffix: normalized.slice(-4),
-  };
 }
 
 function passedChecks(): Prisma.InputJsonObject {

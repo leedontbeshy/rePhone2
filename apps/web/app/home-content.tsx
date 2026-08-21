@@ -30,14 +30,21 @@ export function HomeContent() {
         </nav>
       ) : null}
       {status === 'authenticated' && user !== null ? (
-        <div className="account-card">
-          <div>
-            <strong>{user.fullName}</strong>
-            <span>{user.email}</span>
+        <div className="authenticated-home">
+          {user.role === 'EMPLOYEE' || user.role === 'ADMIN' ? (
+            <Link className="button primary" href="/backoffice/inventory/intake">
+              Mở wizard nhập máy
+            </Link>
+          ) : null}
+          <div className="account-card">
+            <div>
+              <strong>{user.fullName}</strong>
+              <span>{user.email}</span>
+            </div>
+            <button className="button" type="button" onClick={() => void logout()}>
+              Đăng xuất
+            </button>
           </div>
-          <button className="button" type="button" onClick={() => void logout()}>
-            Đăng xuất
-          </button>
         </div>
       ) : null}
     </main>
