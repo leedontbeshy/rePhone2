@@ -879,6 +879,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/checkouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create one atomic order from the cart */
+        post: operations["createCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/checkouts/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview checkout without writes */
+        post: operations["previewCheckout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List owned customer orders */
+        get: operations["listCustomerOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{orderNumber}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one owned order snapshot */
+        get: operations["getCustomerOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{orderNumber}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel one owned order */
+        post: operations["cancelCustomerOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products": {
         parameters: {
             query?: never;
@@ -1148,7 +1233,7 @@ export interface components {
         };
         ApiErrorBodyDto: {
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_ITEM_QUANTITY_FIXED" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
+            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_EMPTY" | "CART_NOT_FULFILLABLE" | "CART_ITEM_QUANTITY_FIXED" | "CHECKOUT_REVIEW_REQUIRED" | "ORDER_NOT_FOUND" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
             details: components["schemas"]["ApiErrorDetailDto"][];
             message: string;
             /** @description Correlation ID for diagnostics */
@@ -1156,6 +1241,7 @@ export interface components {
         };
         ApiErrorDetailDto: {
             code: string;
+            current?: Record<string, never>;
             field?: string;
             message: string;
         };
@@ -1365,6 +1451,89 @@ export interface components {
             currentPassword: string;
             newPassword: string;
         };
+        CheckoutContactDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            phone: string;
+        };
+        CheckoutFulfillmentSummaryDto: {
+            pickupStore?: components["schemas"]["PickupStoreSummaryDto"];
+            /** @enum {string} */
+            type: "PICKUP" | "SHIPPING";
+        };
+        CheckoutPreviewDto: {
+            /** Format: date-time */
+            calculatedAt: string;
+            /** Format: date-time */
+            cartUpdatedAt: string;
+            fulfillmentSummary: components["schemas"]["CheckoutFulfillmentSummaryDto"];
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            items: components["schemas"]["CheckoutPreviewItemDto"][];
+            pricing: components["schemas"]["CheckoutPricingDto"];
+            voucher?: components["schemas"]["CheckoutVoucherDto"];
+            warnings: string[];
+        };
+        CheckoutPreviewItemDto: {
+            /** Format: uuid */
+            cartItemId: string;
+            discountAmount: string;
+            /** @enum {string} */
+            itemType: "IPHONE" | "ACCESSORY";
+            lineSubtotal: string;
+            lineTotal: string;
+            quantity: number;
+            target: components["schemas"]["CheckoutTargetSummaryDto"];
+            unitPrice: string;
+        };
+        CheckoutPreviewRequestDto: {
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            voucherCode?: string;
+        };
+        CheckoutPreviewResponse: {
+            data: components["schemas"]["CheckoutPreviewDto"];
+        };
+        CheckoutPricingDto: {
+            balanceDue: string;
+            depositRequired: string;
+            grandTotal: string;
+            itemDiscountAmount: string;
+            shippingFee: string;
+            subtotal: string;
+            voucherDiscountAmount: string;
+        };
+        CheckoutResultDto: {
+            guestAccessToken?: string;
+            order: components["schemas"]["OrderDetailDto"];
+        };
+        CheckoutResultResponse: {
+            data: components["schemas"]["CheckoutResultDto"];
+        };
+        CheckoutShippingAddressDto: {
+            addressLine: string;
+            district: string;
+            phone: string;
+            postalCode?: string;
+            province: string;
+            receiverName: string;
+            ward: string;
+        };
+        CheckoutTargetSummaryDto: {
+            inventoryCode?: string | null;
+            /** Format: uuid */
+            productId: string;
+            productName: string;
+            /** Format: uuid */
+            variantId: string;
+            variantName: string;
+        };
+        CheckoutVoucherDto: {
+            code: string;
+            discountAmount: string;
+            name: string;
+        };
         CreateAddressDto: {
             addressLine: string;
             district: string;
@@ -1376,6 +1545,18 @@ export interface components {
             province: string;
             receiverName: string;
             ward: string;
+        };
+        CreateCheckoutRequestDto: {
+            contact: components["schemas"]["CheckoutContactDto"];
+            customerNote?: string;
+            /** Format: date-time */
+            expectedCartUpdatedAt: string;
+            expectedDepositRequired: string;
+            expectedGrandTotal: string;
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            shippingAddress?: components["schemas"]["CheckoutShippingAddressDto"];
+            voucherCode?: string;
         };
         CreateInspectionDto: {
             /** @enum {string} */
@@ -1704,11 +1885,130 @@ export interface components {
             /** @enum {string} */
             type: "IMEI_1" | "IMEI_2" | "SERIAL" | "EID";
         };
+        OrderContactDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            phone: string;
+        };
+        OrderDetailDto: {
+            availableActions: "CANCEL"[];
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            cancelReason?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            confirmedAt?: string | null;
+            contact: components["schemas"]["OrderContactDto"];
+            customerNote?: string | null;
+            /** @enum {string} */
+            fulfillmentStatus: "PENDING" | "PREPARING" | "READY" | "IN_TRANSIT" | "COMPLETED" | "FAILED" | "RETURNED" | "CANCELLED";
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["OrderItemDto"][];
+            orderNumber: string;
+            paymentAttempts: components["schemas"]["OrderPaymentDto"][];
+            /** @enum {string} */
+            paymentStatus: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED";
+            pickupStore?: components["schemas"]["PickupStoreSummaryDto"];
+            /** Format: date-time */
+            placedAt: string;
+            pricing: components["schemas"]["CheckoutPricingDto"];
+            refunds: components["schemas"]["OrderRefundDto"][];
+            shippingAddress?: Record<string, never> | null;
+            /** @enum {string} */
+            status: "PLACED" | "CONFIRMED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
+            voucherCode?: string | null;
+        };
+        OrderDetailResponse: {
+            data: components["schemas"]["OrderDetailDto"];
+        };
+        OrderItemDto: {
+            configuration?: Record<string, never> | null;
+            discountAmount: string;
+            /** Format: uuid */
+            id: string;
+            inventoryCode?: string | null;
+            lineSubtotal: string;
+            lineTotal: string;
+            productName: string;
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            quantity: number;
+            sku: string;
+            unitPrice: string;
+            variantName: string;
+            warrantyDays: number;
+            warrantyTerms?: string | null;
+        };
+        OrderListItemDto: {
+            balanceDue: string;
+            depositRequired: string;
+            firstItemName: string;
+            fulfillmentStatus: string;
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            grandTotal: string;
+            orderNumber: string;
+            paymentStatus: string;
+            /** Format: date-time */
+            placedAt: string;
+            status: string;
+            totalItemQuantity: number;
+        };
+        OrderListMetaDto: {
+            pagination: components["schemas"]["OrderPaginationDto"];
+        };
+        OrderListResponse: {
+            data: components["schemas"]["OrderListItemDto"][];
+            meta: components["schemas"]["OrderListMetaDto"];
+        };
+        OrderPaginationDto: {
+            page: number;
+            pageSize: number;
+            totalItems: number;
+            totalPages: number;
+        };
+        OrderPaymentDto: {
+            bankAccountHolder?: string | null;
+            bankAccountNumber?: string | null;
+            bankName?: string | null;
+            expectedAmount: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+            /** @enum {string} */
+            purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+            receivedAmount?: string | null;
+            /** @enum {string} */
+            status: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+            transferContent?: string | null;
+        };
+        OrderRefundDto: {
+            amount: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            reason: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+        };
         PaginationDto: {
             page: number;
             pageSize: number;
             totalItems: number;
             totalPages: number;
+        };
+        PickupStoreSummaryDto: {
+            code: string;
+            name: string;
         };
         ProductDetailDto: {
             brand: string;
@@ -7652,6 +7952,393 @@ export interface operations {
                 };
             };
             /** @description CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    createCheckout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with value 1 for guest cookie requests; not required for Bearer. */
+                "X-Rephone-CSRF"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCheckoutRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Idempotent source-cart replay */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResultResponse"];
+                };
+            };
+            /** @description First successful checkout */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResultResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN or CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CHECKOUT_REVIEW_REQUIRED, CART_NOT_ACTIVE, CART_NOT_FULFILLABLE, INVENTORY_NOT_AVAILABLE, VOUCHER_USAGE_LIMIT_REACHED or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CART_EMPTY or VOUCHER_NOT_APPLICABLE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    previewCheckout: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with value 1 for guest cookie requests; not required for Bearer. */
+                "X-Rephone-CSRF"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutPreviewRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutPreviewResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN or CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CART_NOT_FULFILLABLE, INVENTORY_NOT_AVAILABLE or VOUCHER_USAGE_LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CART_EMPTY or VOUCHER_NOT_APPLICABLE */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listCustomerOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getCustomerOrder: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Raw guest token returned once by checkout create. */
+                "X-Guest-Order-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    cancelCustomerOrder: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with value 1 only when authenticating by guest cart cookie. */
+                "X-Rephone-CSRF"?: string;
+                /** @description Guest header-token authentication does not rely on cookies. */
+                "X-Guest-Order-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN or CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;

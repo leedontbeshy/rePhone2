@@ -381,7 +381,11 @@
               "INVENTORY_INSPECTION_REQUIRED",
               "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET",
               "CART_NOT_ACTIVE",
+              "CART_EMPTY",
+              "CART_NOT_FULFILLABLE",
               "CART_ITEM_QUANTITY_FIXED",
+              "CHECKOUT_REVIEW_REQUIRED",
+              "ORDER_NOT_FOUND",
               "VOUCHER_NOT_APPLICABLE",
               "VOUCHER_USAGE_LIMIT_REACHED",
               "ONE_TIME_TOKEN_INVALID",
@@ -419,6 +423,9 @@
         "properties": {
           "code": {
             "type": "string"
+          },
+          "current": {
+            "type": "object"
           },
           "field": {
             "type": "string"
@@ -1211,6 +1218,345 @@
         ],
         "type": "object"
       },
+      "CheckoutContactDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 320,
+            "type": "string"
+          },
+          "fullName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "minLength": 8,
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "CheckoutFulfillmentSummaryDto": {
+        "properties": {
+          "pickupStore": {
+            "$ref": "#/components/schemas/PickupStoreSummaryDto"
+          },
+          "type": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "CheckoutPreviewDto": {
+        "properties": {
+          "calculatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cartUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fulfillmentSummary": {
+            "$ref": "#/components/schemas/CheckoutFulfillmentSummaryDto"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CheckoutPreviewItemDto"
+            },
+            "type": "array"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/CheckoutPricingDto"
+          },
+          "voucher": {
+            "$ref": "#/components/schemas/CheckoutVoucherDto"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "cartUpdatedAt",
+          "fulfillmentType",
+          "items",
+          "pricing",
+          "fulfillmentSummary",
+          "warnings",
+          "calculatedAt"
+        ],
+        "type": "object"
+      },
+      "CheckoutPreviewItemDto": {
+        "properties": {
+          "cartItemId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "discountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "itemType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "lineSubtotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "lineTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "target": {
+            "$ref": "#/components/schemas/CheckoutTargetSummaryDto"
+          },
+          "unitPrice": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cartItemId",
+          "itemType",
+          "target",
+          "quantity",
+          "unitPrice",
+          "lineSubtotal",
+          "discountAmount",
+          "lineTotal"
+        ],
+        "type": "object"
+      },
+      "CheckoutPreviewRequestDto": {
+        "properties": {
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "voucherCode": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "fulfillmentType"
+        ],
+        "type": "object"
+      },
+      "CheckoutPreviewResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CheckoutPreviewDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "CheckoutPricingDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "depositRequired": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "itemDiscountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "shippingFee": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "subtotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "voucherDiscountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subtotal",
+          "itemDiscountAmount",
+          "voucherDiscountAmount",
+          "shippingFee",
+          "grandTotal",
+          "depositRequired",
+          "balanceDue"
+        ],
+        "type": "object"
+      },
+      "CheckoutResultDto": {
+        "properties": {
+          "guestAccessToken": {
+            "maxLength": 43,
+            "minLength": 43,
+            "type": "string",
+            "writeOnly": true
+          },
+          "order": {
+            "$ref": "#/components/schemas/OrderDetailDto"
+          }
+        },
+        "required": [
+          "order"
+        ],
+        "type": "object"
+      },
+      "CheckoutResultResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CheckoutResultDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "CheckoutShippingAddressDto": {
+        "properties": {
+          "addressLine": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "district": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "minLength": 8,
+            "type": "string"
+          },
+          "postalCode": {
+            "maxLength": 32,
+            "type": "string"
+          },
+          "province": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "receiverName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ward": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiverName",
+          "phone",
+          "addressLine",
+          "ward",
+          "district",
+          "province"
+        ],
+        "type": "object"
+      },
+      "CheckoutTargetSummaryDto": {
+        "properties": {
+          "inventoryCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "productId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "variantId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "productId",
+          "productName",
+          "variantId",
+          "variantName"
+        ],
+        "type": "object"
+      },
+      "CheckoutVoucherDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "discountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "discountAmount"
+        ],
+        "type": "object"
+      },
       "CreateAddressDto": {
         "properties": {
           "addressLine": {
@@ -1257,6 +1603,52 @@
           "ward",
           "district",
           "province"
+        ],
+        "type": "object"
+      },
+      "CreateCheckoutRequestDto": {
+        "properties": {
+          "contact": {
+            "$ref": "#/components/schemas/CheckoutContactDto"
+          },
+          "customerNote": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "expectedCartUpdatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expectedDepositRequired": {
+            "pattern": "^\\d{1,15}$",
+            "type": "string"
+          },
+          "expectedGrandTotal": {
+            "pattern": "^\\d{1,15}$",
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "shippingAddress": {
+            "$ref": "#/components/schemas/CheckoutShippingAddressDto"
+          },
+          "voucherCode": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "fulfillmentType",
+          "contact",
+          "expectedCartUpdatedAt",
+          "expectedGrandTotal",
+          "expectedDepositRequired"
         ],
         "type": "object"
       },
@@ -2495,6 +2887,469 @@
         ],
         "type": "object"
       },
+      "OrderContactDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "OrderDetailDto": {
+        "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "CANCEL"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cancelReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "confirmedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/OrderContactDto"
+          },
+          "customerNote": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "enum": [
+              "PENDING",
+              "PREPARING",
+              "READY",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "FAILED",
+              "RETURNED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderItemDto"
+            },
+            "type": "array"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentAttempts": {
+            "items": {
+              "$ref": "#/components/schemas/OrderPaymentDto"
+            },
+            "type": "array"
+          },
+          "paymentStatus": {
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID",
+              "PARTIALLY_REFUNDED",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "pickupStore": {
+            "$ref": "#/components/schemas/PickupStoreSummaryDto"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/CheckoutPricingDto"
+          },
+          "refunds": {
+            "items": {
+              "$ref": "#/components/schemas/OrderRefundDto"
+            },
+            "type": "array"
+          },
+          "shippingAddress": {
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "PLACED",
+              "CONFIRMED",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "voucherCode": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "fulfillmentType",
+          "contact",
+          "items",
+          "pricing",
+          "paymentAttempts",
+          "refunds",
+          "placedAt",
+          "availableActions"
+        ],
+        "type": "object"
+      },
+      "OrderDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrderDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "OrderItemDto": {
+        "properties": {
+          "configuration": {
+            "nullable": true,
+            "type": "object"
+          },
+          "discountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inventoryCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lineSubtotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "lineTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string"
+          },
+          "warrantyDays": {
+            "type": "number"
+          },
+          "warrantyTerms": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "productType",
+          "productName",
+          "variantName",
+          "sku",
+          "quantity",
+          "unitPrice",
+          "lineSubtotal",
+          "discountAmount",
+          "lineTotal",
+          "warrantyDays"
+        ],
+        "type": "object"
+      },
+      "OrderListItemDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "depositRequired": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "firstItemName": {
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "totalItemQuantity": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "fulfillmentType",
+          "firstItemName",
+          "totalItemQuantity",
+          "grandTotal",
+          "depositRequired",
+          "balanceDue",
+          "placedAt"
+        ],
+        "type": "object"
+      },
+      "OrderListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/OrderPaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "OrderListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrderListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/OrderListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "OrderPaginationDto": {
+        "properties": {
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "totalItems": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "OrderPaymentDto": {
+        "properties": {
+          "bankAccountHolder": {
+            "nullable": true,
+            "type": "string"
+          },
+          "bankAccountNumber": {
+            "nullable": true,
+            "type": "string"
+          },
+          "bankName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "expectedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "COD",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "DEPOSIT",
+              "BALANCE",
+              "FULL_PAYMENT"
+            ],
+            "type": "string"
+          },
+          "receivedAmount": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AWAITING_PROOF",
+              "UNDER_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "transferContent": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "method",
+          "status",
+          "expectedAmount"
+        ],
+        "type": "object"
+      },
+      "OrderRefundDto": {
+        "properties": {
+          "amount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "PROCESSING",
+              "COMPLETED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "amount",
+          "status",
+          "reason",
+          "createdAt"
+        ],
+        "type": "object"
+      },
       "PaginationDto": {
         "properties": {
           "page": {
@@ -2520,6 +3375,21 @@
           "pageSize",
           "totalItems",
           "totalPages"
+        ],
+        "type": "object"
+      },
+      "PickupStoreSummaryDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
         "type": "object"
       },
@@ -4274,6 +5144,11 @@
         "bearerFormat": "JWT",
         "scheme": "bearer",
         "type": "http"
+      },
+      "guestOrderToken": {
+        "in": "header",
+        "name": "X-Guest-Order-Token",
+        "type": "apiKey"
       },
       "rephone_guest_cart": {
         "in": "cookie",
@@ -12162,6 +13037,554 @@
         "summary": "Claim or merge a guest cart after login",
         "tags": [
           "cart"
+        ]
+      }
+    },
+    "/api/v1/checkouts": {
+      "post": {
+        "operationId": "createCheckout",
+        "parameters": [
+          {
+            "description": "Required with value 1 for guest cookie requests; not required for Bearer.",
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResultResponse"
+                }
+              }
+            },
+            "description": "Idempotent source-cart replay"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResultResponse"
+                }
+              }
+            },
+            "description": "First successful checkout"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN or CSRF_VALIDATION_FAILED"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CHECKOUT_REVIEW_REQUIRED, CART_NOT_ACTIVE, CART_NOT_FULFILLABLE, INVENTORY_NOT_AVAILABLE, VOUCHER_USAGE_LIMIT_REACHED or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CART_EMPTY or VOUCHER_NOT_APPLICABLE"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          },
+          {
+            "rephone_guest_cart": []
+          }
+        ],
+        "summary": "Create one atomic order from the cart",
+        "tags": [
+          "checkout"
+        ]
+      }
+    },
+    "/api/v1/checkouts/preview": {
+      "post": {
+        "operationId": "previewCheckout",
+        "parameters": [
+          {
+            "description": "Required with value 1 for guest cookie requests; not required for Bearer.",
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutPreviewRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutPreviewResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN or CSRF_VALIDATION_FAILED"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CART_NOT_FULFILLABLE, INVENTORY_NOT_AVAILABLE or VOUCHER_USAGE_LIMIT_REACHED"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CART_EMPTY or VOUCHER_NOT_APPLICABLE"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          },
+          {
+            "rephone_guest_cart": []
+          }
+        ],
+        "summary": "Preview checkout without writes",
+        "tags": [
+          "checkout"
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "get": {
+        "operationId": "listCustomerOrders",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List owned customer orders",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderNumber}": {
+      "get": {
+        "operationId": "getCustomerOrder",
+        "parameters": [
+          {
+            "description": "Raw guest token returned once by checkout create.",
+            "in": "header",
+            "name": "X-Guest-Order-Token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FOUND"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          },
+          {
+            "guestOrderToken": []
+          },
+          {
+            "rephone_guest_cart": []
+          }
+        ],
+        "summary": "Get one owned order snapshot",
+        "tags": [
+          "orders"
+        ]
+      }
+    },
+    "/api/v1/orders/{orderNumber}/cancel": {
+      "post": {
+        "operationId": "cancelCustomerOrder",
+        "parameters": [
+          {
+            "description": "Required with value 1 only when authenticating by guest cart cookie.",
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Guest header-token authentication does not rely on cookies.",
+            "in": "header",
+            "name": "X-Guest-Order-Token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN or CSRF_VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          },
+          {
+            "guestOrderToken": []
+          },
+          {
+            "rephone_guest_cart": []
+          }
+        ],
+        "summary": "Cancel one owned order",
+        "tags": [
+          "orders"
         ]
       }
     },
