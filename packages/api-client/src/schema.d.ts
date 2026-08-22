@@ -434,6 +434,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List operational orders */
+        get: operations["listBackofficeOrders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get operational order detail */
+        get: operations["getBackofficeOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/complete-pickup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completePickup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmPickupOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/extend-pickup-hold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extendPickupHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/internal-note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateBackofficeOrderInternalNote"];
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/mark-pickup-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markPickupReady"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/start-preparing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startPreparingOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/payments": {
         parameters: {
             query?: never;
@@ -1335,7 +1465,7 @@ export interface components {
         };
         ApiErrorBodyDto: {
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_EMPTY" | "CART_NOT_FULFILLABLE" | "CART_ITEM_QUANTITY_FIXED" | "CHECKOUT_REVIEW_REQUIRED" | "ORDER_NOT_FOUND" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
+            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "ORDER_NOT_FULLY_PAID" | "RESERVATION_EXPIRED" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_EMPTY" | "CART_NOT_FULFILLABLE" | "CART_ITEM_QUANTITY_FIXED" | "CHECKOUT_REVIEW_REQUIRED" | "ORDER_NOT_FOUND" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
             details: components["schemas"]["ApiErrorDetailDto"][];
             message: string;
             /** @description Correlation ID for diagnostics */
@@ -1382,6 +1512,160 @@ export interface components {
             sortOrder: number;
             /** Format: uri */
             url: string;
+        };
+        BackofficeOrderContactDto: {
+            /** Format: email */
+            email: string;
+            fullName: string;
+            phone: string;
+        };
+        BackofficeOrderDetailDto: {
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP")[];
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            cancelReason?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            confirmedAt?: string | null;
+            contact: components["schemas"]["BackofficeOrderContactDto"];
+            customerNote?: string | null;
+            fulfillmentStatus: string;
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            /** Format: uuid */
+            id: string;
+            internalNote?: string | null;
+            items: components["schemas"]["BackofficeOrderItemDto"][];
+            location: components["schemas"]["BackofficeOrderLocationDto"];
+            orderNumber: string;
+            paymentAttempts: components["schemas"]["BackofficeOrderPaymentDto"][];
+            paymentStatus: string;
+            /** Format: date-time */
+            pickedUpAt?: string | null;
+            /** Format: date-time */
+            pickupHoldUntil?: string | null;
+            pickupOverdue: boolean;
+            /** Format: date-time */
+            pickupReadyAt?: string | null;
+            /** Format: date-time */
+            placedAt: string;
+            pricing: components["schemas"]["BackofficeOrderPricingDto"];
+            refunds: components["schemas"]["BackofficeOrderRefundDto"][];
+            reservations: components["schemas"]["BackofficeReservationDto"][];
+            shipments: components["schemas"]["BackofficeOrderShipmentDto"][];
+            shippingAddress?: Record<string, never> | null;
+            status: string;
+            voucherCode?: string | null;
+        };
+        BackofficeOrderDetailResponse: {
+            data: components["schemas"]["BackofficeOrderDetailDto"];
+        };
+        BackofficeOrderItemDto: {
+            /** Format: uuid */
+            id: string;
+            inventoryCode?: string | null;
+            lineTotal: string;
+            productName: string;
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+            quantity: number;
+            sku: string;
+            unitPrice: string;
+            variantName: string;
+            warranty?: components["schemas"]["BackofficeWarrantyDto"] | null;
+            warrantyDays: number;
+        };
+        BackofficeOrderListItemDto: {
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP")[];
+            balanceDue: string;
+            customerName: string;
+            firstItemName: string;
+            fulfillmentStatus: string;
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            grandTotal: string;
+            /** Format: uuid */
+            id: string;
+            location: components["schemas"]["BackofficeOrderLocationDto"];
+            orderNumber: string;
+            paymentStatus: string;
+            /** Format: date-time */
+            pickupHoldUntil?: string | null;
+            pickupOverdue: boolean;
+            /** Format: date-time */
+            placedAt: string;
+            status: string;
+            totalItemQuantity: number;
+        };
+        BackofficeOrderListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        BackofficeOrderListResponse: {
+            data: components["schemas"]["BackofficeOrderListItemDto"][];
+            meta: components["schemas"]["BackofficeOrderListMetaDto"];
+        };
+        BackofficeOrderLocationDto: {
+            code: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            type: "STORE" | "WAREHOUSE";
+        };
+        BackofficeOrderPaymentDto: {
+            expectedAmount: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+            /** @enum {string} */
+            purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+            receivedAmount?: string | null;
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            reviewerName?: string | null;
+            /** @enum {string} */
+            status: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+        };
+        BackofficeOrderPricingDto: {
+            balanceDue: string;
+            depositRequired: string;
+            grandTotal: string;
+            paidAmount: string;
+            refundedAmount: string;
+            shippingFee: string;
+            subtotal: string;
+            voucherDiscountAmount: string;
+        };
+        BackofficeOrderRefundDto: {
+            amount: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+        };
+        BackofficeOrderShipmentDto: {
+            attemptNumber: number;
+            carrierName: string;
+            /** Format: date-time */
+            deliveredAt?: string | null;
+            /** Format: date-time */
+            failedAt?: string | null;
+            failureReason?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            returnedAt?: string | null;
+            /** Format: date-time */
+            shippedAt?: string | null;
+            /** @enum {string} */
+            status: "CREATED" | "HANDED_TO_CARRIER" | "DELIVERED" | "FAILED" | "RETURNED" | "CANCELLED";
+            trackingCode: string;
+            /** Format: uri */
+            trackingUrl?: string | null;
         };
         BackofficePaymentDetailDto: {
             evidenceAvailable: boolean;
@@ -1522,6 +1806,23 @@ export interface components {
         BackofficeProductResponse: {
             data: components["schemas"]["BackofficeProductDetailDto"];
         };
+        BackofficeReservationDto: {
+            /** Format: date-time */
+            consumedAt?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** @enum {string} */
+            holdReason: "DEPOSIT" | "REVIEW" | "PICKUP" | "FULFILLMENT";
+            /** Format: uuid */
+            id: string;
+            quantity: number;
+            /** Format: date-time */
+            releasedAt?: string | null;
+            /** @enum {string} */
+            status: "ACTIVE" | "RELEASED" | "EXPIRED" | "CONSUMED";
+            /** @enum {string} */
+            targetType: "INVENTORY_UNIT" | "STOCK_LEVEL";
+        };
         BackofficeVariantDto: {
             accessoryAttributes?: Record<string, never> | null;
             colorHex?: string | null;
@@ -1585,6 +1886,15 @@ export interface components {
         };
         BackofficeVoucherResponse: {
             data: components["schemas"]["BackofficeVoucherDto"];
+        };
+        BackofficeWarrantyDto: {
+            /** Format: date-time */
+            endAt: string;
+            /** Format: date-time */
+            startAt: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "VOIDED";
+            warrantyCode: string;
         };
         BankTransferInstructionsDto: {
             accountHolder: string;
@@ -1730,6 +2040,10 @@ export interface components {
             discountAmount: string;
             name: string;
         };
+        CompletePickupDto: {
+            /** @default false */
+            confirmCashCollected: boolean;
+        };
         CreateAddressDto: {
             addressLine: string;
             district: string;
@@ -1829,6 +2143,11 @@ export interface components {
         };
         DecryptedIdentifiersResponse: {
             data: components["schemas"]["DecryptedIdentifiersDto"];
+        };
+        ExtendPickupHoldDto: {
+            /** Format: date-time */
+            holdUntil: string;
+            reason: string;
         };
         ForgotPasswordDto: {
             /** @example customer@example.com */
@@ -2117,10 +2436,16 @@ export interface components {
             paymentAttempts: components["schemas"]["OrderPaymentDto"][];
             /** @enum {string} */
             paymentStatus: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED";
+            /** Format: date-time */
+            pickedUpAt?: string | null;
+            /** Format: date-time */
+            pickupHoldUntil?: string | null;
+            /** Format: date-time */
+            pickupReadyAt?: string | null;
             pickupStore?: components["schemas"]["PickupStoreSummaryDto"];
             /** Format: date-time */
             placedAt: string;
-            pricing: components["schemas"]["CheckoutPricingDto"];
+            pricing: components["schemas"]["OrderPricingDto"];
             refunds: components["schemas"]["OrderRefundDto"][];
             shippingAddress?: Record<string, never> | null;
             /** @enum {string} */
@@ -2145,6 +2470,7 @@ export interface components {
             sku: string;
             unitPrice: string;
             variantName: string;
+            warranty?: components["schemas"]["OrderWarrantyDto"] | null;
             warrantyDays: number;
             warrantyTerms?: string | null;
         };
@@ -2203,6 +2529,17 @@ export interface components {
             submittedAt?: string | null;
             transferContent?: string | null;
         };
+        OrderPricingDto: {
+            balanceDue: string;
+            depositRequired: string;
+            grandTotal: string;
+            itemDiscountAmount: string;
+            paidAmount: string;
+            refundedAmount: string;
+            shippingFee: string;
+            subtotal: string;
+            voucherDiscountAmount: string;
+        };
         OrderRefundDto: {
             amount: string;
             /** Format: date-time */
@@ -2212,6 +2549,17 @@ export interface components {
             reason: string;
             /** @enum {string} */
             status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+        };
+        OrderWarrantyDto: {
+            /** Format: date-time */
+            endAt: string;
+            isExpired: boolean;
+            isValid: boolean;
+            /** Format: date-time */
+            startAt: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "VOIDED";
+            warrantyCode: string;
         };
         PaginationDto: {
             page: number;
@@ -2519,6 +2867,9 @@ export interface components {
             province?: string;
             receiverName?: string;
             ward?: string;
+        };
+        UpdateBackofficeOrderInternalNoteDto: {
+            internalNote: string | null;
         };
         UpdateCartItemDto: {
             quantity: number;
@@ -5343,6 +5694,727 @@ export interface operations {
             };
             /** @description Inventory domain requirement failed */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listBackofficeOrders: {
+        parameters: {
+            query?: {
+                sortOrder?: "asc" | "desc";
+                sortBy?: "placedAt" | "updatedAt" | "grandTotal" | "pickupHoldUntil";
+                pageSize?: number;
+                page?: number;
+                pickupOverdue?: boolean;
+                placedTo?: string;
+                placedFrom?: string;
+                locationId?: string;
+                fulfillmentType?: "PICKUP" | "SHIPPING";
+                paymentStatus?: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED";
+                fulfillmentStatus?: "PENDING" | "PREPARING" | "READY" | "IN_TRANSIT" | "COMPLETED" | "FAILED" | "RETURNED" | "CANCELLED";
+                status?: "PLACED" | "CONFIRMED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getBackofficeOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    completePickup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletePickupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FULLY_PAID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    confirmPickupOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    extendPickupHold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendPickupHoldDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    updateBackofficeOrderInternalNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBackofficeOrderInternalNoteDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    markPickupReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    startPreparingOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
