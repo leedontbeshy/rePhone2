@@ -15,6 +15,7 @@ import { FulfillmentNoStoreMiddleware } from './fulfillment-no-store.middleware.
 import { FulfillmentQueryService } from './fulfillment-query.service.js';
 import { PickupCompletionController } from './pickup-completion.controller.js';
 import { PickupCompletionService } from './pickup-completion.service.js';
+import { PickupExpiryService } from './pickup-expiry.service.js';
 import { PickupPreparationController } from './pickup-preparation.controller.js';
 import { PickupPreparationService } from './pickup-preparation.service.js';
 
@@ -37,8 +38,9 @@ import { PickupPreparationService } from './pickup-preparation.service.js';
     BackofficeOrderService,
     PickupPreparationService,
     PickupCompletionService,
+    PickupExpiryService,
   ],
-  exports: [FulfillmentClock],
+  exports: [FulfillmentClock, PickupExpiryService],
 })
 export class FulfillmentModule implements NestModule {
   public configure(consumer: MiddlewareConsumer): void {
