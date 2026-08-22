@@ -1,0 +1,98 @@
+import { describe, expect, it } from 'vitest';
+import type { MailMessage, MailProvider } from '../../common/providers/mail-provider.js';
+import type { AppConfig } from '../../config/app-config.js';
+import type { OrderDetailDto } from '../orders/order-response.dto.js';
+import { OrderNotificationService } from './order-notification.service.js';
+
+class RecordingMailProvider implements MailProvider {
+  public readonly messages: MailMessage[] = [];
+
+  public send(message: MailMessage): Promise<void> {
+    this.messages.push(message);
+    return Promise.resolve();
+  }
+}
+
+describe('OrderNotificationService', () => {
+  it('renders a guest link with token in the fragment and keeps it out of the subject', async () => {
+    const mail = new RecordingMailProvider();
+    const service = new OrderNotificationService(mail, config());
+    const token = 'A'.repeat(43);
+    await service.sendPlaced(orderFixture(), token);
+    expect(mail.messages).toHaveLength(1);
+    expect(mail.messages[0]?.subject).toBe('[rePhone] Đã nhận đơn RPH-20260821-23456789');
+    expect(mail.messages[0]?.subject).not.toContain(token);
+    expect(mail.messages[0]?.text).toContain(`/orders/RPH-20260821-23456789#token=${token}`);
+  });
+
+  it('includes a pending refund amount in cancellation mail', async () => {
+    const mail = new RecordingMailProvider();
+    const service = new OrderNotificationService(mail, config());
+    const order = orderFixture();
+    order.status = 'CANCELLED';
+    order.cancelReason = 'Khách thay đổi nhu cầu';
+    order.refunds = [
+      {
+        id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6999',
+        amount: '500000',
+        status: 'REQUESTED',
+        reason: order.cancelReason,
+        createdAt: '2026-08-21T00:00:00.000Z',
+      },
+    ];
+    await service.sendCancelled(order);
+    expect(mail.messages[0]?.text).toContain('500.000 ₫');
+    expect(mail.messages[0]?.text).toContain('đang chờ xử lý');
+  });
+});
+
+function config(): AppConfig {
+  return { api: { webPublicUrl: 'http://localhost:3001' } } as AppConfig;
+}
+
+function orderFixture(): OrderDetailDto {
+  return {
+    id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
+    orderNumber: 'RPH-20260821-23456789',
+    status: 'PLACED',
+    fulfillmentStatus: 'PENDING',
+    paymentStatus: 'UNPAID',
+    fulfillmentType: 'SHIPPING',
+    contact: { fullName: 'Khách', email: 'customer@example.com', phone: '0900000000' },
+    shippingAddress: null,
+    items: [],
+    pricing: {
+      subtotal: '1000000',
+      itemDiscountAmount: '0',
+      voucherDiscountAmount: '0',
+      shippingFee: '30000',
+      grandTotal: '1030000',
+      depositRequired: '500000',
+      balanceDue: '1030000',
+    },
+    voucherCode: null,
+    paymentAttempts: [
+      {
+        id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6997',
+        purpose: 'DEPOSIT',
+        method: 'BANK_TRANSFER',
+        status: 'AWAITING_PROOF',
+        expectedAmount: '500000',
+        receivedAmount: null,
+        transferContent: 'RPH2026082123456789',
+        bankName: 'Demo Bank',
+        bankAccountNumber: '123456',
+        bankAccountHolder: 'REPHONE',
+        expiresAt: '2026-08-21T00:30:00.000Z',
+      },
+    ],
+    refunds: [],
+    customerNote: null,
+    placedAt: '2026-08-21T00:00:00.000Z',
+    confirmedAt: null,
+    completedAt: null,
+    cancelledAt: null,
+    cancelReason: null,
+    availableActions: ['CANCEL'],
+  };
+}

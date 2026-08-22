@@ -4,10 +4,17 @@ import { CatalogRepository } from './catalog.repository.js';
 import { CatalogService } from './catalog.service.js';
 import { PublicMediaUrlBuilder } from './public-media-url.builder.js';
 import { CommerceOfferReader } from './commerce-offer.reader.js';
+import { CheckoutCatalogReader } from './checkout-catalog.reader.js';
 
 @Module({
   controllers: [CatalogController],
-  providers: [CatalogRepository, CatalogService, PublicMediaUrlBuilder, CommerceOfferReader],
-  exports: [CommerceOfferReader],
+  providers: [
+    CatalogRepository,
+    CatalogService,
+    PublicMediaUrlBuilder,
+    CommerceOfferReader,
+    CheckoutCatalogReader,
+  ],
+  exports: [CommerceOfferReader, CheckoutCatalogReader],
 })
 export class CatalogModule {}

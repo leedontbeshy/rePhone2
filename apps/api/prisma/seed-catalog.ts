@@ -409,7 +409,6 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
       where: { inventoryCode: definition.inventoryCode },
       update: {
         variantId: variant.id,
-        locationId: location.id,
         modelNumber: definition.modelNumber,
         regionCode: definition.regionCode,
         simLockStatus: 'UNLOCKED',
@@ -419,11 +418,9 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
         serialHmac: protectedSerial.hmac,
         serialSuffix: protectedSerial.suffix,
         identifierKeyVersion: 1,
-        lifecycleStatus: 'AVAILABLE',
         salePrice: definition.salePrice,
         compareAtPrice: definition.compareAtPrice,
         warrantyDaysOverride: null,
-        soldAt: null,
       },
       create: {
         variantId: variant.id,
@@ -449,50 +446,36 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
       assetKey: definition.productSlug,
       altText: `${variant.displayName} — ${definition.inventoryCode}`,
     });
-    await prisma.inventoryInspection.upsert({
+    const existingInspection = await prisma.inventoryInspection.findUnique({
       where: { id: inspectionId(index) },
-      update: {
-        inventoryUnitId: unit.id,
-        inspectionType: 'INTAKE',
-        status: 'COMPLETED',
-        batteryHealthPercent: definition.batteryHealthPercent,
-        batteryCycleCount: definition.batteryCycleCount,
-        batteryReplacementStatus: 'ORIGINAL',
-        conditionGrade: definition.conditionGrade,
-        cosmeticNotes:
-          definition.conditionGrade === 'A'
-            ? 'Ngoại hình đẹp, có vết sử dụng rất nhẹ.'
-            : 'Có vết xước nhẹ ở khung, không ảnh hưởng chức năng.',
-        checks: passedChecks(),
-        repairHistoryStatus: 'NONE_KNOWN',
-        repairNotes: null,
-        replacedParts: Prisma.DbNull,
-        overallResult: 'PASSED',
-        inspectorId: employee.id,
-        inspectedAt: new Date('2026-08-20T03:00:00.000Z'),
-        isCurrent: true,
-      },
-      create: {
-        id: inspectionId(index),
-        inventoryUnitId: unit.id,
-        inspectionType: 'INTAKE',
-        status: 'COMPLETED',
-        batteryHealthPercent: definition.batteryHealthPercent,
-        batteryCycleCount: definition.batteryCycleCount,
-        batteryReplacementStatus: 'ORIGINAL',
-        conditionGrade: definition.conditionGrade,
-        cosmeticNotes:
-          definition.conditionGrade === 'A'
-            ? 'Ngoại hình đẹp, có vết sử dụng rất nhẹ.'
-            : 'Có vết xước nhẹ ở khung, không ảnh hưởng chức năng.',
-        checks: passedChecks(),
-        repairHistoryStatus: 'NONE_KNOWN',
-        overallResult: 'PASSED',
-        inspectorId: employee.id,
-        inspectedAt: new Date('2026-08-20T03:00:00.000Z'),
-        isCurrent: true,
-      },
+      select: { id: true },
     });
+    if (existingInspection === null) {
+      await prisma.inventoryInspection.create({
+        data: {
+          id: inspectionId(index),
+          inventoryUnitId: unit.id,
+          inspectionType: 'INTAKE',
+          status: 'COMPLETED',
+          batteryHealthPercent: definition.batteryHealthPercent,
+          batteryCycleCount: definition.batteryCycleCount,
+          batteryReplacementStatus: 'ORIGINAL',
+          conditionGrade: definition.conditionGrade,
+          cosmeticNotes:
+            definition.conditionGrade === 'A'
+              ? 'Ngoại hình đẹp, có vết sử dụng rất nhẹ.'
+              : 'Có vết xước nhẹ ở khung, không ảnh hưởng chức năng.',
+          checks: passedChecks(),
+          repairHistoryStatus: 'NONE_KNOWN',
+          repairNotes: null,
+          replacedParts: Prisma.DbNull,
+          overallResult: 'PASSED',
+          inspectorId: employee.id,
+          inspectedAt: new Date('2026-08-20T03:00:00.000Z'),
+          isCurrent: true,
+        },
+      });
+    }
   }
 
   await seedHiddenCatalogRows(prisma, iphonePolicy.id, store.id);
@@ -530,10 +513,6 @@ async function seedHiddenCatalogRows(
     where: { inventoryCode: 'IP13-RECEIVED-001' },
     update: {
       variantId: variant.id,
-      locationId: storeLocationId,
-      lifecycleStatus: 'RECEIVED',
-      salePrice: null,
-      compareAtPrice: null,
     },
     create: {
       variantId: variant.id,
@@ -600,42 +579,40 @@ async function seedStock(
     employeeId: string;
   },
 ): Promise<void> {
-  await prisma.stockLevel.upsert({
+  const stockLevel = await prisma.stockLevel.findUnique({
     where: {
       variantId_locationId: { variantId: input.variantId, locationId: input.locationId },
     },
-    update: { quantityOnHand: input.quantity, quantityReserved: 0 },
-    create: {
-      variantId: input.variantId,
-      locationId: input.locationId,
-      quantityOnHand: input.quantity,
-      quantityReserved: 0,
-    },
+    select: { id: true },
   });
-  await prisma.stockMovement.upsert({
+  if (stockLevel === null) {
+    await prisma.stockLevel.create({
+      data: {
+        variantId: input.variantId,
+        locationId: input.locationId,
+        quantityOnHand: input.quantity,
+        quantityReserved: 0,
+      },
+    });
+  }
+  const movement = await prisma.stockMovement.findUnique({
     where: { id: input.movementId },
-    update: {
-      variantId: input.variantId,
-      fromLocationId: null,
-      toLocationId: input.locationId,
-      type: 'RECEIPT',
-      quantity: input.quantity,
-      referenceType: 'DEMO_SEED',
-      referenceId: null,
-      reason: `Tồn demo ban đầu tại ${input.locationCode}`,
-      createdById: input.employeeId,
-    },
-    create: {
-      id: input.movementId,
-      variantId: input.variantId,
-      toLocationId: input.locationId,
-      type: 'RECEIPT',
-      quantity: input.quantity,
-      referenceType: 'DEMO_SEED',
-      reason: `Tồn demo ban đầu tại ${input.locationCode}`,
-      createdById: input.employeeId,
-    },
+    select: { id: true },
   });
+  if (movement === null) {
+    await prisma.stockMovement.create({
+      data: {
+        id: input.movementId,
+        variantId: input.variantId,
+        toLocationId: input.locationId,
+        type: 'RECEIPT',
+        quantity: input.quantity,
+        referenceType: 'DEMO_SEED',
+        reason: `Tồn demo ban đầu tại ${input.locationCode}`,
+        createdById: input.employeeId,
+      },
+    });
+  }
 }
 
 function passedChecks(): Prisma.InputJsonObject {

@@ -41,12 +41,17 @@ describe('createLoggerParams', () => {
         'req.headers.authorization',
         'req.headers.cookie',
         'req.headers.idempotency-key',
+        'req.headers.x-guest-order-token',
         '*.password',
         '*.refreshToken',
         '*.accessToken',
+        '*.guestAccessToken',
+        '*.guestAccessTokenHash',
         '*.imei',
         '*.signedUrl',
         '*.bankAccountNumber',
+        '*.shippingAddressSnapshot',
+        '*.contact',
       ]),
     );
   });

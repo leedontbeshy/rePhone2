@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 05 hoàn thành ngày 2026-08-21<br>
-> Bước tiếp theo: Slice 06 — Checkout, reservation và customer order<br>
+> Trạng thái: Slice 06 đã hoàn thành trên branch `feat/slice-06-checkout-reservation-order`<br>
+> Bước tiếp theo: Slice 07 — Deposit proof, review và expiry<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -433,44 +433,55 @@ Nguồn: [Cart/Wishlist endpoints](docs/api/cart-and-wishlist-endpoints.md), [Vo
 
 ### Slice 06 — Checkout, reservation và customer order
 
+> ✅ Hoàn thành và đã đồng bộ lên branch `feat/slice-06-checkout-reservation-order`. Thiết kế và biên bản triển khai: [Slice 06 implementation plan](docs/planning/2026-08-21-slice-06-checkout-reservation-order-plan.md).
+
 **Mục tiêu:** preview stateless và checkout atomic tạo đúng một order, reservation và snapshot với server pricing.
 
 **Phụ thuộc:** Slice 04 và 05.
 
 **Database và migration**
 
-- [ ] Hoàn thiện `Order`, `OrderItem`, `InventoryReservation`, `VoucherUsage` và shipping-deposit `Payment` constraints.
-- [ ] `Order.sourceCartId` unique; guest access token chỉ lưu hash.
-- [ ] Partial unique active reservation/unit; `quantityReserved <= quantityOnHand`.
-- [ ] Order total, fulfillment-specific field và money projection constraints.
+- [x] Hoàn thiện `Order`, `OrderItem`, `InventoryReservation`, `VoucherUsage` và shipping-deposit `Payment` constraints.
+- [x] `Order.sourceCartId` unique; guest access token chỉ lưu hash.
+- [x] Partial unique active reservation/unit; `quantityReserved <= quantityOnHand`.
+- [x] Order total, fulfillment-specific field và money projection constraints.
 
 **Domain/application**
 
-- [ ] Preview đọc cart, availability, price, location, voucher và settings nhưng không ghi reservation.
-- [ ] Checkout tính lại toàn bộ amount trong `Serializable`; so sánh `expectedGrandTotal` và shipping `expectedDepositRequired` trước write.
-- [ ] Chọn một location duy nhất: pickup dùng STORE; shipping thử WAREHOUSE rồi STORE, không split.
-- [ ] Reserve iPhone/accessory/voucher, snapshot order items/totals/warranty/bank data và convert cart trong cùng transaction.
-- [ ] Pickup tạo hold; shipping tạo deposit AWAITING_PROOF và proof deadline; zero-total không tạo Payment 0 đồng.
-- [ ] Replay cùng cart trả order chiến thắng sau ownership check.
-- [ ] Customer/guest list/detail/access link và cancel command theo policy.
+- [x] Preview đọc cart, availability, price, location, voucher và settings nhưng không ghi reservation.
+- [x] Checkout tính lại toàn bộ amount trong `Serializable`; so sánh `expectedGrandTotal` và shipping `expectedDepositRequired` trước write.
+- [x] Chọn một location duy nhất: pickup dùng STORE; shipping thử WAREHOUSE rồi STORE, không split.
+- [x] Reserve iPhone/accessory/voucher, snapshot order items/totals/warranty/bank data và convert cart trong cùng transaction.
+- [x] Pickup tạo hold; shipping tạo deposit AWAITING_PROOF và proof deadline; zero-total không tạo Payment 0 đồng.
+- [x] Replay cùng cart trả order chiến thắng sau ownership check.
+- [x] Customer/guest list/detail/access link và cancel command theo policy.
 
 **API/OpenAPI/UI**
 
-- [ ] Preview, create checkout, customer order list/detail, guest order access và cancel endpoints.
-- [ ] Response pricing/review conflict đủ để web yêu cầu xác nhận lại.
-- [ ] UI demo: checkout pickup/shipping, contact/address, order success và guest access flow.
+- [x] Preview, create checkout, customer order list/detail, guest order access và cancel endpoints.
+- [x] Response pricing/review conflict đủ để web yêu cầu xác nhận lại.
+- [x] UI demo: checkout pickup/shipping, contact/address, order success và guest access flow.
 
 **Test bắt buộc**
 
-- [ ] Forged price/discount/shipping/deposit không được tin.
-- [ ] Stale expected amount trả `CHECKOUT_REVIEW_REQUIRED` và không có write.
-- [ ] Hai checkout cùng iPhone: đúng một thành công.
-- [ ] N checkout phụ kiện cuối tồn: tổng reserved không vượt onHand.
-- [ ] N checkout voucher quota cuối: usage không vượt limit.
-- [ ] Replay cùng cart trả cùng order; một order chỉ dùng một location.
-- [ ] Snapshot không đổi khi catalog/settings thay đổi sau checkout.
+- [x] Forged price/discount/shipping/deposit không được tin.
+- [x] Stale expected amount trả `CHECKOUT_REVIEW_REQUIRED` và không có write.
+- [x] Hai checkout cùng iPhone: đúng một thành công.
+- [x] N checkout phụ kiện cuối tồn: tổng reserved không vượt onHand.
+- [x] N checkout voucher quota cuối: usage không vượt limit.
+- [x] Replay cùng cart trả cùng order; một order chỉ dùng một location.
+- [x] Snapshot không đổi khi catalog/settings thay đổi sau checkout.
 
-**Hoàn thành khi:** guest/customer checkout pickup và shipping an toàn dưới concurrency; order read/ownership đúng.
+**Nghiệm thu:**
+
+- Forward migration `20260821180000_slice06_checkout_invariants` đã qua preflight và được deploy lên Supabase; không reset/down migration.
+- Seed Supabase chạy liên tiếp hai lần vẫn idempotent và không reset operational state.
+- Smoke thật đã qua guest SHIPPING create/replay/token/detail/cancel và CUSTOMER PICKUP list/detail/cancel; hai order smoke đều được hủy bằng application command, reservation/payment/voucher được giải phóng đúng và audit có actor `GUEST`/`USER`.
+- OpenAPI/generated client có đúng 5 operation mới và `guestOrderToken`; web production build có `/checkout`, `/orders`, `/orders/[orderNumber]`.
+- `pnpm verify` xanh: 57 unit test, 11 integration test, 42 API E2E, OpenAPI/client generation và API/Web production build.
+- Các concern được commit/push riêng; không sửa `docs/decisions` và không còn known blocker thuộc Slice 06.
+
+**Hoàn thành khi:** ✅ Đạt — guest/customer checkout pickup và shipping an toàn dưới concurrency; order read/ownership đúng; Slice 07 có thể bắt đầu.
 
 Nguồn: [Order/deposit requirement](docs/requirements/order-deposit-and-fulfillment.md), [Checkout transaction](docs/architecture/checkout-transaction.md), [Transaction/concurrency](docs/architecture/transaction-and-concurrency.md), [Checkout/order endpoints](docs/api/checkout-and-customer-order-endpoints.md), [Sales data](docs/data-model/sales.md).
 

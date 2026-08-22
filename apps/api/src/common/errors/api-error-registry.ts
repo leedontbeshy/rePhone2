@@ -83,9 +83,25 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.CONFLICT,
     message: 'Giỏ hàng không còn ở trạng thái hoạt động.',
   },
+  CART_EMPTY: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Giỏ hàng đang trống.',
+  },
+  CART_NOT_FULFILLABLE: {
+    status: HttpStatus.CONFLICT,
+    message: 'Không có địa điểm nào có thể cấp đủ toàn bộ giỏ hàng.',
+  },
   CART_ITEM_QUANTITY_FIXED: {
     status: HttpStatus.CONFLICT,
     message: 'Số lượng thiết bị định danh luôn là một.',
+  },
+  CHECKOUT_REVIEW_REQUIRED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Giỏ hàng hoặc tổng tiền đã thay đổi. Vui lòng xác nhận lại.',
+  },
+  ORDER_NOT_FOUND: {
+    status: HttpStatus.NOT_FOUND,
+    message: 'Không tìm thấy đơn hàng.',
   },
   VOUCHER_NOT_APPLICABLE: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,

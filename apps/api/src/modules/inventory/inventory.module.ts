@@ -11,6 +11,7 @@ import { InspectionsController, UnitInspectionsController } from './inspection.c
 import { StockController } from './stock.controller.js';
 import { StockRepository } from './stock.repository.js';
 import { StockService } from './stock.service.js';
+import { CheckoutInventoryGateway } from './checkout-inventory.gateway.js';
 
 @Module({
   imports: [AuthModule, AuditModule],
@@ -29,7 +30,8 @@ import { StockService } from './stock.service.js';
     InspectionService,
     StockRepository,
     StockService,
+    CheckoutInventoryGateway,
   ],
-  exports: [InventoryService],
+  exports: [InventoryService, CheckoutInventoryGateway],
 })
 export class InventoryModule {}

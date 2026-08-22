@@ -68,7 +68,9 @@ export default function CartPage() {
               <span>Tạm tính hợp lệ</span>
               <strong>{formatMoney(cart.estimatedSubtotal)} ₫</strong>
               <p>Chưa gồm voucher, phí giao hàng hoặc tiền cọc.</p>
-              <p>Checkout và reservation sẽ được triển khai ở Slice 06.</p>
+              <Link className="button primary" href="/checkout">
+                Tiến hành checkout
+              </Link>
             </aside>
           </div>
         ) : null}
