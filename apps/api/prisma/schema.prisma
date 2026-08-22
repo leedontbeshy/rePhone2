@@ -807,6 +807,7 @@ model Order {
 
   @@index([customerId, createdAt(sort: Desc)])
   @@index([status, fulfillmentStatus, createdAt(sort: Desc)])
+  // Slice 08 pickup expiry queue index is migration-managed because Prisma cannot express its predicate.
   @@index([fulfillmentLocationId])
   @@index([pickupLocationId])
   @@map("orders")
