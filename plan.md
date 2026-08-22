@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 07 đã hoàn thành trên branch `feat/slice-07-deposit-proof-review-expiry`<br>
-> Bước tiếp theo: Slice 08 — Pickup fulfillment<br>
+> Trạng thái: 🚧 Slice 08 — Pickup fulfillment đang triển khai (WP0)<br>
+> Kế hoạch chi tiết: [Slice 08 implementation plan](docs/planning/2026-08-22-slice-08-pickup-fulfillment-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -537,9 +537,11 @@ Nguồn: [Payment proof/review API](docs/api/payment-proof-and-review-endpoints.
 
 ### Slice 08 — Pickup fulfillment
 
+> 🚧 **IN PROGRESS** — WP0 đã khóa scope/contract tại [Slice 08 implementation plan](docs/planning/2026-08-22-slice-08-pickup-fulfillment-plan.md). Chưa đánh dấu hoàn thành cho tới khi toàn bộ invariant, test, OpenAPI/client và rollout gate đạt.
+
 **Mục tiêu:** pickup đi từ PENDING đến COMPLETED, thu CASH nếu cần, consume tồn/voucher và phát hành warranty đúng một lần.
 
-**Phụ thuộc:** Slice 06; Warranty issuance portion có thể dùng service foundation hoàn thiện trong Slice 11.
+**Phụ thuộc:** Slice 06–07; internal Warranty issuer là một phần Slice 08, còn Warranty/after-sales API đầy đủ thuộc Slice 11.
 
 **Database và migration**
 
@@ -556,9 +558,9 @@ Nguồn: [Payment proof/review API](docs/api/payment-proof-and-review-endpoints.
 
 **API/OpenAPI/UI**
 
-- [ ] Backoffice confirm/prepare/ready/extend/complete endpoints.
-- [ ] Customer order detail phản ánh fulfillment/payment/warranty projection.
-- [ ] UI demo có thể dùng seeded `pickup-ready` để rút ngắn thời gian thao tác.
+- [ ] Đúng tám Backoffice Order operation: list, detail, internal-note và confirm/prepare/ready/extend/complete; OpenAPI tăng từ 87 lên 95 operation.
+- [ ] Backoffice queue/detail vận hành pickup với filter, overdue signal, internal note và năm action; customer order detail phản ánh fulfillment/payment/warranty projection.
+- [ ] Smoke có thể dùng fixture `pickup-ready` tạo qua application commands để rút ngắn thời gian thao tác; permanent scenario framework vẫn thuộc Slice 12.
 
 **Test bắt buộc**
 
