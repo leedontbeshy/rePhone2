@@ -1,6 +1,6 @@
 # Kế hoạch triển khai Slice 08 — Pickup Fulfillment
 
-> Trạng thái: 🚧 IN PROGRESS — WP0 khóa contract và kế hoạch triển khai.<br>
+> Trạng thái: ✅ COMPLETE — đã triển khai, kiểm thử và rollout Supabase ngày 2026-08-23.<br>
 > Baseline: Slice 07 đã hoàn thành với 87 OpenAPI operation; Slice 08 thêm đúng 8 operation, mục tiêu 95.<br>
 > Không sửa `docs/decisions`; behavior hiện hành theo precedence tại [docs index](../readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
 
@@ -32,7 +32,7 @@ Không thuộc Slice 08:
 5. **Deadline authoritative trên Order, đồng bộ xuống reservation.** `Order.pickupHoldUntil` dùng cho query/job và mọi command recheck; mỗi active pickup reservation phải có cùng `expiresAt`. Extend cập nhật cả hai trong một transaction.
 6. **Boundary deadline:** pickup hợp lệ khi `now < pickupHoldUntil`; tại `now >= pickupHoldUntil` chỉ expiry/cancellation được phép. Confirm/start/ready/complete/extend đều recheck deadline trong transaction.
 7. **Pickup reservation giữ `holdReason=PICKUP`.** Không đổi sang `FULFILLMENT`; completion chuyển `ACTIVE → CONSUMED`, pickup timeout chuyển `ACTIVE → EXPIRED`, customer/staff cancellation thông thường dùng `RELEASED`.
-8. **Chỉ complete và expiry replay idempotent.** Complete trên projection đã hoàn tất trả projection hiện tại và không gửi lại email; expiry trên state terminal là no-op. Confirm/start/ready sai source state trả conflict; extend cùng deadline không được xem là replay thành công.
+8. **Replay theo đúng trạng thái đích.** Confirm/start/ready trả projection hiện tại khi resource đang ở chính state vừa đạt; state đã đi xa hơn hoặc sang nhánh khác trả conflict. Extend cùng deadline hiện tại là replay; deadline nhỏ hơn hiện tại bị reject. Complete trên projection đã hoàn tất trả projection hiện tại và không gửi lại effect; expiry trên state terminal là no-op.
 9. **CASH không nhận amount từ client.** Nếu `balanceDue > 0`, request chỉ xác nhận `confirmCashCollected=true`; Payment có `expectedAmount=receivedAmount=balance`, `FULL_PAYMENT/CASH/VERIFIED`, reviewer/time là actor/time completion. Balance 0 không tạo Payment.
 10. **Effect “một lần” tính theo target.** Tối đa một pickup CASH Payment/order; một SALE StockMovement/accessory reservation; một Warranty/OrderItem đủ điều kiện. Một order nhiều line có thể có nhiều movement/warranty record.
 11. **Không gửi provider trong transaction.** Audit nằm trong commit; `pickup.ready`, `order.completed`, `order.cancelled` gửi best-effort sau transition mới. SMTP fail không rollback.
@@ -131,28 +131,28 @@ Backoffice detail được phép trả `internalNote`; storefront/customer proje
 1. Lock Order; require `PICKUP`, Order `PLACED`, fulfillment `PENDING`.
 2. Require STORE pickup location bằng fulfillment location; tất cả reservation `ACTIVE/PICKUP`, đúng location và `expiresAt = pickupHoldUntil > now`.
 3. Conditional transition Order `PLACED → CONFIRMED`, set `confirmedAt=now`; fulfillment/reservation/tồn không đổi.
-4. Audit `order.pickup_confirmed`; không gửi email riêng.
+4. Audit `fulfillment.pickup_confirmed`; không gửi email riêng.
 
 ### Start preparing
 
 1. Require Order `CONFIRMED`, fulfillment `PENDING`, active reservation và deadline hợp lệ.
 2. Conditional transition Order `CONFIRMED → PROCESSING`, fulfillment `PENDING → PREPARING`.
 3. Không consume reservation, không trừ onHand và không tạo movement/payment/warranty.
-4. Route được thiết kế dùng lại cho SHIPPING ở Slice 09, nhưng Slice 08 chỉ enable/test PICKUP để không mở shipping lifecycle nửa chừng.
+4. Route được enable cho cả PICKUP và SHIPPING đã `CONFIRMED/PENDING`; các command shipment tiếp theo vẫn thuộc Slice 09. Deadline pickup chỉ áp dụng cho nhánh PICKUP.
 
 ### Mark pickup ready
 
 1. Require PICKUP Order `PROCESSING`, fulfillment `PREPARING`, active valid hold.
 2. Fulfillment `PREPARING → READY`, set `pickupReadyAt=now`; inventory vẫn giữ bởi reservation.
-3. Audit `order.pickup_ready`; emit `pickup.ready` một lần sau commit với store/address và deadline snapshot.
+3. Audit `fulfillment.pickup_ready`; emit `pickup.ready` một lần sau commit với store/address và deadline snapshot.
 
 ### Extend pickup hold
 
 1. Normalize `reason`; require 5..500 characters. Parse `holdUntil` Instant.
 2. Require PICKUP chưa terminal, active reservation, current deadline `> now`.
-3. Require new deadline `> current pickupHoldUntil` và `<= now + 7 days`.
+3. Deadline bằng deadline hiện tại là replay; deadline mới hợp lệ phải `> current pickupHoldUntil` và `<= now + 7 days`.
 4. Atomically update Order deadline và mọi active `PICKUP` reservation expiry; affected reservation count phải bằng full active set.
-5. Audit `order.pickup_hold_extended` với before/after đã redacted; không hồi sinh expired/cancelled record và không gửi email P0.
+5. Audit `fulfillment.pickup_hold_extended` với before/after đã redacted; không hồi sinh expired/cancelled record và không gửi email P0.
 
 ### Complete pickup
 
@@ -169,7 +169,7 @@ Một `Serializable` transaction dùng một injected completion instant:
 7. VoucherUsage `RESERVED → CONSUMED` nếu có.
 8. Với mỗi OrderItem `warrantyDaysSnapshot > 0`, create Warranty unique/orderItem; `startAt=completionAt`, `endAt=startAt + daysSnapshot × 24 giờ`, terms từ snapshot, customer null cho guest.
 9. Fulfillment `READY → COMPLETED`, set `pickedUpAt=completionAt`; Order `PROCESSING → COMPLETED`, set `completedAt=completionAt` và projection payment mới.
-10. Audit `order.pickup_completed`; commit rồi emit `order.completed`. Bất kỳ lỗi nào ở bước 3–10 rollback toàn bộ.
+10. Audit `fulfillment.pickup_completed`; commit rồi emit `order.completed`. Bất kỳ lỗi nào ở bước 3–10 rollback toàn bộ.
 
 ### Expire pickup
 
@@ -177,7 +177,7 @@ Một `Serializable` transaction dùng một injected completion instant:
 - Mỗi candidate chạy một system command/Serializable transaction, lock và recheck state/deadline.
 - Order/Fulfillment → `CANCELLED`, set reason/timestamp; reservation `ACTIVE → EXPIRED` và release accessory reserved counter; VoucherUsage `RESERVED → RELEASED`.
 - Terminalize payment phù hợp và dùng cancellation finance primitive để tạo tối đa một Refund `REQUESTED` nếu verified money chưa được cover. Trạng thái này là defensive P0; checkout pickup bình thường không có payment trước completion.
-- Audit actor `SYSTEM`, action `order.pickup_expired`, request ID `job:expirePickupHolds:<runUuid>`; emit `order.cancelled` sau commit.
+- Audit actor `SYSTEM`, action `fulfillment.pickup_expired`, request ID `job:expirePickupHolds:<runUuid>`; emit `order.cancelled` sau commit.
 - Job chạy mỗi phút UTC, batch `SCHEDULER_BATCH_SIZE`, process-local mutex; một row lỗi không rollback batch. `SCHEDULER_ENABLED=false` trong test process thông thường.
 
 ## 5. Database, migration và idempotency
@@ -207,7 +207,7 @@ Idempotency dựa cả application guard và database defense-in-depth:
 - Backoffice guard xác thực account ACTIVE và role EMPLOYEE/ADMIN; frontend role gate chỉ là UX.
 - DTO whitelist/reject unknown field; bodyless command không chấp nhận JSON status/amount. Backoffice mutation dùng Bearer access token, không fallback guest credential.
 - Dùng backoffice rate-limit baseline hiện có; log route template/request ID/actor/resource/state, không log contact body, token, raw identifier hoặc full payment data.
-- Audit nằm trong transaction và chứa actor, request ID, safe before/after/reason. Exact action names của slice: `order.pickup_confirmed`, `order.preparing_started`, `order.pickup_ready`, `order.pickup_hold_extended`, `order.pickup_completed`, `order.pickup_expired`.
+- Audit nằm trong transaction và chứa actor, request ID, safe before/after/reason. Exact action names của slice: `order.internal_note_updated`, `fulfillment.pickup_confirmed`, `fulfillment.preparation_started`, `fulfillment.pickup_ready`, `fulfillment.pickup_hold_extended`, `fulfillment.pickup_completed`, `fulfillment.pickup_expired`.
 - Notification chỉ phát khi transition mới commit. Replay không gửi lại. Provider fail được log redacted và không đổi HTTP/business success.
 - `/backoffice/orders` cung cấp queue có search/filter/pagination/sort đã khóa, badge ba trục status và tín hiệu pickup overdue; filter state nằm trên URL để reload/share được.
 - `/backoffice/orders/[id]` hiển thị safe detail, internal note và đúng năm action theo `availableActions`; extend yêu cầu deadline/reason, complete yêu cầu xác nhận thu CASH khi balance dương.
@@ -238,7 +238,7 @@ Mỗi WP giữ build xanh và chạy gate theo phạm vi; không stage `apps/web
 ### Unit/policy
 
 - Confirm/start/ready source state, pickup type, STORE/location và deadline guards.
-- Deadline boundary `now < holdUntil` versus `now >= holdUntil`; extend lower/equal/past/>7d/reason invalid.
+- Deadline boundary `now < holdUntil` versus `now >= holdUntil`; extend bằng deadline hiện tại là replay, còn lower/past/>7d/reason invalid.
 - CASH flag với positive/zero balance; Money dùng BigInt/Decimal, không `number`.
 - Warranty code collision retry, snapshot interval `[startAt,endAt)` và days zero skip.
 - Projector/redaction/availableActions; notification replay skip và SMTP failure.
@@ -302,7 +302,17 @@ format:check → lint → typecheck → unit
 | Partial unique + expected-state guards | Chỉ tin Serializable/application replay | Defense-in-depth cho effect tiền/tồn/warranty và bounded retry |
 | Backoffice pickup UI + customer projection | Hoãn toàn bộ pickup UI sang Slice 12 | Operations cần queue/detail/action trong Slice 08; Slice 12 chỉ giữ scenario framework và hardening rộng |
 
-## 11. Nguồn tài liệu
+## 11. Kết quả triển khai và nghiệm thu
+
+- Đã triển khai và push riêng từng concern trên branch `feat/slice-08-pickup-fulfillment`; không sửa `docs/decisions` và không stage thay đổi cục bộ của `apps/web/next-env.d.ts`.
+- OpenAPI có đúng 95 operation/95 operationId duy nhất; tám operation Slice 08 có Bearer security, UUID path, response/error schema và generated client đồng bộ.
+- Hai forward migration Slice 08 đã được deploy lên Supabase. Preflight trước/sau rollout có 17/17 invariant query trả 0; migration-from-zero áp dụng đủ 6 migration.
+- `pnpm verify` xanh: 114 API unit test, 13 Web test, 2 generated-client test, 27 integration test và 63 API E2E test đều qua; API/Web production build thành công.
+- Seed chạy hai lần không nhân bản hoặc reset operational state. Supabase smoke hoàn tất order `RPH-20260823-L4AHFLHT`, expire order `RPH-20260823-DR3976HX`, kiểm tra CASH/reservation/stock movement/voucher/warranty/audit và replay không tạo effect trùng.
+- SMTP provider local không khả dụng trong smoke nhưng notification failure được log an toàn sau commit và không rollback nghiệp vụ, đúng failure policy đã khóa.
+- Trước migration đã tạo logical backup read-only tại `C:\Users\Lee\AppData\Local\Temp\rephone-slice08-logical-20260823-011952\before-slice08.json.gz`, SHA-256 `e4aa90dc715090e5e162804574552a46e12f48bd7e7ba37a9f8e7ca4045a9e94`.
+
+## 12. Nguồn tài liệu
 
 - [Root implementation plan — Slice 08](../../plan.md#slice-08--pickup-fulfillment)
 - [Order, deposit và fulfillment requirements](../requirements/order-deposit-and-fulfillment.md)
