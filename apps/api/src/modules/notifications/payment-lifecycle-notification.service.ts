@@ -14,6 +14,8 @@ export interface PaymentNotificationContext {
   customerEmail: string;
   expectedAmount: string;
   receivedAmount?: string;
+  balanceDue?: string;
+  reviewSlaDueAt?: Date | null;
   rejectionReason?: string;
 }
 
@@ -24,21 +26,29 @@ export class PaymentLifecycleNotificationService {
   public constructor(@Inject(MAIL_PROVIDER) private readonly mail: MailProvider) {}
 
   public sendProofSubmitted(context: PaymentNotificationContext): Promise<NotificationDelivery> {
+    const reviewSla =
+      context.reviewSlaDueAt === undefined || context.reviewSlaDueAt === null
+        ? 'Thời hạn xử lý theo SLA review được hiển thị trên đơn hàng.'
+        : `SLA review dự kiến hoàn tất trước ${formatVietnamDeadline(context.reviewSlaDueAt)}.`;
     return this.sendSafely('payment.proof_submitted', context, {
       to: context.customerEmail,
       subject: `[rePhone] Đã nhận bằng chứng cọc cho ${context.orderNumber}`,
-      text: `rePhone đã nhận bằng chứng cọc cho đơn ${context.orderNumber}. Khoản thanh toán đang được kiểm tra.`,
-      html: `<p>rePhone đã nhận bằng chứng cọc cho đơn <strong>${escapeHtml(context.orderNumber)}</strong>.</p><p>Khoản thanh toán đang được kiểm tra.</p>`,
+      text: `rePhone đã nhận bằng chứng cọc cho đơn ${context.orderNumber}. Khoản thanh toán đang được kiểm tra. ${reviewSla}`,
+      html: `<p>rePhone đã nhận bằng chứng cọc cho đơn <strong>${escapeHtml(context.orderNumber)}</strong>.</p><p>Khoản thanh toán đang được kiểm tra. ${escapeHtml(reviewSla)}</p>`,
     });
   }
 
   public sendVerified(context: PaymentNotificationContext): Promise<NotificationDelivery> {
     const received = formatVnd(context.receivedAmount ?? context.expectedAmount);
+    const balance =
+      context.balanceDue === undefined
+        ? 'Số tiền còn lại được hiển thị trên đơn hàng.'
+        : `Số tiền còn lại khi nhận hàng: ${formatVnd(context.balanceDue)}.`;
     return this.sendSafely('payment.verified', context, {
       to: context.customerEmail,
       subject: `[rePhone] Đã xác nhận cọc cho ${context.orderNumber}`,
-      text: `rePhone đã xác nhận ${received} cho đơn ${context.orderNumber}. Đơn hàng chuyển sang bước chuẩn bị giao.`,
-      html: `<p>rePhone đã xác nhận <strong>${escapeHtml(received)}</strong> cho đơn <strong>${escapeHtml(context.orderNumber)}</strong>.</p><p>Đơn hàng chuyển sang bước chuẩn bị giao.</p>`,
+      text: `rePhone đã xác nhận ${received} cho đơn ${context.orderNumber}. ${balance} Đơn hàng chuyển sang bước chuẩn bị giao.`,
+      html: `<p>rePhone đã xác nhận <strong>${escapeHtml(received)}</strong> cho đơn <strong>${escapeHtml(context.orderNumber)}</strong>.</p><p>${escapeHtml(balance)} Đơn hàng chuyển sang bước chuẩn bị giao.</p>`,
     });
   }
 
@@ -47,17 +57,17 @@ export class PaymentLifecycleNotificationService {
     return this.sendSafely('payment.rejected', context, {
       to: context.customerEmail,
       subject: `[rePhone] Bằng chứng cọc của ${context.orderNumber} bị từ chối`,
-      text: `Bằng chứng cọc cho đơn ${context.orderNumber} bị từ chối. Lý do: ${reason}`,
-      html: `<p>Bằng chứng cọc cho đơn <strong>${escapeHtml(context.orderNumber)}</strong> bị từ chối.</p><p>Lý do: ${escapeHtml(reason)}</p>`,
+      text: `Bằng chứng cọc cho đơn ${context.orderNumber} bị từ chối. Lý do: ${reason}. Đơn hàng đã bị hủy. Hệ thống chưa ghi nhận khoản cọc đã xác minh để hoàn; vui lòng liên hệ rePhone nếu cần đối soát.`,
+      html: `<p>Bằng chứng cọc cho đơn <strong>${escapeHtml(context.orderNumber)}</strong> bị từ chối.</p><p>Lý do: ${escapeHtml(reason)}</p><p>Đơn hàng đã bị hủy. Hệ thống chưa ghi nhận khoản cọc đã xác minh để hoàn; vui lòng liên hệ rePhone nếu cần đối soát.</p>`,
     });
   }
 
   public sendExpired(context: PaymentNotificationContext): Promise<NotificationDelivery> {
-    return this.sendSafely('payment.expired', context, {
+    return this.sendSafely('order.cancelled', context, {
       to: context.customerEmail,
-      subject: `[rePhone] Đơn ${context.orderNumber} đã hết hạn cọc`,
-      text: `Đơn ${context.orderNumber} đã bị hủy vì quá hạn nộp bằng chứng cọc.`,
-      html: `<p>Đơn <strong>${escapeHtml(context.orderNumber)}</strong> đã bị hủy vì quá hạn nộp bằng chứng cọc.</p>`,
+      subject: `[rePhone] Đơn ${context.orderNumber} đã hủy`,
+      text: `Đơn ${context.orderNumber} đã bị hủy. Lý do: quá hạn nộp bằng chứng cọc. Không có khoản cọc đã xác minh cần hoàn.`,
+      html: `<p>Đơn <strong>${escapeHtml(context.orderNumber)}</strong> đã bị hủy.</p><p>Lý do: quá hạn nộp bằng chứng cọc.</p><p>Không có khoản cọc đã xác minh cần hoàn.</p>`,
     });
   }
 
@@ -88,6 +98,16 @@ export class PaymentLifecycleNotificationService {
 
 function formatVnd(value: string): string {
   return `${BigInt(value).toLocaleString('vi-VN')} ₫`;
+}
+
+function formatVietnamDeadline(value: Date): string {
+  const formatted = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    dateStyle: 'short',
+    timeStyle: 'short',
+    hour12: false,
+  }).format(value);
+  return `${formatted} (Asia/Ho_Chi_Minh)`;
 }
 
 function escapeHtml(value: string): string {

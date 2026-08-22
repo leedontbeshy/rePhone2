@@ -146,6 +146,12 @@ export class PaymentProofSubmissionService {
         orderNumber: payment.order.orderNumber,
         customerEmail: payment.order.customerEmail,
         expectedAmount: payment.expectedAmount.toString(),
+        reviewSlaDueAt:
+          payment.submittedAt === null || payment.reviewWindowMinutesSnapshot === null
+            ? null
+            : new Date(
+                payment.submittedAt.getTime() + payment.reviewWindowMinutesSnapshot * 60_000,
+              ),
       });
     } catch (error) {
       this.logger.error({

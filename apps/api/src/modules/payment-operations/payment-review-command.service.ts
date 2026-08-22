@@ -307,6 +307,7 @@ function notificationContext(payment: PaymentOperationsRecord) {
     orderNumber: payment.order.orderNumber,
     customerEmail: payment.order.customerEmail,
     expectedAmount: payment.expectedAmount.toString(),
+    balanceDue: payment.order.balanceDue.toString(),
     ...(payment.receivedAmount === null
       ? {}
       : { receivedAmount: payment.receivedAmount.toString() }),

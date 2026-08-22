@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
@@ -14,6 +15,8 @@ import {
 } from './payment-operations.repository.js';
 
 const EXPIRY_REASON = 'Quá hạn nộp bằng chứng thanh toán cọc.';
+const EXPIRY_JOB_NAME = 'expireDepositProofs';
+const NOTIFICATION_CONCURRENCY = 10;
 
 export interface DepositExpiryRunResult {
   scanned: number;
@@ -44,8 +47,26 @@ export class DepositExpiryService {
   ) {}
 
   public async expireDue(now = this.clock.now()): Promise<DepositExpiryRunResult> {
-    if (this.running) return { scanned: 0, expired: 0, failed: 0, skippedOverlap: true };
+    const runId = randomUUID();
+    const requestId = `job:${EXPIRY_JOB_NAME}:${runId}`;
+    const startedAt = Date.now();
+    if (this.running) {
+      this.logger.warn({
+        event: 'job.skipped_overlap',
+        job: EXPIRY_JOB_NAME,
+        runId,
+        requestId,
+      });
+      return { scanned: 0, expired: 0, failed: 0, skippedOverlap: true };
+    }
     this.running = true;
+    this.logger.log({
+      event: 'job.started',
+      job: EXPIRY_JOB_NAME,
+      runId,
+      requestId,
+      batchSize: this.config.scheduler.batchSize,
+    });
     try {
       const candidates = await this.payments.findExpiredDepositCandidates(
         now,
@@ -53,35 +74,71 @@ export class DepositExpiryService {
       );
       let expired = 0;
       let failed = 0;
+      let noop = 0;
+      const pendingNotifications: PaymentNotificationContext[] = [];
       for (const candidate of candidates) {
         try {
-          const outcome = await this.expireOne(candidate.id, now);
+          const outcome = await this.expireOne(candidate.id, now, requestId);
           if (outcome !== null) {
             expired += 1;
-            await this.notifications.sendExpired(notificationContext(outcome));
+            pendingNotifications.push(notificationContext(outcome));
+          } else {
+            noop += 1;
           }
         } catch (error) {
           failed += 1;
           this.logger.error({
-            event: 'payment.deposit_expiry.failed',
+            event: 'job.record_failed',
+            job: EXPIRY_JOB_NAME,
+            runId,
+            requestId,
             paymentId: candidate.id,
             orderId: candidate.orderId,
             errorCategory: error instanceof Error ? error.name : 'UnknownError',
           });
         }
       }
-      return {
+
+      const notificationFailed = await this.deliverNotifications(pendingNotifications);
+      const result = {
         scanned: candidates.length,
         expired,
         failed,
         skippedOverlap: false,
       };
+      this.logger.log({
+        event: 'job.completed',
+        job: EXPIRY_JOB_NAME,
+        runId,
+        requestId,
+        scanned: candidates.length,
+        succeeded: expired,
+        noop,
+        failed,
+        notificationFailed,
+        durationMs: Date.now() - startedAt,
+      });
+      return result;
+    } catch (error) {
+      this.logger.error({
+        event: 'job.failed',
+        job: EXPIRY_JOB_NAME,
+        runId,
+        requestId,
+        durationMs: Date.now() - startedAt,
+        errorCategory: error instanceof Error ? error.name : 'UnknownError',
+      });
+      throw error;
     } finally {
       this.running = false;
     }
   }
 
-  private expireOne(paymentId: string, now: Date): Promise<PaymentOperationsRecord | null> {
+  private expireOne(
+    paymentId: string,
+    now: Date,
+    requestId: string,
+  ): Promise<PaymentOperationsRecord | null> {
     return this.transactions.run('payments.expire-deposit', async (transaction) => {
       const payment = await this.payments.lockPaymentRoot(paymentId, transaction);
       if (payment === null) return null;
@@ -123,7 +180,7 @@ export class DepositExpiryService {
         transaction,
         {
           actorType: 'SYSTEM',
-          requestId: `scheduler:expire-deposits:${now.toISOString()}`,
+          requestId,
           ipAddress: 'scheduler',
         },
         {
@@ -150,9 +207,27 @@ export class DepositExpiryService {
       return updated;
     });
   }
+
+  private async deliverNotifications(contexts: PaymentNotificationContext[]): Promise<number> {
+    let failed = 0;
+    for (let index = 0; index < contexts.length; index += NOTIFICATION_CONCURRENCY) {
+      const batch = contexts.slice(index, index + NOTIFICATION_CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map((context) =>
+          Promise.resolve().then(() => this.notifications.sendExpired(context)),
+        ),
+      );
+      failed += results.filter(
+        (result) => result.status === 'rejected' || result.value === 'FAILED',
+      ).length;
+    }
+    return failed;
+  }
 }
 
-function notificationContext(payment: PaymentOperationsRecord) {
+type PaymentNotificationContext = Parameters<PaymentLifecycleNotificationService['sendExpired']>[0];
+
+function notificationContext(payment: PaymentOperationsRecord): PaymentNotificationContext {
   return {
     paymentId: payment.id,
     orderNumber: payment.order.orderNumber,
