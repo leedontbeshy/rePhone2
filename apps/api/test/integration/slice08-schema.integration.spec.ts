@@ -31,10 +31,14 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
       SELECT conname
       FROM pg_constraint
       WHERE conname IN (
+        'inventory_reservations_order_item_order_fkey',
+        'order_items_id_order_id_key',
+        'orders_pickup_completed_finance_check',
         'orders_pickup_lifecycle_check',
         'orders_pickup_deadline_timestamps_check',
         'payments_cash_fulfillment_check',
         'stock_movements_sale_reference_check',
+        'warranties_code_shape_check',
         'warranties_interval_check'
       )
       ORDER BY conname
@@ -51,12 +55,22 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
         )
       ORDER BY indexname
     `;
+    const triggers = await prisma.$queryRaw<Array<{ tgname: string }>>`
+      SELECT tgname
+      FROM pg_trigger
+      WHERE NOT tgisinternal
+        AND tgname = 'stock_movements_sale_reservation_alignment'
+    `;
 
     expect(constraints.map(({ conname }) => conname)).toEqual([
+      'inventory_reservations_order_item_order_fkey',
+      'order_items_id_order_id_key',
+      'orders_pickup_completed_finance_check',
       'orders_pickup_deadline_timestamps_check',
       'orders_pickup_lifecycle_check',
       'payments_cash_fulfillment_check',
       'stock_movements_sale_reference_check',
+      'warranties_code_shape_check',
       'warranties_interval_check',
     ]);
     expect(indexes.map(({ indexname }) => indexname)).toEqual([
@@ -71,6 +85,7 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
     expect(
       indexes.find(({ indexname }) => indexname === 'orders_pickup_expiry_queue_idx')?.indexdef,
     ).toContain("fulfillment_type = 'PICKUP'");
+    expect(triggers).toEqual([{ tgname: 'stock_movements_sale_reservation_alignment' }]);
   });
 
   it('enforces the pickup lifecycle and chronological deadline timestamps', async () => {
@@ -123,11 +138,25 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
         },
       }),
     ).rejects.toThrow();
+    await expect(
+      prisma.order.update({
+        where: { id: fixture.orderId },
+        data: {
+          status: 'COMPLETED',
+          fulfillmentStatus: 'COMPLETED',
+          pickedUpAt: completedAt,
+          completedAt,
+        },
+      }),
+    ).rejects.toThrow();
     await prisma.order.update({
       where: { id: fixture.orderId },
       data: {
         status: 'COMPLETED',
         fulfillmentStatus: 'COMPLETED',
+        paymentStatus: 'PAID',
+        paidAmount: '1000000',
+        balanceDue: '0',
         pickedUpAt: completedAt,
         completedAt,
       },
@@ -196,6 +225,24 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
         where: { orderItemId: fixture.orderItemId, status: 'ACTIVE' },
       }),
     ).toBe(1);
+  });
+
+  it('rejects a reservation whose order and order item owners differ', async () => {
+    const first = await createOrderFixture(prisma);
+    const second = await createOrderFixture(prisma);
+
+    await expect(
+      prisma.inventoryReservation.create({
+        data: {
+          orderId: first.orderId,
+          orderItemId: second.orderItemId,
+          stockLevelId: second.stockLevelId,
+          quantity: 1,
+          holdReason: 'PICKUP',
+          expiresAt: HOLD_UNTIL,
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it('requires the finalization-only cash shape and one cash payment per order', async () => {
@@ -270,6 +317,18 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
         },
       }),
     ).rejects.toThrow();
+    await expect(
+      prisma.stockMovement.create({
+        data: {
+          variantId: fixture.variantId,
+          fromLocationId: fixture.locationId,
+          type: 'SALE',
+          quantity: 2,
+          referenceType: 'INVENTORY_RESERVATION',
+          referenceId: reservation.id,
+        },
+      }),
+    ).rejects.toThrow();
 
     await prisma.stockMovement.create({
       data: {
@@ -313,6 +372,18 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
     await expect(
       prisma.warranty.create({
         data: {
+          warrantyCode: `WTY-20260823-${randomUUID().replaceAll('-', '').slice(0, 8)}`,
+          orderItemId: fixture.orderItemId,
+          daysSnapshot: 30,
+          termsSnapshot: 'Bảo hành kiểm thử',
+          startAt,
+          endAt: addDays(startAt, 30),
+        },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      prisma.warranty.create({
+        data: {
           warrantyCode: warrantyCode(),
           orderItemId: fixture.orderItemId,
           daysSnapshot: 30,
@@ -337,18 +408,85 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
   });
 
   it('reports zero exact preflight violations for a valid Slice 08 database', async () => {
-    await createOrderFixture(prisma);
+    const fixture = await createOrderFixture(prisma);
+    await prisma.$transaction(async (transaction) => {
+      await transaction.stockLevel.update({
+        where: { id: fixture.stockLevelId },
+        data: { quantityReserved: { increment: 1 } },
+      });
+      await transaction.inventoryReservation.create({
+        data: {
+          orderId: fixture.orderId,
+          orderItemId: fixture.orderItemId,
+          stockLevelId: fixture.stockLevelId,
+          quantity: 1,
+          holdReason: 'PICKUP',
+          expiresAt: HOLD_UNTIL,
+        },
+      });
+    });
 
     expect(await findSlice08PreflightViolations(prisma)).toEqual([
       { checkName: 'orders_pickup_lifecycle_check', count: 0 },
       { checkName: 'orders_pickup_deadline_timestamps_check', count: 0 },
       { checkName: 'inventory_reservations_one_active_per_order_item', count: 0 },
+      { checkName: 'inventory_reservations_order_item_alignment', count: 0 },
+      { checkName: 'pickup_location_shape', count: 0 },
+      { checkName: 'pickup_active_reservation_mirror', count: 0 },
       { checkName: 'payments_cash_fulfillment_check', count: 0 },
       { checkName: 'payments_one_cash_full_payment_per_order', count: 0 },
       { checkName: 'stock_movements_sale_reference_check', count: 0 },
       { checkName: 'stock_movements_one_sale_per_reservation', count: 0 },
+      { checkName: 'stock_movements_sale_reservation_alignment', count: 0 },
       { checkName: 'warranties_interval_check', count: 0 },
+      { checkName: 'warranties_code_shape_check', count: 0 },
+      { checkName: 'completed_pickup_finance_projection', count: 0 },
+      { checkName: 'completed_pickup_inventory_consumption', count: 0 },
+      { checkName: 'completed_pickup_voucher_consumption', count: 0 },
+      { checkName: 'completed_pickup_warranty_issuance', count: 0 },
     ]);
+  });
+
+  it('reports incomplete terminal effects and incorrect active hold mirrors', async () => {
+    const completed = await createOrderFixture(prisma);
+    const completedAt = new Date('2026-08-23T05:00:00.000Z');
+    await prisma.order.update({
+      where: { id: completed.orderId },
+      data: {
+        status: 'COMPLETED',
+        fulfillmentStatus: 'COMPLETED',
+        paymentStatus: 'PAID',
+        paidAmount: '1000000',
+        balanceDue: '0',
+        confirmedAt: new Date('2026-08-23T03:00:00.000Z'),
+        pickupReadyAt: new Date('2026-08-23T04:00:00.000Z'),
+        pickedUpAt: completedAt,
+        completedAt,
+      },
+    });
+
+    const active = await createOrderFixture(prisma);
+    await prisma.inventoryReservation.create({
+      data: {
+        orderId: active.orderId,
+        orderItemId: active.orderItemId,
+        stockLevelId: active.stockLevelId,
+        quantity: 1,
+        holdReason: 'PICKUP',
+        expiresAt: new Date(HOLD_UNTIL.getTime() + 1_000),
+      },
+    });
+
+    const counts = new Map(
+      (await findSlice08PreflightViolations(prisma)).map(({ checkName, count }) => [
+        checkName,
+        count,
+      ]),
+    );
+    expect(counts.get('pickup_active_reservation_mirror')).toBe(1);
+    expect(counts.get('completed_pickup_finance_projection')).toBe(1);
+    expect(counts.get('completed_pickup_inventory_consumption')).toBe(1);
+    expect(counts.get('completed_pickup_warranty_issuance')).toBe(1);
   });
 
   it('does not reset a ready pickup or its active reservation on reseed', async () => {
@@ -509,7 +647,14 @@ function randomHex64(): string {
 }
 
 function warrantyCode(): string {
-  return `WTY-20260823-${randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase()}`;
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const suffix = randomUUID()
+    .replaceAll('-', '')
+    .slice(0, 8)
+    .split('')
+    .map((character) => alphabet[Number.parseInt(character, 16)] ?? '2')
+    .join('');
+  return `RPH-W-20260823-${suffix}`;
 }
 
 function addDays(value: Date, days: number): Date {
