@@ -22,6 +22,7 @@ import {
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiSecurity,
   ApiTags,
@@ -83,6 +84,7 @@ export class PaymentOperationsController {
   @ApiSecurity('guestOrderToken')
   @ApiSecurity('rephone_guest_cart')
   @ApiOperation({ operationId: 'submitPaymentProof', summary: 'Submit private deposit proof' })
+  @ApiParam({ name: 'paymentId', type: String, format: 'uuid' })
   @ApiConsumes('multipart/form-data')
   @ApiHeader({
     name: 'X-Guest-Order-Token',
@@ -186,6 +188,7 @@ export class BackofficePaymentOperationsController {
 
   @Get(':id')
   @ApiOperation({ operationId: 'getBackofficePayment', summary: 'Get safe payment review detail' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficePaymentDetailResponse })
   @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS)
   public detail(
@@ -202,6 +205,7 @@ export class BackofficePaymentOperationsController {
     operationId: 'getPaymentEvidenceUrl',
     summary: 'Create a short-lived private evidence URL',
   })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: PaymentEvidenceUrlResponse })
   @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS)
   public evidenceUrl(
@@ -218,6 +222,7 @@ export class BackofficePaymentOperationsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'verifyPayment', summary: 'Verify one submitted deposit proof' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: VerifyPaymentDto })
   @ApiOkResponse({ type: PaymentReviewResultResponse })
   @ApiErrorResponses(
@@ -243,6 +248,7 @@ export class BackofficePaymentOperationsController {
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
   @ApiOperation({ operationId: 'rejectPayment', summary: 'Reject one submitted deposit proof' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: RejectPaymentDto })
   @ApiOkResponse({ type: PaymentReviewResultResponse })
   @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS, {

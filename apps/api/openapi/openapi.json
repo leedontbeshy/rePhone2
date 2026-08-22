@@ -728,6 +728,17 @@
         ],
         "type": "object"
       },
+      "BackofficePaymentListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
       "BackofficePaymentListResponse": {
         "properties": {
           "data": {
@@ -737,7 +748,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/BackofficePaymentListMetaDto"
           }
         },
         "required": [
@@ -9684,7 +9695,17 @@
     "/api/v1/backoffice/payments/{id}": {
       "get": {
         "operationId": "getBackofficePayment",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -9790,7 +9811,17 @@
     "/api/v1/backoffice/payments/{id}/evidence-url": {
       "get": {
         "operationId": "getPaymentEvidenceUrl",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -9896,7 +9927,17 @@
     "/api/v1/backoffice/payments/{id}/reject": {
       "post": {
         "operationId": "rejectPayment",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -10022,7 +10063,17 @@
     "/api/v1/backoffice/payments/{id}/verify": {
       "post": {
         "operationId": "verifyPayment",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -15064,6 +15115,15 @@
             "name": "X-Guest-Order-Token",
             "required": false,
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "paymentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }

@@ -4,6 +4,12 @@ import { describe, expect, it } from 'vitest';
 
 interface Operation {
   operationId?: string;
+  parameters?: Array<{
+    in?: string;
+    name?: string;
+    required?: boolean;
+    schema?: { format?: string; type?: string };
+  }>;
   requestBody?: { content?: Record<string, unknown> };
   responses?: Record<string, unknown>;
   security?: Array<Record<string, unknown>>;
@@ -18,12 +24,20 @@ const PAYMENT_OPERATION_IDS = [
   'rejectPayment',
 ] as const;
 
+interface OpenApiSchema {
+  $ref?: string;
+  properties?: Record<string, OpenApiSchema>;
+}
+
 describe('Slice 07 OpenAPI contract', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
   ) as {
     paths: Record<string, Record<string, Operation>>;
-    components?: { securitySchemes?: Record<string, unknown> };
+    components?: {
+      schemas?: Record<string, OpenApiSchema>;
+      securitySchemes?: Record<string, unknown>;
+    };
   };
   const allOperations = Object.values(document.paths).flatMap((pathItem) =>
     Object.entries(pathItem)
@@ -87,5 +101,36 @@ describe('Slice 07 OpenAPI contract', () => {
         '429': {},
       });
     }
+  });
+
+  it('declares every templated payment route parameter as a required UUID', () => {
+    const expectedParameters = new Map<string, string>([
+      ['submitPaymentProof', 'paymentId'],
+      ['getBackofficePayment', 'id'],
+      ['getPaymentEvidenceUrl', 'id'],
+      ['verifyPayment', 'id'],
+      ['rejectPayment', 'id'],
+    ]);
+    for (const [operationId, parameterName] of expectedParameters) {
+      const parameter = byId
+        .get(operationId)
+        ?.parameters?.find((candidate) => candidate.in === 'path');
+      expect(parameter).toMatchObject({
+        in: 'path',
+        name: parameterName,
+        required: true,
+      });
+      expect(parameter?.schema).toMatchObject({ type: 'string', format: 'uuid' });
+    }
+  });
+
+  it('models the paginated review queue with the runtime meta.pagination envelope', () => {
+    const schemas = document.components?.schemas;
+    expect(schemas?.['BackofficePaymentListResponse']?.properties?.['meta']?.$ref).toBe(
+      '#/components/schemas/BackofficePaymentListMetaDto',
+    );
+    expect(schemas?.['BackofficePaymentListMetaDto']?.properties?.['pagination']?.$ref).toBe(
+      '#/components/schemas/PaginationDto',
+    );
   });
 });

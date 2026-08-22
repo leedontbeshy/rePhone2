@@ -1425,9 +1425,12 @@ export interface components {
             submittedAt?: string | null;
             transferContent?: string | null;
         };
+        BackofficePaymentListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
         BackofficePaymentListResponse: {
             data: components["schemas"]["BackofficePaymentListItemDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["BackofficePaymentListMetaDto"];
         };
         BackofficePaymentOrderDto: {
             balanceDue: string;
@@ -5469,7 +5472,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5553,7 +5558,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5637,7 +5644,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -5734,7 +5743,9 @@ export interface operations {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody: {
@@ -9122,7 +9133,9 @@ export interface operations {
                 /** @description Guest order credential; Bearer has precedence when present. */
                 "X-Guest-Order-Token"?: string;
             };
-            path?: never;
+            path: {
+                paymentId: string;
+            };
             cookie?: never;
         };
         requestBody: {

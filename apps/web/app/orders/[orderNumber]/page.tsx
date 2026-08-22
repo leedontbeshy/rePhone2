@@ -277,7 +277,7 @@ export default function OrderDetailPage() {
                           <dt>SLA review</dt>
                           <dd>
                             {formatDateTime(payment.reviewSlaDueAt)}
-                            {payment.reviewOverdue === true ? ' · Đã quá SLA' : ''}
+                            {payment.reviewOverdue ? ' · Đã quá SLA' : ''}
                           </dd>
                         </div>
                       )}

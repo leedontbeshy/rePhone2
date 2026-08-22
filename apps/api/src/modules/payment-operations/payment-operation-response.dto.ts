@@ -52,10 +52,15 @@ export class BackofficePaymentListItemDto extends PaymentPublicDto {
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: string;
 }
 
+export class BackofficePaymentListMetaDto {
+  @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
+}
+
 export class BackofficePaymentListResponse {
   @ApiProperty({ type: () => [BackofficePaymentListItemDto] })
   public data!: BackofficePaymentListItemDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => BackofficePaymentListMetaDto })
+  public meta!: BackofficePaymentListMetaDto;
 }
 
 export class PaymentReviewerDto {
