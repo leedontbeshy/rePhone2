@@ -1,0 +1,152 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { ApiError } from '../../common/errors/api-error.js';
+import { PrismaService } from '../../database/prisma.service.js';
+import type { Prisma } from '../../generated/prisma/client.js';
+import { projectOrderFinance, type OrderFinanceProjection } from './payment-finance.policy.js';
+
+export interface LockedOrderFinance {
+  payments: Array<{
+    id: string;
+    purpose: 'DEPOSIT' | 'BALANCE' | 'FULL_PAYMENT';
+    method: 'BANK_TRANSFER' | 'CASH' | 'COD' | 'OTHER';
+    status: 'AWAITING_PROOF' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
+    expectedAmount: string;
+    receivedAmount: string | null;
+  }>;
+  refunds: Array<{
+    id: string;
+    paymentId: string | null;
+    status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+    amount: string;
+  }>;
+}
+
+@Injectable()
+export class FulfillmentPaymentGateway {
+  public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  public async lockFinance(
+    orderId: string,
+    transaction: Prisma.TransactionClient,
+  ): Promise<LockedOrderFinance> {
+    const paymentIds = await transaction.payment.findMany({
+      where: { orderId },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+    for (const { id } of paymentIds) {
+      await transaction.$queryRaw`SELECT id FROM payments WHERE id = ${id}::uuid FOR UPDATE`;
+    }
+    const refundIds = await transaction.refund.findMany({
+      where: { orderId },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+    for (const { id } of refundIds) {
+      await transaction.$queryRaw`SELECT id FROM refunds WHERE id = ${id}::uuid FOR UPDATE`;
+    }
+    const [payments, refunds] = await Promise.all([
+      transaction.payment.findMany({
+        where: { orderId },
+        select: {
+          id: true,
+          purpose: true,
+          method: true,
+          status: true,
+          expectedAmount: true,
+          receivedAmount: true,
+        },
+        orderBy: { id: 'asc' },
+      }),
+      transaction.refund.findMany({
+        where: { orderId },
+        select: { id: true, paymentId: true, status: true, amount: true },
+        orderBy: { id: 'asc' },
+      }),
+    ]);
+    return {
+      payments: payments.map((payment) => ({
+        ...payment,
+        expectedAmount: payment.expectedAmount.toString(),
+        receivedAmount: payment.receivedAmount?.toString() ?? null,
+      })),
+      refunds: refunds.map((refund) => ({ ...refund, amount: refund.amount.toString() })),
+    };
+  }
+
+  public project(grandTotal: bigint, finance: LockedOrderFinance): OrderFinanceProjection {
+    return projectOrderFinance(
+      grandTotal,
+      finance.payments.flatMap((payment) =>
+        payment.status === 'VERIFIED'
+          ? [BigInt(payment.receivedAmount ?? payment.expectedAmount)]
+          : [],
+      ),
+      finance.refunds.flatMap((refund) =>
+        refund.status === 'COMPLETED' ? [BigInt(refund.amount)] : [],
+      ),
+    );
+  }
+
+  public async createVerifiedCash(
+    orderId: string,
+    amount: bigint,
+    staffUserId: string,
+    now: Date,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (amount <= 0n) throw new ApiError('VALIDATION_FAILED');
+    await transaction.payment.create({
+      data: {
+        orderId,
+        purpose: 'FULL_PAYMENT',
+        method: 'CASH',
+        expectedAmount: amount.toString(),
+        receivedAmount: amount.toString(),
+        status: 'VERIFIED',
+        reviewedById: staffUserId,
+        reviewedAt: now,
+      },
+    });
+  }
+
+  public async prepareSystemRefund(
+    orderId: string,
+    reason: string,
+    finance: LockedOrderFinance,
+    transaction: Prisma.TransactionClient,
+  ): Promise<{ id: string; amount: string } | null> {
+    await transaction.payment.updateMany({
+      where: { orderId, status: 'AWAITING_PROOF' },
+      data: { status: 'CANCELLED' },
+    });
+    const verified = finance.payments.filter(({ status }) => status === 'VERIFIED');
+    const verifiedTotal = verified.reduce(
+      (sum, payment) => sum + BigInt(payment.receivedAmount ?? payment.expectedAmount),
+      0n,
+    );
+    const covered = finance.refunds
+      .filter(({ status }) => ['REQUESTED', 'PROCESSING', 'COMPLETED'].includes(status))
+      .reduce((sum, refund) => sum + BigInt(refund.amount), 0n);
+    const refundable = verifiedTotal - covered;
+    if (refundable <= 0n) return null;
+    const method =
+      verified.length === 1 && verified[0]?.method === 'BANK_TRANSFER'
+        ? 'BANK_TRANSFER'
+        : verified.length === 1 && verified[0]?.method === 'CASH'
+          ? 'CASH'
+          : 'OTHER';
+    const refund = await transaction.refund.create({
+      data: {
+        orderId,
+        paymentId: verified.length === 1 ? (verified[0]?.id ?? null) : null,
+        amount: refundable.toString(),
+        method,
+        status: 'REQUESTED',
+        reason,
+        requestedByType: 'SYSTEM',
+      },
+    });
+    return { id: refund.id, amount: refund.amount.toString() };
+  }
+}

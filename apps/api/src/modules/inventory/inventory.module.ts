@@ -12,6 +12,7 @@ import { StockController } from './stock.controller.js';
 import { StockRepository } from './stock.repository.js';
 import { StockService } from './stock.service.js';
 import { CheckoutInventoryGateway } from './checkout-inventory.gateway.js';
+import { FulfillmentInventoryGateway } from './fulfillment-inventory.gateway.js';
 
 @Module({
   imports: [AuthModule, AuditModule],
@@ -31,7 +32,8 @@ import { CheckoutInventoryGateway } from './checkout-inventory.gateway.js';
     StockRepository,
     StockService,
     CheckoutInventoryGateway,
+    FulfillmentInventoryGateway,
   ],
-  exports: [InventoryService, CheckoutInventoryGateway],
+  exports: [InventoryService, CheckoutInventoryGateway, FulfillmentInventoryGateway],
 })
 export class InventoryModule {}

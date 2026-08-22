@@ -5,11 +5,17 @@ import { BackofficeVouchersController, PublicVouchersController } from './vouche
 import { VoucherRepository } from './voucher.repository.js';
 import { VoucherService } from './voucher.service.js';
 import { CheckoutVoucherGateway } from './checkout-voucher.gateway.js';
+import { FulfillmentVoucherGateway } from './fulfillment-voucher.gateway.js';
 
 @Module({
   imports: [AuthModule, AuditModule],
   controllers: [PublicVouchersController, BackofficeVouchersController],
-  providers: [VoucherRepository, VoucherService, CheckoutVoucherGateway],
-  exports: [VoucherService, CheckoutVoucherGateway],
+  providers: [
+    VoucherRepository,
+    VoucherService,
+    CheckoutVoucherGateway,
+    FulfillmentVoucherGateway,
+  ],
+  exports: [VoucherService, CheckoutVoucherGateway, FulfillmentVoucherGateway],
 })
 export class VouchersModule {}
