@@ -10,6 +10,7 @@ import { SerializableTransactionRunner } from '../../database/serializable-trans
 import { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuditWriteActorContext } from '../audit/audit.types.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
+import { PaymentLifecycleNotificationService } from '../notifications/payment-lifecycle-notification.service.js';
 import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
 import { PaymentClock } from './payment-clock.service.js';
 import { PaymentEvidenceValidator } from './payment-evidence.validator.js';
@@ -39,6 +40,8 @@ export class PaymentProofSubmissionService {
     private readonly inventory: CheckoutInventoryGateway,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
     @Inject(PaymentClock) private readonly clock: PaymentClock,
+    @Inject(PaymentLifecycleNotificationService)
+    private readonly notifications: PaymentLifecycleNotificationService,
   ) {}
 
   public async submit(
@@ -81,10 +84,10 @@ export class PaymentProofSubmissionService {
           data: {
             evidenceBucket: stored.bucket,
             evidenceObjectPath: stored.objectPath,
-              customerDeclaredAt: now,
-              submittedAt: now,
-              status: 'UNDER_REVIEW',
-            },
+            customerDeclaredAt: now,
+            submittedAt: now,
+            status: 'UNDER_REVIEW',
+          },
         });
         if (attached.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
         await this.inventory.transitionOrderReservationReason(
@@ -114,6 +117,13 @@ export class PaymentProofSubmissionService {
       });
       if (!outcome.submitted) {
         await this.deleteBestEffort(paymentId, stored.bucket, stored.objectPath, request);
+      } else {
+        await this.notifications.sendProofSubmitted({
+          paymentId: outcome.payment.id,
+          orderNumber: outcome.payment.order.orderNumber,
+          customerEmail: outcome.payment.order.customerEmail,
+          expectedAmount: outcome.payment.expectedAmount.toString(),
+        });
       }
       return projectPaymentPublic(outcome.payment, this.config, this.clock.now());
     } catch (error) {

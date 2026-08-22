@@ -4,6 +4,7 @@ import { NoopMailProvider, SmtpMailProvider } from '../../common/providers/smtp-
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import { OrderNotificationService } from './order-notification.service.js';
+import { PaymentLifecycleNotificationService } from './payment-lifecycle-notification.service.js';
 
 @Module({
   providers: [
@@ -14,7 +15,8 @@ import { OrderNotificationService } from './order-notification.service.js';
         config.environment === 'test' ? new NoopMailProvider() : new SmtpMailProvider(config.mail),
     },
     OrderNotificationService,
+    PaymentLifecycleNotificationService,
   ],
-  exports: [MAIL_PROVIDER, OrderNotificationService],
+  exports: [MAIL_PROVIDER, OrderNotificationService, PaymentLifecycleNotificationService],
 })
 export class NotificationsModule {}
