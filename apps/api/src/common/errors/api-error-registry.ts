@@ -103,6 +103,14 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.NOT_FOUND,
     message: 'Không tìm thấy đơn hàng.',
   },
+  ORDER_NOT_FULLY_PAID: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Đơn hàng chưa được thanh toán đầy đủ.',
+  },
+  RESERVATION_EXPIRED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Thời hạn giữ hàng đã hết.',
+  },
   PAYMENT_PROOF_DEADLINE_PASSED: {
     status: HttpStatus.CONFLICT,
     message: 'Đã quá hạn nộp bằng chứng thanh toán.',

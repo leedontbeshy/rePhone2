@@ -18,6 +18,7 @@ import { SettingsModule } from './modules/settings/settings.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { PaymentOperationsModule } from './modules/payment-operations/payment-operations.module.js';
 import { SchedulerModule } from './modules/scheduler/scheduler.module.js';
+import { FulfillmentModule } from './modules/fulfillment/fulfillment.module.js';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module.js';
     SettingsModule,
     OrdersModule,
     PaymentOperationsModule,
+    FulfillmentModule,
     SchedulerModule,
     HealthModule,
   ],
