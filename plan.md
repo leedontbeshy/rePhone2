@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 06 đã hoàn thành trên branch `feat/slice-06-checkout-reservation-order`<br>
-> Bước tiếp theo: Slice 07 — Deposit proof, review và expiry<br>
+> Trạng thái: Slice 07 đang triển khai trên branch `feat/slice-07-deposit-proof-review-expiry`<br>
+> Bước hiện tại: Deposit proof, review và expiry<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -486,6 +486,8 @@ Nguồn: [Cart/Wishlist endpoints](docs/api/cart-and-wishlist-endpoints.md), [Vo
 Nguồn: [Order/deposit requirement](docs/requirements/order-deposit-and-fulfillment.md), [Checkout transaction](docs/architecture/checkout-transaction.md), [Transaction/concurrency](docs/architecture/transaction-and-concurrency.md), [Checkout/order endpoints](docs/api/checkout-and-customer-order-endpoints.md), [Sales data](docs/data-model/sales.md).
 
 ### Slice 07 — Deposit proof, review và expiry
+
+> 🚧 Đang triển khai. Thiết kế và work package đã chốt tại [Slice 07 implementation plan](docs/planning/2026-08-22-slice-07-deposit-proof-review-expiry-plan.md).
 
 **Mục tiêu:** shipping deposit đi từ chờ proof đến verified/rejected/expired mà không release reservation sai.
 
