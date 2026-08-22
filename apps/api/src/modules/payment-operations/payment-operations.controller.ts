@@ -71,9 +71,9 @@ export class PaymentOperationsController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(
     OptionalSessionGuard,
-    PaymentProofAccessGuard,
-    PaymentProofCsrfGuard,
     PaymentRateLimitGuard,
+    PaymentProofCsrfGuard,
+    PaymentProofAccessGuard,
   )
   @UseInterceptors(
     FileInterceptor('file', {

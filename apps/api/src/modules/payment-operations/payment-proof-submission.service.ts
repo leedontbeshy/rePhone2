@@ -49,6 +49,15 @@ export class PaymentProofSubmissionService {
     paymentId: string,
     file: Express.Multer.File | undefined,
   ): Promise<PaymentPublicDto> {
+    const beforeUpload = await this.payments.findById(paymentId);
+    if (beforeUpload === null) throw new ApiError('ORDER_NOT_FOUND');
+    const preflightNow = this.clock.now();
+    this.ownership.assertAccess(request, beforeUpload.order, preflightNow);
+    if (isProofSubmissionReplay(beforeUpload)) {
+      return projectPaymentPublic(beforeUpload, this.config, preflightNow);
+    }
+    assertProofSubmissionState(beforeUpload, preflightNow);
+
     const evidence = await this.evidenceValidator.validate(file);
     const objectPath = `payments/${paymentId}/${randomUUID()}.${evidence.extension}`;
     let stored: Awaited<ReturnType<StorageProvider['upload']>>;
@@ -63,13 +72,14 @@ export class PaymentProofSubmissionService {
       throw new ApiError('STORAGE_UNAVAILABLE');
     }
 
+    let outcome: ProofSubmissionOutcome;
     try {
-      const outcome = await this.transactions.run('payments.submit-proof', async (transaction) => {
+      outcome = await this.transactions.run('payments.submit-proof', async (transaction) => {
         const payment = await this.payments.lockPaymentRoot(paymentId, transaction);
         if (payment === null) throw new ApiError('ORDER_NOT_FOUND');
         const now = this.clock.now();
         this.ownership.assertAccess(request, payment.order, now);
-        if (payment.status === 'UNDER_REVIEW') {
+        if (isProofSubmissionReplay(payment)) {
           return { submitted: false, payment };
         }
         assertProofSubmissionState(payment, now);
@@ -115,20 +125,35 @@ export class PaymentProofSubmissionService {
         if (updated === null) throw new ApiError('INTERNAL_ERROR');
         return { submitted: true, payment: updated };
       });
-      if (!outcome.submitted) {
-        await this.deleteBestEffort(paymentId, stored.bucket, stored.objectPath, request);
-      } else {
-        await this.notifications.sendProofSubmitted({
-          paymentId: outcome.payment.id,
-          orderNumber: outcome.payment.order.orderNumber,
-          customerEmail: outcome.payment.order.customerEmail,
-          expectedAmount: outcome.payment.expectedAmount.toString(),
-        });
-      }
-      return projectPaymentPublic(outcome.payment, this.config, this.clock.now());
     } catch (error) {
       await this.deleteBestEffort(paymentId, stored.bucket, stored.objectPath, request);
       throw error;
+    }
+
+    if (!outcome.submitted) {
+      await this.deleteBestEffort(paymentId, stored.bucket, stored.objectPath, request);
+      return projectPaymentPublic(outcome.payment, this.config, this.clock.now());
+    }
+
+    await this.notifySubmittedBestEffort(outcome.payment);
+    return projectPaymentPublic(outcome.payment, this.config, this.clock.now());
+  }
+
+  private async notifySubmittedBestEffort(payment: PaymentOperationsRecord): Promise<void> {
+    try {
+      await this.notifications.sendProofSubmitted({
+        paymentId: payment.id,
+        orderNumber: payment.order.orderNumber,
+        customerEmail: payment.order.customerEmail,
+        expectedAmount: payment.expectedAmount.toString(),
+      });
+    } catch (error) {
+      this.logger.error({
+        event: 'notification.failed',
+        template: 'payment.proof_submitted',
+        resourceId: payment.id,
+        errorCategory: error instanceof Error ? error.name : 'UnknownError',
+      });
     }
   }
 
@@ -178,6 +203,36 @@ export function assertProofSubmissionState(
   if (payment.expiresAt === null || now >= payment.expiresAt) {
     throw new ApiError('PAYMENT_PROOF_DEADLINE_PASSED');
   }
+}
+
+export function isProofSubmissionReplay(
+  payment: Pick<
+    PaymentOperationsRecord,
+    | 'purpose'
+    | 'method'
+    | 'status'
+    | 'evidenceBucket'
+    | 'evidenceObjectPath'
+    | 'customerDeclaredAt'
+    | 'submittedAt'
+  > & { order: Pick<PaymentOperationsRecord['order'], 'status' | 'fulfillmentStatus'> },
+): boolean {
+  return (
+    payment.purpose === 'DEPOSIT' &&
+    payment.method === 'BANK_TRANSFER' &&
+    payment.status === 'UNDER_REVIEW' &&
+    payment.order.status === 'PLACED' &&
+    payment.order.fulfillmentStatus === 'PENDING' &&
+    payment.evidenceBucket !== null &&
+    payment.evidenceObjectPath !== null &&
+    payment.customerDeclaredAt !== null &&
+    payment.submittedAt !== null
+  );
+}
+
+interface ProofSubmissionOutcome {
+  submitted: boolean;
+  payment: PaymentOperationsRecord;
 }
 
 function paymentAuditActor(request: Request): AuditWriteActorContext {

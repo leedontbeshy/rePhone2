@@ -5,7 +5,10 @@ import { ApiError } from '../../common/errors/api-error.js';
 import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
 import { PaymentClock } from './payment-clock.service.js';
 import { PaymentOperationsRepository } from './payment-operations.repository.js';
-import { assertProofSubmissionState } from './payment-proof-submission.service.js';
+import {
+  assertProofSubmissionState,
+  isProofSubmissionReplay,
+} from './payment-proof-submission.service.js';
 
 @Injectable()
 export class PaymentProofAccessGuard implements CanActivate {
@@ -25,8 +28,9 @@ export class PaymentProofAccessGuard implements CanActivate {
     }
     const payment = await this.payments.findById(paymentId);
     if (payment === null) throw new ApiError('ORDER_NOT_FOUND');
-    this.ownership.assertAccess(request, payment.order, this.clock.now());
-    assertProofSubmissionState(payment, this.clock.now());
+    const now = this.clock.now();
+    this.ownership.assertAccess(request, payment.order, now);
+    if (!isProofSubmissionReplay(payment)) assertProofSubmissionState(payment, now);
     return true;
   }
 }

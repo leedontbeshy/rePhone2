@@ -2,12 +2,14 @@ import { readFileSync } from 'node:fs';
 import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
 import { InMemoryStorageProvider } from '../../src/common/providers/in-memory-storage.provider.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { AuthRateLimiter } from '../../src/modules/auth/auth-rate-limiter.service.js';
+import { PaymentLifecycleNotificationService } from '../../src/modules/notifications/payment-lifecycle-notification.service.js';
 import { DepositExpiryService } from '../../src/modules/payment-operations/deposit-expiry.service.js';
+import { PaymentOperationsRepository } from '../../src/modules/payment-operations/payment-operations.repository.js';
 import { PaymentRateLimiter } from '../../src/modules/payment-operations/payment-rate-limiter.service.js';
 import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
@@ -46,6 +48,10 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
   afterAll(async () => {
     await prisma.$disconnect();
     await app.close();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('submits, queues, signs and verifies customer evidence without leaking private location', async () => {
@@ -222,6 +228,112 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
       .get('/api/v1/backoffice/payments')
       .set('Authorization', `Bearer ${customer}`)
       .expect(403);
+  });
+
+  it('returns a sequential no-file replay without another object, audit or email', async () => {
+    const checkout = await createCustomerShippingOrder(server, prisma);
+    const storage = app.get(InMemoryStorageProvider);
+    const notification = vi.spyOn(
+      app.get(PaymentLifecycleNotificationService),
+      'sendProofSubmitted',
+    );
+
+    await request(server)
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('Authorization', `Bearer ${checkout.customerToken}`)
+      .attach('file', PROOF, { filename: 'deposit.png', contentType: 'image/png' })
+      .expect(200);
+    const replay = await request(server)
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('Authorization', `Bearer ${checkout.customerToken}`)
+      .send({})
+      .expect(200);
+    expect(data(replay.body)).toMatchObject({
+      id: checkout.paymentId,
+      status: 'UNDER_REVIEW',
+    });
+
+    const admin = await login(server, 'admin@rephone.local', 'AdminDemo123');
+    await request(server)
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('Authorization', `Bearer ${admin}`)
+      .send({})
+      .expect(403);
+    expect(storage.objectCount()).toBe(1);
+    expect(
+      await prisma.auditLog.count({
+        where: { resourceId: checkout.paymentId, action: 'payment.proof_submitted' },
+      }),
+    ).toBe(1);
+    expect(notification).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a successful submit when the post-commit notification throws', async () => {
+    const checkout = await createCustomerShippingOrder(server, prisma);
+    const storage = app.get(InMemoryStorageProvider);
+    const deleteObject = vi.spyOn(storage, 'delete');
+    const notification = vi
+      .spyOn(app.get(PaymentLifecycleNotificationService), 'sendProofSubmitted')
+      .mockRejectedValueOnce(new Error('post-commit notification failure'));
+
+    const submitted = await request(server)
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('Authorization', `Bearer ${checkout.customerToken}`)
+      .attach('file', PROOF, { filename: 'deposit.png', contentType: 'image/png' })
+      .expect(200);
+    expect(data(submitted.body)).toMatchObject({
+      id: checkout.paymentId,
+      status: 'UNDER_REVIEW',
+    });
+    const committed = await prisma.payment.findUniqueOrThrow({
+      where: { id: checkout.paymentId },
+    });
+    expect(committed).toMatchObject({ status: 'UNDER_REVIEW', evidenceBucket: 'private-test' });
+    expect(committed.evidenceObjectPath).not.toBeNull();
+    expect(storage.objectCount()).toBe(1);
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect(
+      await prisma.auditLog.count({
+        where: { resourceId: checkout.paymentId, action: 'payment.proof_submitted' },
+      }),
+    ).toBe(1);
+
+    await request(server)
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('Authorization', `Bearer ${checkout.customerToken}`)
+      .send({})
+      .expect(200);
+    expect(storage.objectCount()).toBe(1);
+    expect(deleteObject).not.toHaveBeenCalled();
+    expect(notification).toHaveBeenCalledOnce();
+  });
+
+  it('runs rate-limit and CSRF guards before payment database access', async () => {
+    const checkout = await createGuestShippingOrder(server, prisma);
+    const payments = app.get(PaymentOperationsRepository);
+    const findPayment = vi.spyOn(payments, 'findById');
+
+    await checkout.agent
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .send({})
+      .expect(403);
+    expect(findPayment).not.toHaveBeenCalled();
+
+    app.get(PaymentRateLimiter).clear();
+    findPayment.mockClear();
+    for (let requestIndex = 0; requestIndex < 10; requestIndex += 1) {
+      await checkout.agent
+        .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+        .set('X-Guest-Order-Token', 'B'.repeat(43))
+        .send({})
+        .expect(404);
+    }
+    await checkout.agent
+      .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
+      .set('X-Guest-Order-Token', 'B'.repeat(43))
+      .send({})
+      .expect(429);
+    expect(findPayment).toHaveBeenCalledTimes(10);
   });
 
   it('allows exactly one verify or reject terminal transition under concurrency', async () => {
