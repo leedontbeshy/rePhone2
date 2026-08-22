@@ -434,6 +434,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the payment review queue */
+        get: operations["listBackofficePayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get safe payment review detail */
+        get: operations["getBackofficePayment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/payments/{id}/evidence-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Create a short-lived private evidence URL */
+        get: operations["getPaymentEvidenceUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/payments/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject one submitted deposit proof */
+        post: operations["rejectPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/payments/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify one submitted deposit proof */
+        post: operations["verifyPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/product-media/{id}": {
         parameters: {
             query?: never;
@@ -964,6 +1049,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/{paymentId}/submit-proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit private deposit proof */
+        post: operations["submitPaymentProof"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products": {
         parameters: {
             query?: never;
@@ -1281,6 +1383,86 @@ export interface components {
             /** Format: uri */
             url: string;
         };
+        BackofficePaymentDetailDto: {
+            evidenceAvailable: boolean;
+            order: components["schemas"]["BackofficePaymentOrderDto"];
+            payment: components["schemas"]["PaymentPublicDto"];
+            /** Format: date-time */
+            reviewedAt?: string | null;
+            reviewer?: components["schemas"]["PaymentReviewerDto"] | null;
+            reviewNote?: string | null;
+        };
+        BackofficePaymentDetailResponse: {
+            data: components["schemas"]["BackofficePaymentDetailDto"];
+        };
+        BackofficePaymentListItemDto: {
+            bankTransferInstructions?: components["schemas"]["BankTransferInstructionsDto"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: email */
+            customerEmail: string;
+            customerName: string;
+            expectedAmount: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** @enum {string} */
+            fulfillmentType: "PICKUP" | "SHIPPING";
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+            orderNumber: string;
+            /** @enum {string} */
+            purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+            receivedAmount?: string | null;
+            rejectionReason?: string | null;
+            reviewOverdue: boolean;
+            /** Format: date-time */
+            reviewSlaDueAt?: string | null;
+            /** @enum {string} */
+            status: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+            /** Format: date-time */
+            submittedAt?: string | null;
+            transferContent?: string | null;
+        };
+        BackofficePaymentListResponse: {
+            data: components["schemas"]["BackofficePaymentListItemDto"][];
+            meta: components["schemas"]["PaginationDto"];
+        };
+        BackofficePaymentOrderDto: {
+            balanceDue: string;
+            /** Format: date-time */
+            cancelledAt?: string | null;
+            /** Format: date-time */
+            confirmedAt?: string | null;
+            /** Format: email */
+            customerEmail: string;
+            customerName: string;
+            customerPhone: string;
+            depositRequired: string;
+            fulfillmentStatus: string;
+            grandTotal: string;
+            /** Format: uuid */
+            id: string;
+            items: components["schemas"]["BackofficePaymentOrderItemDto"][];
+            orderNumber: string;
+            paidAmount: string;
+            paymentStatus: string;
+            /** Format: date-time */
+            placedAt: string;
+            refundedAmount: string;
+            shippingAddress?: Record<string, never> | null;
+            status: string;
+        };
+        BackofficePaymentOrderItemDto: {
+            /** Format: uuid */
+            id: string;
+            inventoryCode?: string | null;
+            lineTotal: string;
+            productName: string;
+            quantity: number;
+            variantName: string;
+        };
         BackofficeProductDetailDto: {
             /** Format: date-time */
             archivedAt?: string | null;
@@ -1400,6 +1582,14 @@ export interface components {
         };
         BackofficeVoucherResponse: {
             data: components["schemas"]["BackofficeVoucherDto"];
+        };
+        BankTransferInstructionsDto: {
+            accountHolder: string;
+            accountNumber: string;
+            bankName: string;
+            /** Format: uri */
+            qrUrl?: string | null;
+            transferContent: string;
         };
         CancelOrderDto: {
             reason: string;
@@ -1888,6 +2078,14 @@ export interface components {
             /** @enum {string} */
             type: "IMEI_1" | "IMEI_2" | "SERIAL" | "EID";
         };
+        OrderBankTransferInstructionsDto: {
+            accountHolder: string;
+            accountNumber: string;
+            bankName: string;
+            /** Format: uri */
+            qrUrl?: string | null;
+            transferContent: string;
+        };
         OrderContactDto: {
             /** Format: email */
             email: string;
@@ -1895,7 +2093,7 @@ export interface components {
             phone: string;
         };
         OrderDetailDto: {
-            availableActions: "CANCEL"[];
+            availableActions: ("CANCEL" | "SUBMIT_PAYMENT_PROOF")[];
             /** Format: date-time */
             cancelledAt?: string | null;
             cancelReason?: string | null;
@@ -1979,6 +2177,9 @@ export interface components {
             bankAccountHolder?: string | null;
             bankAccountNumber?: string | null;
             bankName?: string | null;
+            /** Format: uri */
+            bankQrUrl?: string | null;
+            bankTransferInstructions?: components["schemas"]["OrderBankTransferInstructionsDto"] | null;
             expectedAmount: string;
             /** Format: date-time */
             expiresAt?: string | null;
@@ -1989,8 +2190,14 @@ export interface components {
             /** @enum {string} */
             purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
             receivedAmount?: string | null;
+            rejectionReason?: string | null;
+            reviewOverdue: boolean;
+            /** Format: date-time */
+            reviewSlaDueAt?: string | null;
             /** @enum {string} */
             status: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+            /** Format: date-time */
+            submittedAt?: string | null;
             transferContent?: string | null;
         };
         OrderRefundDto: {
@@ -2008,6 +2215,65 @@ export interface components {
             pageSize: number;
             totalItems: number;
             totalPages: number;
+        };
+        PaymentEvidenceUrlDto: {
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: uri */
+            url: string;
+        };
+        PaymentEvidenceUrlResponse: {
+            data: components["schemas"]["PaymentEvidenceUrlDto"];
+        };
+        PaymentPublicDto: {
+            bankTransferInstructions?: components["schemas"]["BankTransferInstructionsDto"] | null;
+            expectedAmount: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+            orderNumber: string;
+            /** @enum {string} */
+            purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+            receivedAmount?: string | null;
+            rejectionReason?: string | null;
+            reviewOverdue: boolean;
+            /** Format: date-time */
+            reviewSlaDueAt?: string | null;
+            /** @enum {string} */
+            status: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+            /** Format: date-time */
+            submittedAt?: string | null;
+            transferContent?: string | null;
+        };
+        PaymentPublicResponse: {
+            data: components["schemas"]["PaymentPublicDto"];
+        };
+        PaymentReviewerDto: {
+            employeeCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+        };
+        PaymentReviewOrderProjectionDto: {
+            balanceDue: string;
+            fulfillmentStatus: string;
+            orderNumber: string;
+            paidAmount: string;
+            paymentStatus: string;
+            refundedAmount: string;
+            status: string;
+        };
+        PaymentReviewResultDto: {
+            /** @enum {string} */
+            notificationDelivery: "SENT" | "FAILED" | "SKIPPED_REPLAY";
+            order: components["schemas"]["PaymentReviewOrderProjectionDto"];
+            payment: components["schemas"]["PaymentPublicDto"];
+        };
+        PaymentReviewResultResponse: {
+            data: components["schemas"]["PaymentReviewResultDto"];
         };
         PickupStoreSummaryDto: {
             code: string;
@@ -2139,6 +2405,9 @@ export interface components {
         };
         RegisteredAccountResponse: {
             data: components["schemas"]["RegisteredAccountDto"];
+        };
+        RejectPaymentDto: {
+            reason: string;
         };
         ResetPasswordDto: {
             newPassword: string;
@@ -2414,6 +2683,10 @@ export interface components {
             id: string;
             sku: string;
             storageCapacityGb?: number | null;
+        };
+        VerifyPaymentDto: {
+            note?: string;
+            receivedAmount: string;
         };
         VoucherReasonDto: {
             reason: string;
@@ -5087,6 +5360,468 @@ export interface operations {
             };
             /** @description INTERNAL_ERROR */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listBackofficePayments: {
+        parameters: {
+            query?: {
+                sortOrder?: "asc" | "desc";
+                sortBy?: "submittedAt" | "expiresAt" | "createdAt" | "expectedAmount";
+                pageSize?: number;
+                page?: number;
+                submittedTo?: string;
+                submittedFrom?: string;
+                orderNumber?: string;
+                reviewOverdue?: boolean;
+                method?: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+                purpose?: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+                status?: "AWAITING_PROOF" | "UNDER_REVIEW" | "VERIFIED" | "REJECTED" | "EXPIRED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficePaymentListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getBackofficePayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficePaymentDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getPaymentEvidenceUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentEvidenceUrlResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    rejectPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentReviewResultResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    verifyPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentReviewResultResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /**
+             * @description EVIDENCE_REQUIRED
+             *
+             *     DEPOSIT_AMOUNT_INSUFFICIENT or VALIDATION_FAILED
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8370,6 +9105,129 @@ export interface operations {
                 headers: {
                     /** @description Seconds until the current rate-limit window permits a retry. */
                     "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    submitPaymentProof: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Required with value 1 only for guest cart-cookie authentication. */
+                "X-Rephone-CSRF"?: string;
+                /** @description Guest order credential; Bearer has precedence when present. */
+                "X-Guest-Order-Token"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentPublicResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN or CSRF_VALIDATION_FAILED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description PAYMENT_PROOF_DEADLINE_PASSED, PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FILE_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description UNSUPPORTED_FILE_TYPE */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {

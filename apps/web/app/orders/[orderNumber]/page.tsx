@@ -5,23 +5,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiError, captureGuestOrderToken } from '../../../lib/order-access';
-import { submitPaymentProof, type PaymentPublic } from '../../../lib/payment-api';
+import { submitPaymentProof } from '../../../lib/payment-api';
 import { useAuth } from '../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../catalog-ui';
 
 type GeneratedOrder = components['schemas']['OrderDetailDto'];
 type GeneratedPayment = components['schemas']['OrderPaymentDto'];
-type OrderPayment = GeneratedPayment &
-  Partial<
-    Pick<
-      PaymentPublic,
-      | 'submittedAt'
-      | 'reviewSlaDueAt'
-      | 'reviewOverdue'
-      | 'rejectionReason'
-      | 'bankTransferInstructions'
-    >
-  >;
+type OrderPayment = GeneratedPayment;
 type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts'> & {
   availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
   paymentAttempts: OrderPayment[];

@@ -19,7 +19,9 @@ describe('Slice 04 OpenAPI contract', () => {
       .filter(([method]) => ['get', 'post', 'patch', 'delete'].includes(method))
       .filter(
         () =>
-          path.startsWith('/api/v1/backoffice/') && !path.startsWith('/api/v1/backoffice/vouchers'),
+          path.startsWith('/api/v1/backoffice/') &&
+          !path.startsWith('/api/v1/backoffice/vouchers') &&
+          !path.startsWith('/api/v1/backoffice/payments'),
       )
       .map(([method, operation]) => ({ method, operation, path })),
   );

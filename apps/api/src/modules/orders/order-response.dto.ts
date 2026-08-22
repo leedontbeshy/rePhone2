@@ -86,6 +86,15 @@ export class OrderItemDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public warrantyTerms!: string | null;
 }
 
+export class OrderBankTransferInstructionsDto {
+  @ApiProperty({ type: String }) public bankName!: string;
+  @ApiProperty({ type: String }) public accountNumber!: string;
+  @ApiProperty({ type: String }) public accountHolder!: string;
+  @ApiPropertyOptional({ type: String, format: 'uri', nullable: true }) public qrUrl!:
+    string | null;
+  @ApiProperty({ type: String }) public transferContent!: string;
+}
+
 export class OrderPaymentDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ enum: ['DEPOSIT', 'BALANCE', 'FULL_PAYMENT'] }) public purpose!: string;
@@ -102,14 +111,8 @@ export class OrderPaymentDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public bankAccountHolder!: string | null;
   @ApiPropertyOptional({ type: String, format: 'uri', nullable: true }) public bankQrUrl!:
     string | null;
-  @ApiPropertyOptional({ type: Object, nullable: true })
-  public bankTransferInstructions!: {
-    bankName: string;
-    accountNumber: string;
-    accountHolder: string;
-    qrUrl: string | null;
-    transferContent: string;
-  } | null;
+  @ApiPropertyOptional({ type: () => OrderBankTransferInstructionsDto, nullable: true })
+  public bankTransferInstructions!: OrderBankTransferInstructionsDto | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   public expiresAt!: string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })

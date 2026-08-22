@@ -565,6 +565,313 @@
         ],
         "type": "object"
       },
+      "BackofficePaymentDetailDto": {
+        "properties": {
+          "evidenceAvailable": {
+            "type": "boolean"
+          },
+          "order": {
+            "$ref": "#/components/schemas/BackofficePaymentOrderDto"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/PaymentPublicDto"
+          },
+          "reviewedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewer": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaymentReviewerDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "reviewNote": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment",
+          "evidenceAvailable",
+          "order"
+        ],
+        "type": "object"
+      },
+      "BackofficePaymentDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BackofficePaymentDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "BackofficePaymentListItemDto": {
+        "properties": {
+          "bankTransferInstructions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BankTransferInstructionsDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "customerEmail": {
+            "format": "email",
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "expectedAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "COD",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "DEPOSIT",
+              "BALANCE",
+              "FULL_PAYMENT"
+            ],
+            "type": "string"
+          },
+          "receivedAmount": {
+            "nullable": true,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "rejectionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewOverdue": {
+            "type": "boolean"
+          },
+          "reviewSlaDueAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AWAITING_PROOF",
+              "UNDER_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "transferContent": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "purpose",
+          "method",
+          "status",
+          "expectedAmount",
+          "reviewOverdue",
+          "customerName",
+          "customerEmail",
+          "fulfillmentType",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "BackofficePaymentListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficePaymentListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "BackofficePaymentOrderDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "confirmedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "customerEmail": {
+            "format": "email",
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "customerPhone": {
+            "type": "string"
+          },
+          "depositRequired": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficePaymentOrderItemDto"
+            },
+            "type": "array"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paidAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "refundedAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "shippingAddress": {
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "customerName",
+          "customerEmail",
+          "customerPhone",
+          "items",
+          "grandTotal",
+          "depositRequired",
+          "paidAmount",
+          "refundedAmount",
+          "balanceDue",
+          "placedAt"
+        ],
+        "type": "object"
+      },
+      "BackofficePaymentOrderItemDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inventoryCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lineTotal": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "variantName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "productName",
+          "variantName",
+          "quantity",
+          "lineTotal"
+        ],
+        "type": "object"
+      },
       "BackofficeProductDetailDto": {
         "properties": {
           "archivedAt": {
@@ -1000,6 +1307,34 @@
         },
         "required": [
           "data"
+        ],
+        "type": "object"
+      },
+      "BankTransferInstructionsDto": {
+        "properties": {
+          "accountHolder": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "qrUrl": {
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          },
+          "transferContent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bankName",
+          "accountNumber",
+          "accountHolder",
+          "transferContent"
         ],
         "type": "object"
       },
@@ -2900,6 +3235,34 @@
         ],
         "type": "object"
       },
+      "OrderBankTransferInstructionsDto": {
+        "properties": {
+          "accountHolder": {
+            "type": "string"
+          },
+          "accountNumber": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "qrUrl": {
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          },
+          "transferContent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bankName",
+          "accountNumber",
+          "accountHolder",
+          "transferContent"
+        ],
+        "type": "object"
+      },
       "OrderContactDto": {
         "properties": {
           "email": {
@@ -2925,7 +3288,8 @@
           "availableActions": {
             "items": {
               "enum": [
-                "CANCEL"
+                "CANCEL",
+                "SUBMIT_PAYMENT_PROOF"
               ],
               "type": "string"
             },
@@ -3267,6 +3631,20 @@
             "nullable": true,
             "type": "string"
           },
+          "bankQrUrl": {
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          },
+          "bankTransferInstructions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderBankTransferInstructionsDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "expectedAmount": {
             "pattern": "^\\d+$",
             "type": "string"
@@ -3301,6 +3679,18 @@
             "nullable": true,
             "type": "string"
           },
+          "rejectionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewOverdue": {
+            "type": "boolean"
+          },
+          "reviewSlaDueAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "status": {
             "enum": [
               "AWAITING_PROOF",
@@ -3310,6 +3700,11 @@
               "EXPIRED",
               "CANCELLED"
             ],
+            "type": "string"
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "nullable": true,
             "type": "string"
           },
           "transferContent": {
@@ -3322,7 +3717,8 @@
           "purpose",
           "method",
           "status",
-          "expectedAmount"
+          "expectedAmount",
+          "reviewOverdue"
         ],
         "type": "object"
       },
@@ -3388,6 +3784,231 @@
           "pageSize",
           "totalItems",
           "totalPages"
+        ],
+        "type": "object"
+      },
+      "PaymentEvidenceUrlDto": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "PaymentEvidenceUrlResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PaymentEvidenceUrlDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "PaymentPublicDto": {
+        "properties": {
+          "bankTransferInstructions": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BankTransferInstructionsDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "expectedAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "COD",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "DEPOSIT",
+              "BALANCE",
+              "FULL_PAYMENT"
+            ],
+            "type": "string"
+          },
+          "receivedAmount": {
+            "nullable": true,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "rejectionReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewOverdue": {
+            "type": "boolean"
+          },
+          "reviewSlaDueAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AWAITING_PROOF",
+              "UNDER_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "transferContent": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "purpose",
+          "method",
+          "status",
+          "expectedAmount",
+          "reviewOverdue"
+        ],
+        "type": "object"
+      },
+      "PaymentPublicResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PaymentPublicDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "PaymentReviewerDto": {
+        "properties": {
+          "employeeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "PaymentReviewOrderProjectionDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paidAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "refundedAmount": {
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "paidAmount",
+          "refundedAmount",
+          "balanceDue"
+        ],
+        "type": "object"
+      },
+      "PaymentReviewResultDto": {
+        "properties": {
+          "notificationDelivery": {
+            "enum": [
+              "SENT",
+              "FAILED",
+              "SKIPPED_REPLAY"
+            ],
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/PaymentReviewOrderProjectionDto"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/PaymentPublicDto"
+          }
+        },
+        "required": [
+          "payment",
+          "order",
+          "notificationDelivery"
+        ],
+        "type": "object"
+      },
+      "PaymentReviewResultResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PaymentReviewResultDto"
+          }
+        },
+        "required": [
+          "data"
         ],
         "type": "object"
       },
@@ -3875,6 +4496,19 @@
         },
         "required": [
           "data"
+        ],
+        "type": "object"
+      },
+      "RejectPaymentDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -4900,6 +5534,23 @@
           "id",
           "sku",
           "displayName"
+        ],
+        "type": "object"
+      },
+      "VerifyPaymentDto": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "receivedAmount": {
+            "pattern": "^[1-9][0-9]{0,14}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receivedAmount"
         ],
         "type": "object"
       },
@@ -8798,6 +9449,699 @@
         "summary": "",
         "tags": [
           "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/payments": {
+      "get": {
+        "operationId": "listBackofficePayments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "submittedAt",
+                "expiresAt",
+                "createdAt",
+                "expectedAmount"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submittedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "submittedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderNumber",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reviewOverdue",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "method",
+            "required": false,
+            "schema": {
+              "enum": [
+                "BANK_TRANSFER",
+                "CASH",
+                "COD",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purpose",
+            "required": false,
+            "schema": {
+              "enum": [
+                "DEPOSIT",
+                "BALANCE",
+                "FULL_PAYMENT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "AWAITING_PROOF",
+                "UNDER_REVIEW",
+                "VERIFIED",
+                "REJECTED",
+                "EXPIRED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficePaymentListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List the payment review queue",
+        "tags": [
+          "backoffice-payments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/payments/{id}": {
+      "get": {
+        "operationId": "getBackofficePayment",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficePaymentDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get safe payment review detail",
+        "tags": [
+          "backoffice-payments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/payments/{id}/evidence-url": {
+      "get": {
+        "operationId": "getPaymentEvidenceUrl",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentEvidenceUrlResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a short-lived private evidence URL",
+        "tags": [
+          "backoffice-payments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/payments/{id}/reject": {
+      "post": {
+        "operationId": "rejectPayment",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectPaymentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentReviewResultResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Reject one submitted deposit proof",
+        "tags": [
+          "backoffice-payments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/payments/{id}/verify": {
+      "post": {
+        "operationId": "verifyPayment",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPaymentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentReviewResultResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED\n\nDEPOSIT_AMOUNT_INSUFFICIENT or VALIDATION_FAILED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Verify one submitted deposit proof",
+        "tags": [
+          "backoffice-payments"
         ]
       }
     },
@@ -13698,6 +15042,187 @@
         "summary": "Cancel one owned order",
         "tags": [
           "orders"
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/submit-proof": {
+      "post": {
+        "operationId": "submitPaymentProof",
+        "parameters": [
+          {
+            "description": "Required with value 1 only for guest cart-cookie authentication.",
+            "in": "header",
+            "name": "X-Rephone-CSRF",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Guest order credential; Bearer has precedence when present.",
+            "in": "header",
+            "name": "X-Guest-Order-Token",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentPublicResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN or CSRF_VALIDATION_FAILED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "PAYMENT_PROOF_DEADLINE_PASSED, PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FILE_TOO_LARGE"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_FILE_TYPE"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "rephone_guest_cart": []
+          },
+          {
+            "guestOrderToken": []
+          },
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Submit private deposit proof",
+        "tags": [
+          "payments"
         ]
       }
     },
