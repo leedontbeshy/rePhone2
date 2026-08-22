@@ -86,6 +86,15 @@ export class OrderItemDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public warrantyTerms!: string | null;
 }
 
+export class OrderBankTransferInstructionsDto {
+  @ApiProperty({ type: String }) public bankName!: string;
+  @ApiProperty({ type: String }) public accountNumber!: string;
+  @ApiProperty({ type: String }) public accountHolder!: string;
+  @ApiPropertyOptional({ type: String, format: 'uri', nullable: true }) public qrUrl!:
+    string | null;
+  @ApiProperty({ type: String }) public transferContent!: string;
+}
+
 export class OrderPaymentDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ enum: ['DEPOSIT', 'BALANCE', 'FULL_PAYMENT'] }) public purpose!: string;
@@ -100,8 +109,18 @@ export class OrderPaymentDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public bankName!: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public bankAccountNumber!: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public bankAccountHolder!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'uri', nullable: true }) public bankQrUrl!:
+    string | null;
+  @ApiPropertyOptional({ type: () => OrderBankTransferInstructionsDto, nullable: true })
+  public bankTransferInstructions!: OrderBankTransferInstructionsDto | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   public expiresAt!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public submittedAt!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public reviewSlaDueAt!: string | null;
+  @ApiProperty({ type: Boolean }) public reviewOverdue!: boolean;
+  @ApiPropertyOptional({ type: String, nullable: true }) public rejectionReason!: string | null;
 }
 
 export class OrderRefundDto {
@@ -152,7 +171,8 @@ export class OrderDetailDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public cancelledAt!:
     string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public cancelReason!: string | null;
-  @ApiProperty({ type: [String], enum: ['CANCEL'] }) public availableActions!: Array<'CANCEL'>;
+  @ApiProperty({ type: [String], enum: ['CANCEL', 'SUBMIT_PAYMENT_PROOF'] })
+  public availableActions!: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
 }
 
 export class CheckoutResultDto {

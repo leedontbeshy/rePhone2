@@ -5,10 +5,10 @@ import { CartModule } from '../cart/cart.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
-import { PaymentsModule } from '../payments/payments.module.js';
+import { OrderTransactionPortsModule } from '../order-transaction-ports/order-transaction-ports.module.js';
+import { PaymentCoreModule } from '../payments/payment-core.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
-import { GuestOrderIdentityService } from './guest-order-identity.service.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
 import { OrderRateLimiter } from './order-rate-limiter.service.js';
 import { OrderMutationCsrfGuard } from './order-mutation-csrf.guard.js';
@@ -23,18 +23,13 @@ import { OrdersService } from './orders.service.js';
     CatalogModule,
     InventoryModule,
     VouchersModule,
-    PaymentsModule,
+    PaymentCoreModule,
+    OrderTransactionPortsModule,
     SettingsModule,
     NotificationsModule,
   ],
   controllers: [CheckoutsController, OrdersController],
-  providers: [
-    OrdersService,
-    GuestOrderIdentityService,
-    OrderRateLimiter,
-    OrderRateLimitGuard,
-    OrderMutationCsrfGuard,
-  ],
+  providers: [OrdersService, OrderRateLimiter, OrderRateLimitGuard, OrderMutationCsrfGuard],
   exports: [OrdersService],
 })
 export class OrdersModule {}

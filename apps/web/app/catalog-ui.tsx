@@ -28,6 +28,9 @@ export function CatalogHeader() {
         {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
           <Link href="/orders">Đơn hàng</Link>
         ) : null}
+        {status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN') ? (
+          <Link href="/backoffice/payments">Review cọc</Link>
+        ) : null}
         {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}
       </nav>
     </header>

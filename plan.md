@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 06 đã hoàn thành trên branch `feat/slice-06-checkout-reservation-order`<br>
-> Bước tiếp theo: Slice 07 — Deposit proof, review và expiry<br>
+> Trạng thái: Slice 07 đã hoàn thành trên branch `feat/slice-07-deposit-proof-review-expiry`<br>
+> Bước tiếp theo: Slice 08 — Pickup fulfillment<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -487,39 +487,51 @@ Nguồn: [Order/deposit requirement](docs/requirements/order-deposit-and-fulfill
 
 ### Slice 07 — Deposit proof, review và expiry
 
+> ✅ Hoàn thành và đã đồng bộ lên nhánh `feat/slice-07-deposit-proof-review-expiry`. Chi tiết tại [Slice 07 implementation plan](docs/planning/2026-08-22-slice-07-deposit-proof-review-expiry-plan.md).
+
 **Mục tiêu:** shipping deposit đi từ chờ proof đến verified/rejected/expired mà không release reservation sai.
 
 **Phụ thuộc:** Slice 06 và Media foundation Slice 04.
 
 **Database và migration**
 
-- [ ] Hoàn thiện Payment proof metadata, status/timestamp và bank snapshot constraints/index.
-- [ ] Reservation hỗ trợ proof deadline, `REVIEW` hold không expiry và `FULFILLMENT` hold.
+- [x] Hoàn thiện Payment proof metadata, status/timestamp và bank snapshot constraints/index.
+- [x] Reservation hỗ trợ proof deadline, `REVIEW` hold không expiry và `FULFILLMENT` hold.
 
 **Domain/application**
 
-- [ ] Submit proof trước deadline: upload/validate private object, sau đó transaction Payment → UNDER_REVIEW và reservation → REVIEW.
-- [ ] Verify dùng conditional transition trong `Serializable`; `receivedAmount >= depositRequired`, khác expected cần note.
-- [ ] Verify atomically cập nhật payment projection, Order PLACED → CONFIRMED và reservation → FULFILLMENT.
-- [ ] Reject/expire atomically terminalize payment, cancel order/fulfillment và release reservation/voucher.
-- [ ] Review SLA quá hạn chỉ đánh dấu/hiển thị overdue; không auto-cancel UNDER_REVIEW.
-- [ ] Email chạy sau commit; provider fail không rollback transaction.
+- [x] Submit proof trước deadline: upload/validate private object, sau đó transaction Payment → UNDER_REVIEW và reservation → REVIEW.
+- [x] Verify dùng conditional transition trong `Serializable`; `receivedAmount >= depositRequired`, khác expected cần note.
+- [x] Verify atomically cập nhật payment projection, Order PLACED → CONFIRMED và reservation → FULFILLMENT.
+- [x] Reject/expire atomically terminalize payment, cancel order/fulfillment và release reservation/voucher.
+- [x] Review SLA quá hạn chỉ đánh dấu/hiển thị overdue; không auto-cancel UNDER_REVIEW.
+- [x] Email chạy sau commit; provider fail không rollback transaction.
 
 **API/OpenAPI/UI**
 
-- [ ] Customer/guest proof submission và authorized evidence read.
-- [ ] Backoffice payment queue/detail/evidence/verify/reject.
-- [ ] UI demo: upload proof và employee review; private signed URL TTL 5 phút.
+- [x] Customer/guest proof submission và authorized evidence read.
+- [x] Backoffice payment queue/detail/evidence/verify/reject.
+- [x] UI demo: upload proof và employee review; private signed URL TTL 5 phút.
 
 **Test bắt buộc**
 
-- [ ] Reject MIME giả, magic byte sai, oversize, executable/SVG và unauthorized evidence access.
-- [ ] Proof submit vs expiry race tạo đúng một kết quả nhất quán.
-- [ ] Hai staff verify/reject đồng thời chỉ có một terminal effect/audit.
-- [ ] Underpayment không verify; overpayment có note và projection đúng.
-- [ ] UNDER_REVIEW quá SLA không bị expiry job release.
+- [x] Reject MIME giả, magic byte sai, oversize, executable/SVG và unauthorized evidence access.
+- [x] Proof submit vs expiry race tạo đúng một kết quả nhất quán.
+- [x] Hai staff verify/reject đồng thời chỉ có một terminal effect/audit.
+- [x] Underpayment không verify; overpayment có note và projection đúng.
+- [x] UNDER_REVIEW quá SLA không bị expiry job release.
 
-**Hoàn thành khi:** proof/review/expiry flow e2e xanh, không có trạng thái lai giữa Payment/Order/Reservation/VoucherUsage.
+**Nghiệm thu:**
+
+- Forward migration `20260822100000_slice07_payment_evidence_invariants` đã qua preflight và deploy lên Supabase; kiểm tra lại không còn migration pending hoặc row vi phạm.
+- Bucket `rephone-private` đã được tạo với `public=false`, giới hạn 10 MiB và allowlist JPEG/PNG/WebP/PDF.
+- Supabase smoke thật đã qua CUSTOMER upload → staff signed read → verify/replay → cancel/refund và guest upload → reject/replay; reseed hai lần khi `UNDER_REVIEW` không đổi payment/order/reservation/stock.
+- Scheduler đã expire idempotently một payment quá hạn, release nghiệp vụ và gửi email sau commit; log có run ID, không lộ token/evidence path/signed URL.
+- OpenAPI/generated client có đúng 87 operation duy nhất, gồm 6 operation Slice 07 với UUID path params, multipart và security metadata đúng.
+- `pnpm verify` xanh: 79 unit test, 16 integration test, 54 API E2E, OpenAPI/client generation và API/Web production build.
+- Các concern đã được commit/push riêng; không sửa `docs/decisions` và không còn known blocker thuộc Slice 07.
+
+**Hoàn thành khi:** ✅ Đạt — proof/review/expiry flow chạy end-to-end, không có trạng thái lai giữa Payment/Order/Reservation/VoucherUsage; Slice 08 có thể bắt đầu.
 
 Nguồn: [Payment proof/review API](docs/api/payment-proof-and-review-endpoints.md), [File pipeline](docs/architecture/file-upload-pipeline.md), [Background jobs](docs/architecture/background-jobs.md), [State machines](docs/architecture/state-machines.md), [Notifications](docs/architecture/notifications.md).
 

@@ -103,6 +103,26 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.NOT_FOUND,
     message: 'Không tìm thấy đơn hàng.',
   },
+  PAYMENT_PROOF_DEADLINE_PASSED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Đã quá hạn nộp bằng chứng thanh toán.',
+  },
+  PAYMENT_ALREADY_REVIEWED: {
+    status: HttpStatus.CONFLICT,
+    message: 'Thanh toán đã được xử lý trước đó.',
+  },
+  DEPOSIT_AMOUNT_INSUFFICIENT: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Số tiền nhận được chưa đủ khoản cọc bắt buộc.',
+  },
+  EVIDENCE_REQUIRED: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Bằng chứng thanh toán là bắt buộc.',
+  },
+  EVIDENCE_INVALID: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Bằng chứng thanh toán không hợp lệ.',
+  },
   VOUCHER_NOT_APPLICABLE: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Voucher không áp dụng được cho yêu cầu này.',

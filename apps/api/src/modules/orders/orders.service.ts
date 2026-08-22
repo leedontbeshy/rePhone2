@@ -4,6 +4,8 @@ import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { requestContext } from '../../common/http/request-context.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
+import { APP_CONFIG } from '../../config/app-config.module.js';
+import type { AppConfig } from '../../config/app-config.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
@@ -12,6 +14,8 @@ import { CheckoutCartReader } from '../cart/checkout-cart.reader.js';
 import { CheckoutCatalogReader } from '../catalog/checkout-catalog.reader.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
 import { OrderNotificationService } from '../notifications/order-notification.service.js';
+import { GuestOrderIdentityService } from '../order-transaction-ports/guest-order-identity.service.js';
+import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
 import { CheckoutPaymentGateway } from '../payments/checkout-payment.gateway.js';
 import { CheckoutSettingsReader } from '../settings/checkout-settings.reader.js';
 import { CheckoutVoucherGateway } from '../vouchers/checkout-voucher.gateway.js';
@@ -21,7 +25,6 @@ import {
   orderTransferContent,
   type CheckoutPricing,
 } from './checkout-pricing.js';
-import { GuestOrderIdentityService } from './guest-order-identity.service.js';
 import type {
   CheckoutPreviewRequestDto,
   CreateCheckoutRequestDto,
@@ -60,6 +63,7 @@ export interface CreateCheckoutResult {
 export class OrdersService {
   public constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(CheckoutCartReader) private readonly carts: CheckoutCartReader,
     @Inject(CheckoutCatalogReader) private readonly catalog: CheckoutCatalogReader,
     @Inject(CheckoutInventoryGateway) private readonly inventory: CheckoutInventoryGateway,
@@ -70,6 +74,8 @@ export class OrdersService {
     private readonly transactions: SerializableTransactionRunner,
     @Inject(GuestOrderIdentityService)
     private readonly guestOrders: GuestOrderIdentityService,
+    @Inject(OrderOwnershipPolicy)
+    private readonly orderOwnership: OrderOwnershipPolicy,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
     @Inject(OrderNotificationService)
     private readonly notifications: OrderNotificationService,
@@ -265,7 +271,7 @@ export class OrdersService {
         include: customerOrderInclude,
       }),
     );
-    const projectedOrder = projectOrder(order);
+    const projectedOrder = projectOrder(order, { config: this.config });
     if (outcome.created) {
       await this.notifications.sendPlaced(projectedOrder, rawGuestToken);
     }
@@ -348,8 +354,8 @@ export class OrdersService {
         include: customerOrderInclude,
       }),
     );
-    this.assertOrderAccess(request, order);
-    return projectOrder(order);
+    this.orderOwnership.assertAccess(request, order);
+    return projectOrder(order, { config: this.config });
   }
 
   public async cancel(
@@ -363,7 +369,7 @@ export class OrdersService {
         include: customerOrderInclude,
       }),
     );
-    this.assertOrderAccess(request, initial);
+    this.orderOwnership.assertAccess(request, initial);
     const actorIdentity = this.carts.resolveIdentity(request.auth, request);
     const actor = this.auditActor(actorIdentity, request);
     const outcome = await this.transactions.run('orders.cancel', async (transaction) => {
@@ -374,7 +380,7 @@ export class OrdersService {
           include: customerOrderInclude,
         }),
       );
-      this.assertOrderAccess(request, order);
+      this.orderOwnership.assertAccess(request, order);
       if (order.status === 'CANCELLED') return { orderId: order.id, cancelled: false };
       if (
         order.status === 'COMPLETED' ||
@@ -433,6 +439,7 @@ export class OrdersService {
           include: customerOrderInclude,
         }),
       ),
+      { config: this.config },
     );
     if (outcome.cancelled) await this.notifications.sendCancelled(projectedOrder);
     return projectedOrder;
@@ -566,24 +573,6 @@ export class OrdersService {
     return identity.kind === 'CUSTOMER'
       ? { ...context, actorType: 'USER', actorUserId: identity.customerId }
       : { ...context, actorType: 'GUEST' };
-  }
-
-  private assertOrderAccess(request: Request, order: ReturnType<typeof requireOrder>): void {
-    if (request.auth !== undefined) {
-      if (request.auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
-      if (order.customerId !== request.auth.userId) throw new ApiError('ORDER_NOT_FOUND');
-      return;
-    }
-    const rawOrderToken = this.guestOrders.readToken(request);
-    if (this.guestOrders.matches(rawOrderToken, order.guestAccessTokenHash)) return;
-    const identity = this.carts.resolveIdentity(undefined, request);
-    const activeConvertedCookie =
-      identity.kind === 'GUEST' &&
-      identity.guestTokenHash !== undefined &&
-      order.sourceCart.status === 'CONVERTED' &&
-      order.sourceCart.guestTokenHash === identity.guestTokenHash &&
-      (order.sourceCart.expiresAt === null || order.sourceCart.expiresAt > new Date());
-    if (!activeConvertedCookie) throw new ApiError('ORDER_NOT_FOUND');
   }
 }
 

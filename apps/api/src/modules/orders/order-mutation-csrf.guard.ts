@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { GuestCommerceCsrfGuard } from '../auth/guest-commerce-csrf.guard.js';
-import { GuestOrderIdentityService } from './guest-order-identity.service.js';
+import { GuestOrderIdentityService } from '../order-transaction-ports/guest-order-identity.service.js';
 
 @Injectable()
 export class OrderMutationCsrfGuard implements CanActivate {

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { CheckoutPaymentGateway } from './checkout-payment.gateway.js';
+import { PaymentCoreModule } from './payment-core.module.js';
 
 @Module({
-  providers: [CheckoutPaymentGateway],
-  exports: [CheckoutPaymentGateway],
+  imports: [PaymentCoreModule],
+  exports: [PaymentCoreModule],
 })
 export class PaymentsModule {}

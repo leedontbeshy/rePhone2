@@ -5,10 +5,17 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiError, captureGuestOrderToken } from '../../../lib/order-access';
+import { submitPaymentProof } from '../../../lib/payment-api';
 import { useAuth } from '../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../catalog-ui';
 
-type Order = components['schemas']['OrderDetailDto'];
+type GeneratedOrder = components['schemas']['OrderDetailDto'];
+type GeneratedPayment = components['schemas']['OrderPaymentDto'];
+type OrderPayment = GeneratedPayment;
+type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts'> & {
+  availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
+  paymentAttempts: OrderPayment[];
+};
 
 export default function OrderDetailPage() {
   const params = useParams<{ orderNumber: string }>();
@@ -17,10 +24,16 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
+  const [uploadingPaymentId, setUploadingPaymentId] = useState<string | null>(null);
+  const [proofPaymentId, setProofPaymentId] = useState<string | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [reason, setReason] = useState('Tôi thay đổi nhu cầu mua hàng');
   const tokenRef = useRef<string | undefined>(undefined);
   const capturedRef = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const proofInputRef = useRef<HTMLInputElement>(null);
 
   const loadOrder = useCallback(async () => {
     const token = tokenRef.current;
@@ -37,6 +50,10 @@ export default function OrderDetailPage() {
     setOrder(result.data.data);
     setError(null);
   }, [client, orderNumber]);
+
+  useEffect(() => {
+    if (error !== null) errorRef.current?.focus();
+  }, [error]);
 
   useEffect(() => {
     if (!capturedRef.current) {
@@ -89,17 +106,52 @@ export default function OrderDetailPage() {
     }
   };
 
+  const uploadProof = async (paymentId: string) => {
+    if (proofFile === null || proofPaymentId !== paymentId) {
+      setError('Hãy chọn tệp JPEG, PNG, WebP hoặc PDF.');
+      return;
+    }
+    if (proofFile.size === 0) {
+      setError('Tệp minh chứng đang trống.');
+      return;
+    }
+    if (proofFile.size > 10 * 1024 * 1024) {
+      setError('Tệp vượt quá giới hạn 10 MiB.');
+      return;
+    }
+    setUploadingPaymentId(paymentId);
+    setError(null);
+    setNotice(null);
+    try {
+      await submitPaymentProof(client, paymentId, proofFile, tokenRef.current);
+      setProofFile(null);
+      setProofPaymentId(null);
+      if (proofInputRef.current !== null) proofInputRef.current.value = '';
+      await loadOrder();
+      setNotice('Đã nộp minh chứng. Thanh toán đang chờ nhân viên kiểm tra.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Không thể nộp minh chứng thanh toán.');
+    } finally {
+      setUploadingPaymentId(null);
+    }
+  };
+
   return (
     <>
       <CatalogHeader />
       <main className="catalog-shell commerce-shell">
         {loading ? <div className="empty-state">Đang tải đơn hàng…</div> : null}
         {error === null ? null : (
-          <div className="commerce-alert error" role="alert">
+          <div ref={errorRef} tabIndex={-1} className="commerce-alert error" role="alert">
             <span>{error}</span>
             <button className="button" type="button" onClick={() => void loadOrder()}>
               Thử lại
             </button>
+          </div>
+        )}
+        {notice === null ? null : (
+          <div className="commerce-alert success" role="status" aria-live="polite">
+            {notice}
           </div>
         )}
         {!loading && order === null ? (
@@ -164,7 +216,10 @@ export default function OrderDetailPage() {
                 </div>
                 {order.paymentAttempts.map((payment) => (
                   <div className="detail-panel" key={payment.id}>
-                    <h2>Hướng dẫn cọc</h2>
+                    <div className="payment-panel-heading">
+                      <h2>Thanh toán cọc</h2>
+                      <PaymentStatusBadge status={payment.status} />
+                    </div>
                     <dl className="stacked-specs">
                       <div>
                         <dt>Số tiền</dt>
@@ -172,25 +227,123 @@ export default function OrderDetailPage() {
                       </div>
                       <div>
                         <dt>Ngân hàng</dt>
-                        <dd>{payment.bankName}</dd>
+                        <dd>
+                          {payment.bankTransferInstructions?.bankName ?? payment.bankName ?? '—'}
+                        </dd>
                       </div>
                       <div>
                         <dt>Số tài khoản</dt>
-                        <dd>{payment.bankAccountNumber}</dd>
+                        <dd>
+                          {payment.bankTransferInstructions?.accountNumber ??
+                            payment.bankAccountNumber ??
+                            '—'}
+                        </dd>
                       </div>
                       <div>
                         <dt>Chủ tài khoản</dt>
-                        <dd>{payment.bankAccountHolder}</dd>
+                        <dd>
+                          {payment.bankTransferInstructions?.accountHolder ??
+                            payment.bankAccountHolder ??
+                            '—'}
+                        </dd>
                       </div>
                       <div>
                         <dt>Nội dung</dt>
-                        <dd>{payment.transferContent}</dd>
+                        <dd>
+                          {payment.bankTransferInstructions?.transferContent ??
+                            payment.transferContent ??
+                            '—'}
+                        </dd>
                       </div>
                       <div>
                         <dt>Trạng thái</dt>
                         <dd>{payment.status}</dd>
                       </div>
+                      {payment.expiresAt === null || payment.expiresAt === undefined ? null : (
+                        <div>
+                          <dt>Hạn nộp</dt>
+                          <dd>{formatDateTime(payment.expiresAt)}</dd>
+                        </div>
+                      )}
+                      {payment.submittedAt === null || payment.submittedAt === undefined ? null : (
+                        <div>
+                          <dt>Đã nộp</dt>
+                          <dd>{formatDateTime(payment.submittedAt)}</dd>
+                        </div>
+                      )}
+                      {payment.reviewSlaDueAt === null ||
+                      payment.reviewSlaDueAt === undefined ? null : (
+                        <div>
+                          <dt>SLA review</dt>
+                          <dd>
+                            {formatDateTime(payment.reviewSlaDueAt)}
+                            {payment.reviewOverdue ? ' · Đã quá SLA' : ''}
+                          </dd>
+                        </div>
+                      )}
+                      {payment.receivedAmount === null ||
+                      payment.receivedAmount === undefined ? null : (
+                        <div>
+                          <dt>Đã nhận</dt>
+                          <dd>{formatMoney(payment.receivedAmount)} ₫</dd>
+                        </div>
+                      )}
                     </dl>
+                    {payment.bankTransferInstructions?.qrUrl ? (
+                      <img
+                        className="payment-qr"
+                        src={payment.bankTransferInstructions.qrUrl}
+                        alt="Mã QR chuyển khoản cọc"
+                        width={220}
+                        height={220}
+                      />
+                    ) : null}
+                    {payment.rejectionReason === null ||
+                    payment.rejectionReason === undefined ? null : (
+                      <div className="payment-rejection" role="status">
+                        <strong>Minh chứng bị từ chối</strong>
+                        <span>{payment.rejectionReason}</span>
+                      </div>
+                    )}
+                    {canSubmitProof(order, payment) ? (
+                      <form
+                        className="payment-proof-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void uploadProof(payment.id);
+                        }}
+                      >
+                        <label htmlFor={`proof-${payment.id}`}>
+                          Minh chứng chuyển khoản
+                          <input
+                            ref={proofInputRef}
+                            id={`proof-${payment.id}`}
+                            type="file"
+                            required
+                            accept="image/jpeg,image/png,image/webp,application/pdf"
+                            onChange={(event) => {
+                              setProofFile(event.target.files?.[0] ?? null);
+                              setProofPaymentId(payment.id);
+                              setError(null);
+                            }}
+                          />
+                        </label>
+                        <p>JPEG, PNG, WebP hoặc PDF · tối đa 10 MiB.</p>
+                        <button
+                          className="button primary"
+                          type="submit"
+                          disabled={
+                            uploadingPaymentId !== null ||
+                            proofFile === null ||
+                            proofPaymentId !== payment.id
+                          }
+                        >
+                          {uploadingPaymentId === payment.id
+                            ? 'Đang nộp minh chứng…'
+                            : 'Nộp minh chứng'}
+                        </button>
+                      </form>
+                    ) : null}
                   </div>
                 ))}
                 {order.refunds.length === 0 ? null : (
@@ -258,6 +411,36 @@ export default function OrderDetailPage() {
       </main>
     </>
   );
+}
+
+function canSubmitProof(order: Order, payment: OrderPayment): boolean {
+  if (!order.availableActions.includes('SUBMIT_PAYMENT_PROOF')) return false;
+  if (payment.status !== 'AWAITING_PROOF') return false;
+  if (payment.expiresAt === null || payment.expiresAt === undefined) return false;
+  return Date.parse(payment.expiresAt) > Date.now();
+}
+
+function PaymentStatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`payment-status-badge ${status.toLowerCase()}`}>
+      {paymentStatusLabel(status)}
+    </span>
+  );
+}
+
+function paymentStatusLabel(status: string): string {
+  if (status === 'AWAITING_PROOF') return 'Chờ minh chứng';
+  if (status === 'UNDER_REVIEW') return 'Đang review';
+  if (status === 'VERIFIED') return 'Đã xác minh';
+  if (status === 'REJECTED') return 'Bị từ chối';
+  if (status === 'EXPIRED') return 'Đã hết hạn';
+  if (status === 'CANCELLED') return 'Đã hủy';
+  return status;
+}
+
+function formatDateTime(value: string): string {
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? value : new Date(timestamp).toLocaleString('vi-VN');
 }
 
 function formatAddress(value: unknown): string {
