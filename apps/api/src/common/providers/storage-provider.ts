@@ -17,5 +17,10 @@ export interface UploadObjectInput {
 export interface StorageProvider {
   upload(input: UploadObjectInput): Promise<StoredObject>;
   delete(bucket: string, objectPath: string): Promise<void>;
-  createSignedReadUrl(bucket: string, objectPath: string, ttlSeconds: number): Promise<string>;
+  createSignedReadUrl(
+    bucket: string,
+    objectPath: string,
+    ttlSeconds: number,
+    options?: { download?: boolean | string },
+  ): Promise<string>;
 }

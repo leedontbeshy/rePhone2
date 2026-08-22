@@ -1,10 +1,12 @@
 import {
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -19,19 +21,37 @@ import {
   ApiHeader,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
+import { BackofficeRateLimit } from '../auth/backoffice-rate-limit.decorator.js';
+import { BackofficeRateLimitGuard } from '../auth/backoffice-rate-limit.guard.js';
+import type { AuthContext } from '../auth/auth-context.js';
+import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { OptionalSessionGuard } from '../auth/optional-session.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { SessionGuard } from '../auth/session.guard.js';
 import { MAX_PAYMENT_EVIDENCE_BYTES } from './payment-evidence.validator.js';
-import { PaymentIdParamsDto } from './payment-operation.dto.js';
-import { PaymentPublicResponse } from './payment-operation-response.dto.js';
+import {
+  BackofficePaymentIdParamsDto,
+  BackofficePaymentListQueryDto,
+  PaymentIdParamsDto,
+} from './payment-operation.dto.js';
+import {
+  BackofficePaymentDetailResponse,
+  BackofficePaymentListResponse,
+  PaymentEvidenceUrlResponse,
+  PaymentPublicResponse,
+} from './payment-operation-response.dto.js';
 import { PaymentProofAccessGuard } from './payment-proof-access.guard.js';
 import { PaymentProofCsrfGuard } from './payment-proof-csrf.guard.js';
 import { PaymentProofSubmissionService } from './payment-proof-submission.service.js';
 import { PaymentRateLimitGuard } from './payment-rate-limit.guard.js';
+import { PaymentReviewQueryService } from './payment-review-query.service.js';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -102,5 +122,88 @@ export class PaymentOperationsController {
   ) {
     response.setHeader('Cache-Control', 'no-store');
     return this.proofSubmission.submit(request, params.paymentId, file);
+  }
+}
+
+const BACKOFFICE_PAYMENT_QUERY_ERRORS = [
+  { status: 400 as const, description: 'VALIDATION_FAILED' },
+  { status: 401 as const, description: 'AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED' },
+  { status: 403 as const, description: 'FORBIDDEN' },
+  { status: 404 as const, description: 'RESOURCE_NOT_FOUND' },
+  { status: 422 as const, description: 'EVIDENCE_REQUIRED' },
+  { status: 429 as const, description: 'RATE_LIMITED' },
+  { status: 503 as const, description: 'STORAGE_UNAVAILABLE' },
+];
+
+@ApiTags('backoffice-payments')
+@ApiBearerAuth('access-token')
+@Roles('EMPLOYEE', 'ADMIN')
+@UseGuards(SessionGuard, RolesGuard, BackofficeRateLimitGuard)
+@Controller('backoffice/payments')
+export class BackofficePaymentOperationsController {
+  public constructor(
+    @Inject(PaymentReviewQueryService)
+    private readonly reviewQueries: PaymentReviewQueryService,
+  ) {}
+
+  @Get()
+  @ApiOperation({ operationId: 'listBackofficePayments', summary: 'List the payment review queue' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['AWAITING_PROOF', 'UNDER_REVIEW', 'VERIFIED', 'REJECTED', 'EXPIRED', 'CANCELLED'],
+  })
+  @ApiQuery({ name: 'purpose', required: false, enum: ['DEPOSIT', 'BALANCE', 'FULL_PAYMENT'] })
+  @ApiQuery({ name: 'method', required: false, enum: ['BANK_TRANSFER', 'CASH', 'COD', 'OTHER'] })
+  @ApiQuery({ name: 'reviewOverdue', required: false, type: Boolean })
+  @ApiQuery({ name: 'orderNumber', required: false, type: String })
+  @ApiQuery({ name: 'submittedFrom', required: false, type: String, format: 'date-time' })
+  @ApiQuery({ name: 'submittedTo', required: false, type: String, format: 'date-time' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, minimum: 1, maximum: 100 })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['submittedAt', 'expiresAt', 'createdAt', 'expectedAmount'],
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiOkResponse({ type: BackofficePaymentListResponse })
+  @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS)
+  public list(
+    @Query() query: BackofficePaymentListQueryDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.reviewQueries.list(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ operationId: 'getBackofficePayment', summary: 'Get safe payment review detail' })
+  @ApiOkResponse({ type: BackofficePaymentDetailResponse })
+  @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS)
+  public detail(
+    @Param() params: BackofficePaymentIdParamsDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.reviewQueries.detail(params.id);
+  }
+
+  @Get(':id/evidence-url')
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({
+    operationId: 'getPaymentEvidenceUrl',
+    summary: 'Create a short-lived private evidence URL',
+  })
+  @ApiOkResponse({ type: PaymentEvidenceUrlResponse })
+  @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS)
+  public evidenceUrl(
+    @Param() params: BackofficePaymentIdParamsDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.reviewQueries.evidenceUrl(params.id, auth, request);
   }
 }

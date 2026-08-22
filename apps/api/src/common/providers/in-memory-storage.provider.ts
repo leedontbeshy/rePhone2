@@ -27,8 +27,10 @@ export class InMemoryStorageProvider implements StorageProvider {
     bucket: string,
     objectPath: string,
     ttlSeconds: number,
+    options?: { download?: boolean | string },
   ): Promise<string> {
     void ttlSeconds;
+    void options;
     return Promise.resolve(`https://storage.test/${bucket}/${objectPath}`);
   }
 

@@ -46,10 +46,11 @@ export class SupabaseStorageProvider implements StorageProvider {
     bucket: string,
     objectPath: string,
     ttlSeconds: number,
+    options?: { download?: boolean | string },
   ): Promise<string> {
     const { data, error } = await this.client.storage
       .from(bucket)
-      .createSignedUrl(objectPath, ttlSeconds);
+      .createSignedUrl(objectPath, ttlSeconds, options);
     if (error !== null) throw new StorageProviderError('signed-read-url');
     return data.signedUrl;
   }

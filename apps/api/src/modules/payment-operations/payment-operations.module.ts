@@ -8,13 +8,17 @@ import { StorageModule } from '../storage/storage.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { PaymentClock } from './payment-clock.service.js';
 import { PaymentEvidenceValidator } from './payment-evidence.validator.js';
-import { PaymentOperationsController } from './payment-operations.controller.js';
+import {
+  BackofficePaymentOperationsController,
+  PaymentOperationsController,
+} from './payment-operations.controller.js';
 import { PaymentOperationsRepository } from './payment-operations.repository.js';
 import { PaymentProofAccessGuard } from './payment-proof-access.guard.js';
 import { PaymentProofCsrfGuard } from './payment-proof-csrf.guard.js';
 import { PaymentProofSubmissionService } from './payment-proof-submission.service.js';
 import { PaymentRateLimitGuard } from './payment-rate-limit.guard.js';
 import { PaymentRateLimiter } from './payment-rate-limiter.service.js';
+import { PaymentReviewQueryService } from './payment-review-query.service.js';
 
 @Module({
   imports: [
@@ -26,7 +30,7 @@ import { PaymentRateLimiter } from './payment-rate-limiter.service.js';
     NotificationsModule,
     OrderTransactionPortsModule,
   ],
-  controllers: [PaymentOperationsController],
+  controllers: [PaymentOperationsController, BackofficePaymentOperationsController],
   providers: [
     PaymentClock,
     PaymentEvidenceValidator,
@@ -36,6 +40,7 @@ import { PaymentRateLimiter } from './payment-rate-limiter.service.js';
     PaymentProofCsrfGuard,
     PaymentRateLimiter,
     PaymentRateLimitGuard,
+    PaymentReviewQueryService,
   ],
   exports: [PaymentOperationsRepository, PaymentClock],
 })
