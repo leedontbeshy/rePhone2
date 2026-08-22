@@ -20,6 +20,7 @@ import { PaymentRateLimitGuard } from './payment-rate-limit.guard.js';
 import { PaymentRateLimiter } from './payment-rate-limiter.service.js';
 import { PaymentReviewQueryService } from './payment-review-query.service.js';
 import { PaymentReviewCommandService } from './payment-review-command.service.js';
+import { DepositExpiryService } from './deposit-expiry.service.js';
 
 @Module({
   imports: [
@@ -43,7 +44,8 @@ import { PaymentReviewCommandService } from './payment-review-command.service.js
     PaymentRateLimitGuard,
     PaymentReviewQueryService,
     PaymentReviewCommandService,
+    DepositExpiryService,
   ],
-  exports: [PaymentOperationsRepository, PaymentClock],
+  exports: [PaymentOperationsRepository, PaymentClock, DepositExpiryService],
 })
 export class PaymentOperationsModule {}
