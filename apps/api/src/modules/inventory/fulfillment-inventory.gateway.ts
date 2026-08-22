@@ -12,10 +12,21 @@ export interface FulfillmentReservation {
   holdReason: 'DEPOSIT' | 'REVIEW' | 'PICKUP' | 'FULFILLMENT';
   expiresAt: Date | null;
   orderItem: {
+    id: string;
+    orderId: string;
     inventoryUnitId: string | null;
     variantId: string;
     quantity: number;
   };
+  inventoryUnit: { locationId: string } | null;
+  stockLevel: { locationId: string; variantId: string } | null;
+}
+
+export interface FulfillmentOrderItemTarget {
+  id: string;
+  inventoryUnitId: string | null;
+  variantId: string;
+  quantity: number;
 }
 
 @Injectable()
@@ -42,20 +53,82 @@ export class FulfillmentInventoryGateway {
         quantity: true,
         holdReason: true,
         expiresAt: true,
-        orderItem: { select: { inventoryUnitId: true, variantId: true, quantity: true } },
+        orderItem: {
+          select: {
+            id: true,
+            orderId: true,
+            inventoryUnitId: true,
+            variantId: true,
+            quantity: true,
+          },
+        },
+        inventoryUnit: { select: { locationId: true } },
+        stockLevel: { select: { locationId: true, variantId: true } },
       },
       orderBy: { id: 'asc' },
     });
   }
 
-  public assertPickupHold(
+  public assertReservationTargets(
     reservations: readonly FulfillmentReservation[],
-    orderItemCount: number,
-    holdUntil: Date,
+    orderId: string,
+    orderItems: readonly FulfillmentOrderItemTarget[],
+    locationId: string,
   ): void {
-    if (reservations.length === 0 || reservations.length !== orderItemCount) {
+    if (reservations.length === 0 || reservations.length !== orderItems.length) {
       throw new ApiError('INVENTORY_NOT_AVAILABLE');
     }
+    const expectedItems = new Map(orderItems.map((item) => [item.id, item]));
+    if (expectedItems.size !== orderItems.length) throw new ApiError('INTERNAL_ERROR');
+    const coveredItems = new Set<string>();
+    for (const reservation of reservations) {
+      const expected = expectedItems.get(reservation.orderItemId);
+      if (
+        expected === undefined ||
+        coveredItems.has(reservation.orderItemId) ||
+        reservation.orderId !== orderId ||
+        reservation.orderItem.id !== expected.id ||
+        reservation.orderItem.orderId !== orderId ||
+        reservation.orderItem.inventoryUnitId !== expected.inventoryUnitId ||
+        reservation.orderItem.variantId !== expected.variantId ||
+        reservation.orderItem.quantity !== expected.quantity
+      ) {
+        throw new ApiError('INVENTORY_NOT_AVAILABLE');
+      }
+      coveredItems.add(reservation.orderItemId);
+
+      if (expected.inventoryUnitId !== null) {
+        if (
+          reservation.inventoryUnitId !== expected.inventoryUnitId ||
+          reservation.stockLevelId !== null ||
+          reservation.quantity !== 1 ||
+          expected.quantity !== 1 ||
+          reservation.inventoryUnit?.locationId !== locationId ||
+          reservation.stockLevel !== null
+        ) {
+          throw new ApiError('INVENTORY_NOT_AVAILABLE');
+        }
+      } else if (
+        reservation.inventoryUnitId !== null ||
+        reservation.stockLevelId === null ||
+        reservation.quantity !== expected.quantity ||
+        reservation.inventoryUnit !== null ||
+        reservation.stockLevel?.variantId !== expected.variantId ||
+        reservation.stockLevel.locationId !== locationId
+      ) {
+        throw new ApiError('INVENTORY_NOT_AVAILABLE');
+      }
+    }
+  }
+
+  public assertPickupHold(
+    reservations: readonly FulfillmentReservation[],
+    orderId: string,
+    orderItems: readonly FulfillmentOrderItemTarget[],
+    locationId: string,
+    holdUntil: Date,
+  ): void {
+    this.assertReservationTargets(reservations, orderId, orderItems, locationId);
     if (
       reservations.some(
         (reservation) =>

@@ -43,6 +43,25 @@ export class PickupExpiryService {
     @Inject(FulfillmentClock) private readonly clock: FulfillmentClock,
   ) {}
 
+  public async expireOrder(
+    orderId: string,
+    now = this.clock.now(),
+    requestId = `job:${EXPIRY_JOB_NAME}:${randomUUID()}`,
+  ): Promise<boolean> {
+    const expiredOrderId = await this.expireOne(orderId, now, requestId);
+    if (expiredOrderId === null) return false;
+    const notificationFailed = await this.deliverNotifications([expiredOrderId]);
+    if (notificationFailed > 0) {
+      this.logger.warn({
+        event: 'job.notification_failed',
+        job: EXPIRY_JOB_NAME,
+        requestId,
+        orderId: expiredOrderId,
+      });
+    }
+    return true;
+  }
+
   public async expireDue(now = this.clock.now()): Promise<PickupExpiryRunResult> {
     const runId = randomUUID();
     const requestId = `job:${EXPIRY_JOB_NAME}:${runId}`;
@@ -137,7 +156,13 @@ export class PickupExpiryService {
       }
       const finance = await this.payments.lockFinance(order.id, transaction);
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
-      this.inventory.assertPickupHold(reservations, order.items.length, order.pickupHoldUntil);
+      this.inventory.assertPickupHold(
+        reservations,
+        order.id,
+        order.items,
+        order.fulfillmentLocationId,
+        order.pickupHoldUntil,
+      );
       await this.inventory.expirePickup(reservations, now, transaction);
       await this.vouchers.release(order.id, now, transaction);
       const refund = await this.payments.prepareSystemRefund(

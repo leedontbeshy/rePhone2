@@ -54,17 +54,15 @@ export class PickupCompletionService {
         if (order.status !== 'PROCESSING' || order.fulfillmentStatus !== 'READY') {
           throw new ApiError('INVALID_STATE_TRANSITION');
         }
-        if (
-          order.fulfillmentLocation.type !== 'STORE' ||
-          order.fulfillmentLocation.status !== 'ACTIVE' ||
-          order.pickupLocationId !== order.fulfillmentLocationId
-        ) {
-          throw new ApiError('INVALID_STATE_TRANSITION');
-        }
-
         const lockedFinance = await this.payments.lockFinance(order.id, transaction);
         const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
-        this.inventory.assertPickupHold(reservations, order.items.length, holdUntil);
+        this.inventory.assertPickupHold(
+          reservations,
+          order.id,
+          order.items,
+          order.fulfillmentLocationId,
+          holdUntil,
+        );
         const beforeFinance = this.payments.project(
           BigInt(order.grandTotal.toString()),
           lockedFinance,

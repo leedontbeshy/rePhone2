@@ -47,7 +47,13 @@ export class PickupPreparationService {
       const now = this.clock.now();
       const holdUntil = assertPickupDeadline(order, now);
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
-      this.inventory.assertPickupHold(reservations, order.items.length, holdUntil);
+      this.inventory.assertPickupHold(
+        reservations,
+        order.id,
+        order.items,
+        order.fulfillmentLocationId,
+        holdUntil,
+      );
       if (order.status === 'CONFIRMED' && order.fulfillmentStatus === 'PENDING') return false;
       if (order.status !== 'PLACED' || order.fulfillmentStatus !== 'PENDING') {
         throw new ApiError('INVALID_STATE_TRANSITION');
@@ -81,12 +87,21 @@ export class PickupPreparationService {
         order.status === 'CONFIRMED' && ['PENDING', 'PREPARING'].includes(order.fulfillmentStatus);
       if (!replayed && !transitional) throw new ApiError('INVALID_STATE_TRANSITION');
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
-      if (reservations.length !== order.items.length || reservations.length === 0) {
-        throw new ApiError('INVENTORY_NOT_AVAILABLE');
-      }
+      this.inventory.assertReservationTargets(
+        reservations,
+        order.id,
+        order.items,
+        order.fulfillmentLocationId,
+      );
       if (order.fulfillmentType === 'PICKUP') {
         const holdUntil = assertPickupDeadline(order, now);
-        this.inventory.assertPickupHold(reservations, order.items.length, holdUntil);
+        this.inventory.assertPickupHold(
+          reservations,
+          order.id,
+          order.items,
+          order.fulfillmentLocationId,
+          holdUntil,
+        );
       } else if (
         reservations.some(
           ({ holdReason, expiresAt }) => holdReason !== 'FULFILLMENT' || expiresAt !== null,
@@ -125,7 +140,13 @@ export class PickupPreparationService {
       const now = this.clock.now();
       const holdUntil = assertPickupDeadline(order, now);
       const reservations = await this.inventory.lockActiveReservations(order.id, tx);
-      this.inventory.assertPickupHold(reservations, order.items.length, holdUntil);
+      this.inventory.assertPickupHold(
+        reservations,
+        order.id,
+        order.items,
+        order.fulfillmentLocationId,
+        holdUntil,
+      );
       if (order.status === 'PROCESSING' && order.fulfillmentStatus === 'READY') return false;
       if (order.status !== 'PROCESSING' || order.fulfillmentStatus !== 'PREPARING') {
         throw new ApiError('INVALID_STATE_TRANSITION');
@@ -167,7 +188,13 @@ export class PickupPreparationService {
       const now = this.clock.now();
       const validation = validatePickupHoldExtension(order, requested, now);
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
-      this.inventory.assertPickupHold(reservations, order.items.length, validation.current);
+      this.inventory.assertPickupHold(
+        reservations,
+        order.id,
+        order.items,
+        order.fulfillmentLocationId,
+        validation.current,
+      );
       if (validation.replayed) return false;
       const updated = await transaction.order.updateMany({
         where: { id: order.id, pickupHoldUntil: validation.current },

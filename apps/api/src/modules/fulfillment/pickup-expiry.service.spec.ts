@@ -60,6 +60,22 @@ describe('PickupExpiryService', () => {
     expect(fixture.sendCancelled).toHaveBeenCalledOnce();
   });
 
+  it('expires only the explicitly requested order for an injected-clock smoke run', async () => {
+    const target = pickupOrder(1);
+    const unrelated = pickupOrder(2);
+    const fixture = expiryFixture([target, unrelated]);
+
+    await expect(
+      fixture.service.expireOrder(target.id, NOW, 'job:expirePickupHolds:smoke-slice08'),
+    ).resolves.toBe(true);
+
+    expect(fixture.findCandidates).not.toHaveBeenCalled();
+    expect(fixture.transactionRun).toHaveBeenCalledOnce();
+    expect(fixture.sendCancelled).toHaveBeenCalledOnce();
+    expect(fixture.sendCancelled).toHaveBeenCalledWith(expect.objectContaining({ id: target.id }));
+    expect(fixture.findById).not.toHaveBeenCalledWith(unrelated.id);
+  });
+
   it('isolates a record failure and continues expiring later candidates', async () => {
     const failedOrder = pickupOrder(1);
     const successfulOrder = pickupOrder(2);
@@ -317,9 +333,16 @@ function pickupReservation(orderId: string): FulfillmentReservation {
     holdReason: 'PICKUP',
     expiresAt: HOLD_UNTIL,
     orderItem: {
+      id: orderId.replace('a2bd', 'c2bd'),
+      orderId,
       inventoryUnitId: null,
       variantId: orderId.replace('a2bd', 'f2bd'),
       quantity: 1,
+    },
+    inventoryUnit: null,
+    stockLevel: {
+      locationId: orderId.replace('a2bd', 'b2bd'),
+      variantId: orderId.replace('a2bd', 'f2bd'),
     },
   };
 }

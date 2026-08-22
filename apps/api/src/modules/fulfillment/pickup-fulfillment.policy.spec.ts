@@ -9,7 +9,13 @@ import {
 
 type PolicyOrder = Pick<
   FulfillmentOrderRecord,
-  'status' | 'fulfillmentStatus' | 'fulfillmentType' | 'pickupHoldUntil'
+  | 'status'
+  | 'fulfillmentStatus'
+  | 'fulfillmentType'
+  | 'pickupHoldUntil'
+  | 'fulfillmentLocationId'
+  | 'pickupLocationId'
+  | 'fulfillmentLocation'
 >;
 
 const now = new Date('2026-08-23T03:00:00.000Z');
@@ -21,6 +27,15 @@ function order(overrides: Partial<PolicyOrder> = {}): FulfillmentOrderRecord {
     fulfillmentStatus: 'READY',
     fulfillmentType: 'PICKUP',
     pickupHoldUntil: currentHold,
+    fulfillmentLocationId: '0198e5a0-0000-7000-8000-000000000001',
+    pickupLocationId: '0198e5a0-0000-7000-8000-000000000001',
+    fulfillmentLocation: {
+      id: '0198e5a0-0000-7000-8000-000000000001',
+      code: 'HCM-STORE-01',
+      name: 'rePhone Hồ Chí Minh',
+      type: 'STORE',
+      status: 'ACTIVE',
+    },
     ...overrides,
   };
   return fixture as FulfillmentOrderRecord;

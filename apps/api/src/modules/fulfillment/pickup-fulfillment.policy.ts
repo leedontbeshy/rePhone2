@@ -4,10 +4,20 @@ import type { FulfillmentAction } from './fulfillment-response.dto.js';
 
 const TERMINAL_FULFILLMENT = ['COMPLETED', 'CANCELLED', 'IN_TRANSIT', 'FAILED', 'RETURNED'];
 
-export function assertPickupDeadline(order: FulfillmentOrderRecord, now: Date): Date {
-  if (order.fulfillmentType !== 'PICKUP' || order.pickupHoldUntil === null) {
+export function assertPickupStore(order: FulfillmentOrderRecord): void {
+  if (
+    order.fulfillmentType !== 'PICKUP' ||
+    order.fulfillmentLocation.type !== 'STORE' ||
+    order.fulfillmentLocation.status !== 'ACTIVE' ||
+    order.pickupLocationId !== order.fulfillmentLocationId
+  ) {
     throw new ApiError('INVALID_STATE_TRANSITION');
   }
+}
+
+export function assertPickupDeadline(order: FulfillmentOrderRecord, now: Date): Date {
+  assertPickupStore(order);
+  if (order.pickupHoldUntil === null) throw new ApiError('INVALID_STATE_TRANSITION');
   if (now >= order.pickupHoldUntil) throw new ApiError('RESERVATION_EXPIRED');
   return order.pickupHoldUntil;
 }
