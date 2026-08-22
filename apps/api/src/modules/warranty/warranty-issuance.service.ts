@@ -47,10 +47,11 @@ export class WarrantyIssuanceService {
       const endAt = new Date(now.getTime() + item.warrantyDaysSnapshot * 86_400_000);
       let created: IssuedWarranty | null = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        try {
-          const warranty = await transaction.warranty.create({
-            data: {
-              warrantyCode: generateWarrantyCode(now, timezone),
+        const warrantyCode = generateWarrantyCode(now, timezone);
+        const inserted = await transaction.warranty.createMany({
+          data: [
+            {
+              warrantyCode,
               orderItemId: item.id,
               customerId,
               inventoryUnitId: item.inventoryUnitId,
@@ -61,34 +62,25 @@ export class WarrantyIssuanceService {
               endAt,
               status: 'ACTIVE',
             },
+          ],
+          skipDuplicates: true,
+        });
+        if (inserted.count === 1) {
+          created = await transaction.warranty.findUniqueOrThrow({
+            where: { warrantyCode },
             select: { orderItemId: true, warrantyCode: true, startAt: true, endAt: true },
           });
-          created = warranty;
           break;
-        } catch (error) {
-          if (!isWarrantyCodeCollision(error) || attempt === 2) throw error;
         }
+        const codeCollision = await transaction.warranty.findUnique({
+          where: { warrantyCode },
+          select: { id: true },
+        });
+        if (codeCollision === null) throw new ApiError('INTERNAL_ERROR');
       }
       if (created === null) throw new ApiError('CONCURRENT_MODIFICATION');
       issued.push(created);
     }
     return issued;
   }
-}
-
-function isWarrantyCodeCollision(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('code' in error) || error.code !== 'P2002') {
-    return false;
-  }
-  const targetValue =
-    'meta' in error && typeof error.meta === 'object' && error.meta !== null
-      ? (error.meta as Record<string, unknown>)['target']
-      : undefined;
-  const target =
-    typeof targetValue === 'string'
-      ? targetValue
-      : Array.isArray(targetValue) && targetValue.every((value) => typeof value === 'string')
-        ? targetValue.join(',')
-        : '';
-  return target.includes('warranty_code') || target.includes('warrantyCode');
 }
