@@ -84,6 +84,22 @@ export class OrderItemDto {
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public lineTotal!: string;
   @ApiProperty({ type: Number }) public warrantyDays!: number;
   @ApiPropertyOptional({ type: String, nullable: true }) public warrantyTerms!: string | null;
+  @ApiPropertyOptional({ type: () => OrderWarrantyDto, nullable: true })
+  public warranty!: OrderWarrantyDto | null;
+}
+
+export class OrderWarrantyDto {
+  @ApiProperty({ type: String }) public warrantyCode!: string;
+  @ApiProperty({ enum: ['ACTIVE', 'VOIDED'] }) public status!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) public startAt!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) public endAt!: string;
+  @ApiProperty({ type: Boolean }) public isValid!: boolean;
+  @ApiProperty({ type: Boolean }) public isExpired!: boolean;
+}
+
+export class OrderPricingDto extends CheckoutPricingDto {
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public paidAmount!: string;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public refundedAmount!: string;
 }
 
 export class OrderBankTransferInstructionsDto {
@@ -158,7 +174,7 @@ export class OrderDetailDto {
   @ApiPropertyOptional({ type: () => PickupStoreSummaryDto })
   public pickupStore?: PickupStoreSummaryDto;
   @ApiProperty({ type: () => [OrderItemDto] }) public items!: OrderItemDto[];
-  @ApiProperty({ type: () => CheckoutPricingDto }) public pricing!: CheckoutPricingDto;
+  @ApiProperty({ type: () => OrderPricingDto }) public pricing!: OrderPricingDto;
   @ApiPropertyOptional({ type: String, nullable: true }) public voucherCode!: string | null;
   @ApiProperty({ type: () => [OrderPaymentDto] }) public paymentAttempts!: OrderPaymentDto[];
   @ApiProperty({ type: () => [OrderRefundDto] }) public refunds!: OrderRefundDto[];
@@ -166,6 +182,12 @@ export class OrderDetailDto {
   @ApiProperty({ type: String, format: 'date-time' }) public placedAt!: string;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public confirmedAt!:
     string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public pickupHoldUntil!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public pickupReadyAt!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  public pickedUpAt!: string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public completedAt!:
     string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public cancelledAt!:
