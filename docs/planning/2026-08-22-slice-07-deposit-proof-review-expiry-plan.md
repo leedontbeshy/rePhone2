@@ -1,6 +1,6 @@
 # Kế hoạch triển khai Slice 07 — Deposit Proof, Review & Expiry
 
-> Trạng thái: 🚧 Đang triển khai trên branch `feat/slice-07-deposit-proof-review-expiry` từ commit Slice 06 `02da362`.<br>
+> Trạng thái: ✅ Hoàn thành và đã deploy Supabase trên branch `feat/slice-07-deposit-proof-review-expiry`, bắt đầu từ commit Slice 06 `02da362`.<br>
 > Bước kế tiếp sau nghiệm thu: Slice 08 — Pickup fulfillment.
 
 ## 1. Mục tiêu và Definition of Done
@@ -145,6 +145,17 @@ Quality gate: format → lint → typecheck → unit → DB prepare → integrat
 Supabase rollout: check target/private bucket → backup/preflight → migrate → API/web một scheduler replica → tạo shipping proof → seed hai lần khi UNDER_REVIEW → verify → customer cancel exact smoke order → reject flow → expiry bằng injected clock → invariant/log audit → full verify.
 
 Rollback không down migration/xóa evidence. Dừng scheduler trước rollback; Payment thật UNDER_REVIEW phải resolve hoặc forward-fix. Chỉ cleanup orphan theo exact verified bucket/path.
+
+## 7. Kết quả nghiệm thu
+
+- Migration Slice 07 đã deploy forward-only; preflight trước và sau smoke đều không có vi phạm, lần deploy kiểm tra lại không còn migration pending.
+- Supabase Storage có bucket `rephone-private` ở chế độ private, giới hạn 10 MiB và đúng bốn MIME được phép.
+- OpenAPI có 87 operation/87 operationId duy nhất; đủ 6 operation Slice 07, UUID path params, multipart schema, security OR và generated client không drift.
+- `pnpm verify` xanh với 79 unit test, 16 integration test, 54 API E2E và production build cho API/Web.
+- Smoke Supabase thật đã xác nhận upload/signed read/verify/reject/replay, refund obligation, release reservation/voucher/stock, audit redaction và reseed hai lần không đổi operational state.
+- Scheduler một replica đã chạy một batch thật, expire đúng payment `AWAITING_PROOF` quá hạn và ghi structured job log; expiry/race/replay còn được bao phủ bằng fixture cô lập để không time-travel database dùng chung.
+- Runtime web trả thành công `/login`, `/orders`, `/backoffice/payments`; browser automation tích hợp không khả dụng trong phiên nghiệm thu nên interaction coverage dựa trên web tests, API E2E và HTTP production smoke.
+- Không sửa `docs/decisions`; mỗi concern đã được commit/push riêng. Bước kế tiếp là Slice 08 — Pickup fulfillment.
 
 ## Tài liệu nguồn
 
