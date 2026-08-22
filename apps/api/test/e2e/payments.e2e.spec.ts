@@ -50,6 +50,34 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
     await app.close();
   });
 
+  it('sets no-store before payment guards and upload interceptors run', async () => {
+    const missingId = '0198e4f0-7d16-4c1a-a2bd-39bc2a0f6997';
+    const proofGuardFailure = await request(server)
+      .post(`/api/v1/payments/${missingId}/submit-proof`)
+      .set('Origin', 'http://localhost:3001')
+      .set('X-Rephone-CSRF', '1')
+      .field('unused', 'value')
+      .expect(404);
+    expect(proofGuardFailure.headers['cache-control']).toBe('no-store');
+
+    const backofficeGuardFailures = await Promise.all([
+      request(server).get('/api/v1/backoffice/payments').expect(401),
+      request(server).get(`/api/v1/backoffice/payments/${missingId}`).expect(401),
+      request(server).get(`/api/v1/backoffice/payments/${missingId}/evidence-url`).expect(401),
+      request(server)
+        .post(`/api/v1/backoffice/payments/${missingId}/verify`)
+        .send({ receivedAmount: '500000' })
+        .expect(401),
+      request(server)
+        .post(`/api/v1/backoffice/payments/${missingId}/reject`)
+        .send({ reason: 'Không xác minh được giao dịch này' })
+        .expect(401),
+    ]);
+    for (const response of backofficeGuardFailures) {
+      expect(response.headers['cache-control']).toBe('no-store');
+    }
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -208,7 +236,7 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
       evidenceObjectPath: null,
     });
     storage.clear();
-    await checkout.agent
+    const tooLarge = await checkout.agent
       .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
       .set('X-Guest-Order-Token', checkout.guestOrderToken)
       .attach('file', Buffer.alloc(10 * 1024 * 1024 + 1, 0x41), {
@@ -216,6 +244,7 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
         contentType: 'image/png',
       })
       .expect(413);
+    expect(tooLarge.headers['cache-control']).toBe('no-store');
     const submitted = await checkout.agent
       .post(`/api/v1/payments/${checkout.paymentId}/submit-proof`)
       .set('X-Guest-Order-Token', checkout.guestOrderToken)
@@ -266,6 +295,7 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
       }),
     ).toBe(1);
     expect(notification).toHaveBeenCalledOnce();
+    expect(notification.mock.calls[0]?.[0].reviewSlaDueAt).toBeInstanceOf(Date);
   });
 
   it('keeps a successful submit when the post-commit notification throws', async () => {

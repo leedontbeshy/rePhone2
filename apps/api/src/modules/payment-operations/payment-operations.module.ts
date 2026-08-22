@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
@@ -8,6 +8,7 @@ import { StorageModule } from '../storage/storage.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { PaymentClock } from './payment-clock.service.js';
 import { PaymentEvidenceValidator } from './payment-evidence.validator.js';
+import { PaymentNoStoreMiddleware } from './payment-no-store.middleware.js';
 import {
   BackofficePaymentOperationsController,
   PaymentOperationsController,
@@ -48,4 +49,10 @@ import { DepositExpiryService } from './deposit-expiry.service.js';
   ],
   exports: [PaymentOperationsRepository, PaymentClock, DepositExpiryService],
 })
-export class PaymentOperationsModule {}
+export class PaymentOperationsModule implements NestModule {
+  public configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(PaymentNoStoreMiddleware)
+      .forRoutes(PaymentOperationsController, BackofficePaymentOperationsController);
+  }
+}
