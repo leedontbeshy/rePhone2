@@ -1,23 +1,19 @@
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { loadWorkspaceEnvironment } from '../../src/config/load-environment.js';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 
-loadWorkspaceEnvironment();
-
-const connectionString = process.env.DATABASE_URL;
-if (connectionString === undefined || connectionString.length === 0) {
-  throw new Error('DATABASE_URL is required for the Slice 07 preflight');
-}
-
-interface ViolationCount {
+export interface Slice07PreflightViolationCount {
   checkName: string;
   count: number;
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
-
-try {
-  const violations = await prisma.$queryRaw<ViolationCount[]>`
+export function findSlice07PreflightViolations(
+  prisma: PrismaClient,
+  configuredPrivateBucket: string,
+): Promise<Slice07PreflightViolationCount[]> {
+  return prisma.$queryRaw<Slice07PreflightViolationCount[]>`
     SELECT 'payments_evidence_shape_check' AS "checkName", COUNT(*)::int AS count
     FROM payments
     WHERE NOT (
@@ -29,6 +25,11 @@ try {
         AND NULLIF(BTRIM(evidence_object_path), '') IS NOT NULL
       )
     )
+    UNION ALL
+    SELECT 'payments_evidence_private_bucket_check', COUNT(*)::int
+    FROM payments
+    WHERE evidence_bucket IS NOT NULL
+      AND evidence_bucket <> ${configuredPrivateBucket}
     UNION ALL
     SELECT 'payments_evidence_owner_path_check', COUNT(*)::int
     FROM payments
@@ -97,11 +98,39 @@ try {
         )
       )
   `;
-  const failed = violations.filter(({ count }) => count > 0);
-  process.stdout.write(`${JSON.stringify({ checks: violations }, null, 2)}\n`);
-  if (failed.length > 0) {
-    throw new Error(`Slice 07 preflight found ${failed.length.toString()} violated invariant(s)`);
+}
+
+async function runSlice07Preflight(): Promise<void> {
+  loadWorkspaceEnvironment();
+  const connectionString = requiredEnvironment('DATABASE_URL');
+  const configuredPrivateBucket = requiredEnvironment('SUPABASE_PRIVATE_BUCKET');
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+
+  try {
+    const violations = await findSlice07PreflightViolations(prisma, configuredPrivateBucket);
+    const failed = violations.filter(({ count }) => count > 0);
+    process.stdout.write(`${JSON.stringify({ checks: violations }, null, 2)}\n`);
+    if (failed.length > 0) {
+      throw new Error(`Slice 07 preflight found ${failed.length.toString()} violated invariant(s)`);
+    }
+  } finally {
+    await prisma.$disconnect();
   }
-} finally {
-  await prisma.$disconnect();
+}
+
+function requiredEnvironment(name: string): string {
+  const value = process.env[name]?.trim();
+  if (value === undefined || value.length === 0) {
+    throw new Error(`${name} is required for the Slice 07 preflight`);
+  }
+  return value;
+}
+
+function isMainModule(): boolean {
+  const entrypoint = process.argv[1];
+  return entrypoint !== undefined && import.meta.url === pathToFileURL(resolve(entrypoint)).href;
+}
+
+if (isMainModule()) {
+  await runSlice07Preflight();
 }

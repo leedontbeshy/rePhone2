@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
+import { findSlice07PreflightViolations } from '../../prisma/scripts/preflight-slice07.js';
 import type { Prisma, PrismaClient } from '../../src/generated/prisma/client.js';
 import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
@@ -79,6 +80,33 @@ describe('Slice 07 payment evidence database invariants', () => {
         data: { evidenceObjectPath: `payments/${randomUUID()}/proof.png` },
       }),
     ).rejects.toThrow();
+  });
+
+  it('preflight rejects evidence outside the configured private bucket without exposing it', async () => {
+    const fixture = await createOrderFixture(prisma);
+    const paymentId = randomUUID();
+    const submittedAt = new Date('2026-08-22T03:00:00.000Z');
+    const unexpectedBucket = 'unexpected-private-bucket';
+    const objectPath = evidencePath(paymentId);
+    await prisma.payment.create({
+      data: {
+        ...bankDepositBase(fixture.orderId, paymentId),
+        status: 'UNDER_REVIEW',
+        evidenceBucket: unexpectedBucket,
+        evidenceObjectPath: objectPath,
+        customerDeclaredAt: submittedAt,
+        submittedAt,
+      },
+    });
+
+    const violations = await findSlice07PreflightViolations(prisma, 'private-test');
+    expect(
+      violations.find(({ checkName }) => checkName === 'payments_evidence_private_bucket_check'),
+    ).toEqual({ checkName: 'payments_evidence_private_bucket_check', count: 1 });
+    const safeOutput = JSON.stringify({ checks: violations });
+    expect(safeOutput).not.toContain(unexpectedBucket);
+    expect(safeOutput).not.toContain(objectPath);
+    expect(safeOutput).not.toContain('private-test');
   });
 
   it('enforces the complete bank deposit lifecycle without constraining cash payments', async () => {
