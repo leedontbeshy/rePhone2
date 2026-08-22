@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -40,18 +41,22 @@ import {
   BackofficePaymentIdParamsDto,
   BackofficePaymentListQueryDto,
   PaymentIdParamsDto,
+  RejectPaymentDto,
+  VerifyPaymentDto,
 } from './payment-operation.dto.js';
 import {
   BackofficePaymentDetailResponse,
   BackofficePaymentListResponse,
   PaymentEvidenceUrlResponse,
   PaymentPublicResponse,
+  PaymentReviewResultResponse,
 } from './payment-operation-response.dto.js';
 import { PaymentProofAccessGuard } from './payment-proof-access.guard.js';
 import { PaymentProofCsrfGuard } from './payment-proof-csrf.guard.js';
 import { PaymentProofSubmissionService } from './payment-proof-submission.service.js';
 import { PaymentRateLimitGuard } from './payment-rate-limit.guard.js';
 import { PaymentReviewQueryService } from './payment-review-query.service.js';
+import { PaymentReviewCommandService } from './payment-review-command.service.js';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -144,6 +149,8 @@ export class BackofficePaymentOperationsController {
   public constructor(
     @Inject(PaymentReviewQueryService)
     private readonly reviewQueries: PaymentReviewQueryService,
+    @Inject(PaymentReviewCommandService)
+    private readonly reviewCommands: PaymentReviewCommandService,
   ) {}
 
   @Get()
@@ -205,5 +212,51 @@ export class BackofficePaymentOperationsController {
   ) {
     response.setHeader('Cache-Control', 'no-store');
     return this.reviewQueries.evidenceUrl(params.id, auth, request);
+  }
+
+  @Post(':id/verify')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'verifyPayment', summary: 'Verify one submitted deposit proof' })
+  @ApiBody({ type: VerifyPaymentDto })
+  @ApiOkResponse({ type: PaymentReviewResultResponse })
+  @ApiErrorResponses(
+    ...BACKOFFICE_PAYMENT_QUERY_ERRORS,
+    {
+      status: 409,
+      description: 'PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION',
+    },
+    { status: 422, description: 'DEPOSIT_AMOUNT_INSUFFICIENT or VALIDATION_FAILED' },
+  )
+  public verify(
+    @Param() params: BackofficePaymentIdParamsDto,
+    @Body() input: VerifyPaymentDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.reviewCommands.verify(params.id, input, auth, request);
+  }
+
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'rejectPayment', summary: 'Reject one submitted deposit proof' })
+  @ApiBody({ type: RejectPaymentDto })
+  @ApiOkResponse({ type: PaymentReviewResultResponse })
+  @ApiErrorResponses(...BACKOFFICE_PAYMENT_QUERY_ERRORS, {
+    status: 409,
+    description: 'PAYMENT_ALREADY_REVIEWED, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION',
+  })
+  public reject(
+    @Param() params: BackofficePaymentIdParamsDto,
+    @Body() input: RejectPaymentDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Cache-Control', 'no-store');
+    return this.reviewCommands.reject(params.id, input, auth, request);
   }
 }
