@@ -34,7 +34,13 @@ export class OrderNotificationService {
     });
   }
 
-  public sendCancelled(order: OrderDetailDto): Promise<void> {
+  public sendCancelled(order: {
+    id: string;
+    orderNumber: string;
+    contact: { email: string };
+    cancelReason: string | null;
+    refunds: Array<{ status: string; amount: string }>;
+  }): Promise<void> {
     const refund = order.refunds.find(({ status }) => ['REQUESTED', 'PROCESSING'].includes(status));
     const refundText =
       refund === undefined
@@ -45,6 +51,50 @@ export class OrderNotificationService {
       subject: `[rePhone] Đơn ${order.orderNumber} đã hủy`,
       text: `Đơn ${order.orderNumber} đã được hủy. Lý do: ${order.cancelReason ?? 'Theo yêu cầu khách hàng'}.${refundText}`,
       html: `<p>Đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã được hủy.</p><p>Lý do: ${escapeHtml(order.cancelReason ?? 'Theo yêu cầu khách hàng')}.</p>${refund === undefined ? '' : `<p>${escapeHtml(refundText.trim())}</p>`}`,
+    });
+  }
+
+  public sendPickupReady(order: {
+    id: string;
+    orderNumber: string;
+    contact: { email: string };
+    location: { name: string };
+    pickupHoldUntil: string | null;
+    storeAddress: string;
+  }): Promise<void> {
+    const deadline =
+      order.pickupHoldUntil === null
+        ? 'theo xác nhận của cửa hàng'
+        : formatDateTime(order.pickupHoldUntil);
+    const link = this.orderLink(order.orderNumber);
+    return this.sendSafely('pickup.ready', order.id, {
+      to: order.contact.email,
+      subject: `[rePhone] Đơn ${order.orderNumber} đã sẵn sàng nhận`,
+      text: `Đơn ${order.orderNumber} đã sẵn sàng tại ${order.location.name}, ${order.storeAddress}. Vui lòng nhận trước ${deadline}. Xem đơn: ${link}`,
+      html: `<p>Đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã sẵn sàng nhận.</p><p>${escapeHtml(order.location.name)}, ${escapeHtml(order.storeAddress)}.</p><p>Vui lòng nhận trước ${escapeHtml(deadline)}.</p><p><a href="${escapeHtml(link)}">Xem đơn hàng</a></p>`,
+    });
+  }
+
+  public sendCompleted(order: {
+    id: string;
+    orderNumber: string;
+    contact: { email: string };
+    pricing: { paidAmount: string; refundedAmount: string };
+    items: Array<{ warranty: { warrantyCode: string } | null }>;
+  }): Promise<void> {
+    const warrantyCodes = order.items.flatMap(({ warranty }) =>
+      warranty === null ? [] : [warranty.warrantyCode],
+    );
+    const warrantyText =
+      warrantyCodes.length === 0
+        ? 'Đơn không phát sinh bảo hành.'
+        : `Mã bảo hành: ${warrantyCodes.join(', ')}.`;
+    const link = this.orderLink(order.orderNumber);
+    return this.sendSafely('order.completed', order.id, {
+      to: order.contact.email,
+      subject: `[rePhone] Đơn ${order.orderNumber} đã hoàn tất`,
+      text: `Đơn ${order.orderNumber} đã hoàn tất. Đã thanh toán: ${formatVnd(order.pricing.paidAmount)}. Đã hoàn: ${formatVnd(order.pricing.refundedAmount)}. ${warrantyText} Xem đơn: ${link}`,
+      html: `<p>Đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã hoàn tất.</p><p>Đã thanh toán: ${escapeHtml(formatVnd(order.pricing.paidAmount))}. Đã hoàn: ${escapeHtml(formatVnd(order.pricing.refundedAmount))}.</p><p>${escapeHtml(warrantyText)}</p><p><a href="${escapeHtml(link)}">Xem đơn hàng</a></p>`,
     });
   }
 
@@ -79,6 +129,14 @@ export class OrderNotificationService {
 
 function formatVnd(value: string): string {
   return `${BigInt(value).toLocaleString('vi-VN')} ₫`;
+}
+
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
 }
 
 function escapeHtml(value: string): string {
