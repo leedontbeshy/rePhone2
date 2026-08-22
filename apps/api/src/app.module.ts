@@ -16,6 +16,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module.js';
 import { VouchersModule } from './modules/vouchers/voucher.module.js';
 import { SettingsModule } from './modules/settings/settings.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
+import { PaymentOperationsModule } from './modules/payment-operations/payment-operations.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { OrdersModule } from './modules/orders/orders.module.js';
     VouchersModule,
     SettingsModule,
     OrdersModule,
+    PaymentOperationsModule,
     HealthModule,
   ],
 })

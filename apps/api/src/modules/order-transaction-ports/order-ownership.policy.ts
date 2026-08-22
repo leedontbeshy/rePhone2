@@ -30,8 +30,10 @@ export class OrderOwnershipPolicy {
       return;
     }
 
-    if (this.guestOrders.matches(this.guestOrders.readToken(request), order.guestAccessTokenHash)) {
-      return;
+    const guestOrderToken = this.guestOrders.readToken(request);
+    if (guestOrderToken !== undefined) {
+      if (this.guestOrders.matches(guestOrderToken, order.guestAccessTokenHash)) return;
+      throw new ApiError('ORDER_NOT_FOUND');
     }
 
     const guestCartToken = this.guestCarts.readToken(request);

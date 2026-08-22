@@ -65,6 +65,21 @@ describe('OrderOwnershipPolicy', () => {
       );
     }, 'ORDER_NOT_FOUND');
   });
+
+  it('does not fall back to a matching cart cookie when an invalid order token is supplied', () => {
+    const cartToken = guestOrders.createToken();
+    const order = record({
+      guestAccessTokenHash: guestOrders.digestToken(guestOrders.createToken()),
+      sourceCart: {
+        status: 'CONVERTED',
+        guestTokenHash: guestCarts.digestToken(cartToken),
+        expiresAt: null,
+      },
+    });
+    expectApiError(() => {
+      policy.assertAccess(request(undefined, guestOrders.createToken(), cartToken), order);
+    }, 'ORDER_NOT_FOUND');
+  });
 });
 
 function record(overrides: Partial<OrderOwnershipRecord>): OrderOwnershipRecord {

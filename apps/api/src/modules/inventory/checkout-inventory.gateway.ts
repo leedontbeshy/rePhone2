@@ -217,6 +217,7 @@ export class CheckoutInventoryGateway {
     orderId: string,
     now: Date,
     transaction: Prisma.TransactionClient,
+    terminalStatus: 'RELEASED' | 'EXPIRED' = 'RELEASED',
   ): Promise<void> {
     const reservations = await transaction.inventoryReservation.findMany({
       where: { orderId, status: 'ACTIVE' },
@@ -244,9 +245,27 @@ export class CheckoutInventoryGateway {
     if (reservations.length > 0) {
       await transaction.inventoryReservation.updateMany({
         where: { id: { in: reservations.map(({ id }) => id) }, status: 'ACTIVE' },
-        data: { status: 'RELEASED', releasedAt: now },
+        data: { status: terminalStatus, releasedAt: now },
       });
     }
+  }
+
+  public async transitionOrderReservationReason(
+    orderId: string,
+    fromReason: 'DEPOSIT' | 'REVIEW',
+    toReason: 'REVIEW' | 'FULFILLMENT',
+    expiresAt: Date | null,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    const activeCount = await transaction.inventoryReservation.count({
+      where: { orderId, status: 'ACTIVE' },
+    });
+    if (activeCount === 0) throw new ApiError('INVALID_STATE_TRANSITION');
+    const updated = await transaction.inventoryReservation.updateMany({
+      where: { orderId, status: 'ACTIVE', holdReason: fromReason },
+      data: { holdReason: toReason, expiresAt },
+    });
+    if (updated.count !== activeCount) throw new ApiError('INVALID_STATE_TRANSITION');
   }
 
   private async lockTargets(
