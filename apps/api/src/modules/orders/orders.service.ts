@@ -4,6 +4,8 @@ import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { requestContext } from '../../common/http/request-context.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
+import { APP_CONFIG } from '../../config/app-config.module.js';
+import type { AppConfig } from '../../config/app-config.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
@@ -61,6 +63,7 @@ export interface CreateCheckoutResult {
 export class OrdersService {
   public constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(CheckoutCartReader) private readonly carts: CheckoutCartReader,
     @Inject(CheckoutCatalogReader) private readonly catalog: CheckoutCatalogReader,
     @Inject(CheckoutInventoryGateway) private readonly inventory: CheckoutInventoryGateway,
@@ -268,7 +271,7 @@ export class OrdersService {
         include: customerOrderInclude,
       }),
     );
-    const projectedOrder = projectOrder(order);
+    const projectedOrder = projectOrder(order, { config: this.config });
     if (outcome.created) {
       await this.notifications.sendPlaced(projectedOrder, rawGuestToken);
     }
@@ -352,7 +355,7 @@ export class OrdersService {
       }),
     );
     this.orderOwnership.assertAccess(request, order);
-    return projectOrder(order);
+    return projectOrder(order, { config: this.config });
   }
 
   public async cancel(
@@ -436,6 +439,7 @@ export class OrdersService {
           include: customerOrderInclude,
         }),
       ),
+      { config: this.config },
     );
     if (outcome.cancelled) await this.notifications.sendCancelled(projectedOrder);
     return projectedOrder;

@@ -1,4 +1,5 @@
 import { ApiError } from '../../common/errors/api-error.js';
+import type { AppConfig } from '../../config/app-config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { OrderDetailDto } from './order-response.dto.js';
 
@@ -15,7 +16,11 @@ export type CustomerOrderRecord = Prisma.OrderGetPayload<{
   include: typeof customerOrderInclude;
 }>;
 
-export function projectOrder(order: CustomerOrderRecord): OrderDetailDto {
+export function projectOrder(
+  order: CustomerOrderRecord,
+  options: { now?: Date; config?: AppConfig } = {},
+): OrderDetailDto {
+  const now = options.now ?? new Date();
   return {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -63,19 +68,51 @@ export function projectOrder(order: CustomerOrderRecord): OrderDetailDto {
       balanceDue: order.balanceDue.toString(),
     },
     voucherCode: order.voucherCodeSnapshot,
-    paymentAttempts: order.payments.map((payment) => ({
-      id: payment.id,
-      purpose: payment.purpose,
-      method: payment.method,
-      status: payment.status,
-      expectedAmount: payment.expectedAmount.toString(),
-      receivedAmount: payment.receivedAmount?.toString() ?? null,
-      transferContent: payment.transferContent,
-      bankName: payment.bankNameSnapshot,
-      bankAccountNumber: payment.bankAccountNumberSnapshot,
-      bankAccountHolder: payment.bankAccountHolderSnapshot,
-      expiresAt: payment.expiresAt?.toISOString() ?? null,
-    })),
+    paymentAttempts: order.payments.map((payment) => {
+      const reviewSlaDueAt =
+        payment.submittedAt === null || payment.reviewWindowMinutesSnapshot === null
+          ? null
+          : new Date(payment.submittedAt.getTime() + payment.reviewWindowMinutesSnapshot * 60_000);
+      const bankQrUrl = publicStorageUrl(
+        options.config,
+        payment.bankQrBucketSnapshot,
+        payment.bankQrObjectPathSnapshot,
+      );
+      const bankTransferInstructions =
+        payment.method === 'BANK_TRANSFER' &&
+        payment.bankNameSnapshot !== null &&
+        payment.bankAccountNumberSnapshot !== null &&
+        payment.bankAccountHolderSnapshot !== null &&
+        payment.transferContent !== null
+          ? {
+              bankName: payment.bankNameSnapshot,
+              accountNumber: payment.bankAccountNumberSnapshot,
+              accountHolder: payment.bankAccountHolderSnapshot,
+              qrUrl: bankQrUrl,
+              transferContent: payment.transferContent,
+            }
+          : null;
+      return {
+        id: payment.id,
+        purpose: payment.purpose,
+        method: payment.method,
+        status: payment.status,
+        expectedAmount: payment.expectedAmount.toString(),
+        receivedAmount: payment.receivedAmount?.toString() ?? null,
+        transferContent: payment.transferContent,
+        bankName: payment.bankNameSnapshot,
+        bankAccountNumber: payment.bankAccountNumberSnapshot,
+        bankAccountHolder: payment.bankAccountHolderSnapshot,
+        bankQrUrl,
+        bankTransferInstructions,
+        expiresAt: payment.expiresAt?.toISOString() ?? null,
+        submittedAt: payment.submittedAt?.toISOString() ?? null,
+        reviewSlaDueAt: reviewSlaDueAt?.toISOString() ?? null,
+        reviewOverdue:
+          payment.status === 'UNDER_REVIEW' && reviewSlaDueAt !== null && reviewSlaDueAt <= now,
+        rejectionReason: payment.status === 'REJECTED' ? payment.rejectionReason : null,
+      };
+    }),
     refunds: order.refunds.map((refund) => ({
       id: refund.id,
       amount: refund.amount.toString(),
@@ -89,7 +126,10 @@ export function projectOrder(order: CustomerOrderRecord): OrderDetailDto {
     completedAt: order.completedAt?.toISOString() ?? null,
     cancelledAt: order.cancelledAt?.toISOString() ?? null,
     cancelReason: order.cancelReason,
-    availableActions: canCancel(order) ? ['CANCEL'] : [],
+    availableActions: [
+      ...(canCancel(order) ? (['CANCEL'] as const) : []),
+      ...(canSubmitPaymentProof(order, now) ? (['SUBMIT_PAYMENT_PROOF'] as const) : []),
+    ],
   };
 }
 
@@ -105,4 +145,33 @@ function canCancel(order: CustomerOrderRecord): boolean {
     !['IN_TRANSIT', 'COMPLETED', 'FAILED', 'RETURNED'].includes(order.fulfillmentStatus) &&
     !order.payments.some(({ status }) => status === 'UNDER_REVIEW')
   );
+}
+
+function canSubmitPaymentProof(order: CustomerOrderRecord, now: Date): boolean {
+  return order.payments.some(
+    (payment) =>
+      payment.purpose === 'DEPOSIT' &&
+      payment.method === 'BANK_TRANSFER' &&
+      payment.status === 'AWAITING_PROOF' &&
+      payment.expiresAt !== null &&
+      now < payment.expiresAt,
+  );
+}
+
+function publicStorageUrl(
+  config: AppConfig | undefined,
+  bucket: string | null,
+  objectPath: string | null,
+): string | null {
+  if (config === undefined || bucket === null || objectPath === null) return null;
+  const segments = objectPath.split('/');
+  if (
+    objectPath.startsWith('/') ||
+    objectPath.endsWith('/') ||
+    objectPath.includes('\\') ||
+    segments.some((segment) => segment.length === 0 || segment === '.' || segment === '..')
+  ) {
+    return null;
+  }
+  return `${config.storage.url.replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${segments.map(encodeURIComponent).join('/')}`;
 }
