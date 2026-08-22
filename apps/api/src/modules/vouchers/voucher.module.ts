@@ -10,12 +10,7 @@ import { FulfillmentVoucherGateway } from './fulfillment-voucher.gateway.js';
 @Module({
   imports: [AuthModule, AuditModule],
   controllers: [PublicVouchersController, BackofficeVouchersController],
-  providers: [
-    VoucherRepository,
-    VoucherService,
-    CheckoutVoucherGateway,
-    FulfillmentVoucherGateway,
-  ],
+  providers: [VoucherRepository, VoucherService, CheckoutVoucherGateway, FulfillmentVoucherGateway],
   exports: [VoucherService, CheckoutVoucherGateway, FulfillmentVoucherGateway],
 })
 export class VouchersModule {}
