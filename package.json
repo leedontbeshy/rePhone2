@@ -35,6 +35,7 @@
     "db:seed": "pnpm --filter @rephone/api db:seed",
     "storage:seed:catalog": "pnpm --filter @rephone/api storage:seed:catalog",
     "preflight:slice06": "pnpm --filter @rephone/api preflight:slice06",
+    "preflight:slice07": "pnpm --filter @rephone/api preflight:slice07",
     "smoke:slice05": "pnpm --filter @rephone/api smoke:slice05",
     "smoke:slice06": "pnpm --filter @rephone/api smoke:slice06",
     "db:studio": "pnpm --filter @rephone/api db:studio",

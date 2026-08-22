@@ -22,6 +22,7 @@
     "db:seed": "prisma db seed --config prisma.config.ts",
     "storage:seed:catalog": "tsx prisma/scripts/upload-demo-catalog-assets.ts",
     "preflight:slice06": "tsx prisma/scripts/preflight-slice06.ts",
+    "preflight:slice07": "tsx prisma/scripts/preflight-slice07.ts",
     "smoke:slice05": "tsx prisma/scripts/smoke-slice05.ts",
     "smoke:slice06": "tsx prisma/scripts/smoke-slice06.ts",
     "db:studio": "prisma studio --config prisma.config.ts",
