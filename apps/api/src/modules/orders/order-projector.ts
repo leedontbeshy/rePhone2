@@ -139,6 +139,7 @@ export function projectOrder(
       reason: refund.reason,
       createdAt: refund.createdAt.toISOString(),
     })),
+    shipment: projectPublicShipment(order.shipments[0]),
     customerNote: order.customerNote,
     placedAt: order.placedAt.toISOString(),
     confirmedAt: order.confirmedAt?.toISOString() ?? null,
@@ -152,6 +153,20 @@ export function projectOrder(
       ...(canCancel(order) ? (['CANCEL'] as const) : []),
       ...(canSubmitPaymentProof(order, now) ? (['SUBMIT_PAYMENT_PROOF'] as const) : []),
     ],
+  };
+}
+
+function projectPublicShipment(shipment: CustomerOrderRecord['shipments'][number] | undefined) {
+  if (shipment === undefined) return null;
+  return {
+    carrierName: shipment.carrierName,
+    trackingCode: shipment.trackingCode,
+    trackingUrl: shipment.trackingUrl,
+    status: shipment.status,
+    shippedAt: shipment.shippedAt?.toISOString() ?? null,
+    deliveredAt: shipment.deliveredAt?.toISOString() ?? null,
+    failedAt: shipment.failedAt?.toISOString() ?? null,
+    returnedAt: shipment.returnedAt?.toISOString() ?? null,
   };
 }
 

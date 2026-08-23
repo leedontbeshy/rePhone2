@@ -317,6 +317,20 @@ export class OrdersService {
             select: { productNameSnapshot: true, quantity: true },
             orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
           },
+          shipments: {
+            select: {
+              carrierName: true,
+              trackingCode: true,
+              trackingUrl: true,
+              status: true,
+              shippedAt: true,
+              deliveredAt: true,
+              failedAt: true,
+              returnedAt: true,
+            },
+            orderBy: { attemptNumber: 'desc' },
+            take: 1,
+          },
         },
         orderBy,
         skip: (query.page - 1) * query.pageSize,
@@ -336,6 +350,19 @@ export class OrdersService {
         grandTotal: order.grandTotal.toString(),
         depositRequired: order.depositRequired.toString(),
         balanceDue: order.balanceDue.toString(),
+        shipment:
+          order.shipments[0] === undefined
+            ? null
+            : {
+                carrierName: order.shipments[0].carrierName,
+                trackingCode: order.shipments[0].trackingCode,
+                trackingUrl: order.shipments[0].trackingUrl,
+                status: order.shipments[0].status,
+                shippedAt: order.shipments[0].shippedAt?.toISOString() ?? null,
+                deliveredAt: order.shipments[0].deliveredAt?.toISOString() ?? null,
+                failedAt: order.shipments[0].failedAt?.toISOString() ?? null,
+                returnedAt: order.shipments[0].returnedAt?.toISOString() ?? null,
+              },
         placedAt: order.placedAt.toISOString(),
       })),
       {
