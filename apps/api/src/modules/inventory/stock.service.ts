@@ -185,36 +185,110 @@ export class StockService {
   }
 
   public async returnStock(input: ReturnStockDto, actor: AuditActorContext) {
-    return this.transactions.run('inventory.stock.return', async (transaction) => {
-      await assertStockTarget(transaction, input.variantId, [input.locationId]);
-      const seed = await this.repository.ensureLevel(
-        input.variantId,
-        input.locationId,
-        transaction,
-      );
-      await this.repository.lockLevels([seed.id], transaction);
-      const updated = await this.repository.updateLevel(
-        seed.id,
-        { quantityOnHand: { increment: input.quantity } },
-        transaction,
-      );
-      const movement = await this.repository.createMovement(
-        {
-          variantId: input.variantId,
-          toLocationId: input.locationId,
-          type: 'RETURN',
-          quantity: input.quantity,
-          referenceType: input.referenceType,
-          referenceId: input.referenceId,
-          reason: input.reason,
-          createdById: actor.actorUserId,
-        },
-        transaction,
-      );
-      await auditMovement(this.audit, transaction, actor, movement, [updated]);
-      return commandResult(movement, [updated]);
-    });
+    return this.transactions.run(
+      'inventory.stock.return',
+      async (transaction) => {
+        await assertStockTarget(transaction, input.variantId, [input.locationId]);
+        const seed = await this.repository.ensureLevel(
+          input.variantId,
+          input.locationId,
+          transaction,
+        );
+        await this.repository.lockLevels([seed.id], transaction);
+        if (input.referenceType === 'SHIPMENT') {
+          const current = await this.repository.findLevel(
+            input.variantId,
+            input.locationId,
+            transaction,
+          );
+          if (current === null) throw new ApiError('INTERNAL_ERROR');
+          const existing = await this.repository.findShipmentReturn(
+            input.referenceId,
+            input.variantId,
+            transaction,
+          );
+          if (existing !== null) {
+            if (
+              existing.toLocationId === input.locationId &&
+              existing.quantity === input.quantity &&
+              existing.reason?.trim() === input.reason.trim()
+            ) {
+              return commandResult(existing, [current]);
+            }
+            throw new ApiError('DUPLICATE_RESOURCE');
+          }
+          await assertShipmentReturnReference(transaction, input);
+        }
+        const updated = await this.repository.updateLevel(
+          seed.id,
+          { quantityOnHand: { increment: input.quantity } },
+          transaction,
+        );
+        const movement = await this.repository.createMovement(
+          {
+            variantId: input.variantId,
+            toLocationId: input.locationId,
+            type: 'RETURN',
+            quantity: input.quantity,
+            referenceType: input.referenceType,
+            referenceId: input.referenceId,
+            reason: input.reason,
+            createdById: actor.actorUserId,
+          },
+          transaction,
+        );
+        await auditMovement(this.audit, transaction, actor, movement, [updated]);
+        return commandResult(movement, [updated]);
+      },
+      (error) => input.referenceType === 'SHIPMENT' && isUniqueError(error),
+    );
   }
+}
+
+async function assertShipmentReturnReference(
+  transaction: Prisma.TransactionClient,
+  input: ReturnStockDto,
+): Promise<void> {
+  const shipment = await transaction.shipment.findUnique({
+    where: { id: input.referenceId },
+    select: {
+      status: true,
+      returnedToLocationId: true,
+      returnedToLocation: { select: { status: true, type: true } },
+      order: {
+        select: {
+          fulfillmentType: true,
+          fulfillmentStatus: true,
+          items: {
+            where: { variantId: input.variantId, inventoryUnitId: null },
+            select: { quantity: true },
+          },
+        },
+      },
+    },
+  });
+  if (shipment === null) throw new ApiError('RESOURCE_NOT_FOUND');
+  if (
+    shipment.status !== 'RETURNED' ||
+    shipment.order.fulfillmentType !== 'SHIPPING' ||
+    shipment.order.fulfillmentStatus !== 'RETURNED' ||
+    shipment.returnedToLocationId !== input.locationId ||
+    shipment.returnedToLocation?.status !== 'ACTIVE' ||
+    !isReturnLocationType(shipment.returnedToLocation.type) ||
+    !shipment.order.items.some(({ quantity }) => quantity === input.quantity)
+  ) {
+    throw new ApiError('INVALID_STATE_TRANSITION');
+  }
+}
+
+function isUniqueError(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
+function isReturnLocationType(value: string): boolean {
+  return value === 'STORE' || value === 'WAREHOUSE';
 }
 
 async function assertStockTarget(
