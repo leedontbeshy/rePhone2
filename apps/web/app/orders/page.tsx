@@ -8,11 +8,11 @@ import { useAuth } from '../auth-provider';
 import { CatalogHeader, formatMoney } from '../catalog-ui';
 
 type GeneratedOrderListItem = components['schemas']['OrderListItemDto'];
-type OrderListItem = GeneratedOrderListItem & {
+type OrderListItem = Omit<GeneratedOrderListItem, 'shipment'> & {
   shipment?: {
     carrierName: string;
     trackingCode: string;
-    trackingUrl: string | null;
+    trackingUrl?: string | null;
     status: string;
   } | null;
 };

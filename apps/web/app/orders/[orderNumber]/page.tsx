@@ -18,14 +18,14 @@ type PublicOrderWarranty = NonNullable<OrderItem['warranty']>;
 interface PublicShipment {
   carrierName: string;
   trackingCode: string;
-  trackingUrl: string | null;
+  trackingUrl?: string | null;
   status: 'CREATED' | 'HANDED_TO_CARRIER' | 'DELIVERED' | 'FAILED' | 'RETURNED' | 'CANCELLED';
-  shippedAt: string | null;
-  deliveredAt: string | null;
-  failedAt: string | null;
-  returnedAt: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  failedAt?: string | null;
+  returnedAt?: string | null;
 }
-type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts'> & {
+type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts' | 'shipment'> & {
   availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
   paymentAttempts: OrderPayment[];
   shipment?: PublicShipment | null;
