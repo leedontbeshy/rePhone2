@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   completePickup,
+  createShipment,
   fulfillmentError,
   getBackofficeOrder,
+  handOverShipment,
+  listActiveReturnLocations,
   listBackofficeOrders,
+  markShipmentDelivered,
+  markShipmentFailed,
+  markShipmentReturned,
+  overrideShippingFee,
 } from './fulfillment-api';
 
 const ORDER = {
@@ -184,5 +191,152 @@ describe('fulfillment api adapter', () => {
         'fallback',
       ),
     ).toBe('Đơn chưa được xác nhận thu đủ số tiền còn lại.');
+  });
+
+  it('maps shipping actions, override metadata and only safe tracking URLs', async () => {
+    const shipping = {
+      ...ORDER,
+      fulfillmentType: 'SHIPPING',
+      fulfillmentStatus: 'IN_TRANSIT',
+      pickupHoldUntil: null,
+      pickupReadyAt: null,
+      shippingAddress: { addressLine: '1 Nguyễn Huệ', province: 'TP.HCM' },
+      pricing: {
+        ...ORDER.pricing,
+        shippingFeeOriginal: '30000',
+        shippingFee: '50000',
+        shippingFeeOverride: {
+          reason: 'Điều chỉnh theo kích thước kiện hàng',
+          overriddenAt: '2026-08-23T00:10:00.000Z',
+          overriddenBy: {
+            id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67ff',
+            fullName: 'Nhân viên Demo',
+            employeeCode: 'EMP001',
+          },
+        },
+      },
+      shipments: [
+        {
+          id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6700',
+          orderId: ORDER.id,
+          attemptNumber: 1,
+          carrierName: 'Giao hàng demo',
+          trackingCode: 'DEMO-001',
+          trackingUrl: 'http://unsafe.example/DEMO-001',
+          status: 'HANDED_TO_CARRIER',
+          shippedAt: '2026-08-23T01:00:00.000Z',
+          deliveredAt: null,
+          failedAt: null,
+          returnedAt: null,
+          failureReason: null,
+          returnedToLocation: null,
+          returnNote: null,
+          createdBy: {
+            id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67ff',
+            fullName: 'Nhân viên Demo',
+            employeeCode: 'EMP001',
+          },
+        },
+      ],
+      availableActions: ['MARK_SHIPMENT_DELIVERED', 'MARK_SHIPMENT_FAILED'],
+    };
+    const client = { GET: vi.fn().mockResolvedValue({ data: { data: shipping } }) };
+
+    const result = await getBackofficeOrder(client, ORDER.id);
+
+    expect(result.fulfillmentType).toBe('SHIPPING');
+    expect(result.pickupStore).toBeNull();
+    expect(result.pricing.shippingFeeOriginal).toBe('30000');
+    expect(result.pricing.shippingFeeOverride).toMatchObject({
+      reason: 'Điều chỉnh theo kích thước kiện hàng',
+      overriddenBy: { employeeCode: 'EMP001' },
+    });
+    expect(result.shipments[0]).toMatchObject({
+      trackingCode: 'DEMO-001',
+      trackingUrl: null,
+      createdBy: { fullName: 'Nhân viên Demo' },
+    });
+    expect(result.availableActions).toEqual(['MARK_SHIPMENT_DELIVERED', 'MARK_SHIPMENT_FAILED']);
+  });
+
+  it('uses the six named shipping command contracts', async () => {
+    const shipment = {
+      id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6700',
+      orderId: ORDER.id,
+      attemptNumber: 1,
+      carrierName: 'Giao hàng demo',
+      trackingCode: 'DEMO-001',
+      trackingUrl: 'https://tracking.example/DEMO-001',
+      status: 'CREATED',
+    };
+    const client = {
+      POST: vi
+        .fn()
+        .mockResolvedValueOnce({ data: { data: ORDER } })
+        .mockResolvedValueOnce({ data: { data: shipment } })
+        .mockResolvedValue({ data: { data: ORDER } }),
+    };
+
+    await overrideShippingFee(client, ORDER.id, {
+      shippingFee: '50000',
+      reason: 'Điều chỉnh theo kiện hàng',
+    });
+    await createShipment(client, ORDER.id, {
+      carrierName: 'Giao hàng demo',
+      trackingCode: 'DEMO-001',
+      trackingUrl: 'https://tracking.example/DEMO-001',
+    });
+    await handOverShipment(client, shipment.id);
+    await markShipmentDelivered(client, shipment.id, { confirmCodCollected: true });
+    await markShipmentFailed(client, shipment.id, { reason: 'Khách không nhận hàng' });
+    await markShipmentReturned(client, shipment.id, {
+      returnedToLocationId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67e0',
+      reason: 'Kho đã nhận và kiểm đếm kiện hoàn',
+    });
+
+    const calledPaths = client.POST.mock.calls.map((call) => String((call as unknown[])[0]));
+    expect(calledPaths).toEqual([
+      '/api/v1/backoffice/orders/{id}/override-shipping-fee',
+      '/api/v1/backoffice/orders/{id}/shipment',
+      '/api/v1/backoffice/shipments/{id}/hand-over',
+      '/api/v1/backoffice/shipments/{id}/mark-delivered',
+      '/api/v1/backoffice/shipments/{id}/mark-failed',
+      '/api/v1/backoffice/shipments/{id}/mark-returned',
+    ]);
+  });
+
+  it('offers only active inventory locations for a physical return', async () => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67e0',
+              code: 'HCM-STORE-01',
+              name: 'Cửa hàng Hồ Chí Minh',
+              type: 'STORE',
+              status: 'ACTIVE',
+            },
+            {
+              id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67e9',
+              code: 'OLD-WH',
+              name: 'Kho ngừng hoạt động',
+              type: 'WAREHOUSE',
+              status: 'INACTIVE',
+            },
+          ],
+        },
+      }),
+    };
+
+    await expect(listActiveReturnLocations(client)).resolves.toEqual([
+      {
+        id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f67e0',
+        code: 'HCM-STORE-01',
+        name: 'Cửa hàng Hồ Chí Minh',
+        type: 'STORE',
+      },
+    ]);
+    expect(client.GET).toHaveBeenCalledWith('/api/v1/backoffice/inventory-locations');
   });
 });

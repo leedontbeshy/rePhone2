@@ -13,8 +13,26 @@ export type BackofficeFulfillmentStatus =
   | 'CANCELLED';
 export type BackofficePaymentStatus =
   'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'PARTIALLY_REFUNDED' | 'REFUNDED';
-export type PickupOrderAction =
-  'CONFIRM' | 'START_PREPARING' | 'MARK_PICKUP_READY' | 'EXTEND_PICKUP_HOLD' | 'COMPLETE_PICKUP';
+export type FulfillmentAction =
+  | 'CONFIRM'
+  | 'START_PREPARING'
+  | 'MARK_PICKUP_READY'
+  | 'EXTEND_PICKUP_HOLD'
+  | 'COMPLETE_PICKUP'
+  | 'OVERRIDE_SHIPPING_FEE'
+  | 'CREATE_SHIPMENT'
+  | 'HAND_OVER_SHIPMENT'
+  | 'MARK_SHIPMENT_DELIVERED'
+  | 'MARK_SHIPMENT_FAILED'
+  | 'MARK_SHIPMENT_RETURNED';
+export type PickupOrderAction = FulfillmentAction;
+
+export interface BackofficeOrderLocation {
+  id: string;
+  code: string;
+  name: string;
+  type: 'STORE' | 'WAREHOUSE';
+}
 
 export interface PickupWarrantySummary {
   warrantyCode: string;
@@ -36,11 +54,12 @@ export interface BackofficeOrderListItem {
   totalItemQuantity: number;
   grandTotal: string;
   balanceDue: string;
+  location: BackofficeOrderLocation | null;
   pickupHoldUntil: string | null;
   pickupOverdue: boolean;
   placedAt: string;
   updatedAt: string | null;
-  availableActions: PickupOrderAction[];
+  availableActions: FulfillmentAction[];
 }
 
 export interface BackofficeOrderItem {
@@ -81,6 +100,7 @@ export interface BackofficeReservationSummary {
 
 export interface BackofficeOrderShipment {
   id: string;
+  orderId: string | null;
   attemptNumber: number;
   carrierName: string;
   trackingCode: string;
@@ -91,6 +111,11 @@ export interface BackofficeOrderShipment {
   failedAt: string | null;
   returnedAt: string | null;
   failureReason: string | null;
+  returnedToLocation: BackofficeOrderLocation | null;
+  returnNote: string | null;
+  createdBy: { id: string; fullName: string; employeeCode: string | null } | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface BackofficeOrderDetail {
@@ -101,17 +126,25 @@ export interface BackofficeOrderDetail {
   paymentStatus: BackofficePaymentStatus;
   fulfillmentType: 'PICKUP' | 'SHIPPING';
   contact: { fullName: string; email: string; phone: string };
+  shippingAddress: unknown;
+  location: BackofficeOrderLocation | null;
   pickupStore: { code: string; name: string } | null;
   items: BackofficeOrderItem[];
   pricing: {
     subtotal: string;
     voucherDiscountAmount: string;
+    shippingFeeOriginal: string;
     shippingFee: string;
     grandTotal: string;
     depositRequired: string;
     paidAmount: string;
     refundedAmount: string;
     balanceDue: string;
+    shippingFeeOverride: {
+      reason: string;
+      overriddenAt: string;
+      overriddenBy: { id: string; fullName: string; employeeCode: string | null };
+    } | null;
   };
   reservations: BackofficeReservationSummary[];
   paymentAttempts: BackofficeOrderPayment[];
@@ -126,7 +159,7 @@ export interface BackofficeOrderDetail {
   pickedUpAt: string | null;
   completedAt: string | null;
   cancelledAt: string | null;
-  availableActions: PickupOrderAction[];
+  availableActions: FulfillmentAction[];
 }
 
 export interface BackofficeOrderListQuery {
@@ -256,6 +289,86 @@ export function completePickup(
   );
 }
 
+export function overrideShippingFee(
+  client: unknown,
+  orderId: string,
+  input: { shippingFee: string; reason: string },
+) {
+  return runOrderCommand(
+    client,
+    orderId,
+    'override-shipping-fee',
+    input,
+    'Không thể cập nhật phí giao hàng.',
+  );
+}
+
+export async function createShipment(
+  client: unknown,
+  orderId: string,
+  input: { carrierName: string; trackingCode: string; trackingUrl?: string },
+): Promise<BackofficeOrderShipment> {
+  const result = await runtimeClient(client).POST('/api/v1/backoffice/orders/{id}/shipment', {
+    params: { path: { id: orderId } },
+    body: input,
+  });
+  return parseShipment(responseData(result, 'Không thể tạo vận đơn.'));
+}
+
+export function handOverShipment(client: unknown, shipmentId: string) {
+  return runShipmentCommand(client, shipmentId, 'hand-over', undefined, 'Không thể bàn giao hàng.');
+}
+
+export function markShipmentDelivered(
+  client: unknown,
+  shipmentId: string,
+  input: { confirmCodCollected: boolean },
+) {
+  return runShipmentCommand(
+    client,
+    shipmentId,
+    'mark-delivered',
+    input,
+    'Không thể xác nhận giao hàng.',
+  );
+}
+
+export function markShipmentFailed(client: unknown, shipmentId: string, input: { reason: string }) {
+  return runShipmentCommand(
+    client,
+    shipmentId,
+    'mark-failed',
+    input,
+    'Không thể ghi nhận giao hàng thất bại.',
+  );
+}
+
+export function markShipmentReturned(
+  client: unknown,
+  shipmentId: string,
+  input: { returnedToLocationId: string; reason: string },
+) {
+  return runShipmentCommand(
+    client,
+    shipmentId,
+    'mark-returned',
+    input,
+    'Không thể ghi nhận hàng hoàn về.',
+  );
+}
+
+export async function listActiveReturnLocations(
+  client: unknown,
+): Promise<BackofficeOrderLocation[]> {
+  const result = await runtimeClient(client).GET('/api/v1/backoffice/inventory-locations');
+  const data = responseData(result, 'Không thể tải danh sách địa điểm nhận hàng hoàn.');
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((value) => recordOrEmpty(value)['status'] === 'ACTIVE')
+    .map(parseLocation)
+    .filter((location): location is BackofficeOrderLocation => location !== null);
+}
+
 export function fulfillmentError(value: unknown, fallback: string): string {
   if (value instanceof Error) return value.message;
   const code = errorCode(value);
@@ -283,12 +396,31 @@ async function runOrderCommand(
   client: unknown,
   orderId: string,
   command:
-    'confirm' | 'start-preparing' | 'mark-pickup-ready' | 'extend-pickup-hold' | 'complete-pickup',
+    | 'confirm'
+    | 'start-preparing'
+    | 'mark-pickup-ready'
+    | 'extend-pickup-hold'
+    | 'complete-pickup'
+    | 'override-shipping-fee',
   body: unknown,
   fallback: string,
 ): Promise<BackofficeOrderDetail> {
   const result = await runtimeClient(client).POST(`/api/v1/backoffice/orders/{id}/${command}`, {
     params: { path: { id: orderId } },
+    ...(body === undefined ? {} : { body }),
+  });
+  return parseDetail(responseData(result, fallback));
+}
+
+async function runShipmentCommand(
+  client: unknown,
+  shipmentId: string,
+  command: 'hand-over' | 'mark-delivered' | 'mark-failed' | 'mark-returned',
+  body: unknown,
+  fallback: string,
+): Promise<BackofficeOrderDetail> {
+  const result = await runtimeClient(client).POST(`/api/v1/backoffice/shipments/{id}/${command}`, {
+    params: { path: { id: shipmentId } },
     ...(body === undefined ? {} : { body }),
   });
   return parseDetail(responseData(result, fallback));
@@ -320,11 +452,12 @@ function parseListItem(value: unknown): BackofficeOrderListItem {
       items.reduce((sum, item) => sum + numberOr(item['quantity'], 0), 0),
     grandTotal: moneyOrNull(input['grandTotal']) ?? moneyOrZero(pricing['grandTotal']),
     balanceDue: moneyOrNull(input['balanceDue']) ?? moneyOrZero(pricing['balanceDue']),
+    location: parseLocation(input['location']),
     pickupHoldUntil: stringOrNull(input['pickupHoldUntil']) ?? stringOrNull(pickup['holdUntil']),
     pickupOverdue: input['pickupOverdue'] === true,
     placedAt: stringOr(input['placedAt']),
     updatedAt: stringOrNull(input['updatedAt']),
-    availableActions: pickupActions(input['availableActions']),
+    availableActions: fulfillmentActions(input['availableActions']),
   };
 }
 
@@ -333,8 +466,13 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
   const contact = recordOrEmpty(input['contact']);
   const pricing = recordOrEmpty(input['pricing']);
   const pickup = recordOrEmpty(input['pickup']);
+  const fulfillmentType = input['fulfillmentType'] === 'SHIPPING' ? 'SHIPPING' : 'PICKUP';
+  const location = parseLocation(input['location']);
   const pickupStore = recordOrEmpty(
-    input['pickupStore'] ?? input['pickupLocation'] ?? input['location'] ?? pickup['location'],
+    input['pickupStore'] ??
+      input['pickupLocation'] ??
+      pickup['location'] ??
+      (fulfillmentType === 'PICKUP' ? input['location'] : undefined),
   );
   const items = Array.isArray(input['items']) ? input['items'] : [];
   const reservations = Array.isArray(input['reservations']) ? input['reservations'] : [];
@@ -358,14 +496,16 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     status: orderStatus(input['status']),
     fulfillmentStatus: fulfillmentStatus(input['fulfillmentStatus']),
     paymentStatus: paymentStatus(input['paymentStatus']),
-    fulfillmentType: input['fulfillmentType'] === 'SHIPPING' ? 'SHIPPING' : 'PICKUP',
+    fulfillmentType,
     contact: {
       fullName: stringOrNull(contact['fullName']) ?? stringOr(input['customerName']),
       email: stringOrNull(contact['email']) ?? stringOr(input['customerEmail']),
       phone: stringOrNull(contact['phone']) ?? stringOr(input['customerPhone']),
     },
+    shippingAddress: input['shippingAddress'] ?? null,
+    location,
     pickupStore:
-      stringOrNull(pickupStore['name']) === null
+      fulfillmentType !== 'PICKUP' || stringOrNull(pickupStore['name']) === null
         ? null
         : { code: stringOr(pickupStore['code']), name: stringOr(pickupStore['name']) },
     items: items.map((row) => {
@@ -379,12 +519,16 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     pricing: {
       subtotal: moneyFrom(input, pricing, 'subtotal'),
       voucherDiscountAmount: moneyFrom(input, pricing, 'voucherDiscountAmount'),
+      shippingFeeOriginal: moneyFrom(input, pricing, 'shippingFeeOriginal'),
       shippingFee: moneyFrom(input, pricing, 'shippingFee'),
       grandTotal: moneyFrom(input, pricing, 'grandTotal'),
       depositRequired: moneyFrom(input, pricing, 'depositRequired'),
       paidAmount: moneyFrom(input, pricing, 'paidAmount'),
       refundedAmount: moneyFrom(input, pricing, 'refundedAmount'),
       balanceDue: moneyFrom(input, pricing, 'balanceDue'),
+      shippingFeeOverride: parseShippingFeeOverride(
+        input['shippingFeeOverride'] ?? pricing['shippingFeeOverride'],
+      ),
     },
     reservations: reservations.map((row) => {
       const reservation = recordOrEmpty(row);
@@ -414,22 +558,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
         reason: stringOr(refund['reason']),
       };
     }),
-    shipments: shipments.map((row) => {
-      const shipment = recordOrEmpty(row);
-      return {
-        id: stringOr(shipment['id']),
-        attemptNumber: numberOr(shipment['attemptNumber'], 0),
-        carrierName: stringOr(shipment['carrierName']),
-        trackingCode: stringOr(shipment['trackingCode']),
-        trackingUrl: stringOrNull(shipment['trackingUrl']),
-        status: stringOr(shipment['status']),
-        shippedAt: stringOrNull(shipment['shippedAt']),
-        deliveredAt: stringOrNull(shipment['deliveredAt']),
-        failedAt: stringOrNull(shipment['failedAt']),
-        returnedAt: stringOrNull(shipment['returnedAt']),
-        failureReason: stringOrNull(shipment['failureReason']),
-      };
-    }),
+    shipments: shipments.map(parseShipment),
     customerNote: stringOrNull(input['customerNote']),
     internalNote: stringOrNull(input['internalNote']),
     placedAt: stringOr(input['placedAt']),
@@ -439,8 +568,65 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     pickedUpAt: stringOrNull(input['pickedUpAt']) ?? stringOrNull(pickup['pickedUpAt']),
     completedAt: stringOrNull(input['completedAt']),
     cancelledAt: stringOrNull(input['cancelledAt']),
-    availableActions: pickupActions(input['availableActions']),
+    availableActions: fulfillmentActions(input['availableActions']),
   };
+}
+
+function parseShipment(value: unknown): BackofficeOrderShipment {
+  const shipment = recordOrEmpty(value);
+  return {
+    id: stringOr(shipment['id']),
+    orderId: stringOrNull(shipment['orderId']),
+    attemptNumber: numberOr(shipment['attemptNumber'], 0),
+    carrierName: stringOr(shipment['carrierName']),
+    trackingCode: stringOr(shipment['trackingCode']),
+    trackingUrl: safeHttpsUrl(shipment['trackingUrl']),
+    status: stringOr(shipment['status']),
+    shippedAt: stringOrNull(shipment['shippedAt']),
+    deliveredAt: stringOrNull(shipment['deliveredAt']),
+    failedAt: stringOrNull(shipment['failedAt']),
+    returnedAt: stringOrNull(shipment['returnedAt']),
+    failureReason: stringOrNull(shipment['failureReason']),
+    returnedToLocation: parseLocation(shipment['returnedToLocation']),
+    returnNote: stringOrNull(shipment['returnNote']),
+    createdBy: parseActor(shipment['createdBy']),
+    createdAt: stringOrNull(shipment['createdAt']),
+    updatedAt: stringOrNull(shipment['updatedAt']),
+  };
+}
+
+function parseShippingFeeOverride(
+  value: unknown,
+): BackofficeOrderDetail['pricing']['shippingFeeOverride'] {
+  const override = recordOrEmpty(value);
+  const reason = stringOrNull(override['reason']);
+  const overriddenAt = stringOrNull(override['overriddenAt']);
+  const overriddenBy = parseActor(override['overriddenBy']);
+  if (reason === null || overriddenAt === null || overriddenBy === null) return null;
+  return { reason, overriddenAt, overriddenBy };
+}
+
+function parseLocation(value: unknown): BackofficeOrderLocation | null {
+  const location = recordOrEmpty(value);
+  const id = stringOrNull(location['id']);
+  const name = stringOrNull(location['name']);
+  if (id === null || name === null) return null;
+  return {
+    id,
+    code: stringOr(location['code']),
+    name,
+    type: location['type'] === 'WAREHOUSE' ? 'WAREHOUSE' : 'STORE',
+  };
+}
+
+function parseActor(
+  value: unknown,
+): { id: string; fullName: string; employeeCode: string | null } | null {
+  const actor = recordOrEmpty(value);
+  const id = stringOrNull(actor['id']);
+  const fullName = stringOrNull(actor['fullName']);
+  if (id === null || fullName === null) return null;
+  return { id, fullName, employeeCode: stringOrNull(actor['employeeCode']) };
 }
 
 function parseOrderItem(value: unknown): BackofficeOrderItem {
@@ -489,22 +675,28 @@ function parsePayment(value: unknown): BackofficeOrderPayment {
   };
 }
 
-function pickupActions(value: unknown): PickupOrderAction[] {
+function fulfillmentActions(value: unknown): FulfillmentAction[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((action) => {
-    if (isPickupAction(action)) return [action];
+    if (isFulfillmentAction(action)) return [action];
     if (action === 'CONFIRM_PICKUP') return ['CONFIRM'];
     return [];
   });
 }
 
-function isPickupAction(value: unknown): value is PickupOrderAction {
+function isFulfillmentAction(value: unknown): value is FulfillmentAction {
   return (
     value === 'CONFIRM' ||
     value === 'START_PREPARING' ||
     value === 'MARK_PICKUP_READY' ||
     value === 'EXTEND_PICKUP_HOLD' ||
-    value === 'COMPLETE_PICKUP'
+    value === 'COMPLETE_PICKUP' ||
+    value === 'OVERRIDE_SHIPPING_FEE' ||
+    value === 'CREATE_SHIPMENT' ||
+    value === 'HAND_OVER_SHIPMENT' ||
+    value === 'MARK_SHIPMENT_DELIVERED' ||
+    value === 'MARK_SHIPMENT_FAILED' ||
+    value === 'MARK_SHIPMENT_RETURNED'
   );
 }
 
@@ -557,6 +749,16 @@ function stringOr(value: unknown): string {
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function safeHttpsUrl(value: unknown): string | null {
+  const candidate = stringOrNull(value);
+  if (candidate === null) return null;
+  try {
+    return new URL(candidate).protocol === 'https:' ? candidate : null;
+  } catch {
+    return null;
+  }
 }
 
 function numberOr(value: unknown, fallback: number): number {

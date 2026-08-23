@@ -15,6 +15,7 @@ interface FilterDraft {
   status: Exclude<BackofficeOrderListQuery['status'], undefined>;
   fulfillmentStatus: Exclude<BackofficeOrderListQuery['fulfillmentStatus'], undefined>;
   paymentStatus: Exclude<BackofficeOrderListQuery['paymentStatus'], undefined>;
+  fulfillmentType: Exclude<BackofficeOrderListQuery['fulfillmentType'], undefined>;
   pickupOverdue: '' | 'true' | 'false';
   sortBy: BackofficeOrderListQuery['sortBy'];
   sortOrder: BackofficeOrderListQuery['sortOrder'];
@@ -26,6 +27,7 @@ const DEFAULT_FILTERS: FilterDraft = {
   status: '',
   fulfillmentStatus: '',
   paymentStatus: '',
+  fulfillmentType: 'SHIPPING',
   pickupOverdue: '',
   sortBy: 'placedAt',
   sortOrder: 'desc',
@@ -93,8 +95,8 @@ export default function BackofficeOrdersPage() {
         <header className="backoffice-page-heading">
           <div>
             <p className="eyebrow">Backoffice</p>
-            <h1>Đơn nhận tại cửa hàng</h1>
-            <p>Xác nhận, chuẩn bị, gia hạn và hoàn tất pickup từ một hàng chờ.</p>
+            <h1>Vận hành đơn hàng</h1>
+            <p>Chuẩn bị pickup hoặc theo dõi bàn giao, COD và hàng hoàn của đơn shipping.</p>
           </div>
           <Link className="button" href="/backoffice/payments">
             Review cọc
@@ -131,6 +133,28 @@ export default function BackofficeOrdersPage() {
                 />
               </label>
               <label>
+                Hình thức nhận hàng
+                <select
+                  value={draft.fulfillmentType}
+                  onChange={(event) => {
+                    const fulfillmentType = event.target.value as FilterDraft['fulfillmentType'];
+                    setDraft((current) => ({
+                      ...current,
+                      fulfillmentType,
+                      pickupOverdue: fulfillmentType === 'SHIPPING' ? '' : current.pickupOverdue,
+                      sortBy:
+                        fulfillmentType === 'SHIPPING' && current.sortBy === 'pickupHoldUntil'
+                          ? 'placedAt'
+                          : current.sortBy,
+                    }));
+                  }}
+                >
+                  <option value="">Tất cả</option>
+                  <option value="PICKUP">Nhận tại cửa hàng</option>
+                  <option value="SHIPPING">Giao hàng</option>
+                </select>
+              </label>
+              <label>
                 Trạng thái đơn
                 <select
                   value={draft.status}
@@ -161,7 +185,16 @@ export default function BackofficeOrdersPage() {
                   }}
                 >
                   <option value="">Tất cả</option>
-                  {['PENDING', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'].map((value) => (
+                  {[
+                    'PENDING',
+                    'PREPARING',
+                    'READY',
+                    'IN_TRANSIT',
+                    'COMPLETED',
+                    'FAILED',
+                    'RETURNED',
+                    'CANCELLED',
+                  ].map((value) => (
                     <option key={value} value={value}>
                       {value}
                     </option>
@@ -193,6 +226,7 @@ export default function BackofficeOrdersPage() {
                 Deadline pickup
                 <select
                   value={draft.pickupOverdue}
+                  disabled={draft.fulfillmentType === 'SHIPPING'}
                   onChange={(event) => {
                     setDraft((current) => ({
                       ...current,
@@ -219,7 +253,9 @@ export default function BackofficeOrdersPage() {
                   <option value="placedAt">Thời gian đặt</option>
                   <option value="updatedAt">Cập nhật gần nhất</option>
                   <option value="grandTotal">Tổng tiền</option>
-                  <option value="pickupHoldUntil">Hạn giữ hàng</option>
+                  {draft.fulfillmentType === 'SHIPPING' ? null : (
+                    <option value="pickupHoldUntil">Hạn giữ hàng</option>
+                  )}
                 </select>
               </label>
               <label>
@@ -263,9 +299,7 @@ export default function BackofficeOrdersPage() {
             )}
 
             <div className="payment-queue-summary" aria-live="polite">
-              <strong>
-                {loading ? 'Đang tải…' : `${String(pagination.totalItems)} đơn pickup`}
-              </strong>
+              <strong>{loading ? 'Đang tải…' : `${String(pagination.totalItems)} đơn hàng`}</strong>
               <span>
                 Trang {pagination.page}/{Math.max(pagination.totalPages, 1)}
               </span>
@@ -273,10 +307,10 @@ export default function BackofficeOrdersPage() {
             {!loading && orders.length === 0 ? (
               <section className="empty-state">
                 <h2>Không có đơn phù hợp</h2>
-                <p>Thử thay đổi bộ lọc hoặc tạo một checkout pickup mới.</p>
+                <p>Thử thay đổi bộ lọc hoặc tạo một checkout phù hợp.</p>
               </section>
             ) : null}
-            <section className="fulfillment-queue" aria-label="Danh sách đơn pickup">
+            <section className="fulfillment-queue" aria-label="Danh sách đơn hàng backoffice">
               {orders.map((order) => (
                 <OrderCard key={order.id} order={order} />
               ))}
@@ -325,10 +359,19 @@ function OrderCard({ order }: { order: BackofficeOrderListItem }) {
       <div className="fulfillment-order-finance">
         <strong>{formatMoney(order.grandTotal)} ₫</strong>
         <span>Còn thu {formatMoney(order.balanceDue)} ₫</span>
-        <time>
-          Giữ đến {order.pickupHoldUntil === null ? '—' : dateTime(order.pickupHoldUntil)}
-        </time>
-        {order.pickupOverdue ? <strong className="overdue-label">Đã quá hạn</strong> : null}
+        {order.fulfillmentType === 'PICKUP' ? (
+          <>
+            <time>
+              Giữ đến {order.pickupHoldUntil === null ? '—' : dateTime(order.pickupHoldUntil)}
+            </time>
+            {order.pickupOverdue ? <strong className="overdue-label">Đã quá hạn</strong> : null}
+          </>
+        ) : (
+          <span>
+            Giao hàng
+            {order.location === null ? '' : ` · ${order.location.code}`}
+          </span>
+        )}
       </div>
       <div className="fulfillment-order-statuses">
         <span>{order.status}</span>
@@ -345,7 +388,7 @@ function queryFromDraft(draft: FilterDraft): BackofficeOrderListQuery {
     status: draft.status,
     fulfillmentStatus: draft.fulfillmentStatus,
     paymentStatus: draft.paymentStatus,
-    fulfillmentType: 'PICKUP',
+    fulfillmentType: draft.fulfillmentType,
     ...(draft.pickupOverdue === '' ? {} : { pickupOverdue: draft.pickupOverdue === 'true' }),
     page: 1,
     pageSize: PAGE_SIZE,
