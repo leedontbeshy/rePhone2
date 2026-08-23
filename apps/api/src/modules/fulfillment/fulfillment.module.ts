@@ -9,6 +9,7 @@ import { SettingsModule } from '../settings/settings.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { WarrantyModule } from '../warranty/warranty.module.js';
 import { BackofficeOrderController } from './backoffice-order.controller.js';
+import { BackofficeShipmentController } from './backoffice-shipment.controller.js';
 import { BackofficeOrderService } from './backoffice-order.service.js';
 import { FulfillmentClock } from './fulfillment-clock.service.js';
 import { FulfillmentNoStoreMiddleware } from './fulfillment-no-store.middleware.js';
@@ -18,6 +19,11 @@ import { PickupCompletionService } from './pickup-completion.service.js';
 import { PickupExpiryService } from './pickup-expiry.service.js';
 import { PickupPreparationController } from './pickup-preparation.controller.js';
 import { PickupPreparationService } from './pickup-preparation.service.js';
+import { ShipmentFinalizationService } from './shipment-finalization.service.js';
+import { ShipmentGateway } from './shipment.gateway.js';
+import { ShipmentPreparationService } from './shipment-preparation.service.js';
+import { ShippingFeeOverrideService } from './shipping-fee-override.service.js';
+import { ShippingOrderController } from './shipping-order.controller.js';
 
 @Module({
   imports: [
@@ -31,7 +37,13 @@ import { PickupPreparationService } from './pickup-preparation.service.js';
     SettingsModule,
     NotificationsModule,
   ],
-  controllers: [BackofficeOrderController, PickupPreparationController, PickupCompletionController],
+  controllers: [
+    BackofficeOrderController,
+    PickupPreparationController,
+    PickupCompletionController,
+    ShippingOrderController,
+    BackofficeShipmentController,
+  ],
   providers: [
     FulfillmentClock,
     FulfillmentQueryService,
@@ -39,6 +51,10 @@ import { PickupPreparationService } from './pickup-preparation.service.js';
     PickupPreparationService,
     PickupCompletionService,
     PickupExpiryService,
+    ShipmentGateway,
+    ShippingFeeOverrideService,
+    ShipmentPreparationService,
+    ShipmentFinalizationService,
   ],
   exports: [FulfillmentClock, PickupExpiryService],
 })
@@ -50,6 +66,8 @@ export class FulfillmentModule implements NestModule {
         BackofficeOrderController,
         PickupPreparationController,
         PickupCompletionController,
+        ShippingOrderController,
+        BackofficeShipmentController,
       );
   }
 }
