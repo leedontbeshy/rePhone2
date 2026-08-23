@@ -1112,7 +1112,7 @@ async function assertCustomerTracking(
   assertNoStore(listResponse.response, '/orders');
   const row = arrayProperty(record(listResponse.body), 'data')
     .map(record)
-    .find((candidate) => candidate['id'] === smokeOrder.id);
+    .find((candidate) => candidate['orderNumber'] === smokeOrder.orderNumber);
   if (row === undefined) throw new Error(`${smokeOrder.orderNumber}: missing from customer list`);
   const listShipment = recordPropertyAsRecord(row, 'shipment');
   assertProperty(listShipment, 'trackingCode', shipment.trackingCode);
