@@ -577,9 +577,11 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 
 ### Slice 09 — Shipping, tracking, COD và return
 
+> Trạng thái: 🚧 IN PROGRESS — kế hoạch chi tiết và WP1 database đang triển khai tại [Slice 09 shipping fulfillment plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md).
+
 **Mục tiêu:** confirmed shipping order được chuẩn bị, bàn giao, giao COD hoặc trả hàng mà không consume tồn hai lần.
 
-**Phụ thuộc:** Slice 07.
+**Phụ thuộc:** Slice 07–08.
 
 **Database và migration**
 
