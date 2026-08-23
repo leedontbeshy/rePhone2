@@ -78,6 +78,29 @@ describe('OrderNotificationService', () => {
     expect(mail.messages[0]?.text).toContain('1.030.000 ₫');
     expect(mail.messages[0]?.text).toContain('RPH-W-20260821-23456789');
   });
+
+  it('falls back to the order portal when tracking contains authority credentials', async () => {
+    const mail = new RecordingMailProvider();
+    const service = new OrderNotificationService(mail, config());
+
+    await service.sendShipmentHandedOver({
+      id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
+      orderNumber: 'RPH-20260821-23456789',
+      contact: { email: 'customer@example.com' },
+      shipments: [
+        {
+          status: 'HANDED_TO_CARRIER',
+          carrierName: 'Carrier test',
+          trackingCode: 'TRACK-09',
+          trackingUrl: 'https://carrier-user:carrier-password@tracking.example/TRACK-09',
+        },
+      ],
+    });
+
+    expect(mail.messages[0]?.text).toContain('/orders/RPH-20260821-23456789');
+    expect(mail.messages[0]?.text).not.toContain('carrier-password');
+    expect(mail.messages[0]?.html).not.toContain('carrier-password');
+  });
 });
 
 function config(): AppConfig {

@@ -110,6 +110,58 @@ export class FulfillmentPaymentGateway {
     });
   }
 
+  public async updateAwaitingDeposit(
+    orderId: string,
+    paymentId: string,
+    expectedAmount: bigint,
+    cancel: boolean,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (expectedAmount < 0n || (expectedAmount === 0n && !cancel)) {
+      throw new ApiError('VALIDATION_FAILED');
+    }
+    const updated = await transaction.payment.updateMany({
+      where: {
+        id: paymentId,
+        orderId,
+        purpose: 'DEPOSIT',
+        method: 'BANK_TRANSFER',
+        status: 'AWAITING_PROOF',
+        evidenceBucket: null,
+        evidenceObjectPath: null,
+        submittedAt: null,
+        reviewedAt: null,
+      },
+      data: {
+        expectedAmount: expectedAmount.toString(),
+        ...(cancel ? { status: 'CANCELLED' as const } : {}),
+      },
+    });
+    if (updated.count !== 1) throw new ApiError('INVALID_STATE_TRANSITION');
+  }
+
+  public async createVerifiedCod(
+    orderId: string,
+    amount: bigint,
+    staffUserId: string,
+    now: Date,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (amount <= 0n) throw new ApiError('VALIDATION_FAILED');
+    await transaction.payment.create({
+      data: {
+        orderId,
+        purpose: 'BALANCE',
+        method: 'COD',
+        expectedAmount: amount.toString(),
+        receivedAmount: amount.toString(),
+        status: 'VERIFIED',
+        reviewedById: staffUserId,
+        reviewedAt: now,
+      },
+    });
+  }
+
   public async prepareSystemRefund(
     orderId: string,
     reason: string,
