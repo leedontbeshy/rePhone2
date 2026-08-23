@@ -152,24 +152,19 @@ export class OrderShipmentDto {
   @ApiProperty({ type: String }) public carrierName!: string;
   @ApiProperty({ type: String }) public trackingCode!: string;
   @ApiPropertyOptional({ type: String, format: 'uri', nullable: true }) public trackingUrl!:
-    | string
-    | null;
+    string | null;
   @ApiProperty({
     enum: ['CREATED', 'HANDED_TO_CARRIER', 'DELIVERED', 'FAILED', 'RETURNED', 'CANCELLED'],
   })
   public status!: string;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public shippedAt!:
-    | string
-    | null;
+    string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public deliveredAt!:
-    | string
-    | null;
+    string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public failedAt!:
-    | string
-    | null;
+    string | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public returnedAt!:
-    | string
-    | null;
+    string | null;
 }
 
 export class OrderDetailDto {
@@ -202,9 +197,8 @@ export class OrderDetailDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public voucherCode!: string | null;
   @ApiProperty({ type: () => [OrderPaymentDto] }) public paymentAttempts!: OrderPaymentDto[];
   @ApiProperty({ type: () => [OrderRefundDto] }) public refunds!: OrderRefundDto[];
-  @ApiPropertyOptional({ type: () => OrderShipmentDto, nullable: true }) public shipment!:
-    | OrderShipmentDto
-    | null;
+  @ApiPropertyOptional({ type: () => OrderShipmentDto, nullable: true })
+  public shipment!: OrderShipmentDto | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public customerNote!: string | null;
   @ApiProperty({ type: String, format: 'date-time' }) public placedAt!: string;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public confirmedAt!:
@@ -245,9 +239,8 @@ export class OrderListItemDto {
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public grandTotal!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public depositRequired!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public balanceDue!: string;
-  @ApiPropertyOptional({ type: () => OrderShipmentDto, nullable: true }) public shipment!:
-    | OrderShipmentDto
-    | null;
+  @ApiPropertyOptional({ type: () => OrderShipmentDto, nullable: true })
+  public shipment!: OrderShipmentDto | null;
   @ApiProperty({ type: String, format: 'date-time' }) public placedAt!: string;
 }
 
