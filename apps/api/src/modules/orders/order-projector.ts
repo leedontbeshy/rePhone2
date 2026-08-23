@@ -1,4 +1,5 @@
 import { ApiError } from '../../common/errors/api-error.js';
+import { safeHttpsUrl } from '../../common/security/safe-https-url.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { OrderDetailDto } from './order-response.dto.js';
@@ -161,7 +162,7 @@ function projectPublicShipment(shipment: CustomerOrderRecord['shipments'][number
   return {
     carrierName: shipment.carrierName,
     trackingCode: shipment.trackingCode,
-    trackingUrl: shipment.trackingUrl,
+    trackingUrl: safeHttpsUrl(shipment.trackingUrl),
     status: shipment.status,
     shippedAt: shipment.shippedAt?.toISOString() ?? null,
     deliveredAt: shipment.deliveredAt?.toISOString() ?? null,

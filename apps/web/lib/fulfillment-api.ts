@@ -1,4 +1,5 @@
 import { apiError } from './order-access';
+import { safeHttpsUrl } from './safe-https-url';
 
 export type BackofficeOrderStatus =
   'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
@@ -580,7 +581,7 @@ function parseShipment(value: unknown): BackofficeOrderShipment {
     attemptNumber: numberOr(shipment['attemptNumber'], 0),
     carrierName: stringOr(shipment['carrierName']),
     trackingCode: stringOr(shipment['trackingCode']),
-    trackingUrl: safeHttpsUrl(shipment['trackingUrl']),
+    trackingUrl: safeHttpsUrl(stringOrNull(shipment['trackingUrl'])),
     status: stringOr(shipment['status']),
     shippedAt: stringOrNull(shipment['shippedAt']),
     deliveredAt: stringOrNull(shipment['deliveredAt']),
@@ -749,16 +750,6 @@ function stringOr(value: unknown): string {
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function safeHttpsUrl(value: unknown): string | null {
-  const candidate = stringOrNull(value);
-  if (candidate === null) return null;
-  try {
-    return new URL(candidate).protocol === 'https:' ? candidate : null;
-  } catch {
-    return null;
-  }
 }
 
 function numberOr(value: unknown, fallback: number): number {

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiError, captureGuestOrderToken } from '../../../lib/order-access';
 import { submitPaymentProof } from '../../../lib/payment-api';
+import { safeHttpsUrl } from '../../../lib/safe-https-url';
 import { useAuth } from '../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../catalog-ui';
 
@@ -588,15 +589,6 @@ function shippingStatusMessage(fulfillmentStatus: string, shipmentStatus?: strin
   return shipmentStatus === undefined
     ? `Trạng thái hiện tại: ${fulfillmentStatus}.`
     : `Trạng thái vận đơn: ${shipmentStatus}.`;
-}
-
-function safeHttpsUrl(value: string | null): string | null {
-  if (value === null) return null;
-  try {
-    return new URL(value).protocol === 'https:' ? value : null;
-  } catch {
-    return null;
-  }
 }
 
 function paymentTitle(payment: OrderPayment): string {

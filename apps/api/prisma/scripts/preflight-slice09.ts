@@ -92,7 +92,13 @@ export function findSlice09PreflightViolations(
     WHERE (
       NULLIF(BTRIM(carrier_name), '') IS NOT NULL
       AND NULLIF(BTRIM(tracking_code), '') IS NOT NULL
-      AND (tracking_url IS NULL OR tracking_url ~ '^https://[^[:space:]]+$')
+      AND (
+        tracking_url IS NULL
+        OR (
+          tracking_url ~* '^https://[^[:space:]]+$'
+          AND tracking_url !~* '^https://[^/?#]*@'
+        )
+      )
     ) IS NOT TRUE
     UNION ALL
     SELECT 'shipments_status_timestamp_check', COUNT(*)::int

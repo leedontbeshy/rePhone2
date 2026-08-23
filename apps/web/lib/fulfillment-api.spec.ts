@@ -222,7 +222,7 @@ describe('fulfillment api adapter', () => {
           attemptNumber: 1,
           carrierName: 'Giao hàng demo',
           trackingCode: 'DEMO-001',
-          trackingUrl: 'http://unsafe.example/DEMO-001',
+          trackingUrl: 'https://carrier-user:carrier-password@unsafe.example/DEMO-001',
           status: 'HANDED_TO_CARRIER',
           shippedAt: '2026-08-23T01:00:00.000Z',
           deliveredAt: null,

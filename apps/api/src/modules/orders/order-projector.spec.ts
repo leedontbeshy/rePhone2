@@ -10,7 +10,7 @@ describe('customer order projector', () => {
       attemptNumber: 2,
       carrierName: 'Giao hàng demo',
       trackingCode: 'DEMO-002',
-      trackingUrl: 'https://tracking.example/DEMO-002',
+      trackingUrl: 'https://carrier-user:carrier-password@tracking.example/DEMO-002',
       status: 'RETURNED',
       shippedAt: new Date('2026-08-23T01:00:00.000Z'),
       deliveredAt: null,
@@ -64,7 +64,7 @@ describe('customer order projector', () => {
     expect(result.shipment).toEqual({
       carrierName: 'Giao hàng demo',
       trackingCode: 'DEMO-002',
-      trackingUrl: 'https://tracking.example/DEMO-002',
+      trackingUrl: null,
       status: 'RETURNED',
       shippedAt: '2026-08-23T01:00:00.000Z',
       deliveredAt: null,

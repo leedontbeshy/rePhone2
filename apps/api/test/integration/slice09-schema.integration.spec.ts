@@ -177,6 +177,18 @@ describe('Slice 09 shipping fulfillment database invariants', () => {
         },
       }),
     ).rejects.toThrow();
+    await expect(
+      prisma.shipment.create({
+        data: {
+          orderId: fixture.orderId,
+          attemptNumber: 1,
+          carrierName: 'VNPost',
+          trackingCode: 'TRACK-CREDENTIAL-09',
+          trackingUrl: 'https://carrier-user:carrier-password@tracking.example.test/TRACK-09',
+          createdById: staff.id,
+        },
+      }),
+    ).rejects.toThrow();
 
     const shipment = await prisma.shipment.create({
       data: {
