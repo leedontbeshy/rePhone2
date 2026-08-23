@@ -336,8 +336,8 @@ async function createShippingOrder(variantId: string, customerToken: string): Pr
   const pricing = recordPropertyAsRecord(preview, 'pricing');
   const grandTotal = BigInt(stringProperty(pricing, 'grandTotal'));
   const depositRequired = BigInt(stringProperty(pricing, 'depositRequired'));
-  if (depositRequired <= 0n || grandTotal <= depositRequired) {
-    throw new Error('Slice 09 smoke requires a positive shipping deposit and COD balance');
+  if (depositRequired <= 0n || grandTotal < depositRequired) {
+    throw new Error('Slice 09 smoke requires a valid positive shipping deposit');
   }
   const createdResponse = await call(
     '/checkouts',
@@ -550,6 +550,7 @@ async function overrideShippingFee(
     persisted.shippingFeeOverrideReason !== reason ||
     persisted.shippingFeeOverriddenById !== smokeIdentity.employeeId ||
     persisted.shippingFeeOverriddenAt === null ||
+    BigInt(persisted.grandTotal.toString()) <= BigInt(smokeOrder.expectedDeposit) ||
     persisted.payments[0]?.status !== 'AWAITING_PROOF' ||
     persisted.payments[0].expectedAmount.toString() !== smokeOrder.expectedDeposit
   ) {
