@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: ✅ Slice 08 — Pickup fulfillment đã hoàn thành; bước tiếp theo là Slice 09<br>
-> Kế hoạch chi tiết: [Slice 08 implementation plan](docs/planning/2026-08-22-slice-08-pickup-fulfillment-plan.md)<br>
+> Trạng thái: ✅ Slice 09 — Shipping fulfillment, COD và tracking đã hoàn thành; bước tiếp theo là Slice 10<br>
+> Kế hoạch chi tiết: [Slice 09 implementation plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -577,7 +577,7 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 
 ### Slice 09 — Shipping, tracking, COD và return
 
-> Trạng thái: 🚧 IN PROGRESS — kế hoạch chi tiết và WP1 database đang triển khai tại [Slice 09 shipping fulfillment plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md).
+> ✅ **COMPLETE** — đã triển khai đủ contract tại [Slice 09 shipping fulfillment plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md), rollout Supabase và nghiệm thu ngày 2026-08-23. Bước tiếp theo là Slice 10.
 
 **Mục tiêu:** confirmed shipping order được chuẩn bị, bàn giao, giao COD hoặc trả hàng mà không consume tồn hai lần.
 
@@ -585,33 +585,35 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 
 **Database và migration**
 
-- [ ] Hoàn thiện Shipment unique one-per-order, `attemptNumber = 1`, tracking và status timestamp constraints.
-- [ ] Shipping fee override fields/reason/audit và recomputed totals constraints.
+- [x] Hoàn thiện Shipment unique one-per-order, `attemptNumber = 1`, tracking và status timestamp constraints.
+- [x] Shipping fee override fields/reason/audit và recomputed totals constraints.
 
 **Domain/application**
 
-- [ ] Override shipping fee chỉ trước proof; không tăng deposit snapshot, giảm nếu vượt grand total mới.
-- [ ] Start preparation và create Shipment.
-- [ ] Handover trong transaction consume reservation đúng một lần, unit → IN_TRANSIT và fulfillment → IN_TRANSIT.
-- [ ] Delivered tạo+verify COD cho balance > 0, unit → SOLD, consume voucher, issue warranty và complete order atomically.
-- [ ] Failed giữ unit IN_TRANSIT; returned ghi location/note/time và chuyển iPhone → INSPECTING.
-- [ ] Không tạo redelivery/attempt thứ hai trong P0.
+- [x] Override shipping fee chỉ trước proof; không tăng deposit snapshot, giảm nếu vượt grand total mới.
+- [x] Start preparation và create Shipment.
+- [x] Handover trong transaction consume reservation đúng một lần, unit → IN_TRANSIT và fulfillment → IN_TRANSIT.
+- [x] Delivered tạo+verify COD cho balance > 0, unit → SOLD, consume voucher, issue warranty và complete order atomically.
+- [x] Failed giữ unit IN_TRANSIT; returned ghi location/note/time và chuyển iPhone → INSPECTING.
+- [x] Không tạo redelivery/attempt thứ hai trong P0.
 
 **API/OpenAPI/UI**
 
-- [ ] Shipping fee override, shipment create, handover, delivered, failed và returned endpoints.
-- [ ] Customer tracking projection chỉ chứa carrier/tracking data an toàn.
-- [ ] UI demo: employee nhập tracking → handover → delivered; failure/return có thể trình diễn từ seed.
+- [x] Shipping fee override, shipment create, handover, delivered, failed và returned endpoints.
+- [x] Customer tracking projection chỉ chứa carrier/tracking data an toàn.
+- [x] UI demo: employee nhập tracking → handover → delivered; failure/return có thể trình diễn qua smoke flow.
 
 **Test bắt buộc**
 
-- [ ] Deposit chưa verified không thể handover.
-- [ ] Handover replay không consume tồn lần hai.
-- [ ] Delivered replay không tạo COD/warranty/movement trùng.
-- [ ] Failed → returned đưa iPhone về INSPECTING; accessory không tự tăng sellable stock.
-- [ ] Không cancel khi IN_TRANSIT; không tạo shipment attempt thứ hai.
+- [x] Deposit chưa verified không thể handover.
+- [x] Handover replay không consume tồn lần hai.
+- [x] Delivered replay không tạo COD/warranty/movement trùng.
+- [x] Failed → returned đưa iPhone về INSPECTING; accessory không tự tăng sellable stock.
+- [x] Không cancel khi IN_TRANSIT; không tạo shipment attempt thứ hai.
 
-**Hoàn thành khi:** shipping/COD happy path và failed/returned path giữ đúng state/inventory/payment invariant.
+**Bằng chứng nghiệm thu:** OpenAPI có đúng 101 operation; `pnpm verify` xanh với 150 API unit test, 21 Web test, 2 generated-client test, 35 integration test và 72 API E2E test. Migration-from-zero áp dụng đủ 8 migration. Supabase preflight có 18/18 invariant query trả 0; seed chạy hai lần không đổi operational state. Smoke thật đã complete order `RPH-20260823-RBFQ57UL`, đưa order `RPH-20260823-NYKVUJMC` qua FAILED → RETURNED, xác nhận replay không nhân side effect và nhận đủ 10 lifecycle email qua Mailpit.
+
+**Hoàn thành khi:** ✅ Đạt — shipping/COD happy path và failed/returned path giữ đúng state/inventory/payment invariant; Slice 10 có thể bắt đầu.
 
 Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.md), [Backoffice fulfillment API](docs/api/backoffice-order-fulfillment-refund-endpoints.md), [Order/deposit requirement](docs/requirements/order-deposit-and-fulfillment.md), [Sales data](docs/data-model/sales.md).
 

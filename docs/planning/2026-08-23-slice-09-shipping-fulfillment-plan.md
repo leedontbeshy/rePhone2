@@ -1,6 +1,6 @@
 # Kế hoạch triển khai Slice 09 — Shipping Fulfillment, COD & Tracking
 
-> Trạng thái: 🚧 IN PROGRESS — WP0/WP1 bắt đầu ngày 2026-08-23.<br>
+> Trạng thái: ✅ COMPLETE — triển khai, rollout Supabase và nghiệm thu ngày 2026-08-23.<br>
 > Baseline: Slice 08 đã hoàn thành với đúng 95 OpenAPI operation; Slice 09 thêm đúng 6 operation, mục tiêu 101.<br>
 > Phụ thuộc: Slice 07 deposit lifecycle và Slice 08 fulfillment foundation đã hoàn thành.<br>
 > Không sửa `docs/decisions`; behavior hiện hành theo precedence tại [docs index](../readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
@@ -166,6 +166,16 @@ Rollout: backup + exact preflight → forward migration → deploy API rồi Web
 | Returned accessory needs inspection | Auto increment StockLevel | Returned không đồng nghĩa sellable; explicit stock return giữ audit/reference |
 | No new background job | Carrier polling/return automation | P0 vận hành thủ công; chỉ reuse deposit expiry hiện có |
 | Exact preflight + partial uniques | Chỉ application checks | Rollout fail-fast và defense-in-depth cho effect tài chính/tồn |
+
+## 6. Biên bản nghiệm thu
+
+- **Contract:** đủ đúng 6 operation mới; OpenAPI tăng `95 → 101`, operationId duy nhất và generated client không drift. Backoffice/customer UI đã có đủ action shipping và tracking projection public-safe.
+- **Database:** đã backup trước rollout, chạy exact preflight và deploy hai forward migration `20260823120000_slice09_shipping_fulfillment_invariants`, `20260823123000_slice09_tracking_url_hardening`; sau smoke, cả 18/18 invariant query vẫn trả `0`. Seed chạy lặp hai lần khi Shipment `IN_TRANSIT` mà operational fingerprint không đổi.
+- **Quality gates:** `pnpm verify` xanh trên HEAD bàn giao: 150 API unit test, 21 Web test, 2 generated-client test, 35 integration test, 72 API E2E test; migration-from-zero áp dụng đủ 8 migration; API và Web production build thành công.
+- **Supabase smoke:** order `RPH-20260823-RBFQ57UL` hoàn tất qua override → proof/verify → prepare → create Shipment → handover → COD delivered → replay. Order `RPH-20260823-NYKVUJMC` đi qua handover → failed → returned; accessory không auto-restock và stock return theo Shipment reference chỉ phát sinh đúng một lần.
+- **Notification và security:** Mailpit nhận đủ 10 email lifecycle của lần smoke cuối; runtime không có `notification.failed`, `storage_orphan_candidate`, raw guest token/hash, Authorization hay guest-order-token trong phần log đã kiểm tra. Provider failure ở lần smoke trước cũng không rollback transaction, đúng failure policy.
+- **Rollback asset:** backup `pre-slice09.dump` có SHA-256 `B92B0BFDC45F6EFE374F592434037E07473D36747AE02876A756ACDDE0CCE93F`; không down migration, reset database, xóa Shipment/Payment/Movement/Warranty history hoặc sửa business state trực tiếp bằng SQL.
+- **Runtime:** API và Mailpit local dùng cho nghiệm thu đã dừng; database/schema Supabase được giữ nguyên. Bước triển khai tiếp theo là Slice 10 — Order cancellation và refund.
 
 Nguồn:
 
