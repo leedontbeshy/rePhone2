@@ -1,4 +1,5 @@
 import { ApiError } from '../../common/errors/api-error.js';
+export { deriveOrderPaymentStatus } from '../payments/payment-finance.policy.js';
 
 export interface VerificationAmounts {
   receivedAmount: bigint;
@@ -29,18 +30,6 @@ export function validateVerificationAmounts(input: {
     ]);
   }
   return { receivedAmount, note };
-}
-
-export function deriveOrderPaymentStatus(
-  paid: bigint,
-  refunded: bigint,
-  grandTotal: bigint,
-): 'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'PARTIALLY_REFUNDED' | 'REFUNDED' {
-  if (refunded > 0n && refunded >= paid) return 'REFUNDED';
-  if (refunded > 0n) return 'PARTIALLY_REFUNDED';
-  if (paid >= grandTotal) return 'PAID';
-  if (paid > 0n) return 'PARTIALLY_PAID';
-  return 'UNPAID';
 }
 
 export function normalizeOptionalText(value: string | null | undefined): string | null {

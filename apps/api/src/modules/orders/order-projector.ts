@@ -4,7 +4,10 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { OrderDetailDto } from './order-response.dto.js';
 
 export const customerOrderInclude = {
-  items: { orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] },
+  items: {
+    include: { warranty: true },
+    orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }],
+  },
   payments: { orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] },
   refunds: { orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] },
   pickupLocation: { select: { code: true, name: true } },
@@ -57,6 +60,20 @@ export function projectOrder(
       lineTotal: item.lineTotal.toString(),
       warrantyDays: item.warrantyDaysSnapshot,
       warrantyTerms: item.warrantyTermsSnapshot,
+      warranty:
+        item.warranty === null
+          ? null
+          : {
+              warrantyCode: item.warranty.warrantyCode,
+              status: item.warranty.status,
+              startAt: item.warranty.startAt.toISOString(),
+              endAt: item.warranty.endAt.toISOString(),
+              isValid:
+                item.warranty.status === 'ACTIVE' &&
+                item.warranty.startAt <= now &&
+                now < item.warranty.endAt,
+              isExpired: item.warranty.endAt <= now,
+            },
     })),
     pricing: {
       subtotal: order.subtotal.toString(),
@@ -65,6 +82,8 @@ export function projectOrder(
       shippingFee: order.shippingFee.toString(),
       grandTotal: order.grandTotal.toString(),
       depositRequired: order.depositRequired.toString(),
+      paidAmount: order.paidAmount.toString(),
+      refundedAmount: order.refundedAmount.toString(),
       balanceDue: order.balanceDue.toString(),
     },
     voucherCode: order.voucherCodeSnapshot,
@@ -123,6 +142,9 @@ export function projectOrder(
     customerNote: order.customerNote,
     placedAt: order.placedAt.toISOString(),
     confirmedAt: order.confirmedAt?.toISOString() ?? null,
+    pickupHoldUntil: order.pickupHoldUntil?.toISOString() ?? null,
+    pickupReadyAt: order.pickupReadyAt?.toISOString() ?? null,
+    pickedUpAt: order.pickedUpAt?.toISOString() ?? null,
     completedAt: order.completedAt?.toISOString() ?? null,
     cancelledAt: order.cancelledAt?.toISOString() ?? null,
     cancelReason: order.cancelReason,

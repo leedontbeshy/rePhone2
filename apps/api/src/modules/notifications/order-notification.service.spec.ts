@@ -44,6 +44,40 @@ describe('OrderNotificationService', () => {
     expect(mail.messages[0]?.text).toContain('500.000 ₫');
     expect(mail.messages[0]?.text).toContain('đang chờ xử lý');
   });
+
+  it('renders pickup ready instructions with the store and strict hold deadline', async () => {
+    const mail = new RecordingMailProvider();
+    const service = new OrderNotificationService(mail, config());
+    await service.sendPickupReady({
+      id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
+      orderNumber: 'RPH-20260821-23456789',
+      contact: { email: 'customer@example.com' },
+      location: { name: 'rePhone Quận 1' },
+      pickupHoldUntil: '2026-08-24T03:00:00.000Z',
+      storeAddress: '123 Nguyễn Huệ, Quận 1',
+    });
+
+    expect(mail.messages).toHaveLength(1);
+    expect(mail.messages[0]?.text).toContain('rePhone Quận 1');
+    expect(mail.messages[0]?.text).toContain('123 Nguyễn Huệ, Quận 1');
+    expect(mail.messages[0]?.text).toContain('/orders/RPH-20260821-23456789');
+    expect(mail.messages[0]?.text).not.toContain('#token=');
+  });
+
+  it('renders the authoritative paid totals and issued warranty codes on completion', async () => {
+    const mail = new RecordingMailProvider();
+    const service = new OrderNotificationService(mail, config());
+    await service.sendCompleted({
+      id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
+      orderNumber: 'RPH-20260821-23456789',
+      contact: { email: 'customer@example.com' },
+      pricing: { paidAmount: '1030000', refundedAmount: '0' },
+      items: [{ warranty: { warrantyCode: 'RPH-W-20260821-23456789' } }, { warranty: null }],
+    });
+
+    expect(mail.messages[0]?.text).toContain('1.030.000 ₫');
+    expect(mail.messages[0]?.text).toContain('RPH-W-20260821-23456789');
+  });
 });
 
 function config(): AppConfig {
@@ -68,6 +102,8 @@ function orderFixture(): OrderDetailDto {
       shippingFee: '30000',
       grandTotal: '1030000',
       depositRequired: '500000',
+      paidAmount: '0',
+      refundedAmount: '0',
       balanceDue: '1030000',
     },
     voucherCode: null,
@@ -102,6 +138,9 @@ function orderFixture(): OrderDetailDto {
     customerNote: null,
     placedAt: '2026-08-21T00:00:00.000Z',
     confirmedAt: null,
+    pickupHoldUntil: null,
+    pickupReadyAt: null,
+    pickedUpAt: null,
     completedAt: null,
     cancelledAt: null,
     cancelReason: null,

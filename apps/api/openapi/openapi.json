@@ -376,6 +376,8 @@
               "UNSUPPORTED_FILE_TYPE",
               "DUPLICATE_RESOURCE",
               "INVALID_STATE_TRANSITION",
+              "ORDER_NOT_FULLY_PAID",
+              "RESERVATION_EXPIRED",
               "CONCURRENT_MODIFICATION",
               "INVENTORY_NOT_AVAILABLE",
               "INVENTORY_INSPECTION_REQUIRED",
@@ -562,6 +564,613 @@
           "id",
           "url",
           "sortOrder"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderContactDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "email",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderDetailDto": {
+        "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "CONFIRM",
+                "START_PREPARING",
+                "MARK_PICKUP_READY",
+                "EXTEND_PICKUP_HOLD",
+                "COMPLETE_PICKUP"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cancelledAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "cancelReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "confirmedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "contact": {
+            "$ref": "#/components/schemas/BackofficeOrderContactDto"
+          },
+          "customerNote": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "internalNote": {
+            "nullable": true,
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderItemDto"
+            },
+            "type": "array"
+          },
+          "location": {
+            "$ref": "#/components/schemas/BackofficeOrderLocationDto"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentAttempts": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderPaymentDto"
+            },
+            "type": "array"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "pickedUpAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pickupHoldUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pickupOverdue": {
+            "type": "boolean"
+          },
+          "pickupReadyAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/BackofficeOrderPricingDto"
+          },
+          "refunds": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderRefundDto"
+            },
+            "type": "array"
+          },
+          "reservations": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeReservationDto"
+            },
+            "type": "array"
+          },
+          "shipments": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderShipmentDto"
+            },
+            "type": "array"
+          },
+          "shippingAddress": {
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "voucherCode": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "fulfillmentType",
+          "contact",
+          "location",
+          "items",
+          "pricing",
+          "reservations",
+          "paymentAttempts",
+          "refunds",
+          "shipments",
+          "placedAt",
+          "pickupOverdue",
+          "availableActions"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BackofficeOrderDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderItemDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inventoryCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lineTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "variantName": {
+            "type": "string"
+          },
+          "warranty": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeWarrantyDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "warrantyDays": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "productType",
+          "productName",
+          "variantName",
+          "sku",
+          "quantity",
+          "unitPrice",
+          "lineTotal",
+          "warrantyDays"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderListItemDto": {
+        "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "CONFIRM",
+                "START_PREPARING",
+                "MARK_PICKUP_READY",
+                "EXTEND_PICKUP_HOLD",
+                "COMPLETE_PICKUP"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "firstItemName": {
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "fulfillmentType": {
+            "enum": [
+              "PICKUP",
+              "SHIPPING"
+            ],
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/BackofficeOrderLocationDto"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "pickupHoldUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pickupOverdue": {
+            "type": "boolean"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "totalItemQuantity": {
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "customerName",
+          "fulfillmentType",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "firstItemName",
+          "totalItemQuantity",
+          "grandTotal",
+          "balanceDue",
+          "location",
+          "pickupOverdue",
+          "placedAt",
+          "availableActions"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeOrderListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/BackofficeOrderListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderLocationDto": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "STORE",
+              "WAREHOUSE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "type"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderPaymentDto": {
+        "properties": {
+          "expectedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "COD",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "DEPOSIT",
+              "BALANCE",
+              "FULL_PAYMENT"
+            ],
+            "type": "string"
+          },
+          "receivedAmount": {
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewerName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "AWAITING_PROOF",
+              "UNDER_REVIEW",
+              "VERIFIED",
+              "REJECTED",
+              "EXPIRED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "method",
+          "status",
+          "expectedAmount"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderPricingDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "depositRequired": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "paidAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "refundedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "shippingFee": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "subtotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "voucherDiscountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subtotal",
+          "voucherDiscountAmount",
+          "shippingFee",
+          "grandTotal",
+          "depositRequired",
+          "paidAmount",
+          "refundedAmount",
+          "balanceDue"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderRefundDto": {
+        "properties": {
+          "amount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "PROCESSING",
+              "COMPLETED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "amount",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderShipmentDto": {
+        "properties": {
+          "attemptNumber": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "carrierName": {
+            "type": "string"
+          },
+          "deliveredAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "failedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "failureReason": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "returnedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "shippedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATED",
+              "HANDED_TO_CARRIER",
+              "DELIVERED",
+              "FAILED",
+              "RETURNED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "trackingCode": {
+            "type": "string"
+          },
+          "trackingUrl": {
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "attemptNumber",
+          "carrierName",
+          "trackingCode",
+          "status"
         ],
         "type": "object"
       },
@@ -1089,6 +1698,66 @@
         ],
         "type": "object"
       },
+      "BackofficeReservationDto": {
+        "properties": {
+          "consumedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "holdReason": {
+            "enum": [
+              "DEPOSIT",
+              "REVIEW",
+              "PICKUP",
+              "FULFILLMENT"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "releasedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "RELEASED",
+              "EXPIRED",
+              "CONSUMED"
+            ],
+            "type": "string"
+          },
+          "targetType": {
+            "enum": [
+              "INVENTORY_UNIT",
+              "STOCK_LEVEL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "holdReason",
+          "targetType",
+          "quantity"
+        ],
+        "type": "object"
+      },
       "BackofficeVariantDto": {
         "properties": {
           "accessoryAttributes": {
@@ -1318,6 +1987,35 @@
         },
         "required": [
           "data"
+        ],
+        "type": "object"
+      },
+      "BackofficeWarrantyDto": {
+        "properties": {
+          "endAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "startAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "VOIDED"
+            ],
+            "type": "string"
+          },
+          "warrantyCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "warrantyCode",
+          "status",
+          "startAt",
+          "endAt"
         ],
         "type": "object"
       },
@@ -1916,6 +2614,15 @@
         ],
         "type": "object"
       },
+      "CompletePickupDto": {
+        "properties": {
+          "confirmCashCollected": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "CreateAddressDto": {
         "properties": {
           "addressLine": {
@@ -2296,6 +3003,24 @@
         },
         "required": [
           "data"
+        ],
+        "type": "object"
+      },
+      "ExtendPickupHoldDto": {
+        "properties": {
+          "holdUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "holdUntil",
+          "reason"
         ],
         "type": "object"
       },
@@ -3381,6 +4106,21 @@
             ],
             "type": "string"
           },
+          "pickedUpAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pickupHoldUntil": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pickupReadyAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "pickupStore": {
             "$ref": "#/components/schemas/PickupStoreSummaryDto"
           },
@@ -3389,7 +4129,7 @@
             "type": "string"
           },
           "pricing": {
-            "$ref": "#/components/schemas/CheckoutPricingDto"
+            "$ref": "#/components/schemas/OrderPricingDto"
           },
           "refunds": {
             "items": {
@@ -3492,6 +4232,15 @@
           },
           "variantName": {
             "type": "string"
+          },
+          "warranty": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderWarrantyDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "warrantyDays": {
             "type": "number"
@@ -3733,6 +4482,58 @@
         ],
         "type": "object"
       },
+      "OrderPricingDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "depositRequired": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "itemDiscountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "paidAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "refundedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "shippingFee": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "subtotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "voucherDiscountAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subtotal",
+          "itemDiscountAmount",
+          "voucherDiscountAmount",
+          "shippingFee",
+          "grandTotal",
+          "depositRequired",
+          "balanceDue",
+          "paidAmount",
+          "refundedAmount"
+        ],
+        "type": "object"
+      },
       "OrderRefundDto": {
         "properties": {
           "amount": {
@@ -3767,6 +4568,43 @@
           "status",
           "reason",
           "createdAt"
+        ],
+        "type": "object"
+      },
+      "OrderWarrantyDto": {
+        "properties": {
+          "endAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "isExpired": {
+            "type": "boolean"
+          },
+          "isValid": {
+            "type": "boolean"
+          },
+          "startAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "VOIDED"
+            ],
+            "type": "string"
+          },
+          "warrantyCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "warrantyCode",
+          "status",
+          "startAt",
+          "endAt",
+          "isValid",
+          "isExpired"
         ],
         "type": "object"
       },
@@ -4906,6 +5744,20 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateBackofficeOrderInternalNoteDto": {
+        "properties": {
+          "internalNote": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "internalNote"
+        ],
         "type": "object"
       },
       "UpdateCartItemDto": {
@@ -9460,6 +10312,1116 @@
         "summary": "",
         "tags": [
           "backoffice-inventory"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders": {
+      "get": {
+        "operationId": "listBackofficeOrders",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "placedAt",
+                "updatedAt",
+                "grandTotal",
+                "pickupHoldUntil"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pickupOverdue",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "placedTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "placedFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fulfillmentType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PICKUP",
+                "SHIPPING"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "paymentStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "UNPAID",
+                "PARTIALLY_PAID",
+                "PAID",
+                "PARTIALLY_REFUNDED",
+                "REFUNDED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fulfillmentStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING",
+                "PREPARING",
+                "READY",
+                "IN_TRANSIT",
+                "COMPLETED",
+                "FAILED",
+                "RETURNED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PLACED",
+                "CONFIRMED",
+                "PROCESSING",
+                "COMPLETED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List operational orders",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}": {
+      "get": {
+        "operationId": "getBackofficeOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get operational order detail",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/complete-pickup": {
+      "post": {
+        "operationId": "completePickup",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletePickupDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FULLY_PAID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/confirm": {
+      "post": {
+        "operationId": "confirmPickupOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/extend-pickup-hold": {
+      "post": {
+        "operationId": "extendPickupHold",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendPickupHoldDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/internal-note": {
+      "patch": {
+        "operationId": "updateBackofficeOrderInternalNote",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBackofficeOrderInternalNoteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/mark-pickup-ready": {
+      "post": {
+        "operationId": "markPickupReady",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/start-preparing": {
+      "post": {
+        "operationId": "startPreparingOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION, RESERVATION_EXPIRED, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
         ]
       }
     },

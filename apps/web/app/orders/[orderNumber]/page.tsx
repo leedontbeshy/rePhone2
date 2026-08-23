@@ -12,6 +12,8 @@ import { CatalogHeader, formatMoney } from '../../catalog-ui';
 type GeneratedOrder = components['schemas']['OrderDetailDto'];
 type GeneratedPayment = components['schemas']['OrderPaymentDto'];
 type OrderPayment = GeneratedPayment;
+type OrderItem = GeneratedOrder['items'][number];
+type PublicOrderWarranty = NonNullable<OrderItem['warranty']>;
 type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts'> & {
   availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
   paymentAttempts: OrderPayment[];
@@ -169,7 +171,7 @@ export default function OrderDetailPage() {
               <div>
                 <p className="eyebrow">Đơn hàng</p>
                 <h1>{order.orderNumber}</h1>
-                <p>Đặt lúc {new Date(order.placedAt).toLocaleString('vi-VN')}</p>
+                <p>Đặt lúc {formatDateTime(order.placedAt)}</p>
               </div>
               <div className="order-status">
                 <strong>{order.status}</strong>
@@ -182,24 +184,38 @@ export default function OrderDetailPage() {
               <section className="order-main">
                 <div className="detail-panel">
                   <h2>Sản phẩm</h2>
-                  {order.items.map((item) => (
-                    <article className="order-item" key={item.id}>
-                      <div>
-                        <strong>{item.productName}</strong>
-                        <span>
-                          {item.variantName}
-                          {item.inventoryCode ? ` · ${item.inventoryCode}` : ''}
-                        </span>
-                        <small>Bảo hành {item.warrantyDays} ngày</small>
-                      </div>
-                      <div>
-                        <span>
-                          {item.quantity} × {formatMoney(item.unitPrice)} ₫
-                        </span>
-                        <strong>{formatMoney(item.lineTotal)} ₫</strong>
-                      </div>
-                    </article>
-                  ))}
+                  {order.items.map((item) => {
+                    const warranty = itemWarranty(item);
+                    return (
+                      <article className="order-item" key={item.id}>
+                        <div>
+                          <strong>{item.productName}</strong>
+                          <span>
+                            {item.variantName}
+                            {item.inventoryCode ? ` · ${item.inventoryCode}` : ''}
+                          </span>
+                          <small>Bảo hành {item.warrantyDays} ngày</small>
+                          {warranty === null ? null : (
+                            <div className="order-warranty-summary">
+                              <strong>
+                                {warranty.warrantyCode} · {warranty.status}
+                              </strong>
+                              <span>
+                                Hiệu lực {formatDateTime(warranty.startAt)} –{' '}
+                                {formatDateTime(warranty.endAt)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <span>
+                            {item.quantity} × {formatMoney(item.unitPrice)} ₫
+                          </span>
+                          <strong>{formatMoney(item.lineTotal)} ₫</strong>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
                 <div className="detail-panel">
                   <h2>Liên hệ & nhận hàng</h2>
@@ -214,47 +230,58 @@ export default function OrderDetailPage() {
                     <pre className="address-snapshot">{formatAddress(order.shippingAddress)}</pre>
                   )}
                 </div>
+                {order.fulfillmentType === 'PICKUP' ? <PickupTimeline order={order} /> : null}
                 {order.paymentAttempts.map((payment) => (
                   <div className="detail-panel" key={payment.id}>
                     <div className="payment-panel-heading">
-                      <h2>Thanh toán cọc</h2>
+                      <h2>{paymentTitle(payment)}</h2>
                       <PaymentStatusBadge status={payment.status} />
                     </div>
                     <dl className="stacked-specs">
                       <div>
-                        <dt>Số tiền</dt>
+                        <dt>Số tiền dự kiến</dt>
                         <dd>{formatMoney(payment.expectedAmount)} ₫</dd>
                       </div>
                       <div>
-                        <dt>Ngân hàng</dt>
-                        <dd>
-                          {payment.bankTransferInstructions?.bankName ?? payment.bankName ?? '—'}
-                        </dd>
+                        <dt>Phương thức</dt>
+                        <dd>{paymentMethodLabel(payment.method)}</dd>
                       </div>
-                      <div>
-                        <dt>Số tài khoản</dt>
-                        <dd>
-                          {payment.bankTransferInstructions?.accountNumber ??
-                            payment.bankAccountNumber ??
-                            '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Chủ tài khoản</dt>
-                        <dd>
-                          {payment.bankTransferInstructions?.accountHolder ??
-                            payment.bankAccountHolder ??
-                            '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Nội dung</dt>
-                        <dd>
-                          {payment.bankTransferInstructions?.transferContent ??
-                            payment.transferContent ??
-                            '—'}
-                        </dd>
-                      </div>
+                      {payment.method === 'BANK_TRANSFER' ? (
+                        <>
+                          <div>
+                            <dt>Ngân hàng</dt>
+                            <dd>
+                              {payment.bankTransferInstructions?.bankName ??
+                                payment.bankName ??
+                                '—'}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Số tài khoản</dt>
+                            <dd>
+                              {payment.bankTransferInstructions?.accountNumber ??
+                                payment.bankAccountNumber ??
+                                '—'}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Chủ tài khoản</dt>
+                            <dd>
+                              {payment.bankTransferInstructions?.accountHolder ??
+                                payment.bankAccountHolder ??
+                                '—'}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Nội dung</dt>
+                            <dd>
+                              {payment.bankTransferInstructions?.transferContent ??
+                                payment.transferContent ??
+                                '—'}
+                            </dd>
+                          </div>
+                        </>
+                      ) : null}
                       <div>
                         <dt>Trạng thái</dt>
                         <dd>{payment.status}</dd>
@@ -289,7 +316,8 @@ export default function OrderDetailPage() {
                         </div>
                       )}
                     </dl>
-                    {payment.bankTransferInstructions?.qrUrl ? (
+                    {payment.method === 'BANK_TRANSFER' &&
+                    payment.bankTransferInstructions?.qrUrl ? (
                       <img
                         className="payment-qr"
                         src={payment.bankTransferInstructions.qrUrl}
@@ -376,6 +404,14 @@ export default function OrderDetailPage() {
                     <strong>{formatMoney(order.pricing.grandTotal)} ₫</strong>
                   </div>
                   <div>
+                    <span>Đã thanh toán</span>
+                    <strong>{formatMoney(order.pricing.paidAmount)} ₫</strong>
+                  </div>
+                  <div>
+                    <span>Đã hoàn</span>
+                    <strong>{formatMoney(order.pricing.refundedAmount)} ₫</strong>
+                  </div>
+                  <div>
                     <span>Còn phải trả</span>
                     <strong>{formatMoney(order.pricing.balanceDue)} ₫</strong>
                   </div>
@@ -413,11 +449,72 @@ export default function OrderDetailPage() {
   );
 }
 
+function PickupTimeline({ order }: { order: Order }) {
+  const events = [
+    { label: 'Đặt đơn', at: order.placedAt },
+    { label: 'Đã xác nhận', at: order.confirmedAt },
+    { label: 'Sẵn sàng nhận', at: order.pickupReadyAt },
+    { label: 'Đã nhận hàng', at: order.pickedUpAt },
+    { label: 'Hoàn tất', at: order.completedAt },
+  ];
+  return (
+    <section className="detail-panel pickup-customer-panel">
+      <h2>Tiến độ nhận tại cửa hàng</h2>
+      <p>{pickupStatusMessage(order.fulfillmentStatus)}</p>
+      <ol className="fulfillment-timeline">
+        {events.map((event) => (
+          <li className={event.at ? 'complete' : 'pending'} key={event.label}>
+            <span aria-hidden="true" />
+            <div>
+              <strong>{event.label}</strong>
+              <time>{event.at ? formatDateTime(event.at) : 'Chưa thực hiện'}</time>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {order.pickupHoldUntil ? (
+        <p className="pickup-deadline">
+          <strong>Giữ hàng đến:</strong> {formatDateTime(order.pickupHoldUntil)}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function canSubmitProof(order: Order, payment: OrderPayment): boolean {
   if (!order.availableActions.includes('SUBMIT_PAYMENT_PROOF')) return false;
+  if (payment.method !== 'BANK_TRANSFER') return false;
   if (payment.status !== 'AWAITING_PROOF') return false;
   if (payment.expiresAt === null || payment.expiresAt === undefined) return false;
   return Date.parse(payment.expiresAt) > Date.now();
+}
+
+function itemWarranty(item: OrderItem): PublicOrderWarranty | null {
+  return item.warranty ?? null;
+}
+
+function pickupStatusMessage(status: string): string {
+  if (status === 'PENDING') return 'Cửa hàng sẽ xác nhận và chuẩn bị đơn của bạn.';
+  if (status === 'PREPARING') return 'Cửa hàng đang chuẩn bị sản phẩm.';
+  if (status === 'READY') return 'Đơn đã sẵn sàng. Hãy mang mã đơn khi đến nhận hàng.';
+  if (status === 'COMPLETED') return 'Bạn đã nhận hàng thành công.';
+  if (status === 'CANCELLED') return 'Đơn pickup đã được hủy.';
+  return `Trạng thái hiện tại: ${status}.`;
+}
+
+function paymentTitle(payment: OrderPayment): string {
+  if (payment.method === 'CASH') return 'Thanh toán tiền mặt';
+  if (payment.method === 'COD') return 'Thanh toán COD';
+  if (payment.purpose === 'FULL_PAYMENT') return 'Thanh toán toàn bộ';
+  if (payment.purpose === 'BALANCE') return 'Thanh toán số dư';
+  return 'Thanh toán cọc';
+}
+
+function paymentMethodLabel(method: string): string {
+  if (method === 'BANK_TRANSFER') return 'Chuyển khoản ngân hàng';
+  if (method === 'CASH') return 'Tiền mặt tại cửa hàng';
+  if (method === 'COD') return 'Thu hộ khi giao hàng';
+  return method;
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
@@ -440,7 +537,13 @@ function paymentStatusLabel(status: string): string {
 
 function formatDateTime(value: string): string {
   const timestamp = Date.parse(value);
-  return Number.isNaN(timestamp) ? value : new Date(timestamp).toLocaleString('vi-VN');
+  return Number.isNaN(timestamp)
+    ? value
+    : new Intl.DateTimeFormat('vi-VN', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone: 'Asia/Ho_Chi_Minh',
+      }).format(timestamp);
 }
 
 function formatAddress(value: unknown): string {

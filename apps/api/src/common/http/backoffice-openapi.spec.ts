@@ -21,7 +21,8 @@ describe('Slice 04 OpenAPI contract', () => {
         () =>
           path.startsWith('/api/v1/backoffice/') &&
           !path.startsWith('/api/v1/backoffice/vouchers') &&
-          !path.startsWith('/api/v1/backoffice/payments'),
+          !path.startsWith('/api/v1/backoffice/payments') &&
+          !path.startsWith('/api/v1/backoffice/orders'),
       )
       .map(([method, operation]) => ({ method, operation, path })),
   );

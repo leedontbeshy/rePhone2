@@ -142,7 +142,7 @@ export class OrdersService {
             customerEmail: input.contact.email,
             customerPhone: input.contact.phone,
             fulfillmentType: input.fulfillmentType,
-            fulfillmentStatus: zeroShippingOrder ? 'PREPARING' : 'PENDING',
+            fulfillmentStatus: 'PENDING',
             fulfillmentLocationId: calculation.allocation.location.id,
             ...(input.shippingAddress === undefined
               ? {}

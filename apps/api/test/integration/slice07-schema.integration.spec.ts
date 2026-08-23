@@ -109,7 +109,7 @@ describe('Slice 07 payment evidence database invariants', () => {
     expect(safeOutput).not.toContain('private-test');
   });
 
-  it('enforces the complete bank deposit lifecycle without constraining cash payments', async () => {
+  it('enforces the complete bank deposit lifecycle and permits valid cash finalization', async () => {
     const fixture = await createOrderFixture(prisma);
     const reviewer = await prisma.user.findUniqueOrThrow({
       where: { normalizedEmail: 'employee@rephone.local' },
@@ -159,11 +159,12 @@ describe('Slice 07 payment evidence database invariants', () => {
         { ...bankDepositBase(fixture.orderId, randomUUID()), status: 'CANCELLED' },
         {
           orderId: fixture.orderId,
-          purpose: 'BALANCE',
+          purpose: 'FULL_PAYMENT',
           method: 'CASH',
           expectedAmount: '500000',
           receivedAmount: '500000',
           status: 'VERIFIED',
+          reviewedById: reviewer.id,
           reviewedAt,
         },
       ],

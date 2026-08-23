@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: Slice 07 đã hoàn thành trên branch `feat/slice-07-deposit-proof-review-expiry`<br>
-> Bước tiếp theo: Slice 08 — Pickup fulfillment<br>
+> Trạng thái: ✅ Slice 08 — Pickup fulfillment đã hoàn thành; bước tiếp theo là Slice 09<br>
+> Kế hoạch chi tiết: [Slice 08 implementation plan](docs/planning/2026-08-22-slice-08-pickup-fulfillment-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -537,37 +537,41 @@ Nguồn: [Payment proof/review API](docs/api/payment-proof-and-review-endpoints.
 
 ### Slice 08 — Pickup fulfillment
 
+> ✅ **COMPLETE** — đã triển khai đủ contract tại [Slice 08 implementation plan](docs/planning/2026-08-22-slice-08-pickup-fulfillment-plan.md), rollout Supabase và nghiệm thu ngày 2026-08-23. Bước tiếp theo là Slice 09.
+
 **Mục tiêu:** pickup đi từ PENDING đến COMPLETED, thu CASH nếu cần, consume tồn/voucher và phát hành warranty đúng một lần.
 
-**Phụ thuộc:** Slice 06; Warranty issuance portion có thể dùng service foundation hoàn thiện trong Slice 11.
+**Phụ thuộc:** Slice 06–07; internal Warranty issuer là một phần Slice 08, còn Warranty/after-sales API đầy đủ thuộc Slice 11.
 
 **Database và migration**
 
-- [ ] Hoàn thiện pickup hold/expiry fields và fulfillment projection trên Order.
-- [ ] CASH Payment, stock movement và warranty uniqueness constraints sẵn sàng cho atomic completion.
+- [x] Hoàn thiện pickup hold/expiry invariant và fulfillment projection trên Order bằng forward migration, không sửa baseline.
+- [x] CASH Payment, stock movement và warranty uniqueness/graph constraints bảo vệ atomic completion.
 
 **Domain/application**
 
-- [ ] Staff confirm pickup Order PLACED → CONFIRMED.
-- [ ] Start preparation, mark ready và extend hold có reason/audit.
-- [ ] Complete pickup trong `Serializable`: tạo+verify CASH cho balance > 0, consume reservation, xuất stock, unit → SOLD, voucher → CONSUMED, fulfillment/order → COMPLETED và issue warranty.
-- [ ] Zero balance không tạo Payment nhưng payment summary vẫn PAID.
-- [ ] Expire pickup idempotently cancel và release khi chưa completed.
+- [x] Staff confirm pickup Order PLACED → CONFIRMED.
+- [x] Start preparation dùng chung PICKUP/SHIPPING; mark ready và extend hold có reason/audit.
+- [x] Complete pickup trong `Serializable`: tạo+verify CASH cho balance > 0, consume reservation, xuất stock, unit → SOLD, voucher → CONSUMED, fulfillment/order → COMPLETED và issue warranty.
+- [x] Zero balance không tạo Payment nhưng payment summary vẫn PAID.
+- [x] Expire pickup idempotently cancel và release khi chưa completed.
 
 **API/OpenAPI/UI**
 
-- [ ] Backoffice confirm/prepare/ready/extend/complete endpoints.
-- [ ] Customer order detail phản ánh fulfillment/payment/warranty projection.
-- [ ] UI demo có thể dùng seeded `pickup-ready` để rút ngắn thời gian thao tác.
+- [x] Đúng tám Backoffice Order operation: list, detail, internal-note và confirm/prepare/ready/extend/complete; OpenAPI tăng từ 87 lên đúng 95 operation duy nhất.
+- [x] Backoffice queue/detail vận hành pickup với filter, overdue signal, internal note và năm action; customer order detail phản ánh fulfillment/payment/warranty projection.
+- [x] Supabase smoke tạo fixture qua checkout và application commands; permanent scenario framework vẫn thuộc Slice 12.
 
 **Test bắt buộc**
 
-- [ ] Invalid transition và expired hold bị reject.
-- [ ] Complete replay chỉ tạo một CASH Payment, StockMovement và Warranty.
-- [ ] Payment/inventory/voucher/order projection cùng commit hoặc cùng rollback.
-- [ ] CUSTOMER không gọi backoffice command; employee permission đúng.
+- [x] Invalid transition và expired hold bị reject.
+- [x] Complete replay chỉ tạo một CASH Payment, StockMovement và Warranty.
+- [x] Payment/inventory/voucher/order projection cùng commit hoặc cùng rollback.
+- [x] CUSTOMER không gọi backoffice command; EMPLOYEE/ADMIN permission đúng.
 
-**Hoàn thành khi:** pickup happy path và expiry/cancel failure path chạy end-to-end với invariant query sau commit.
+**Bằng chứng nghiệm thu:** `pnpm verify` xanh; migration-from-zero áp dụng đủ 6 migration; 114 API unit test, 13 Web test, 2 generated-client test, 27 integration test và 63 API E2E test đều qua. Supabase preflight có 17/17 invariant query trả 0; seed chạy hai lần không đổi operational state. Smoke thật đã complete order `RPH-20260823-L4AHFLHT`, expire order `RPH-20260823-DR3976HX` và xác nhận replay không nhân Payment/Reservation/StockMovement/VoucherUsage/Warranty/Audit.
+
+**Hoàn thành khi:** ✅ Đạt — pickup happy path và expiry/cancel failure path chạy end-to-end với invariant query sau commit; Slice 09 có thể bắt đầu.
 
 Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.md), [Backoffice fulfillment API](docs/api/backoffice-order-fulfillment-refund-endpoints.md), [Order requirement](docs/requirements/order-deposit-and-fulfillment.md), [State machines](docs/architecture/state-machines.md).
 

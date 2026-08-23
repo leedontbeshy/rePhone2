@@ -617,7 +617,7 @@ model InventoryReservation {
   releasedAt      DateTime?         @map("released_at") @db.Timestamptz(3)
   consumedAt      DateTime?         @map("consumed_at") @db.Timestamptz(3)
   order           Order             @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  orderItem       OrderItem         @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  orderItem       OrderItem         @relation(fields: [orderItemId, orderId], references: [id, orderId], onDelete: Restrict)
   inventoryUnit   InventoryUnit?    @relation(fields: [inventoryUnitId], references: [id], onDelete: Restrict)
   stockLevel      StockLevel?       @relation(fields: [stockLevelId], references: [id], onDelete: Restrict)
 
@@ -807,6 +807,7 @@ model Order {
 
   @@index([customerId, createdAt(sort: Desc)])
   @@index([status, fulfillmentStatus, createdAt(sort: Desc)])
+  // Slice 08 pickup expiry queue index is migration-managed because Prisma cannot express its predicate.
   @@index([fulfillmentLocationId])
   @@index([pickupLocationId])
   @@map("orders")
@@ -840,6 +841,7 @@ model OrderItem {
   warranty                Warranty?
   afterSalesRequests      AfterSalesRequest[]
 
+  @@unique([id, orderId])
   @@index([orderId])
   @@index([productId])
   @@index([variantId])

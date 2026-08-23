@@ -339,6 +339,7 @@ async function createActiveUnitReservation(
       fulfillmentLocationId: unit.locationId,
       pickupLocationId: unit.locationId,
       pickupHoldUntil: new Date('2026-08-22T00:00:00.000Z'),
+      placedAt: new Date('2026-08-21T00:00:00.000Z'),
       subtotal: amount,
       grandTotal: amount,
       balanceDue: amount,
