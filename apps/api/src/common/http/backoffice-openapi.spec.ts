@@ -10,6 +10,49 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+const SLICE_04_OPERATION_IDS = new Set([
+  'activateBackofficeVariant',
+  'adjustBackofficeStock',
+  'archiveBackofficeProduct',
+  'archiveBackofficeVariant',
+  'completeBackofficeInventoryInspection',
+  'createBackofficeInventoryInspection',
+  'createBackofficeProduct',
+  'createBackofficeVariant',
+  'deleteBackofficeProductMedia',
+  'getBackofficeInventoryCost',
+  'getBackofficeInventoryInspection',
+  'getBackofficeInventoryUnit',
+  'getBackofficeProduct',
+  'intakeBackofficeInventoryUnit',
+  'listBackofficeInventoryInspections',
+  'listBackofficeInventoryLocations',
+  'listBackofficeInventoryUnits',
+  'listBackofficeProducts',
+  'listBackofficeStockLevels',
+  'listBackofficeStockMovements',
+  'lookupBackofficeInventoryIdentifier',
+  'makeBackofficeInventoryUnitAvailable',
+  'publishBackofficeProduct',
+  'quarantineBackofficeInventoryUnit',
+  'receiveBackofficeStock',
+  'returnBackofficeStock',
+  'revealBackofficeInventoryIdentifiers',
+  'sendBackofficeInventoryUnitToRepair',
+  'transferBackofficeInventoryUnit',
+  'transferBackofficeStock',
+  'updateBackofficeInventoryCost',
+  'updateBackofficeInventoryInspection',
+  'updateBackofficeInventoryUnit',
+  'updateBackofficeProduct',
+  'updateBackofficeProductMedia',
+  'updateBackofficeVariant',
+  'uploadBackofficeInventoryUnitMedia',
+  'uploadBackofficeProductMedia',
+  'uploadBackofficeVariantMedia',
+  'writeOffBackofficeInventoryUnit',
+]);
+
 describe('Slice 04 OpenAPI contract', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
@@ -17,19 +60,14 @@ describe('Slice 04 OpenAPI contract', () => {
   const operations = Object.entries(document.paths).flatMap(([path, pathItem]) =>
     Object.entries(pathItem)
       .filter(([method]) => ['get', 'post', 'patch', 'delete'].includes(method))
-      .filter(
-        () =>
-          path.startsWith('/api/v1/backoffice/') &&
-          !path.startsWith('/api/v1/backoffice/vouchers') &&
-          !path.startsWith('/api/v1/backoffice/payments') &&
-          !path.startsWith('/api/v1/backoffice/orders'),
-      )
+      .filter(([, operation]) => SLICE_04_OPERATION_IDS.has(operation.operationId ?? ''))
       .map(([method, operation]) => ({ method, operation, path })),
   );
 
   it('publishes exactly 40 secured and uniquely named operations', () => {
     expect(operations).toHaveLength(40);
     const operationIds = operations.map(({ operation }) => operation.operationId);
+    expect(new Set(operationIds)).toEqual(SLICE_04_OPERATION_IDS);
     expect(new Set(operationIds).size).toBe(40);
     for (const { operation } of operations) {
       expect(operation.security).toEqual([{ bearer: [] }]);
