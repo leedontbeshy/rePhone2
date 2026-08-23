@@ -13,14 +13,58 @@ export const fulfillmentOrderInclude = {
   },
   refunds: { orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }] },
   reservations: { orderBy: { id: 'asc' as const } },
-  shipments: { orderBy: { attemptNumber: 'desc' as const } },
+  shipments: {
+    include: {
+      createdBy: { select: { id: true, fullName: true, employeeCode: true } },
+      returnedToLocation: { select: { id: true, code: true, name: true, type: true } },
+    },
+    orderBy: { attemptNumber: 'desc' as const },
+  },
   pickupLocation: { select: { id: true, code: true, name: true, type: true, status: true } },
   fulfillmentLocation: { select: { id: true, code: true, name: true, type: true, status: true } },
+  shippingFeeOverriddenBy: { select: { id: true, fullName: true, employeeCode: true } },
   voucherUsage: { select: { id: true, status: true, voucherId: true } },
 } satisfies Prisma.OrderInclude;
 
 export type FulfillmentOrderRecord = Prisma.OrderGetPayload<{
   include: typeof fulfillmentOrderInclude;
+}>;
+
+export const fulfillmentOrderListSelect = {
+  id: true,
+  orderNumber: true,
+  customerName: true,
+  fulfillmentType: true,
+  status: true,
+  fulfillmentStatus: true,
+  paymentStatus: true,
+  grandTotal: true,
+  balanceDue: true,
+  pickupHoldUntil: true,
+  placedAt: true,
+  items: {
+    select: { productNameSnapshot: true, quantity: true },
+    orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }],
+  },
+  fulfillmentLocation: { select: { id: true, code: true, name: true, type: true } },
+  payments: {
+    select: {
+      purpose: true,
+      method: true,
+      status: true,
+      submittedAt: true,
+      expiresAt: true,
+    },
+    orderBy: [{ createdAt: 'asc' as const }, { id: 'asc' as const }],
+  },
+  shipments: {
+    select: { status: true },
+    orderBy: { attemptNumber: 'desc' as const },
+  },
+} satisfies Prisma.OrderSelect;
+
+export type FulfillmentOrderListRecord = Prisma.OrderGetPayload<{
+  select: typeof fulfillmentOrderListSelect;
 }>;
 
 export interface FulfillmentOrderListInput {
@@ -71,7 +115,7 @@ export class FulfillmentOrderGateway {
   }
 
   public async list(input: FulfillmentOrderListInput): Promise<{
-    orders: FulfillmentOrderRecord[];
+    orders: FulfillmentOrderListRecord[];
     totalItems: number;
   }> {
     const where = buildWhere(input);
@@ -79,7 +123,7 @@ export class FulfillmentOrderGateway {
     const [orders, totalItems] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        include: fulfillmentOrderInclude,
+        select: fulfillmentOrderListSelect,
         orderBy,
         skip: (input.page - 1) * input.pageSize,
         take: input.pageSize,

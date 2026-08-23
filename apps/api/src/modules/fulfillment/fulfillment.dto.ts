@@ -6,8 +6,10 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   Length,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -155,4 +157,73 @@ export class CompletePickupDto {
   @IsOptional()
   @IsBoolean()
   public confirmCashCollected?: boolean;
+}
+
+export class OverrideShippingFeeDto {
+  @ApiProperty({ type: String, pattern: '^\\d{1,15}$' })
+  @Matches(/^\d{1,15}$/)
+  public shippingFee!: string;
+
+  @ApiProperty({ type: String, minLength: 5, maxLength: 500 })
+  @Transform(trim)
+  @IsString()
+  @Length(5, 500)
+  public reason!: string;
+}
+
+export class CreateShipmentDto {
+  @ApiProperty({ type: String, minLength: 1, maxLength: 255 })
+  @Transform(trim)
+  @IsString()
+  @Length(1, 255)
+  public carrierName!: string;
+
+  @ApiProperty({ type: String, minLength: 1, maxLength: 255 })
+  @Transform(trim)
+  @IsString()
+  @Length(1, 255)
+  public trackingCode!: string;
+
+  @ApiPropertyOptional({ type: String, format: 'uri', maxLength: 2048 })
+  @Transform(optionalTrim)
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true, require_valid_protocol: true })
+  @Matches(/^https:\/\/(?![^/?#]*@)/i, {
+    message: 'trackingUrl must not include username or password credentials',
+  })
+  @MaxLength(2048)
+  public trackingUrl?: string;
+}
+
+export class ShipmentIdParamsDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID()
+  public id!: string;
+}
+
+export class MarkShipmentDeliveredDto {
+  @ApiPropertyOptional({ type: Boolean, default: false })
+  @IsOptional()
+  @IsBoolean()
+  public confirmCodCollected?: boolean;
+}
+
+export class MarkShipmentFailedDto {
+  @ApiProperty({ type: String, minLength: 5, maxLength: 500 })
+  @Transform(trim)
+  @IsString()
+  @Length(5, 500)
+  public reason!: string;
+}
+
+export class MarkShipmentReturnedDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID()
+  public returnedToLocationId!: string;
+
+  @ApiProperty({ type: String, minLength: 5, maxLength: 500 })
+  @Transform(trim)
+  @IsString()
+  @Length(5, 500)
+  public reason!: string;
 }

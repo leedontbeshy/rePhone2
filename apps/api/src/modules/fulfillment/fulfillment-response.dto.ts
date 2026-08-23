@@ -7,6 +7,12 @@ export const FULFILLMENT_ACTIONS = [
   'MARK_PICKUP_READY',
   'EXTEND_PICKUP_HOLD',
   'COMPLETE_PICKUP',
+  'OVERRIDE_SHIPPING_FEE',
+  'CREATE_SHIPMENT',
+  'HAND_OVER_SHIPMENT',
+  'MARK_SHIPMENT_DELIVERED',
+  'MARK_SHIPMENT_FAILED',
+  'MARK_SHIPMENT_RETURNED',
 ] as const;
 export type FulfillmentAction = (typeof FULFILLMENT_ACTIONS)[number];
 
@@ -21,6 +27,12 @@ export class BackofficeOrderContactDto {
   @ApiProperty({ type: String }) public fullName!: string;
   @ApiProperty({ type: String, format: 'email' }) public email!: string;
   @ApiProperty({ type: String }) public phone!: string;
+}
+
+export class BackofficeActorDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ type: String }) public fullName!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public employeeCode!: string | null;
 }
 
 export class BackofficeWarrantyDto {
@@ -84,6 +96,7 @@ export class BackofficeOrderRefundDto {
 
 export class BackofficeOrderShipmentDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ type: String, format: 'uuid' }) public orderId!: string;
   @ApiProperty({ type: Number, minimum: 1 }) public attemptNumber!: number;
   @ApiProperty({ type: String }) public carrierName!: string;
   @ApiProperty({ type: String }) public trackingCode!: string;
@@ -102,12 +115,33 @@ export class BackofficeOrderShipmentDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public returnedAt!:
     string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public failureReason!: string | null;
+  @ApiPropertyOptional({ type: () => BackofficeOrderLocationDto, nullable: true })
+  public returnedToLocation!: BackofficeOrderLocationDto | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) public returnNote!: string | null;
+  @ApiPropertyOptional({ type: () => BackofficeActorDto, nullable: true })
+  public createdBy!: BackofficeActorDto | null;
+  @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: string;
+}
+
+export class BackofficeOrderShipmentResponse {
+  @ApiProperty({ type: () => BackofficeOrderShipmentDto })
+  public data!: BackofficeOrderShipmentDto;
+}
+
+export class BackofficeShippingFeeOverrideDto {
+  @ApiProperty({ type: String }) public reason!: string;
+  @ApiProperty({ type: String, format: 'date-time' }) public overriddenAt!: string;
+  @ApiProperty({ type: () => BackofficeActorDto }) public overriddenBy!: BackofficeActorDto;
 }
 
 export class BackofficeOrderPricingDto {
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public subtotal!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public voucherDiscountAmount!: string;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public shippingFeeOriginal!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public shippingFee!: string;
+  @ApiPropertyOptional({ type: () => BackofficeShippingFeeOverrideDto, nullable: true })
+  public shippingFeeOverride!: BackofficeShippingFeeOverrideDto | null;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public grandTotal!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public depositRequired!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public paidAmount!: string;
