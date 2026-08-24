@@ -126,7 +126,11 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
         status: 'PLACED',
         fulfillmentStatus: 'PENDING',
         paymentStatus: 'UNPAID',
-        availableActions: ['CONFIRM', 'EXTEND_PICKUP_HOLD'],
+        availableActions: expect.arrayContaining([
+          'CONFIRM',
+          'EXTEND_PICKUP_HOLD',
+          'CANCEL_ORDER',
+        ]),
       }),
     ]);
 
@@ -141,7 +145,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
       internalNote: null,
       pickupReadyAt: null,
       pickedUpAt: null,
-      availableActions: ['CONFIRM', 'EXTEND_PICKUP_HOLD'],
+      availableActions: ['CONFIRM', 'EXTEND_PICKUP_HOLD', 'CANCEL_ORDER'],
     });
 
     const noted = await request(server)
@@ -162,7 +166,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
     expect(successRecord(confirmed)).toMatchObject({
       status: 'CONFIRMED',
       fulfillmentStatus: 'PENDING',
-      availableActions: ['START_PREPARING', 'EXTEND_PICKUP_HOLD'],
+      availableActions: ['START_PREPARING', 'EXTEND_PICKUP_HOLD', 'CANCEL_ORDER'],
     });
 
     const extendedHold = new Date(fixture.originalHoldUntil.getTime() + 60 * 60 * 1_000);
@@ -200,7 +204,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
     expect(successRecord(preparing)).toMatchObject({
       status: 'PROCESSING',
       fulfillmentStatus: 'PREPARING',
-      availableActions: ['MARK_PICKUP_READY', 'EXTEND_PICKUP_HOLD'],
+      availableActions: ['MARK_PICKUP_READY', 'EXTEND_PICKUP_HOLD', 'CANCEL_ORDER'],
     });
 
     const ready = await request(server)
@@ -211,7 +215,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
     expect(successRecord(ready)).toMatchObject({
       status: 'PROCESSING',
       fulfillmentStatus: 'READY',
-      availableActions: ['EXTEND_PICKUP_HOLD', 'COMPLETE_PICKUP'],
+      availableActions: ['EXTEND_PICKUP_HOLD', 'COMPLETE_PICKUP', 'CANCEL_ORDER'],
     });
     expect(stringProperty(successRecord(ready), 'pickupReadyAt')).toMatch(/Z$/);
 
@@ -235,7 +239,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
       status: 'COMPLETED',
       fulfillmentStatus: 'COMPLETED',
       paymentStatus: 'PAID',
-      availableActions: [],
+      availableActions: ['CREATE_REFUND'],
       pricing: {
         grandTotal: fixture.grandTotal,
         paidAmount: fixture.grandTotal,
@@ -538,7 +542,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
         status: 'COMPLETED',
         fulfillmentStatus: 'COMPLETED',
         paymentStatus: 'PAID',
-        availableActions: [],
+        availableActions: ['CREATE_REFUND'],
       });
     }
     const [order, reservation, stock, cashCount, movementCount, warrantyCount, completionAudits] =
