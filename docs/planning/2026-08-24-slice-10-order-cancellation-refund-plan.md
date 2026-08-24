@@ -1,7 +1,7 @@
 # Kế hoạch triển khai Slice 10 — Order Cancellation & Refund
 
-> Trạng thái: 🚧 IN PROGRESS — bắt đầu từ commit Slice 09 `da6d394` trên branch `feat/slice-10-order-cancellation-refund`.<br>
-> Baseline: Slice 09 đã hoàn thành với đúng 101 OpenAPI operation; Slice 10 thêm đúng 10 operation, mục tiêu 111.<br>
+> Trạng thái: ✅ COMPLETE — nghiệm thu ngày 2026-08-24 trên branch `feat/slice-10-order-cancellation-refund`.<br>
+> Baseline: Slice 09 có 101 OpenAPI operation; Slice 10 đã thêm đúng 10 operation và đạt 111.<br>
 > Phụ thuộc: Slice 07 payment proof, Slice 08 pickup fulfillment và Slice 09 shipping fulfillment đã hoàn thành.<br>
 > Không sửa `docs/decisions`; behavior hiện hành theo precedence tại [docs index](../readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
 
@@ -189,7 +189,7 @@ pnpm format:check → pnpm lint → pnpm typecheck → pnpm test
 
 | WP | Nội dung | Commit dự kiến |
 |---|---|---|
-| 0 | Plan chi tiết, contract clarification và root plan IN PROGRESS | `docs(plan): detail slice 10 implementation` |
+| 0 | Plan chi tiết, contract clarification và root plan | `docs(plan): detail slice 10 implementation` |
 | 1 | Forward migration, exact preflight, indexes và seed safety | `feat(db): enforce refund workflow invariants` |
 | 2 | RefundCore, shared cancellation engine và transaction ports | `refactor(api): centralize cancellation and refund finance` |
 | 3 | Refactor customer/guest cancel và thêm staff cancellation | `feat(api): add staff order cancellation` |
@@ -205,6 +205,8 @@ pnpm format:check → pnpm lint → pnpm typecheck → pnpm test
 | 13 | Guarded Supabase preflight/smoke | `test(refunds): add Supabase slice 10 smoke` |
 | 14 | Rollout, nghiệm thu và chuyển plan sang Slice 11 | `docs(plan): mark slice 10 complete` |
 
+Tất cả WP 0–14 đã hoàn thành và được push riêng theo concern lên `origin/feat/slice-10-order-cancellation-refund`.
+
 Rollout: backup + exact preflight → forward migration → deploy API/Web → seed hai lần và so operational fingerprint → bank/CASH smoke → full quality gate. Bank smoke đi qua deposit verify → shipping failed/returned → stock return → staff cancel → process/complete evidence; CASH smoke tạo partial refund trên completed pickup. Business transition chỉ qua API/application command; SQL chỉ dùng preflight/assertion.
 
 Rollback không down/reset database, xóa Refund/evidence/history hoặc sửa finance bằng SQL. Không rollback application khi có Refund thật PROCESSING; complete hoặc forward-fix trước. Cleanup orphan chỉ theo exact bucket/path đã xác minh. Khi trễ, cắt filter/PDF preview/email HTML/CSS/browser-smoke breadth trước; không cắt 10 API, no-over-refund, returned cancellation, bank/CASH backend, private evidence, RBAC, audit hay concurrency tests.
@@ -219,6 +221,15 @@ Rollback không down/reset database, xóa Refund/evidence/history hoặc sửa f
 | CASH no evidence | Evidence optional | Contract đơn giản, DB lifecycle rõ và đúng kênh hoàn tiền tại quầy |
 | Keep balance/status | Reopen balance/fulfillment | Refund là projection sau thu tiền, không làm sống lại Order đã terminal |
 | Private signed read <=300s | Public/permanent evidence URL | Giới hạn lộ dữ liệu và bắt buộc authorize mỗi lần |
+
+## 6. Kết quả nghiệm thu
+
+- OpenAPI đạt đúng 111 operation và generated client không drift.
+- `pnpm verify` xanh: format, lint, typecheck, 186 API unit test, 27 Web test, 2 generated-client test, 41 integration test, 77 API E2E test và production build.
+- Test database tái tạo từ zero với đủ 9 forward migration.
+- Migration Slice 10 đã deploy lên Supabase; exact preflight trước/sau migration đều không có row vi phạm và seed hai lần giữ nguyên operational state.
+- Full Supabase smoke hoàn tất BANK_TRANSFER/CASH refund, private evidence + signed URL, exact/different replay, over-refund rejection, RBAC/no-store, audit idempotency và customer projection redaction.
+- Rollback policy giữ nguyên: không down migration, không xóa Refund/evidence/history và không sửa finance bằng SQL.
 
 ## Nguồn contract
 
