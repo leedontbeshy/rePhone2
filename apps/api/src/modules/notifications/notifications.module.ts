@@ -5,6 +5,7 @@ import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import { OrderNotificationService } from './order-notification.service.js';
 import { PaymentLifecycleNotificationService } from './payment-lifecycle-notification.service.js';
+import { RefundNotificationService } from './refund-notification.service.js';
 
 @Module({
   providers: [
@@ -16,7 +17,13 @@ import { PaymentLifecycleNotificationService } from './payment-lifecycle-notific
     },
     OrderNotificationService,
     PaymentLifecycleNotificationService,
+    RefundNotificationService,
   ],
-  exports: [MAIL_PROVIDER, OrderNotificationService, PaymentLifecycleNotificationService],
+  exports: [
+    MAIL_PROVIDER,
+    OrderNotificationService,
+    PaymentLifecycleNotificationService,
+    RefundNotificationService,
+  ],
 })
 export class NotificationsModule {}

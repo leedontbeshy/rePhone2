@@ -58,7 +58,7 @@ export class PrivateEvidenceValidator {
           failOn: 'error',
           limitInputPixels: 40_000_000,
         }).metadata();
-        if (metadata.width === undefined || metadata.height === undefined) {
+        if (metadata.width < 1 || metadata.height < 1) {
           throw new Error('Image has invalid dimensions');
         }
       }
