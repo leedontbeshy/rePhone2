@@ -313,6 +313,25 @@ describe('Slice 11 after-sales HTTP contract', () => {
       .send(resolutionPayload)
       .expect(200);
 
+    const stockReturnPayload = {
+      variantId: fixture.variantId,
+      locationId: fixture.storeId,
+      quantity: 1,
+      referenceType: 'AFTER_SALES_REQUEST',
+      referenceId: caseId,
+      reason: 'Nhập lại phụ kiện sau khi hoàn tất kiểm tra hậu mãi.',
+    } as const;
+    await request(server)
+      .post('/api/v1/backoffice/stock/return')
+      .set(bearer(employee))
+      .send(stockReturnPayload)
+      .expect(200);
+    await request(server)
+      .post('/api/v1/backoffice/stock/return')
+      .set(bearer(employee))
+      .send(stockReturnPayload)
+      .expect(200);
+
     const persisted = await prisma.afterSalesRequest.findUniqueOrThrow({ where: { id: caseId } });
     expect(persisted).toMatchObject({
       status: 'RESOLVED',
@@ -328,6 +347,16 @@ describe('Slice 11 after-sales HTTP contract', () => {
     expect(
       await prisma.auditLog.count({
         where: { resourceId: caseId, action: 'after_sales.resolved' },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.stockMovement.count({
+        where: {
+          type: 'RETURN',
+          referenceType: 'AFTER_SALES_REQUEST',
+          referenceId: caseId,
+          variantId: fixture.variantId,
+        },
       }),
     ).toBe(1);
   });
@@ -503,6 +532,7 @@ describe('Slice 11 after-sales HTTP contract', () => {
 interface CompletedAccessoryPickup {
   orderItemId: string;
   storeId: string;
+  variantId: string;
 }
 
 async function completeAccessoryPickup(
@@ -584,6 +614,7 @@ async function completeAccessoryPickup(
   return {
     orderItemId: item.id,
     storeId: stock.locationId,
+    variantId: stock.variantId,
   };
 }
 
