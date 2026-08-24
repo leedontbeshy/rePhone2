@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: ✅ Slice 09 — Shipping fulfillment, COD và tracking đã hoàn thành; bước tiếp theo là Slice 10<br>
-> Kế hoạch chi tiết: [Slice 09 implementation plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md)<br>
+> Trạng thái: 🚧 Slice 10 — Order cancellation và refund đang triển khai<br>
+> Kế hoạch chi tiết: [Slice 10 implementation plan](docs/planning/2026-08-24-slice-10-order-cancellation-refund-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -619,28 +619,34 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 
 ### Slice 10 — Order cancellation và refund
 
+> 🚧 **IN PROGRESS** — triển khai theo [Slice 10 implementation plan](docs/planning/2026-08-24-slice-10-order-cancellation-refund-plan.md) từ baseline Slice 09 `da6d394`; mục tiêu OpenAPI `101 → 111`.
+
 **Mục tiêu:** cancel release đúng tài nguyên; tiền đã thu tạo nghĩa vụ refund và chỉ complete an toàn.
 
 **Phụ thuộc:** Slice 07–09.
 
 **Database và migration**
 
-- [ ] Hoàn thiện Refund amount/status/timestamp/actor/evidence constraints và index theo order/status.
+- [ ] Hoàn thiện Refund amount/status/timestamp/actor/evidence constraints; evidence lưu MIME/size/SHA-256 và có queue/processing index.
+- [ ] Enforce Payment/Order alignment bằng composite relation; không auto-backfill dữ liệu lạ.
 - [ ] Enforce tổng nghĩa vụ active/completed không vượt verified payment chưa hoàn bằng transaction policy.
 
 **Domain/application**
 
-- [ ] Customer/guest cancel theo ownership, không khi proof UNDER_REVIEW hoặc fulfillment IN_TRANSIT.
-- [ ] Staff cancel theo policy/reason; release reservation/voucher và tạo Refund REQUESTED nếu đã thu tiền trong cùng transaction.
-- [ ] Refund create/start/reject/cancel bằng named command và audit.
-- [ ] Bank evidence upload trước completion transaction; CASH refund cần note/audit nhưng không bắt buộc ảnh.
-- [ ] Complete atomically terminalize refund và recompute `refundedAmount`, `balanceDue`, `paymentStatus`.
+- [ ] Customer/guest cancel theo ownership qua shared cancellation engine, không khi proof UNDER_REVIEW hoặc fulfillment IN_TRANSIT.
+- [ ] Staff cancel pre-handover hoặc sau SHIPPING/RETURNED; không auto-restock hàng returned.
+- [ ] Manual Refund chỉ cho Order CANCELLED/COMPLETED; P0 chỉ tạo BANK_TRANSFER/CASH, OTHER là legacy read-only.
+- [ ] Refund create/start/reject/cancel bằng named command và audit; PROCESSING chỉ có thể complete.
+- [ ] Bank evidence upload trước completion transaction và exact replay bằng SHA-256; CASH refund không có evidence và bắt buộc note/audit.
+- [ ] Complete atomically terminalize Refund, recompute `refundedAmount`/`paymentStatus` và giữ nguyên Order status/`balanceDue`.
 - [ ] Terminal refund immutable; sửa sai bằng record mới hợp lệ.
 
 **API/OpenAPI/UI**
 
-- [ ] Customer/guest cancel và refund read projection.
-- [ ] Backoffice refund query/create/process/evidence/complete/reject/cancel.
+- [ ] Customer/guest cancel và refund read projection public-safe.
+- [ ] Đủ đúng 10 backoffice operation refund/cancellation; OpenAPI tăng `101 → 111` và generated client không drift.
+- [ ] Backoffice refund query/create/process/evidence/complete/reject/cancel với private signed URL tối đa 300 giây.
+- [ ] UI `/backoffice/refunds`, detail/action, Order cancellation/manual refund và customer refund timeline.
 - [ ] UI demo dùng scenario `refund-processing` để trình diễn evidence + completion.
 
 **Test bắt buộc**
@@ -649,6 +655,7 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 - [ ] Cancel đã verify deposit tạo đúng một refund obligation.
 - [ ] Hai cancel/review replay không nhân side effect.
 - [ ] Bank refund thiếu evidence không complete; completed refunds không vượt verified payment.
+- [ ] Exact evidence replay không upload/audit/email lại; evidence khác conflict và concurrent loser được cleanup.
 - [ ] Private refund evidence yêu cầu ownership/role và không lộ object path.
 
 **Hoàn thành khi:** cancellation/refund happy và failure paths cập nhật Order/Payment/Inventory/Voucher nhất quán.
