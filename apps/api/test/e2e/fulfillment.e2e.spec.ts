@@ -126,11 +126,7 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
         status: 'PLACED',
         fulfillmentStatus: 'PENDING',
         paymentStatus: 'UNPAID',
-        availableActions: expect.arrayContaining([
-          'CONFIRM',
-          'EXTEND_PICKUP_HOLD',
-          'CANCEL_ORDER',
-        ]),
+        availableActions: expect.arrayContaining(['CONFIRM', 'EXTEND_PICKUP_HOLD', 'CANCEL_ORDER']),
       }),
     ]);
 
