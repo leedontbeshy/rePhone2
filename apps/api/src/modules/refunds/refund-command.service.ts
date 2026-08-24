@@ -384,7 +384,7 @@ export class RefundCommandService {
       const order = await this.orders.lockById(orderId, transaction);
       if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
       const finance = await this.finance.lockFinance(orderId, transaction);
-      const refund = await this.refunds.findById(id, transaction);
+      const refund = await this.refunds.findByIdInTransaction(id, transaction);
       if (refund === null || refund.orderId !== orderId) throw new ApiError('RESOURCE_NOT_FOUND');
       return useCase(refund, finance, transaction);
     });

@@ -4,33 +4,31 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { BackofficeRefundListQueryDto } from './refund.dto.js';
 
 const actorSelect = { id: true, fullName: true, employeeCode: true } as const;
+const orderSelect = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  fulfillmentStatus: true,
+  paymentStatus: true,
+  customerName: true,
+  customerEmail: true,
+  grandTotal: true,
+  paidAmount: true,
+  refundedAmount: true,
+  balanceDue: true,
+} as const;
+const paymentSelect = {
+  id: true,
+  purpose: true,
+  method: true,
+  status: true,
+  expectedAmount: true,
+  receivedAmount: true,
+} as const;
 
 export const refundProjectionInclude = {
-  order: {
-    select: {
-      id: true,
-      orderNumber: true,
-      status: true,
-      fulfillmentStatus: true,
-      paymentStatus: true,
-      customerName: true,
-      customerEmail: true,
-      grandTotal: true,
-      paidAmount: true,
-      refundedAmount: true,
-      balanceDue: true,
-    },
-  },
-  payment: {
-    select: {
-      id: true,
-      purpose: true,
-      method: true,
-      status: true,
-      expectedAmount: true,
-      receivedAmount: true,
-    },
-  },
+  order: { select: orderSelect },
+  payment: { select: paymentSelect },
   requestedBy: { select: actorSelect },
   processedBy: { select: actorSelect },
   terminalBy: { select: actorSelect },
@@ -44,11 +42,52 @@ export type RefundOperationsRecord = Prisma.RefundGetPayload<{
 export class RefundOperationsRepository {
   public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  public findById(
+  public findById(id: string): Promise<RefundOperationsRecord | null> {
+    return this.prisma.refund.findUnique({ where: { id }, include: refundProjectionInclude });
+  }
+
+  public async findByIdInTransaction(
     id: string,
-    client: PrismaService | Prisma.TransactionClient = this.prisma,
+    transaction: Prisma.TransactionClient,
   ): Promise<RefundOperationsRecord | null> {
-    return client.refund.findUnique({ where: { id }, include: refundProjectionInclude });
+    const refund = await transaction.refund.findUnique({ where: { id } });
+    if (refund === null) return null;
+
+    const order = await transaction.order.findUnique({
+      where: { id: refund.orderId },
+      select: orderSelect,
+    });
+    if (order === null) return null;
+    const payment =
+      refund.paymentId === null
+        ? null
+        : await transaction.payment.findUnique({
+            where: { id: refund.paymentId },
+            select: paymentSelect,
+          });
+    const requestedBy =
+      refund.requestedById === null
+        ? null
+        : await transaction.user.findUnique({
+            where: { id: refund.requestedById },
+            select: actorSelect,
+          });
+    const processedBy =
+      refund.processedById === null
+        ? null
+        : await transaction.user.findUnique({
+            where: { id: refund.processedById },
+            select: actorSelect,
+          });
+    const terminalBy =
+      refund.terminalById === null
+        ? null
+        : await transaction.user.findUnique({
+            where: { id: refund.terminalById },
+            select: actorSelect,
+          });
+
+    return { ...refund, order, payment, requestedBy, processedBy, terminalBy };
   }
 
   public async findOrderId(id: string): Promise<string | null> {

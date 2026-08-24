@@ -45,25 +45,23 @@ export class FulfillmentPaymentGateway {
     for (const { id } of refundIds) {
       await transaction.$queryRaw`SELECT id FROM refunds WHERE id = ${id}::uuid FOR UPDATE`;
     }
-    const [payments, refunds] = await Promise.all([
-      transaction.payment.findMany({
-        where: { orderId },
-        select: {
-          id: true,
-          purpose: true,
-          method: true,
-          status: true,
-          expectedAmount: true,
-          receivedAmount: true,
-        },
-        orderBy: { id: 'asc' },
-      }),
-      transaction.refund.findMany({
-        where: { orderId },
-        select: { id: true, paymentId: true, status: true, amount: true },
-        orderBy: { id: 'asc' },
-      }),
-    ]);
+    const payments = await transaction.payment.findMany({
+      where: { orderId },
+      select: {
+        id: true,
+        purpose: true,
+        method: true,
+        status: true,
+        expectedAmount: true,
+        receivedAmount: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+    const refunds = await transaction.refund.findMany({
+      where: { orderId },
+      select: { id: true, paymentId: true, status: true, amount: true },
+      orderBy: { id: 'asc' },
+    });
     return {
       payments: payments.map((payment) => ({
         ...payment,
