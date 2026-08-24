@@ -1,6 +1,6 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: 🚧 Slice 11 — Warranty và after-sales đang triển khai<br>
+> Trạng thái: ✅ Slice 11 — Warranty và after-sales đã hoàn thành; bước tiếp theo là Slice 12 — Settings, audit, jobs, email, UI và demo hardening<br>
 > Kế hoạch chi tiết: [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
@@ -666,7 +666,7 @@ Nguồn: [Cancellation/refund transaction](docs/architecture/order-cancellation-
 
 ### Slice 11 — Warranty và after-sales
 
-> 🚧 **IN PROGRESS** — triển khai theo [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md) từ baseline Slice 10 `fb9db65`; target OpenAPI `111 → 143`.
+> ✅ **COMPLETE** — đã triển khai đủ contract tại [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md), rollout Supabase và nghiệm thu ngày 2026-08-25. OpenAPI đạt `111 → 143`; bước tiếp theo là Slice 12.
 
 **Mục tiêu:** completed order phát hành warranty snapshot và customer/staff xử lý case hậu mãi theo state machine.
 
@@ -674,36 +674,38 @@ Nguồn: [Cancellation/refund transaction](docs/architecture/order-cancellation-
 
 **Database và migration**
 
-- [ ] Hoàn thiện `WarrantyPolicy`, `Warranty`, `AfterSalesRequest` relations/constraints/index.
-- [ ] Unique Warranty/OrderItem; one active after-sales case/OrderItem; actor/time/note theo status.
-- [ ] Replacement unit khác original unit và warranty interval `[startAt,endAt)`.
+- [x] Hoàn thiện `WarrantyPolicy`, `Warranty`, `AfterSalesRequest` relations/constraints/index.
+- [x] Unique Warranty/OrderItem; one active after-sales case/OrderItem; actor/time/note theo status.
+- [x] Replacement unit khác original unit và warranty interval `[startAt,endAt)`.
 
 **Domain/application**
 
-- [ ] Issue warranty trong terminal fulfillment transaction với duration/terms snapshot.
-- [ ] Expiry tính động `now >= endAt`; không lưu status EXPIRED.
-- [ ] Customer/guest tạo/xem/cancel REQUESTED case theo ownership/access token.
-- [ ] Staff receive: iPhone SOLD → INSPECTING; start inspection, approve/reject và typed resolution.
-- [ ] Reject/repaired/returned unchanged đưa unit INSPECTING → SOLD khi trả khách.
-- [ ] Replace chỉ cho iPhone với replacement unit hợp lệ; accessory dùng refund + order mới.
-- [ ] REFUNDED resolution chỉ RESOLVED sau khi Refund COMPLETED.
-- [ ] Attachment luôn private và command nhạy cảm có reason/audit.
+- [x] Issue warranty trong terminal fulfillment transaction với duration/terms snapshot.
+- [x] Expiry tính động `now >= endAt`; không lưu status EXPIRED.
+- [x] Customer/guest tạo/xem/cancel REQUESTED case theo ownership/access token.
+- [x] Staff receive: iPhone SOLD → INSPECTING; start inspection, approve/reject và typed resolution.
+- [x] Reject/repaired/returned unchanged đưa unit INSPECTING → SOLD khi trả khách.
+- [x] Replace chỉ cho iPhone với replacement unit hợp lệ; accessory dùng refund + order mới.
+- [x] REFUNDED resolution chỉ RESOLVED sau khi Refund COMPLETED.
+- [x] Attachment luôn private và command nhạy cảm có reason/audit.
 
 **API/OpenAPI/UI**
 
-- [ ] Storefront warranty/case/attachment endpoints.
-- [ ] Backoffice policy, warranty query, receive/inspect/decision/resolution endpoints.
-- [ ] UI demo dùng scenario `after-sales-inspecting` hoặc tạo case trực tiếp từ completed order.
+- [x] Storefront warranty/case/attachment endpoints.
+- [x] Backoffice policy, warranty query, receive/inspect/decision/resolution endpoints.
+- [x] UI demo dùng scenario `after-sales-inspecting` hoặc tạo case trực tiếp từ completed order.
 
 **Test bắt buộc**
 
-- [ ] Warranty startAt/endAt và snapshot đúng thời điểm completion.
-- [ ] Warranty hết hạn/void không tạo WARRANTY case; P0 không override.
-- [ ] Tối đa một active case/order item.
-- [ ] Inventory transition đúng cho receive, reject, repair, return và replace.
-- [ ] REFUNDED không resolve trước Refund COMPLETED; ownership/attachment authorization đúng.
+- [x] Warranty startAt/endAt và snapshot đúng thời điểm completion.
+- [x] Warranty hết hạn/void không tạo WARRANTY case; P0 không override.
+- [x] Tối đa một active case/order item.
+- [x] Inventory transition đúng cho receive, reject, repair, return và replace.
+- [x] REFUNDED không resolve trước Refund COMPLETED; ownership/attachment authorization đúng.
 
-**Hoàn thành khi:** một completed order có warranty và một case đi đến REJECTED hoặc RESOLVED mà inventory/refund invariant vẫn đúng.
+**Bằng chứng nghiệm thu:** OpenAPI/generated client có đúng 143 operation duy nhất (`111 → 143`, thêm đúng 32 operation Slice 11); operationId, security metadata, multipart schema và typed client không drift. `pnpm verify` xanh với 246 API unit test, 46 Web test, 2 generated-client test, 48 integration test và 81 API E2E test; migration-from-zero áp dụng đủ 10 migration. Supabase preflight trước/sau smoke có 20/20 invariant query trả 0; seed chạy hai lần không thay đổi fingerprint của case `INSPECTING`, Order, Warranty, attachment metadata hoặc audit count. Full smoke đi qua completed Order → Warranty → WARRANTY case → private attachment → receive/start-inspection/summary → approve → `REPAIRED`, xác nhận exact replay không nhân side effect, signed URL tối đa 300 giây, RBAC/no-store và public projection không lộ private storage metadata. Guarded scenario `after-sales-inspecting` được tạo/reuse qua application commands và dừng đúng tại `INSPECTING`.
+
+**Hoàn thành khi:** ✅ Đạt — completed Order phát hành Warranty snapshot đúng một lần; customer/guest và staff đưa case đến REJECTED hoặc RESOLVED mà inventory, refund, attachment và audit invariant vẫn đúng; Slice 12 có thể bắt đầu.
 
 Nguồn: [Warranty requirement](docs/requirements/warranty-and-aftersales.md), [Warranty/after-sales API](docs/api/warranty-and-aftersales-endpoints.md), [After-sales data](docs/data-model/after-sales.md), [State machines](docs/architecture/state-machines.md).
 
