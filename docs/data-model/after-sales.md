@@ -56,8 +56,8 @@ Warranty được tạo trong fulfillment completion transaction khi `daysSnapsh
 |---|---|---|
 | Identity | `id`, `requestNumber` | Public code unique |
 | Relation | `warrantyId`, `orderItemId`, `customerId` | Warranty nullable với return/exchange |
-| Request | `type`, `issueDescription`, `requestedResolution` | Mô tả bắt buộc |
-| Workflow | `status`, `assignedToId`, `receivedLocationId`, `receivedById` | Staff/admin; received location FK InventoryLocation, received actor FK User |
+| Request | `type`, `issueDescription`, `requestedResolution?` | Issue description bắt buộc; requested resolution nullable, không dùng empty string |
+| Workflow | `status`, `assignedToId`, `receivedLocationId`, `receivedById`, `receiveNote` | Staff/admin; received location FK InventoryLocation, received actor FK User; receive note nullable |
 | Evidence | `attachments` | JSONB array: bucket, objectPath, type, uploadedBy/At |
 | Inspection | `inspectionSummary`, `inventoryInspectionId` | Unit case có thể link inspection |
 | Decision | `decisionNote`, `decidedById`, `decidedAt` | Bắt buộc khi APPROVED/REJECTED; actor FK User |
@@ -68,6 +68,7 @@ Warranty được tạo trong fulfillment completion transaction khi `daysSnapsh
 Invariant:
 
 - Warranty request cần warranty active; P0 không có override cho warranty hết hạn/void.
+- `requestedResolution` lưu `NULL` khi client omit; nếu có phải trim/nonblank và dài tối đa 500 ký tự. `receiveNote` lưu `NULL` khi omit; nếu có phải trim/nonblank và dài 5..1000 ký tự.
 - `REPLACED` cần replacement unit khác unit gốc.
 - `REFUNDED` cần refund liên quan hoàn tất trước khi case resolved.
 - Returned iPhone chuyển INSPECTING và cần inspection mới trước khi AVAILABLE.

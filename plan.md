@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: ✅ Slice 10 — Order cancellation và refund đã hoàn thành; bước tiếp theo là Slice 11<br>
-> Kế hoạch chi tiết: [Slice 10 implementation plan](docs/planning/2026-08-24-slice-10-order-cancellation-refund-plan.md)<br>
+> Trạng thái: 🚧 Slice 11 — Warranty và after-sales đang triển khai<br>
+> Kế hoạch chi tiết: [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -666,7 +666,7 @@ Nguồn: [Cancellation/refund transaction](docs/architecture/order-cancellation-
 
 ### Slice 11 — Warranty và after-sales
 
-> ⏭️ **NEXT** — bắt đầu sau baseline Slice 10 đã nghiệm thu; chưa đánh dấu IN PROGRESS cho đến khi kế hoạch Slice 11 được chốt.
+> 🚧 **IN PROGRESS** — triển khai theo [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md) từ baseline Slice 10 `fb9db65`; target OpenAPI `111 → 143`.
 
 **Mục tiêu:** completed order phát hành warranty snapshot và customer/staff xử lý case hậu mãi theo state machine.
 
