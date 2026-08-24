@@ -33,6 +33,7 @@
     "smoke:slice08": "tsx prisma/scripts/smoke-slice08.ts",
     "smoke:slice09": "tsx prisma/scripts/smoke-slice09.ts",
     "smoke:slice10": "tsx prisma/scripts/smoke-slice10.ts",
+    "smoke:slice11": "tsx prisma/scripts/smoke-slice11.ts",
     "demo:refund-processing": "tsx prisma/scripts/demo-refund-processing.ts",
     "demo:after-sales-inspecting": "tsx prisma/scripts/demo-after-sales-inspecting.ts",
     "db:studio": "prisma studio --config prisma.config.ts",
