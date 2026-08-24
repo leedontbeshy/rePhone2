@@ -123,13 +123,17 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Số tiền nhận được chưa đủ khoản cọc bắt buộc.',
   },
+  REFUND_AMOUNT_EXCEEDS_PAID: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Số tiền hoàn vượt quá khoản đã xác minh còn lại.',
+  },
   EVIDENCE_REQUIRED: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
-    message: 'Bằng chứng thanh toán là bắt buộc.',
+    message: 'Bằng chứng riêng tư là bắt buộc.',
   },
   EVIDENCE_INVALID: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
-    message: 'Bằng chứng thanh toán không hợp lệ.',
+    message: 'Bằng chứng riêng tư không hợp lệ.',
   },
   VOUCHER_NOT_APPLICABLE: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,

@@ -7,7 +7,6 @@ import { OrderTransactionPortsModule } from '../order-transaction-ports/order-tr
 import { StorageModule } from '../storage/storage.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { PaymentClock } from './payment-clock.service.js';
-import { PaymentEvidenceValidator } from './payment-evidence.validator.js';
 import { PaymentNoStoreMiddleware } from './payment-no-store.middleware.js';
 import {
   BackofficePaymentOperationsController,
@@ -36,7 +35,6 @@ import { DepositExpiryService } from './deposit-expiry.service.js';
   controllers: [PaymentOperationsController, BackofficePaymentOperationsController],
   providers: [
     PaymentClock,
-    PaymentEvidenceValidator,
     PaymentOperationsRepository,
     PaymentProofSubmissionService,
     PaymentProofAccessGuard,

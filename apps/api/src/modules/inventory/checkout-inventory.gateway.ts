@@ -224,6 +224,11 @@ export class CheckoutInventoryGateway {
       select: { id: true, inventoryUnitId: true, stockLevelId: true, quantity: true },
       orderBy: { id: 'asc' },
     });
+    for (const { id } of reservations) {
+      await transaction.$queryRaw`
+        SELECT id FROM inventory_reservations WHERE id = ${id}::uuid FOR UPDATE
+      `;
+    }
     await this.lockTargets(
       reservations.flatMap(({ inventoryUnitId }) =>
         inventoryUnitId === null ? [] : [inventoryUnitId],
