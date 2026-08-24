@@ -60,6 +60,8 @@ Nếu máy đã có PostgreSQL container chiếm 5432, đổi host port Compose 
 | Create migration | `pnpm db:migrate -- --name <name>` |
 | Deploy existing migration | `pnpm db:deploy` |
 | Seed/reseed idempotent | `pnpm db:seed` |
+| Slice 10 invariant preflight | `pnpm preflight:slice10` |
+| Slice 10 smoke mặc định (read-only) | `pnpm smoke:slice10` |
 | Verify toàn repo | `pnpm verify` |
 | Full demo containers | `docker compose --profile demo up --build` |
 
@@ -126,6 +128,16 @@ HTTPS reverse proxy/platform
 ## 9. Demo reset
 
 Demo rehearsal dùng database riêng `rephone_demo`, seed idempotent và scenario script. Không reset database đang dùng cho đánh giá nếu chưa backup. Credential demo được truyền bằng environment và đổi sau buổi demo nếu domain public.
+
+`pnpm smoke:slice10` mặc định chỉ kiểm tra API readiness và các invariant Refund, không tạo dữ liệu. Full mode tạo hai pickup Order terminal, tiêu thụ hai phụ kiện và giữ lịch sử Payment/Refund; chỉ chạy sau backup và xác nhận đúng target:
+
+```powershell
+$env:SLICE10_SMOKE_MODE='smoke'
+$env:SLICE10_SMOKE_CONFIRM='consume-two-accessories-and-create-refunds'
+pnpm smoke:slice10
+```
+
+Không dùng SQL để đổi business state hoặc xóa lịch sử sau smoke. Nếu script báo còn Refund `PROCESSING` từ lần chạy trước, resolve nó qua backoffice API/UI rồi mới chạy lại.
 
 ## Liên kết
 

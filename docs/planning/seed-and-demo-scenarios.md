@@ -81,6 +81,15 @@ Identifier là số giả được đánh dấu test; tuyệt đối không dùn
 
 Script ghi manifest `.local/demo-manifest.json` (gitignored) chứa public IDs/codes, không token/password/raw identifier. Nếu scenario đã tồn tại, script trả lại record hiện hành hoặc rebuild trên database demo có guard; không nhân side effect.
 
+Slice 10 cung cấp trước scenario `refund-processing` bằng command chuyên biệt. Command này chỉ chấp nhận database có tên kết thúc `_demo`/`_test`, từ chối `NODE_ENV=production`, yêu cầu API đang ready và tạo mọi chuyển trạng thái nghiệp vụ qua HTTP application command:
+
+```powershell
+$env:REFUND_PROCESSING_DEMO_CONFIRM='create-refund-processing'
+pnpm demo:refund-processing
+```
+
+Kết quả là một Order pickup đã `COMPLETED/PAID` và một Refund `BANK_TRANSFER/PROCESSING`. Chạy lại trả đúng scenario hiện có; nếu marker tồn tại nhưng state đã bị đổi, script dừng để người vận hành kiểm tra thay vì ghi đè lịch sử.
+
 ## 5. Demo flow đề xuất 12–15 phút
 
 1. Public xem product-grouped catalog, filter model/dung lượng/màu/tình trạng và mở exact used iPhone unit.
