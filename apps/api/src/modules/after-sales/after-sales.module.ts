@@ -10,7 +10,13 @@ import { StorageModule } from '../storage/storage.module.js';
 import { WarrantyModule } from '../warranty/warranty.module.js';
 import { AfterSalesAttachmentAccessGuard } from './after-sales-attachment-access.guard.js';
 import { AfterSalesAttachmentService } from './after-sales-attachment.service.js';
+import { BackofficeAfterSalesController } from './after-sales-backoffice.controller.js';
+import { AfterSalesBackofficeCommandService } from './after-sales-backoffice-command.service.js';
+import { AfterSalesBackofficeQueryService } from './after-sales-backoffice-query.service.js';
+import { AfterSalesBackofficeRepository } from './after-sales-backoffice.repository.js';
+import { AfterSalesBackofficeService } from './after-sales-backoffice.service.js';
 import { AfterSalesClock } from './after-sales-clock.service.js';
+import { AfterSalesCommandRepository } from './after-sales-command.repository.js';
 import { AfterSalesCommandService } from './after-sales-command.service.js';
 import { AfterSalesController } from './after-sales.controller.js';
 import { AfterSalesNoStoreMiddleware } from './after-sales-no-store.middleware.js';
@@ -31,7 +37,7 @@ import { AfterSalesRepository } from './after-sales.repository.js';
     SettingsModule,
     NotificationsModule,
   ],
-  controllers: [AfterSalesController],
+  controllers: [AfterSalesController, BackofficeAfterSalesController],
   providers: [
     AfterSalesClock,
     AfterSalesRepository,
@@ -41,10 +47,17 @@ import { AfterSalesRepository } from './after-sales.repository.js';
     AfterSalesAttachmentAccessGuard,
     AfterSalesRateLimiter,
     AfterSalesRateLimitGuard,
+    AfterSalesCommandRepository,
+    AfterSalesBackofficeCommandService,
+    AfterSalesBackofficeRepository,
+    AfterSalesBackofficeQueryService,
+    AfterSalesBackofficeService,
   ],
 })
 export class AfterSalesModule implements NestModule {
   public configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(AfterSalesNoStoreMiddleware).forRoutes(AfterSalesController);
+    consumer
+      .apply(AfterSalesNoStoreMiddleware)
+      .forRoutes(AfterSalesController, BackofficeAfterSalesController);
   }
 }
