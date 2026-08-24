@@ -1,4 +1,17 @@
-import { Body, Controller, Get, Inject, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -17,6 +30,7 @@ import { CurrentAuth } from '../auth/current-auth.decorator.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
 import { SessionGuard } from '../auth/session.guard.js';
+import { CancelBackofficeOrderDto } from '../order-cancellation/order-cancellation.dto.js';
 import { BackofficeOrderService } from './backoffice-order.service.js';
 import {
   BackofficeOrderIdParamsDto,
@@ -127,5 +141,25 @@ export class BackofficeOrderController {
     @Req() request: Request,
   ) {
     return this.commands.updateInternalNote(params.id, input, auth, request);
+  }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @BackofficeRateLimit('mutation')
+  @ApiOperation({ operationId: 'cancelBackofficeOrder', summary: 'Cancel an eligible order' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: CancelBackofficeOrderDto })
+  @ApiOkResponse({ type: BackofficeOrderDetailResponse })
+  @ApiErrorResponses(
+    ...BACKOFFICE_ORDER_QUERY_ERRORS,
+    { status: 409, description: 'INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION' },
+  )
+  public cancel(
+    @Param() params: BackofficeOrderIdParamsDto,
+    @Body() input: CancelBackofficeOrderDto,
+    @CurrentAuth() auth: AuthContext,
+    @Req() request: Request,
+  ) {
+    return this.commands.cancel(params.id, input.reason, auth, request);
   }
 }

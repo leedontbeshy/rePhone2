@@ -5,6 +5,7 @@ import { CartModule } from '../cart/cart.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
+import { OrderCancellationModule } from '../order-cancellation/order-cancellation.module.js';
 import { OrderTransactionPortsModule } from '../order-transaction-ports/order-transaction-ports.module.js';
 import { PaymentCoreModule } from '../payments/payment-core.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
@@ -27,6 +28,7 @@ import { OrdersService } from './orders.service.js';
     OrderTransactionPortsModule,
     SettingsModule,
     NotificationsModule,
+    OrderCancellationModule,
   ],
   controllers: [CheckoutsController, OrdersController],
   providers: [OrdersService, OrderRateLimiter, OrderRateLimitGuard, OrderMutationCsrfGuard],

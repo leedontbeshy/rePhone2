@@ -5,6 +5,7 @@ import { requestContext } from '../../common/http/request-context.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuthContext } from '../auth/auth-context.js';
+import { OrderCancellationService } from '../order-cancellation/order-cancellation.service.js';
 import { FulfillmentOrderGateway } from '../order-transaction-ports/fulfillment-order.gateway.js';
 import type { UpdateBackofficeOrderInternalNoteDto } from './fulfillment.dto.js';
 import { FulfillmentClock } from './fulfillment-clock.service.js';
@@ -19,6 +20,8 @@ export class BackofficeOrderService {
     private readonly transactions: SerializableTransactionRunner,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
     @Inject(FulfillmentClock) private readonly clock: FulfillmentClock,
+    @Inject(OrderCancellationService)
+    private readonly cancellations: OrderCancellationService,
   ) {}
 
   public async updateInternalNote(
@@ -48,6 +51,18 @@ export class BackofficeOrderService {
         },
       );
     });
+    const order = await this.orders.findById(id);
+    if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
+    return projectBackofficeOrderDetail(order, this.clock.now());
+  }
+
+  public async cancel(
+    id: string,
+    reason: string,
+    auth: AuthContext,
+    request: Request,
+  ): Promise<BackofficeOrderDetailDto> {
+    await this.cancellations.cancelByStaff(id, reason, auth, request);
     const order = await this.orders.findById(id);
     if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
     return projectBackofficeOrderDetail(order, this.clock.now());
