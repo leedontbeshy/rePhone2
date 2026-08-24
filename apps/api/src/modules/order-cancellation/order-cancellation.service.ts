@@ -10,7 +10,10 @@ import type { AuditWriteActorContext } from '../audit/audit.types.js';
 import type { AuthContext } from '../auth/auth-context.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
 import { OrderNotificationService } from '../notifications/order-notification.service.js';
-import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
+import {
+  OrderOwnershipPolicy,
+  type OrderOwnershipRecord,
+} from '../order-transaction-ports/order-ownership.policy.js';
 import { RefundOrderGateway } from '../order-transaction-ports/refund-order.gateway.js';
 import { customerOrderInclude, requireOrder } from '../orders/order-projector.js';
 import { RefundCoreGateway, type RefundObligationActor } from '../refunds/refund-core.gateway.js';
@@ -95,18 +98,16 @@ export class OrderCancellationService {
       if (lockedOrder === null) {
         throw new ApiError(kind === 'OWNER' ? 'ORDER_NOT_FOUND' : 'RESOURCE_NOT_FOUND');
       }
-      const order = await transaction.order.findUnique({
-        where: { id: orderId },
-        include: customerOrderInclude,
-      });
+      const order = await loadCancellationOrder(orderId, transaction);
       if (order === null) {
         throw new ApiError(kind === 'OWNER' ? 'ORDER_NOT_FOUND' : 'RESOURCE_NOT_FOUND');
       }
       if (kind === 'OWNER') this.ownership.assertAccess(request, order, this.clock.now());
       if (order.status === 'CANCELLED') return { orderId: order.id, changed: false };
+      const shipments = await lockShipments(order.id, transaction);
+      order.shipments = shipments;
       assertCancellationAllowed(order, kind);
 
-      await lockShipments(order.id, transaction);
       const now = this.clock.now();
       const refund = await this.refunds.prepareCancellationRefund(
         { orderId: order.id, reason, now, actor: refundActor },
@@ -170,6 +171,41 @@ export class OrderCancellationService {
   }
 }
 
+interface CancellationOrderRecord extends OrderOwnershipRecord {
+  id: string;
+  orderNumber: string;
+  status: string;
+  fulfillmentType: string;
+  fulfillmentStatus: string;
+  shipments: Array<{ status: string }>;
+}
+
+async function loadCancellationOrder(
+  orderId: string,
+  transaction: Prisma.TransactionClient,
+): Promise<CancellationOrderRecord | null> {
+  const order = await transaction.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      orderNumber: true,
+      sourceCartId: true,
+      customerId: true,
+      guestAccessTokenHash: true,
+      status: true,
+      fulfillmentType: true,
+      fulfillmentStatus: true,
+    },
+  });
+  if (order === null) return null;
+  const sourceCart = await transaction.cart.findUnique({
+    where: { id: order.sourceCartId },
+    select: { status: true, guestTokenHash: true, expiresAt: true },
+  });
+  if (sourceCart === null) return null;
+  return { ...order, sourceCart, shipments: [] };
+}
+
 function assertCancellationAllowed(
   order: {
     status: string;
@@ -198,7 +234,10 @@ function assertCancellationAllowed(
   }
 }
 
-async function lockShipments(orderId: string, transaction: Prisma.TransactionClient) {
+async function lockShipments(
+  orderId: string,
+  transaction: Prisma.TransactionClient,
+): Promise<Array<{ status: string }>> {
   const shipments = await transaction.shipment.findMany({
     where: { orderId },
     select: { id: true },
@@ -207,6 +246,11 @@ async function lockShipments(orderId: string, transaction: Prisma.TransactionCli
   for (const { id } of shipments) {
     await transaction.$queryRaw`SELECT id FROM shipments WHERE id = ${id}::uuid FOR UPDATE`;
   }
+  return transaction.shipment.findMany({
+    where: { orderId },
+    select: { status: true },
+    orderBy: { id: 'asc' },
+  });
 }
 
 function ownerAuditActor(request: Request): AuditWriteActorContext {
