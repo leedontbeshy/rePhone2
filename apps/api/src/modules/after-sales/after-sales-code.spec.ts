@@ -8,9 +8,7 @@ describe('after-sales request number', () => {
       'UTC',
     );
 
-    expect(requestNumber).toMatch(
-      /^RPH-AS-20260825-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/,
-    );
+    expect(requestNumber).toMatch(/^RPH-AS-20260825-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/);
   });
 
   it('derives the date in the configured business timezone', () => {

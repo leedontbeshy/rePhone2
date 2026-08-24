@@ -13,9 +13,7 @@ describe('after-sales policy', () => {
   });
 
   it('only exposes direct replacement for iPhone and OTHER for admin', () => {
-    expect(backofficeAfterSalesActions('APPROVED', true, 'EMPLOYEE')).toContain(
-      'RESOLVE_REPLACED',
-    );
+    expect(backofficeAfterSalesActions('APPROVED', true, 'EMPLOYEE')).toContain('RESOLVE_REPLACED');
     expect(backofficeAfterSalesActions('APPROVED', false, 'EMPLOYEE')).not.toContain(
       'RESOLVE_REPLACED',
     );

@@ -66,7 +66,9 @@ function createService(
   const transaction = { productVariant: { update: variantUpdate } };
   return new BackofficeCatalogService(
     repository as never,
-    { run: vi.fn((_name: string, work: (client: unknown) => unknown) => work(transaction)) } as never,
+    {
+      run: vi.fn((_name: string, work: (client: unknown) => unknown) => work(transaction)),
+    } as never,
     { write: vi.fn() },
     { storage: { publicBucket: 'public-test' } } as never,
     { findUsableById } as never,
