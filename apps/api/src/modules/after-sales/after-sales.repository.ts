@@ -125,7 +125,7 @@ export class AfterSalesRepository {
 
   public create(data: AfterSalesCreateData, transaction: Prisma.TransactionClient) {
     return transaction.afterSalesRequest.create({
-      data: data as Prisma.AfterSalesRequestUncheckedCreateInput,
+      data,
       select: afterSalesPublicSelect,
     });
   }

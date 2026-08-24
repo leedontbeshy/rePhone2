@@ -4,11 +4,11 @@ import { AfterSalesBackofficeService } from './after-sales-backoffice.service.js
 
 describe('AfterSalesBackofficeService', () => {
   it('sends one post-commit update for a changed lifecycle command', async () => {
-    const sendUpdated = vi.fn(async () => undefined);
+    const sendUpdated = vi.fn().mockResolvedValue(undefined);
     const detail = detailRecord('RECEIVED');
     const service = createService(
       {
-        receiveAfterSalesRequest: vi.fn(async () => ({ record: {}, changed: true })),
+        receiveAfterSalesRequest: vi.fn().mockResolvedValue({ record: {}, changed: true }),
       },
       detail,
       sendUpdated,
@@ -28,11 +28,11 @@ describe('AfterSalesBackofficeService', () => {
   });
 
   it('does not send a second notification for an exact replay', async () => {
-    const sendUpdated = vi.fn(async () => undefined);
+    const sendUpdated = vi.fn().mockResolvedValue(undefined);
     const detail = detailRecord('RECEIVED');
     const service = createService(
       {
-        receiveAfterSalesRequest: vi.fn(async () => ({ record: {}, changed: false })),
+        receiveAfterSalesRequest: vi.fn().mockResolvedValue({ record: {}, changed: false }),
       },
       detail,
       sendUpdated,
@@ -43,11 +43,11 @@ describe('AfterSalesBackofficeService', () => {
   });
 
   it('keeps assignment silent even when it changes', async () => {
-    const sendUpdated = vi.fn(async () => undefined);
+    const sendUpdated = vi.fn().mockResolvedValue(undefined);
     const detail = detailRecord('REQUESTED');
     const service = createService(
       {
-        assignAfterSalesRequest: vi.fn(async () => ({ record: {}, changed: true })),
+        assignAfterSalesRequest: vi.fn().mockResolvedValue({ record: {}, changed: true }),
       },
       detail,
       sendUpdated,
@@ -65,7 +65,7 @@ function createService(
 ) {
   return new AfterSalesBackofficeService(
     commands as never,
-    { detail: vi.fn(async () => detail) } as never,
+    { detail: vi.fn().mockResolvedValue(detail) } as never,
     { sendUpdated } as never,
   );
 }

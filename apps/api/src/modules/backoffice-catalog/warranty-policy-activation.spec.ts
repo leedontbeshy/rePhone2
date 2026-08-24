@@ -3,16 +3,16 @@ import { BackofficeCatalogService } from './backoffice-catalog.service.js';
 
 describe('BackofficeCatalogService warranty policy activation gate', () => {
   it('blocks publishing when the product or an active variant references an unusable policy', async () => {
-    const findUsableById = vi.fn(async () => null);
+    const findUsableById = vi.fn().mockResolvedValue(null);
     const updateProduct = vi.fn();
     const service = createService(
       {
-        findProduct: vi.fn(async () => ({
+        findProduct: vi.fn().mockResolvedValue({
           id: 'product-1',
           status: 'DRAFT',
           warrantyPolicyId: 'policy-1',
           variants: [{ status: 'ACTIVE', warrantyPolicyId: null }],
-        })),
+        }),
         updateProduct,
       },
       findUsableById,
@@ -27,11 +27,11 @@ describe('BackofficeCatalogService warranty policy activation gate', () => {
   });
 
   it('blocks activating a variant when its effective policy is inactive or archived', async () => {
-    const findUsableById = vi.fn(async () => null);
+    const findUsableById = vi.fn().mockResolvedValue(null);
     const update = vi.fn();
     const service = createService(
       {
-        findVariant: vi.fn(async () => ({
+        findVariant: vi.fn().mockResolvedValue({
           id: 'variant-1',
           status: 'DRAFT',
           warrantyPolicyId: null,
@@ -43,7 +43,7 @@ describe('BackofficeCatalogService warranty policy activation gate', () => {
             type: 'ACCESSORY',
             warrantyPolicyId: 'policy-2',
           },
-        })),
+        }),
       },
       findUsableById,
       update,
@@ -66,8 +66,8 @@ function createService(
   const transaction = { productVariant: { update: variantUpdate } };
   return new BackofficeCatalogService(
     repository as never,
-    { run: vi.fn(async (_name: string, work: (client: unknown) => unknown) => work(transaction)) } as never,
-    { write: vi.fn() } as never,
+    { run: vi.fn((_name: string, work: (client: unknown) => unknown) => work(transaction)) } as never,
+    { write: vi.fn() },
     { storage: { publicBucket: 'public-test' } } as never,
     { findUsableById } as never,
   );

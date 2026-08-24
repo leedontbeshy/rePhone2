@@ -103,9 +103,16 @@ export class AfterSalesBackofficeQueryService {
 }
 
 function projectListItem(record: AfterSalesBackofficeRecord): BackofficeAfterSalesListItemDto {
+  const publicItem = projectAfterSalesListItem(record);
   return {
     id: record.id,
-    ...projectAfterSalesListItem(record),
+    requestNumber: publicItem.requestNumber,
+    type: publicItem.type,
+    status: publicItem.status,
+    orderItem: publicItem.orderItem,
+    issueDescription: publicItem.issueDescription,
+    requestedAt: publicItem.requestedAt,
+    updatedAt: publicItem.updatedAt,
     customer: customer(record),
     assignedTo: actor(record.assignedTo),
     attachmentCount: projectAttachments(record.attachments).length,
@@ -118,7 +125,6 @@ function projectDetail(
   now: Date,
 ): BackofficeAfterSalesDetailDto {
   const publicDetail: AfterSalesDetailDto = projectAfterSalesDetail(record, now);
-  const { availableActions: _customerActions, ...safePublicDetail } = publicDetail;
   const actions = backofficeAfterSalesActions(
     record.status,
     record.orderItem.productTypeSnapshot === 'IPHONE',
@@ -130,7 +136,21 @@ function projectDetail(
       : record.inspectionSummary !== null;
   return {
     id: record.id,
-    ...safePublicDetail,
+    requestNumber: publicDetail.requestNumber,
+    type: publicDetail.type,
+    status: publicDetail.status,
+    orderItem: publicDetail.orderItem,
+    issueDescription: publicDetail.issueDescription,
+    requestedAt: publicDetail.requestedAt,
+    updatedAt: publicDetail.updatedAt,
+    requestedResolution: publicDetail.requestedResolution,
+    warranty: publicDetail.warranty,
+    attachments: publicDetail.attachments,
+    decisionNote: publicDetail.decisionNote,
+    resolutionType: publicDetail.resolutionType,
+    resolutionNote: publicDetail.resolutionNote,
+    cancelReason: publicDetail.cancelReason,
+    timeline: publicDetail.timeline,
     customer: customer(record),
     assignedTo: actor(record.assignedTo),
     attachmentCount: projectAttachments(record.attachments).length,

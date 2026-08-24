@@ -134,7 +134,7 @@ function record(now: Date): AfterSalesPublicRecord {
     customerId: '00000000-0000-4000-8000-000000000030',
     type: 'RETURN',
     issueDescription: 'Thiết bị có lỗi màn hình cần kiểm tra.',
-    requestedResolution: null as never,
+    requestedResolution: null,
     status: 'REQUESTED',
     attachments: [],
     decisionNote: null,
