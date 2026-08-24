@@ -1476,6 +1476,17 @@
         ],
         "type": "object"
       },
+      "BackofficeAfterSalesListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
       "BackofficeAfterSalesListResponse": {
         "properties": {
           "data": {
@@ -1485,7 +1496,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/BackofficeAfterSalesListMetaDto"
           }
         },
         "required": [
@@ -3333,7 +3344,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/WarrantyListMetaDto"
           }
         },
         "required": [
@@ -8895,6 +8906,17 @@
         ],
         "type": "object"
       },
+      "WarrantyListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
       "WarrantyListResponse": {
         "properties": {
           "data": {
@@ -8904,7 +8926,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/WarrantyListMetaDto"
           }
         },
         "required": [
@@ -8979,7 +9001,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/WarrantyListMetaDto"
           }
         },
         "required": [

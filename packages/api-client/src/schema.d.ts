@@ -2498,9 +2498,12 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        BackofficeAfterSalesListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
         BackofficeAfterSalesListResponse: {
             data: components["schemas"]["BackofficeAfterSalesListItemDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["BackofficeAfterSalesListMetaDto"];
         };
         BackofficeMediaSummaryDto: {
             altText?: string | null;
@@ -2986,7 +2989,7 @@ export interface components {
         };
         BackofficeWarrantyListResponse: {
             data: components["schemas"]["BackofficeWarrantyListItemDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["WarrantyListMetaDto"];
         };
         BankTransferInstructionsDto: {
             accountHolder: string;
@@ -4437,9 +4440,12 @@ export interface components {
             variantName: string;
             warrantyCode: string;
         };
+        WarrantyListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
         WarrantyListResponse: {
             data: components["schemas"]["WarrantyListItemDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["WarrantyListMetaDto"];
         };
         WarrantyPolicyDto: {
             /** Format: date-time */
@@ -4460,7 +4466,7 @@ export interface components {
         };
         WarrantyPolicyListResponse: {
             data: components["schemas"]["WarrantyPolicyDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["WarrantyListMetaDto"];
         };
         WarrantyPolicyResponse: {
             data: components["schemas"]["WarrantyPolicyDto"];

@@ -69,6 +69,10 @@ export class BackofficeAfterSalesListItemDto extends AfterSalesListItemDto {
   @ApiProperty({ type: Number, minimum: 0, maximum: 5 }) public attachmentCount!: number;
 }
 
+export class BackofficeAfterSalesListMetaDto {
+  @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
+}
+
 export class BackofficeAfterSalesDetailDto extends BackofficeAfterSalesListItemDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   public requestedResolution!: string | null;
@@ -107,7 +111,8 @@ export class BackofficeAfterSalesDetailDto extends BackofficeAfterSalesListItemD
 export class BackofficeAfterSalesListResponse {
   @ApiProperty({ type: () => [BackofficeAfterSalesListItemDto] })
   public data!: BackofficeAfterSalesListItemDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => BackofficeAfterSalesListMetaDto })
+  public meta!: BackofficeAfterSalesListMetaDto;
 }
 
 export class BackofficeAfterSalesDetailResponse {

@@ -2,6 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { PolicyStatus, WarrantyStatus } from '../../generated/prisma/enums.js';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
 
+export class WarrantyListMetaDto {
+  @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
+}
+
 export class WarrantyPolicyDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String }) public code!: string;
@@ -22,7 +26,7 @@ export class WarrantyPolicyResponse {
 
 export class WarrantyPolicyListResponse {
   @ApiProperty({ type: () => [WarrantyPolicyDto] }) public data!: WarrantyPolicyDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => WarrantyListMetaDto }) public meta!: WarrantyListMetaDto;
 }
 
 export class WarrantyListItemDto {
@@ -49,7 +53,7 @@ export class WarrantyDetailDto extends WarrantyListItemDto {
 
 export class WarrantyListResponse {
   @ApiProperty({ type: () => [WarrantyListItemDto] }) public data!: WarrantyListItemDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => WarrantyListMetaDto }) public meta!: WarrantyListMetaDto;
 }
 
 export class WarrantyDetailResponse {
@@ -100,7 +104,7 @@ export class BackofficeWarrantyDetailDto extends BackofficeWarrantyListItemDto {
 export class BackofficeWarrantyListResponse {
   @ApiProperty({ type: () => [BackofficeWarrantyListItemDto] })
   public data!: BackofficeWarrantyListItemDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => WarrantyListMetaDto }) public meta!: WarrantyListMetaDto;
 }
 
 export class BackofficeWarrantyDetailResponse {
