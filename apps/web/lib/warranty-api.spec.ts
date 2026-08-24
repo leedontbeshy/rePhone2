@@ -1,0 +1,194 @@
+import { describe, expect, it, vi } from 'vitest';
+import {
+  activateWarrantyPolicy,
+  archiveWarrantyPolicy,
+  createWarrantyPolicy,
+  getCustomerWarranty,
+  listBackofficeWarranties,
+  listCustomerWarranties,
+  listWarrantyPolicies,
+  updateWarrantyPolicy,
+  voidWarranty,
+  warrantyError,
+  type WarrantyApiClient,
+} from './warranty-api';
+
+const POLICY = {
+  id: '0199b354-d818-7f7c-b966-3932599978cf',
+  code: 'IPHONE-90',
+  name: 'iPhone 90 ngày',
+  defaultDays: 90,
+  terms: 'Bảo hành phần cứng theo điều khoản.',
+  status: 'INACTIVE' as const,
+  isArchived: false,
+  archivedAt: null,
+  createdAt: '2026-08-25T00:00:00.000Z',
+  updatedAt: '2026-08-25T00:00:00.000Z',
+};
+
+const CUSTOMER_WARRANTY = {
+  warrantyCode: 'RPH-W-20260825-23456789',
+  orderNumber: 'RPH-20260825-ABC23456',
+  orderItemId: '0199b354-d818-7f7c-b966-3932599978d0',
+  productName: 'iPhone 15',
+  variantName: '128GB · Đen',
+  inventoryCode: 'IP-TEST-001',
+  daysSnapshot: 90,
+  status: 'ACTIVE' as const,
+  startAt: '2026-08-01T00:00:00.000Z',
+  endAt: '2026-10-30T00:00:00.000Z',
+  isValid: true,
+  isExpired: false,
+};
+
+describe('warranty typed-client adapter', () => {
+  it('loads the owned page and understands the runtime pagination envelope', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        data: [CUSTOMER_WARRANTY],
+        meta: { pagination: { page: 2, pageSize: 12, totalItems: 14, totalPages: 2 } },
+      },
+    });
+    const result = await listCustomerWarranties(mockClient({ GET: get }), {
+      page: 2,
+      pageSize: 12,
+    });
+
+    expect(get).toHaveBeenCalledWith('/api/v1/warranties', {
+      params: { query: { page: 2, pageSize: 12 } },
+    });
+    expect(result).toMatchObject({
+      data: [{ warrantyCode: CUSTOMER_WARRANTY.warrantyCode }],
+      pagination: { page: 2, totalItems: 14 },
+    });
+  });
+
+  it('passes a guest credential only through the generated header parameter', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: { data: { ...CUSTOMER_WARRANTY, sku: 'IP15-128-BLK', termsSnapshot: 'Terms' } },
+    });
+    await getCustomerWarranty(mockClient({ GET: get }), CUSTOMER_WARRANTY.warrantyCode, 'token');
+
+    expect(get).toHaveBeenCalledWith('/api/v1/warranties/{warrantyCode}', {
+      params: {
+        path: { warrantyCode: CUSTOMER_WARRANTY.warrantyCode },
+        header: { 'X-Guest-Order-Token': 'token' },
+      },
+    });
+  });
+
+  it('normalizes policy filters and keeps code out of the update body', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: { data: [POLICY], meta: { pagination: { page: 1, pageSize: 20 } } },
+    });
+    const post = vi.fn().mockResolvedValue({ data: { data: POLICY } });
+    const patch = vi.fn().mockResolvedValue({ data: { data: POLICY } });
+    const client = mockClient({ GET: get, POST: post, PATCH: patch });
+
+    await listWarrantyPolicies(client, {
+      page: 1,
+      pageSize: 20,
+      q: 'IPHONE',
+      status: '',
+      archived: 'false',
+    });
+    await createWarrantyPolicy(client, {
+      code: POLICY.code,
+      name: POLICY.name,
+      defaultDays: POLICY.defaultDays,
+      terms: POLICY.terms,
+    });
+    await updateWarrantyPolicy(client, POLICY.id, {
+      name: 'Tên mới',
+      defaultDays: 180,
+      terms: 'Điều khoản mới',
+    });
+
+    expect(get).toHaveBeenCalledWith('/api/v1/backoffice/warranty-policies', {
+      params: { query: { page: 1, pageSize: 20, q: 'IPHONE', archived: false } },
+    });
+    expect(patch).toHaveBeenCalledWith('/api/v1/backoffice/warranty-policies/{id}', {
+      params: { path: { id: POLICY.id } },
+      body: { name: 'Tên mới', defaultDays: 180, terms: 'Điều khoản mới' },
+    });
+  });
+
+  it('uses the exact lifecycle command routes and reason bodies', async () => {
+    const post = vi.fn().mockResolvedValue({ data: { data: POLICY } });
+    const client = mockClient({ POST: post });
+
+    await activateWarrantyPolicy(client, POLICY.id);
+    await archiveWarrantyPolicy(client, POLICY.id, 'Không còn cung cấp chính sách này');
+
+    expect(post.mock.calls).toEqual([
+      [
+        '/api/v1/backoffice/warranty-policies/{id}/activate',
+        { params: { path: { id: POLICY.id } } },
+      ],
+      [
+        '/api/v1/backoffice/warranty-policies/{id}/archive',
+        {
+          params: { path: { id: POLICY.id } },
+          body: { reason: 'Không còn cung cấp chính sách này' },
+        },
+      ],
+    ]);
+  });
+
+  it('loads and voids backoffice warranty without exposing untyped fields', async () => {
+    const row = {
+      ...CUSTOMER_WARRANTY,
+      id: POLICY.id,
+      customer: {
+        customerId: null,
+        name: 'Guest',
+        email: 'guest@example.com',
+        phone: '0900000000',
+      },
+      policy: null,
+      createdAt: CUSTOMER_WARRANTY.startAt,
+    };
+    const detail = {
+      ...row,
+      sku: 'IP15-128-BLK',
+      termsSnapshot: 'Terms',
+      updatedAt: CUSTOMER_WARRANTY.startAt,
+      voidReason: null,
+      voidedBy: null,
+      voidedAt: null,
+    };
+    const get = vi.fn().mockResolvedValue({
+      data: { data: [row], meta: { pagination: { page: 1, pageSize: 20 } } },
+    });
+    const post = vi.fn().mockResolvedValue({ data: { data: detail } });
+    const client = mockClient({ GET: get, POST: post });
+
+    const page = await listBackofficeWarranties(client, {
+      page: 1,
+      pageSize: 20,
+      status: 'ACTIVE',
+      validity: '',
+    });
+    const voided = await voidWarranty(client, POLICY.id, 'Hoàn tiền theo case hậu mãi');
+
+    expect(page.data[0]).not.toHaveProperty('rawIdentifier');
+    expect(voided.warrantyCode).toBe(CUSTOMER_WARRANTY.warrantyCode);
+    expect(post).toHaveBeenCalledWith('/api/v1/backoffice/warranties/{id}/void', {
+      params: { path: { id: POLICY.id } },
+      body: { reason: 'Hoàn tiền theo case hậu mãi' },
+    });
+  });
+
+  it('maps stable conflicts without reflecting unsafe server detail', () => {
+    expect(
+      warrantyError(
+        { error: { code: 'INVALID_STATE_TRANSITION', message: 'private row detail' } },
+        'fallback',
+      ),
+    ).toContain('Hãy tải lại');
+  });
+});
+
+function mockClient(methods: Record<string, unknown>): WarrantyApiClient {
+  return methods as unknown as WarrantyApiClient;
+}
