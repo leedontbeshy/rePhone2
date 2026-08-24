@@ -37,6 +37,24 @@ export function availableFulfillmentActions(
     : availableShippingActions(order, now);
 }
 
+export function canStaffCancelOrder(order: FulfillmentActionOrder): boolean {
+  if (!['PLACED', 'CONFIRMED', 'PROCESSING'].includes(order.status)) return false;
+  if (order.payments.some(({ status }) => status === 'UNDER_REVIEW')) return false;
+  if (
+    order.fulfillmentType === 'SHIPPING' &&
+    order.fulfillmentStatus === 'RETURNED' &&
+    order.shipments.some(({ status }) => status === 'RETURNED')
+  ) {
+    return true;
+  }
+  return (
+    ['PENDING', 'PREPARING', 'READY'].includes(order.fulfillmentStatus) &&
+    !order.shipments.some(({ status }) =>
+      ['HANDED_TO_CARRIER', 'DELIVERED', 'FAILED', 'RETURNED'].includes(status),
+    )
+  );
+}
+
 function availablePickupActions(order: FulfillmentActionOrder, now: Date): FulfillmentAction[] {
   const pickupValid = order.pickupHoldUntil !== null && now < order.pickupHoldUntil;
   if (!pickupValid) return [];

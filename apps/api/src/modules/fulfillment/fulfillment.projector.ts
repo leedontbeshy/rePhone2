@@ -7,13 +7,17 @@ import type {
   BackofficeOrderListItemDto,
   BackofficeOrderShipmentDto,
 } from './fulfillment-response.dto.js';
-import { availableFulfillmentActions } from './fulfillment-action.policy.js';
+import {
+  availableFulfillmentActions,
+  canStaffCancelOrder,
+} from './fulfillment-action.policy.js';
 import type { ShipmentRecord } from './shipment.gateway.js';
 
 export function projectBackofficeOrderDetail(
   order: FulfillmentOrderRecord,
   now: Date,
 ): BackofficeOrderDetailDto {
+  const refundableAmount = calculateRefundableAmount(order);
   return {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -79,6 +83,7 @@ export function projectBackofficeOrderDetail(
       refundedAmount: order.refundedAmount.toString(),
       balanceDue: order.balanceDue.toString(),
     },
+    refundableAmount: refundableAmount.toString(),
     reservations: order.reservations.map((reservation) => ({
       id: reservation.id,
       status: reservation.status,
@@ -102,7 +107,13 @@ export function projectBackofficeOrderDetail(
     refunds: order.refunds.map((refund) => ({
       id: refund.id,
       amount: refund.amount.toString(),
+      method: refund.method,
       status: refund.status,
+      reason: refund.reason,
+      terminalReason: refund.terminalReason,
+      processingAt: refund.processingAt?.toISOString() ?? null,
+      completedAt: refund.completedAt?.toISOString() ?? null,
+      terminalAt: refund.terminalAt?.toISOString() ?? null,
       createdAt: refund.createdAt.toISOString(),
     })),
     shipments: order.shipments.map(projectBackofficeShipment),
@@ -118,7 +129,13 @@ export function projectBackofficeOrderDetail(
     cancelledAt: order.cancelledAt?.toISOString() ?? null,
     cancelReason: order.cancelReason,
     pickupOverdue: isPickupOverdue(order, now),
-    availableActions: availableFulfillmentActions(order, now),
+    availableActions: [
+      ...availableFulfillmentActions(order, now),
+      ...(canStaffCancelOrder(order) ? (['CANCEL_ORDER'] as const) : []),
+      ...(['CANCELLED', 'COMPLETED'].includes(order.status) && refundableAmount > 0n
+        ? (['CREATE_REFUND'] as const)
+        : []),
+    ],
   };
 }
 
@@ -181,8 +198,24 @@ export function projectBackofficeOrderListItem(
     pickupHoldUntil: order.pickupHoldUntil?.toISOString() ?? null,
     pickupOverdue: isPickupOverdue(order, now),
     placedAt: order.placedAt.toISOString(),
-    availableActions: availableFulfillmentActions(order, now),
+    availableActions: [
+      ...availableFulfillmentActions(order, now),
+      ...(canStaffCancelOrder(order) ? (['CANCEL_ORDER'] as const) : []),
+    ],
   };
+}
+
+function calculateRefundableAmount(order: FulfillmentOrderRecord): bigint {
+  const verified = order.payments
+    .filter(({ status }) => status === 'VERIFIED')
+    .reduce(
+      (sum, payment) => sum + BigInt(payment.receivedAmount?.toString() ?? '0'),
+      0n,
+    );
+  const covered = order.refunds
+    .filter(({ status }) => ['REQUESTED', 'PROCESSING', 'COMPLETED'].includes(status))
+    .reduce((sum, refund) => sum + BigInt(refund.amount.toString()), 0n);
+  return verified > covered ? verified - covered : 0n;
 }
 
 function isPickupOverdue(

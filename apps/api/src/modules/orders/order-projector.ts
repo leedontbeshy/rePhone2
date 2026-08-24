@@ -136,8 +136,13 @@ export function projectOrder(
     refunds: order.refunds.map((refund) => ({
       id: refund.id,
       amount: refund.amount.toString(),
+      method: refund.method,
       status: refund.status,
       reason: refund.reason,
+      terminalReason: refund.terminalReason,
+      processingAt: refund.processingAt?.toISOString() ?? null,
+      completedAt: refund.completedAt?.toISOString() ?? null,
+      terminalAt: refund.terminalAt?.toISOString() ?? null,
       createdAt: refund.createdAt.toISOString(),
     })),
     shipment: projectPublicShipment(order.shipments[0]),

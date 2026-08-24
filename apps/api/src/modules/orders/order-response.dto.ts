@@ -142,9 +142,17 @@ export class OrderPaymentDto {
 export class OrderRefundDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public amount!: string;
+  @ApiProperty({ enum: ['BANK_TRANSFER', 'CASH', 'OTHER'] }) public method!: string;
   @ApiProperty({ enum: ['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'] })
   public status!: string;
   @ApiProperty({ type: String }) public reason!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public terminalReason!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public processingAt!:
+    string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public completedAt!:
+    string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public terminalAt!:
+    string | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: string;
 }
 
