@@ -879,6 +879,7 @@ model Payment {
   reviewedBy                  User?          @relation("PaymentReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
   refunds                     Refund[]
 
+  @@unique([id, orderId])
   @@index([orderId, status])
   @@index([status, submittedAt])
   @@map("payments")
@@ -897,6 +898,9 @@ model Refund {
   terminalAt         DateTime?           @map("terminal_at") @db.Timestamptz(3)
   evidenceBucket     String?             @map("evidence_bucket") @db.Text
   evidenceObjectPath String?             @map("evidence_object_path") @db.Text
+  evidenceMimeType   String?             @map("evidence_mime_type") @db.VarChar(100)
+  evidenceFileSize   Int?                @map("evidence_file_size")
+  evidenceSha256     String?             @map("evidence_sha256") @db.Char(64)
   requestedByType    RefundRequesterType @map("requested_by_type")
   requestedById      String?             @map("requested_by_id") @db.Uuid
   processedById      String?             @map("processed_by_id") @db.Uuid
@@ -906,7 +910,7 @@ model Refund {
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
   order              Order               @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  payment            Payment?            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  payment            Payment?            @relation(fields: [paymentId, orderId], references: [id, orderId], onDelete: Restrict)
   terminalBy         User?               @relation("RefundTerminalActor", fields: [terminalById], references: [id], onDelete: Restrict)
   requestedBy        User?               @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: Restrict)
   processedBy        User?               @relation("RefundProcessor", fields: [processedById], references: [id], onDelete: Restrict)
@@ -914,6 +918,8 @@ model Refund {
 
   @@index([orderId, status])
   @@index([paymentId])
+  @@index([status, createdAt, id])
+  @@index([status, processingAt, id])
   @@map("refunds")
 }
 
