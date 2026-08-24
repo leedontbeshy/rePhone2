@@ -136,11 +136,10 @@ export class AdjustStockDto extends StockQuantityDto {
 
 export class ReturnStockDto extends StockQuantityDto {
   @ApiProperty({ type: String, format: 'uuid' }) @IsUUID() public locationId!: string;
-  @ApiProperty({ type: String, maxLength: 255 })
+  @ApiProperty({ enum: ['SHIPMENT', 'AFTER_SALES_REQUEST'] })
   @Transform(optionalTrim)
-  @IsString()
-  @Length(1, 255)
-  public referenceType!: string;
+  @IsIn(['SHIPMENT', 'AFTER_SALES_REQUEST'])
+  public referenceType!: 'SHIPMENT' | 'AFTER_SALES_REQUEST';
   @ApiProperty({ type: String, format: 'uuid' }) @IsUUID() public referenceId!: string;
   @ApiProperty({ type: String, minLength: 5, maxLength: 500 })
   @Transform(optionalTrim)

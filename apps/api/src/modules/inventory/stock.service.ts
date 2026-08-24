@@ -195,29 +195,38 @@ export class StockService {
           transaction,
         );
         await this.repository.lockLevels([seed.id], transaction);
-        if (input.referenceType === 'SHIPMENT') {
-          const current = await this.repository.findLevel(
-            input.variantId,
-            input.locationId,
-            transaction,
-          );
-          if (current === null) throw new ApiError('INTERNAL_ERROR');
-          const existing = await this.repository.findShipmentReturn(
-            input.referenceId,
-            input.variantId,
-            transaction,
-          );
-          if (existing !== null) {
-            if (
-              existing.toLocationId === input.locationId &&
-              existing.quantity === input.quantity &&
-              existing.reason?.trim() === input.reason.trim()
-            ) {
-              return commandResult(existing, [current]);
-            }
-            throw new ApiError('DUPLICATE_RESOURCE');
+        const current = await this.repository.findLevel(
+          input.variantId,
+          input.locationId,
+          transaction,
+        );
+        if (current === null) throw new ApiError('INTERNAL_ERROR');
+        const existing =
+          input.referenceType === 'SHIPMENT'
+            ? await this.repository.findShipmentReturn(
+                input.referenceId,
+                input.variantId,
+                transaction,
+              )
+            : await this.repository.findAfterSalesReturn(
+                input.referenceId,
+                input.variantId,
+                transaction,
+              );
+        if (existing !== null) {
+          if (
+            existing.toLocationId === input.locationId &&
+            existing.quantity === input.quantity &&
+            existing.reason?.trim() === input.reason.trim()
+          ) {
+            return commandResult(existing, [current]);
           }
+          throw new ApiError('DUPLICATE_RESOURCE');
+        }
+        if (input.referenceType === 'SHIPMENT') {
           await assertShipmentReturnReference(transaction, input);
+        } else {
+          await assertAfterSalesReturnReference(transaction, input);
         }
         const updated = await this.repository.updateLevel(
           seed.id,
@@ -240,8 +249,48 @@ export class StockService {
         await auditMovement(this.audit, transaction, actor, movement, [updated]);
         return commandResult(movement, [updated]);
       },
-      (error) => input.referenceType === 'SHIPMENT' && isUniqueError(error),
+      (error) => isUniqueError(error),
     );
+  }
+}
+
+async function assertAfterSalesReturnReference(
+  transaction: Prisma.TransactionClient,
+  input: ReturnStockDto,
+): Promise<void> {
+  const request = await transaction.afterSalesRequest.findUnique({
+    where: { id: input.referenceId },
+    select: {
+      status: true,
+      resolutionType: true,
+      receivedLocationId: true,
+      inspectionSummary: true,
+      receivedLocation: { select: { status: true, type: true } },
+      orderItem: {
+        select: {
+          variantId: true,
+          inventoryUnitId: true,
+          productTypeSnapshot: true,
+          quantity: true,
+        },
+      },
+    },
+  });
+  if (request === null) throw new ApiError('RESOURCE_NOT_FOUND');
+  if (
+    request.status !== 'RESOLVED' ||
+    request.resolutionType === null ||
+    request.resolutionType === 'REPLACED' ||
+    request.receivedLocationId !== input.locationId ||
+    request.receivedLocation?.status !== 'ACTIVE' ||
+    !isReturnLocationType(request.receivedLocation.type) ||
+    request.inspectionSummary === null ||
+    request.orderItem.productTypeSnapshot !== 'ACCESSORY' ||
+    request.orderItem.inventoryUnitId !== null ||
+    request.orderItem.variantId !== input.variantId ||
+    request.orderItem.quantity !== input.quantity
+  ) {
+    throw new ApiError('INVALID_STATE_TRANSITION');
   }
 }
 
