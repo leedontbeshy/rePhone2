@@ -127,6 +127,18 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Số tiền hoàn vượt quá khoản đã xác minh còn lại.',
   },
+  WARRANTY_NOT_ACTIVE: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Bảo hành chưa hiệu lực, đã hết hạn hoặc đã bị vô hiệu hóa.',
+  },
+  AFTER_SALES_REQUEST_ALREADY_OPEN: {
+    status: HttpStatus.CONFLICT,
+    message: 'Sản phẩm đã có yêu cầu hậu mãi chưa kết thúc.',
+  },
+  AFTER_SALES_RESOLUTION_REQUIREMENTS_NOT_MET: {
+    status: HttpStatus.UNPROCESSABLE_ENTITY,
+    message: 'Yêu cầu hậu mãi chưa đủ điều kiện để ghi nhận kết quả này.',
+  },
   EVIDENCE_REQUIRED: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Bằng chứng riêng tư là bắt buộc.',

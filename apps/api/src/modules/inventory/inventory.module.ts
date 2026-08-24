@@ -13,6 +13,7 @@ import { StockRepository } from './stock.repository.js';
 import { StockService } from './stock.service.js';
 import { CheckoutInventoryGateway } from './checkout-inventory.gateway.js';
 import { FulfillmentInventoryGateway } from './fulfillment-inventory.gateway.js';
+import { AfterSalesInventoryGateway } from './after-sales-inventory.gateway.js';
 
 @Module({
   imports: [AuthModule, AuditModule],
@@ -33,7 +34,13 @@ import { FulfillmentInventoryGateway } from './fulfillment-inventory.gateway.js'
     StockService,
     CheckoutInventoryGateway,
     FulfillmentInventoryGateway,
+    AfterSalesInventoryGateway,
   ],
-  exports: [InventoryService, CheckoutInventoryGateway, FulfillmentInventoryGateway],
+  exports: [
+    InventoryService,
+    CheckoutInventoryGateway,
+    FulfillmentInventoryGateway,
+    AfterSalesInventoryGateway,
+  ],
 })
 export class InventoryModule {}
