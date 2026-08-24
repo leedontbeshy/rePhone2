@@ -234,6 +234,24 @@ export default function OrderDetailPage() {
                               </span>
                             </div>
                           )}
+                          {order.status === 'COMPLETED' ? (
+                            <div className="warranty-row-actions">
+                              {warranty === null ? null : (
+                                <Link
+                                  className="button"
+                                  href={`/warranties/${encodeURIComponent(warranty.warrantyCode)}?orderNumber=${encodeURIComponent(order.orderNumber)}`}
+                                >
+                                  Xem bảo hành
+                                </Link>
+                              )}
+                              <Link
+                                className="button primary"
+                                href={`/after-sales/new?orderItemId=${encodeURIComponent(item.id)}&orderNumber=${encodeURIComponent(order.orderNumber)}`}
+                              >
+                                Yêu cầu hậu mãi
+                              </Link>
+                            </div>
+                          ) : null}
                         </div>
                         <div>
                           <span>
