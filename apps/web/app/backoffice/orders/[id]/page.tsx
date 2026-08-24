@@ -6,19 +6,27 @@ import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'r
 import {
   completePickup,
   confirmPickupOrder,
+  createShipment,
   extendPickupHold,
   fulfillmentError,
   getBackofficeOrder,
+  handOverShipment,
+  listActiveReturnLocations,
   markPickupReady,
+  markShipmentDelivered,
+  markShipmentFailed,
+  markShipmentReturned,
+  overrideShippingFee,
   startPreparingOrder,
   updateBackofficeOrderInternalNote,
   type BackofficeOrderDetail,
-  type PickupOrderAction,
+  type BackofficeOrderLocation,
+  type FulfillmentAction,
 } from '../../../../lib/fulfillment-api';
 import { useAuth } from '../../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../../catalog-ui';
 
-type BusyAction = PickupOrderAction | 'INTERNAL_NOTE' | 'RELOAD' | null;
+type BusyAction = FulfillmentAction | 'INTERNAL_NOTE' | 'RELOAD' | null;
 
 export default function BackofficeOrderDetailPage() {
   const params = useParams<{ id: string }>();
@@ -30,6 +38,16 @@ export default function BackofficeOrderDetailPage() {
   const [holdUntil, setHoldUntil] = useState('');
   const [holdReason, setHoldReason] = useState('Khách hàng cần thêm thời gian nhận máy');
   const [cashConfirmed, setCashConfirmed] = useState(false);
+  const [shippingFee, setShippingFee] = useState('');
+  const [shippingFeeReason, setShippingFeeReason] = useState('Điều chỉnh theo kiện hàng thực tế');
+  const [carrierName, setCarrierName] = useState('Giao hàng nội bộ');
+  const [trackingCode, setTrackingCode] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
+  const [codConfirmed, setCodConfirmed] = useState(false);
+  const [failureReason, setFailureReason] = useState('Không thể liên hệ người nhận');
+  const [returnReason, setReturnReason] = useState('Kho đã nhận và kiểm đếm kiện hoàn');
+  const [returnLocationId, setReturnLocationId] = useState('');
+  const [returnLocations, setReturnLocations] = useState<BackofficeOrderLocation[]>([]);
   const [busy, setBusy] = useState<BusyAction>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +58,7 @@ export default function BackofficeOrderDetailPage() {
     const next = await getBackofficeOrder(client, orderId);
     setDetail(next);
     setInternalNote(next.internalNote ?? '');
+    setShippingFee(next.pricing.shippingFee);
     setError(null);
   }, [client, orderId]);
 
@@ -56,6 +75,7 @@ export default function BackofficeOrderDetailPage() {
         if (!active) return;
         setDetail(next);
         setInternalNote(next.internalNote ?? '');
+        setShippingFee(next.pricing.shippingFee);
         setError(null);
       })
       .catch((caught: unknown) => {
@@ -70,6 +90,29 @@ export default function BackofficeOrderDetailPage() {
     };
   }, [client, isStaff, orderId, status]);
 
+  useEffect(() => {
+    if (
+      status !== 'authenticated' ||
+      !isStaff ||
+      !detail?.availableActions.includes('MARK_SHIPMENT_RETURNED')
+    ) {
+      return;
+    }
+    let active = true;
+    void listActiveReturnLocations(client)
+      .then((locations) => {
+        if (!active) return;
+        setReturnLocations(locations);
+        setReturnLocationId((current) => current || locations[0]?.id || '');
+      })
+      .catch(() => {
+        if (active) setError('Không thể tải địa điểm nhận hàng hoàn.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [client, detail?.availableActions, isStaff, status]);
+
   const runAction = async (
     action: Exclude<BusyAction, 'INTERNAL_NOTE' | 'RELOAD' | null>,
     operation: () => Promise<BackofficeOrderDetail>,
@@ -82,6 +125,7 @@ export default function BackofficeOrderDetailPage() {
       const next = await operation();
       setDetail(next);
       setInternalNote(next.internalNote ?? '');
+      setShippingFee(next.pricing.shippingFee);
       setNotice(success);
     } catch (caught) {
       const message = errorMessage(caught, 'Không thể cập nhật đơn hàng.');
@@ -178,12 +222,117 @@ export default function BackofficeOrderDetailPage() {
     );
   };
 
+  const submitShippingFee = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const reason = shippingFeeReason.trim();
+    if (!/^\d{1,15}$/.test(shippingFee)) {
+      setError('Phí giao hàng phải là số VND nguyên không âm, tối đa 15 chữ số.');
+      return;
+    }
+    if (reason.length < 5 || reason.length > 500) {
+      setError('Lý do điều chỉnh phải có từ 5 đến 500 ký tự.');
+      return;
+    }
+    void runAction(
+      'OVERRIDE_SHIPPING_FEE',
+      () => overrideShippingFee(client, orderId, { shippingFee, reason }),
+      'Đã cập nhật phí giao hàng và tổng tiền.',
+    );
+  };
+
+  const submitShipment = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const carrier = carrierName.trim();
+    const tracking = trackingCode.trim();
+    const url = trackingUrl.trim();
+    if (carrier.length === 0 || tracking.length === 0) {
+      setError('Đơn vị vận chuyển và mã vận đơn là bắt buộc.');
+      return;
+    }
+    if (url !== '' && !isHttpsUrl(url)) {
+      setError('URL tra cứu phải dùng HTTPS hợp lệ.');
+      return;
+    }
+    void runAction(
+      'CREATE_SHIPMENT',
+      async () => {
+        await createShipment(client, orderId, {
+          carrierName: carrier,
+          trackingCode: tracking,
+          ...(url === '' ? {} : { trackingUrl: url }),
+        });
+        return getBackofficeOrder(client, orderId);
+      },
+      'Đã tạo vận đơn và mã tra cứu.',
+    );
+  };
+
+  const submitDelivered = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const shipment = detail?.shipments[0];
+    if (detail === null || shipment === undefined) return;
+    const codRequired = positiveMoney(detail.pricing.balanceDue);
+    if (codRequired && !codConfirmed) {
+      setError('Hãy xác nhận đơn vị giao hàng đã thu đủ COD.');
+      return;
+    }
+    if (!codRequired && codConfirmed) {
+      setError('Đơn có số dư bằng 0 nên không được xác nhận thu COD.');
+      return;
+    }
+    void runAction(
+      'MARK_SHIPMENT_DELIVERED',
+      () => markShipmentDelivered(client, shipment.id, { confirmCodCollected: codRequired }),
+      'Đã giao hàng, quyết toán COD và phát hành bảo hành.',
+    );
+  };
+
+  const submitFailed = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const shipment = detail?.shipments[0];
+    const reason = failureReason.trim();
+    if (shipment === undefined) return;
+    if (reason.length < 5 || reason.length > 500) {
+      setError('Lý do giao thất bại phải có từ 5 đến 500 ký tự.');
+      return;
+    }
+    void runAction(
+      'MARK_SHIPMENT_FAILED',
+      () => markShipmentFailed(client, shipment.id, { reason }),
+      'Đã ghi nhận giao hàng thất bại.',
+    );
+  };
+
+  const submitReturned = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const shipment = detail?.shipments[0];
+    const reason = returnReason.trim();
+    if (shipment === undefined) return;
+    if (returnLocationId === '') {
+      setError('Hãy chọn địa điểm thực nhận hàng hoàn.');
+      return;
+    }
+    if (reason.length < 5 || reason.length > 500) {
+      setError('Ghi chú hàng hoàn phải có từ 5 đến 500 ký tự.');
+      return;
+    }
+    void runAction(
+      'MARK_SHIPMENT_RETURNED',
+      () =>
+        markShipmentReturned(client, shipment.id, {
+          returnedToLocationId: returnLocationId,
+          reason,
+        }),
+      'Đã ghi nhận hàng hoàn về kho; iPhone sẽ chờ kiểm định lại.',
+    );
+  };
+
   return (
     <>
       <CatalogHeader />
       <main className="backoffice-shell fulfillment-shell">
         <nav className="breadcrumbs" aria-label="Breadcrumb">
-          <Link href="/backoffice/orders">Đơn pickup</Link>
+          <Link href="/backoffice/orders">Đơn hàng</Link>
           <span>/</span>
           <span>{detail?.orderNumber ?? 'Chi tiết'}</span>
         </nav>
@@ -229,7 +378,7 @@ export default function BackofficeOrderDetailPage() {
           <section className="empty-state">
             <h1>Không tìm thấy đơn hàng</h1>
             <Link className="button" href="/backoffice/orders">
-              Về hàng chờ pickup
+              Về hàng chờ đơn hàng
             </Link>
           </section>
         ) : null}
@@ -238,7 +387,9 @@ export default function BackofficeOrderDetailPage() {
           <>
             <header className="backoffice-page-heading fulfillment-detail-heading">
               <div>
-                <p className="eyebrow">Pickup order</p>
+                <p className="eyebrow">
+                  {detail.fulfillmentType === 'PICKUP' ? 'Pickup order' : 'Shipping order'}
+                </p>
                 <h1>{detail.orderNumber}</h1>
                 <p>Đặt lúc {dateTime(detail.placedAt)}</p>
               </div>
@@ -252,19 +403,33 @@ export default function BackofficeOrderDetailPage() {
             <div className="fulfillment-detail-layout">
               <section className="fulfillment-detail-main">
                 <section className="detail-panel">
-                  <h2>Khách hàng & điểm nhận</h2>
+                  <h2>Khách hàng & giao nhận</h2>
                   <dl className="payment-review-specs">
                     <Spec label="Khách hàng" value={detail.contact.fullName} />
                     <Spec label="Điện thoại" value={detail.contact.phone} />
                     <Spec label="Email" value={detail.contact.email} />
-                    <Spec
-                      label="Cửa hàng"
-                      value={
-                        detail.pickupStore === null
-                          ? '—'
-                          : `${detail.pickupStore.code} · ${detail.pickupStore.name}`
-                      }
-                    />
+                    {detail.fulfillmentType === 'PICKUP' ? (
+                      <Spec
+                        label="Cửa hàng"
+                        value={
+                          detail.pickupStore === null
+                            ? '—'
+                            : `${detail.pickupStore.code} · ${detail.pickupStore.name}`
+                        }
+                      />
+                    ) : (
+                      <>
+                        <Spec
+                          label="Nguồn xuất"
+                          value={
+                            detail.location === null
+                              ? '—'
+                              : `${detail.location.code} · ${detail.location.name}`
+                          }
+                        />
+                        <Spec label="Địa chỉ giao" value={formatAddress(detail.shippingAddress)} />
+                      </>
+                    )}
                   </dl>
                 </section>
 
@@ -300,21 +465,25 @@ export default function BackofficeOrderDetailPage() {
                   </div>
                 </section>
 
-                <section className="detail-panel">
-                  <h2>Pickup timeline</h2>
-                  <ol className="fulfillment-timeline">
-                    <Timeline label="Đặt đơn" at={detail.placedAt} />
-                    <Timeline label="Đã xác nhận" at={detail.confirmedAt} />
-                    <Timeline label="Sẵn sàng nhận" at={detail.pickupReadyAt} />
-                    <Timeline label="Đã nhận hàng" at={detail.pickedUpAt} />
-                    <Timeline label="Hoàn tất" at={detail.completedAt} />
-                    <Timeline label="Đã hủy" at={detail.cancelledAt} />
-                  </ol>
-                  <p className="pickup-deadline">
-                    <strong>Hạn giữ hàng:</strong>{' '}
-                    {detail.pickupHoldUntil === null ? '—' : dateTime(detail.pickupHoldUntil)}
-                  </p>
-                </section>
+                {detail.fulfillmentType === 'PICKUP' ? (
+                  <section className="detail-panel">
+                    <h2>Pickup timeline</h2>
+                    <ol className="fulfillment-timeline">
+                      <Timeline label="Đặt đơn" at={detail.placedAt} />
+                      <Timeline label="Đã xác nhận" at={detail.confirmedAt} />
+                      <Timeline label="Sẵn sàng nhận" at={detail.pickupReadyAt} />
+                      <Timeline label="Đã nhận hàng" at={detail.pickedUpAt} />
+                      <Timeline label="Hoàn tất" at={detail.completedAt} />
+                      <Timeline label="Đã hủy" at={detail.cancelledAt} />
+                    </ol>
+                    <p className="pickup-deadline">
+                      <strong>Hạn giữ hàng:</strong>{' '}
+                      {detail.pickupHoldUntil === null ? '—' : dateTime(detail.pickupHoldUntil)}
+                    </p>
+                  </section>
+                ) : (
+                  <ShippingTimeline detail={detail} />
+                )}
 
                 <section className="detail-panel">
                   <h2>Reservation</h2>
@@ -380,6 +549,20 @@ export default function BackofficeOrderDetailPage() {
                           <Spec label="Lần giao" value={String(shipment.attemptNumber)} />
                           <Spec label="Đơn vị" value={shipment.carrierName} />
                           <Spec label="Mã vận đơn" value={shipment.trackingCode} />
+                          {shipment.trackingUrl === null ? null : (
+                            <div>
+                              <dt>Tra cứu</dt>
+                              <dd>
+                                <a
+                                  href={shipment.trackingUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Mở trang vận chuyển
+                                </a>
+                              </dd>
+                            </div>
+                          )}
                           <Spec label="Trạng thái" value={shipment.status} />
                           <Spec
                             label="Bàn giao"
@@ -393,6 +576,15 @@ export default function BackofficeOrderDetailPage() {
                           />
                           {shipment.failureReason === null ? null : (
                             <Spec label="Lý do lỗi" value={shipment.failureReason} />
+                          )}
+                          {shipment.returnedToLocation === null ? null : (
+                            <Spec
+                              label="Nhận hoàn tại"
+                              value={`${shipment.returnedToLocation.code} · ${shipment.returnedToLocation.name}`}
+                            />
+                          )}
+                          {shipment.returnNote === null ? null : (
+                            <Spec label="Ghi chú hoàn" value={shipment.returnNote} />
                           )}
                         </dl>
                       ))}
@@ -440,17 +632,34 @@ export default function BackofficeOrderDetailPage() {
                       value={detail.pricing.voucherDiscountAmount}
                       negative
                     />
-                    <MoneyLine label="Phí giao" value={detail.pricing.shippingFee} />
+                    {detail.fulfillmentType === 'SHIPPING' ? (
+                      <MoneyLine
+                        label="Phí giao ban đầu"
+                        value={detail.pricing.shippingFeeOriginal}
+                      />
+                    ) : null}
+                    <MoneyLine label="Phí giao hiện tại" value={detail.pricing.shippingFee} />
                     <MoneyLine label="Tổng" value={detail.pricing.grandTotal} total />
                     <MoneyLine label="Đã thu" value={detail.pricing.paidAmount} />
                     <MoneyLine label="Đã hoàn" value={detail.pricing.refundedAmount} />
                     <MoneyLine label="Còn thu" value={detail.pricing.balanceDue} total />
                   </div>
+                  {detail.pricing.shippingFeeOverride === null ? null : (
+                    <p className="muted">
+                      Điều chỉnh bởi {detail.pricing.shippingFeeOverride.overriddenBy.fullName} lúc{' '}
+                      {dateTime(detail.pricing.shippingFeeOverride.overriddenAt)} ·{' '}
+                      {detail.pricing.shippingFeeOverride.reason}
+                    </p>
+                  )}
                 </section>
 
                 <section className="detail-panel fulfillment-command-card">
-                  <h2>Thao tác pickup</h2>
-                  <p>Mỗi lệnh sẽ kiểm tra lại trạng thái và deadline trong transaction.</p>
+                  <h2>
+                    {detail.fulfillmentType === 'PICKUP'
+                      ? 'Thao tác pickup'
+                      : 'Thao tác vận chuyển'}
+                  </h2>
+                  <p>Mỗi lệnh sẽ kiểm tra lại trạng thái authoritative trong transaction.</p>
                   <div className="fulfillment-command-buttons">
                     {hasAction(detail, 'CONFIRM') ? (
                       <button
@@ -570,8 +779,212 @@ export default function BackofficeOrderDetailPage() {
                     </form>
                   ) : null}
 
+                  {hasAction(detail, 'OVERRIDE_SHIPPING_FEE') ? (
+                    <form className="fulfillment-command-form" onSubmit={submitShippingFee}>
+                      <h3>Điều chỉnh phí giao hàng</h3>
+                      <label htmlFor="shipping-fee">
+                        Phí giao mới (VND)
+                        <input
+                          id="shipping-fee"
+                          inputMode="numeric"
+                          pattern="[0-9]+"
+                          maxLength={15}
+                          required
+                          value={shippingFee}
+                          onChange={(event) => {
+                            setShippingFee(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <label htmlFor="shipping-fee-reason">
+                        Lý do
+                        <textarea
+                          id="shipping-fee-reason"
+                          minLength={5}
+                          maxLength={500}
+                          rows={3}
+                          required
+                          value={shippingFeeReason}
+                          onChange={(event) => {
+                            setShippingFeeReason(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <button className="button" type="submit" disabled={busy !== null}>
+                        {busy === 'OVERRIDE_SHIPPING_FEE' ? 'Đang cập nhật…' : 'Cập nhật phí giao'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {hasAction(detail, 'CREATE_SHIPMENT') ? (
+                    <form className="fulfillment-command-form" onSubmit={submitShipment}>
+                      <h3>Tạo vận đơn</h3>
+                      <label htmlFor="carrier-name">
+                        Đơn vị vận chuyển
+                        <input
+                          id="carrier-name"
+                          maxLength={255}
+                          required
+                          value={carrierName}
+                          onChange={(event) => {
+                            setCarrierName(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <label htmlFor="tracking-code">
+                        Mã vận đơn
+                        <input
+                          id="tracking-code"
+                          maxLength={255}
+                          required
+                          value={trackingCode}
+                          onChange={(event) => {
+                            setTrackingCode(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <label htmlFor="tracking-url">
+                        URL tra cứu HTTPS (không bắt buộc)
+                        <input
+                          id="tracking-url"
+                          type="url"
+                          inputMode="url"
+                          maxLength={2048}
+                          placeholder="https://carrier.example/track/..."
+                          value={trackingUrl}
+                          onChange={(event) => {
+                            setTrackingUrl(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <button className="button primary" type="submit" disabled={busy !== null}>
+                        {busy === 'CREATE_SHIPMENT' ? 'Đang tạo…' : 'Tạo vận đơn'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {hasAction(detail, 'HAND_OVER_SHIPMENT') && detail.shipments[0] !== undefined ? (
+                    <button
+                      className="button primary"
+                      type="button"
+                      disabled={busy !== null}
+                      onClick={() => {
+                        const shipment = detail.shipments[0];
+                        if (shipment === undefined) return;
+                        void runAction(
+                          'HAND_OVER_SHIPMENT',
+                          () => handOverShipment(client, shipment.id),
+                          'Đã bàn giao kiện hàng cho đơn vị vận chuyển.',
+                        );
+                      }}
+                    >
+                      {busy === 'HAND_OVER_SHIPMENT' ? 'Đang bàn giao…' : 'Bàn giao vận chuyển'}
+                    </button>
+                  ) : null}
+
+                  {hasAction(detail, 'MARK_SHIPMENT_DELIVERED') ? (
+                    <form className="fulfillment-command-form" onSubmit={submitDelivered}>
+                      <h3>Xác nhận giao thành công</h3>
+                      {positiveMoney(detail.pricing.balanceDue) ? (
+                        <label className="cash-confirmation">
+                          <input
+                            type="checkbox"
+                            checked={codConfirmed}
+                            onChange={(event) => {
+                              setCodConfirmed(event.target.checked);
+                            }}
+                          />
+                          <span>
+                            Đơn vị giao hàng đã thu đủ{' '}
+                            <strong>{formatMoney(detail.pricing.balanceDue)} ₫</strong> COD
+                          </span>
+                        </label>
+                      ) : (
+                        <p>Đơn đã đủ tiền; hệ thống sẽ không tạo Payment COD 0 đồng.</p>
+                      )}
+                      <button
+                        className="button primary"
+                        type="submit"
+                        disabled={
+                          busy !== null ||
+                          (positiveMoney(detail.pricing.balanceDue) && !codConfirmed)
+                        }
+                      >
+                        {busy === 'MARK_SHIPMENT_DELIVERED'
+                          ? 'Đang hoàn tất…'
+                          : 'Đã giao thành công'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {hasAction(detail, 'MARK_SHIPMENT_FAILED') ? (
+                    <form className="fulfillment-command-form" onSubmit={submitFailed}>
+                      <h3>Giao hàng thất bại</h3>
+                      <label htmlFor="shipment-failure-reason">
+                        Lý do
+                        <textarea
+                          id="shipment-failure-reason"
+                          minLength={5}
+                          maxLength={500}
+                          rows={3}
+                          required
+                          value={failureReason}
+                          onChange={(event) => {
+                            setFailureReason(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <button className="button" type="submit" disabled={busy !== null}>
+                        {busy === 'MARK_SHIPMENT_FAILED' ? 'Đang cập nhật…' : 'Đánh dấu thất bại'}
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {hasAction(detail, 'MARK_SHIPMENT_RETURNED') ? (
+                    <form className="fulfillment-command-form" onSubmit={submitReturned}>
+                      <h3>Thực nhận hàng hoàn</h3>
+                      <label htmlFor="return-location">
+                        Địa điểm nhận hoàn
+                        <select
+                          id="return-location"
+                          required
+                          value={returnLocationId}
+                          onChange={(event) => {
+                            setReturnLocationId(event.target.value);
+                          }}
+                        >
+                          <option value="">Chọn địa điểm</option>
+                          {returnLocations.map((location) => (
+                            <option key={location.id} value={location.id}>
+                              {location.code} · {location.name} · {location.type}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label htmlFor="shipment-return-reason">
+                        Ghi chú kiểm nhận
+                        <textarea
+                          id="shipment-return-reason"
+                          minLength={5}
+                          maxLength={500}
+                          rows={3}
+                          required
+                          value={returnReason}
+                          onChange={(event) => {
+                            setReturnReason(event.target.value);
+                          }}
+                        />
+                      </label>
+                      <button className="button" type="submit" disabled={busy !== null}>
+                        {busy === 'MARK_SHIPMENT_RETURNED'
+                          ? 'Đang cập nhật…'
+                          : 'Xác nhận hàng hoàn'}
+                      </button>
+                    </form>
+                  ) : null}
+
                   {detail.availableActions.length === 0 ? (
-                    <p className="muted">Đơn không còn thao tác pickup khả dụng.</p>
+                    <p className="muted">Đơn không còn thao tác fulfillment khả dụng.</p>
                   ) : null}
                 </section>
               </aside>
@@ -604,6 +1017,31 @@ function Timeline({ label, at }: { label: string; at: string | null }) {
   );
 }
 
+function ShippingTimeline({ detail }: { detail: BackofficeOrderDetail }) {
+  const shipment = detail.shipments[0];
+  return (
+    <section className="detail-panel">
+      <h2>Shipping timeline</h2>
+      <ol className="fulfillment-timeline">
+        <Timeline label="Đặt đơn" at={detail.placedAt} />
+        <Timeline label="Xác nhận cọc" at={detail.confirmedAt} />
+        <Timeline label="Tạo vận đơn" at={shipment?.createdAt ?? null} />
+        <Timeline label="Bàn giao vận chuyển" at={shipment?.shippedAt ?? null} />
+        {shipment?.status === 'FAILED' || shipment?.status === 'RETURNED' ? (
+          <Timeline label="Giao thất bại" at={shipment.failedAt} />
+        ) : (
+          <Timeline label="Giao thành công" at={shipment?.deliveredAt ?? null} />
+        )}
+        {shipment?.status === 'RETURNED' ? (
+          <Timeline label="Hàng hoàn đã về" at={shipment.returnedAt} />
+        ) : null}
+        <Timeline label="Hoàn tất" at={detail.completedAt} />
+        <Timeline label="Đã hủy" at={detail.cancelledAt} />
+      </ol>
+    </section>
+  );
+}
+
 function MoneyLine({
   label,
   value,
@@ -626,8 +1064,32 @@ function MoneyLine({
   );
 }
 
-function hasAction(detail: BackofficeOrderDetail, action: PickupOrderAction): boolean {
+function hasAction(detail: BackofficeOrderDetail, action: FulfillmentAction): boolean {
   return detail.availableActions.includes(action);
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function formatAddress(value: unknown): string {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return '—';
+  const address = value as Record<string, unknown>;
+  return [
+    address['receiverName'],
+    address['phone'],
+    address['addressLine'],
+    address['ward'],
+    address['district'],
+    address['province'],
+    address['postalCode'],
+  ]
+    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .join(', ');
 }
 
 function positiveMoney(value: string): boolean {

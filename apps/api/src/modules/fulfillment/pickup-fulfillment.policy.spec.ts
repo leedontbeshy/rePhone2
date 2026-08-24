@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ApiError } from '../../common/errors/api-error.js';
 import type { FulfillmentOrderRecord } from '../order-transaction-ports/fulfillment-order.gateway.js';
-import {
-  assertPickupDeadline,
-  availableFulfillmentActions,
-  validatePickupHoldExtension,
-} from './pickup-fulfillment.policy.js';
+import { assertPickupDeadline, validatePickupHoldExtension } from './pickup-fulfillment.policy.js';
+import { availableFulfillmentActions } from './fulfillment-action.policy.js';
 
 type PolicyOrder = Pick<
   FulfillmentOrderRecord,
@@ -16,6 +13,8 @@ type PolicyOrder = Pick<
   | 'fulfillmentLocationId'
   | 'pickupLocationId'
   | 'fulfillmentLocation'
+  | 'payments'
+  | 'shipments'
 >;
 
 const now = new Date('2026-08-23T03:00:00.000Z');
@@ -36,6 +35,8 @@ function order(overrides: Partial<PolicyOrder> = {}): FulfillmentOrderRecord {
       type: 'STORE',
       status: 'ACTIVE',
     },
+    payments: [],
+    shipments: [],
     ...overrides,
   };
   return fixture as FulfillmentOrderRecord;
@@ -83,6 +84,16 @@ describe('pickup fulfillment policy', () => {
       },
       ['START_PREPARING'],
     ],
+    [
+      'legacy confirmed/preparing shipping',
+      {
+        status: 'CONFIRMED',
+        fulfillmentStatus: 'PREPARING',
+        fulfillmentType: 'SHIPPING',
+        pickupHoldUntil: null,
+      },
+      ['START_PREPARING'],
+    ],
   ] satisfies Array<[string, Partial<PolicyOrder>, string[]]>)(
     'returns ordered actions for %s',
     (_label, overrides, expected) => {
@@ -100,6 +111,68 @@ describe('pickup fulfillment policy', () => {
     expect(availableFulfillmentActions(order({ status: 'COMPLETED' }), now)).toEqual([]);
     expect(availableFulfillmentActions(order({ status: 'CANCELLED' }), now)).toEqual([]);
   });
+
+  it('exposes fee override only while the awaiting deposit deadline is still open', () => {
+    const deposit = shippingDeposit();
+    const shipping = order({
+      status: 'PLACED',
+      fulfillmentStatus: 'PENDING',
+      fulfillmentType: 'SHIPPING',
+      pickupHoldUntil: null,
+      payments: [deposit],
+    });
+    expect(availableFulfillmentActions(shipping, now)).toEqual(['OVERRIDE_SHIPPING_FEE']);
+    expect(availableFulfillmentActions(shipping, deposit.expiresAt as Date)).toEqual([]);
+  });
+
+  it.each([
+    [
+      'preparing without shipment',
+      { status: 'PROCESSING', fulfillmentStatus: 'PREPARING', shipments: [] },
+      ['CREATE_SHIPMENT'],
+    ],
+    [
+      'created shipment',
+      {
+        status: 'PROCESSING',
+        fulfillmentStatus: 'PREPARING',
+        shipments: [shipment('CREATED')],
+      },
+      ['HAND_OVER_SHIPMENT'],
+    ],
+    [
+      'in transit shipment',
+      {
+        status: 'PROCESSING',
+        fulfillmentStatus: 'IN_TRANSIT',
+        shipments: [shipment('HANDED_TO_CARRIER')],
+      },
+      ['MARK_SHIPMENT_DELIVERED', 'MARK_SHIPMENT_FAILED'],
+    ],
+    [
+      'failed shipment',
+      {
+        status: 'PROCESSING',
+        fulfillmentStatus: 'FAILED',
+        shipments: [shipment('FAILED')],
+      },
+      ['MARK_SHIPMENT_RETURNED'],
+    ],
+  ] satisfies Array<[string, Partial<PolicyOrder>, string[]]>)(
+    'returns shipping action for %s',
+    (_label, overrides, expected) => {
+      expect(
+        availableFulfillmentActions(
+          order({
+            fulfillmentType: 'SHIPPING',
+            pickupHoldUntil: null,
+            ...overrides,
+          }),
+          now,
+        ),
+      ).toEqual(expected);
+    },
+  );
 
   it('recognizes an equal hold extension as a replay', () => {
     expect(validatePickupHoldExtension(order(), currentHold, now)).toEqual({
@@ -126,3 +199,24 @@ describe('pickup fulfillment policy', () => {
     );
   });
 });
+
+function shippingDeposit(): FulfillmentOrderRecord['payments'][number] {
+  return {
+    id: cryptoId(10),
+    purpose: 'DEPOSIT',
+    method: 'BANK_TRANSFER',
+    status: 'AWAITING_PROOF',
+    submittedAt: null,
+    expiresAt: new Date('2026-08-23T04:00:00.000Z'),
+  } as FulfillmentOrderRecord['payments'][number];
+}
+
+function shipment(
+  status: FulfillmentOrderRecord['shipments'][number]['status'],
+): FulfillmentOrderRecord['shipments'][number] {
+  return { id: cryptoId(11), status } as FulfillmentOrderRecord['shipments'][number];
+}
+
+function cryptoId(suffix: number): string {
+  return `0198e5a0-0000-7000-8000-${suffix.toString().padStart(12, '0')}`;
+}

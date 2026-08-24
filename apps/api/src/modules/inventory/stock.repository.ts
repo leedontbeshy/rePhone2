@@ -103,6 +103,18 @@ export class StockRepository {
     return client.stockMovement.create({ data });
   }
 
+  public findShipmentReturn(referenceId: string, variantId: string, client: DbClient) {
+    return client.stockMovement.findFirst({
+      where: {
+        type: 'RETURN',
+        referenceType: 'SHIPMENT',
+        referenceId,
+        variantId,
+      },
+      orderBy: { id: 'asc' },
+    });
+  }
+
   public async lockLevels(ids: string[], client: Prisma.TransactionClient): Promise<void> {
     const uniqueIds = [...new Set(ids)].sort();
     await client.$queryRaw`

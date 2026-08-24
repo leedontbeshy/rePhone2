@@ -5,6 +5,7 @@ import {
   type MailMessage,
   type MailProvider,
 } from '../../common/providers/mail-provider.js';
+import { safeHttpsUrl } from '../../common/security/safe-https-url.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { OrderDetailDto } from '../orders/order-response.dto.js';
@@ -95,6 +96,43 @@ export class OrderNotificationService {
       subject: `[rePhone] Đơn ${order.orderNumber} đã hoàn tất`,
       text: `Đơn ${order.orderNumber} đã hoàn tất. Đã thanh toán: ${formatVnd(order.pricing.paidAmount)}. Đã hoàn: ${formatVnd(order.pricing.refundedAmount)}. ${warrantyText} Xem đơn: ${link}`,
       html: `<p>Đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã hoàn tất.</p><p>Đã thanh toán: ${escapeHtml(formatVnd(order.pricing.paidAmount))}. Đã hoàn: ${escapeHtml(formatVnd(order.pricing.refundedAmount))}.</p><p>${escapeHtml(warrantyText)}</p><p><a href="${escapeHtml(link)}">Xem đơn hàng</a></p>`,
+    });
+  }
+
+  public sendShippingFeeUpdated(order: {
+    id: string;
+    orderNumber: string;
+    contact: { email: string };
+    pricing: { shippingFee: string; grandTotal: string; depositRequired: string };
+  }): Promise<void> {
+    const link = this.orderLink(order.orderNumber);
+    return this.sendSafely('order.shipping_fee_updated', order.id, {
+      to: order.contact.email,
+      subject: `[rePhone] Phí giao đơn ${order.orderNumber} đã cập nhật`,
+      text: `Phí giao mới của đơn ${order.orderNumber}: ${formatVnd(order.pricing.shippingFee)}. Tổng đơn: ${formatVnd(order.pricing.grandTotal)}. Cọc cần thanh toán: ${formatVnd(order.pricing.depositRequired)}. Xem đơn: ${link}`,
+      html: `<p>Phí giao của đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã cập nhật thành ${escapeHtml(formatVnd(order.pricing.shippingFee))}.</p><p>Tổng đơn: ${escapeHtml(formatVnd(order.pricing.grandTotal))}. Cọc cần thanh toán: ${escapeHtml(formatVnd(order.pricing.depositRequired))}.</p><p><a href="${escapeHtml(link)}">Xem đơn hàng</a></p>`,
+    });
+  }
+
+  public sendShipmentHandedOver(order: {
+    id: string;
+    orderNumber: string;
+    contact: { email: string };
+    shipments: Array<{
+      status: string;
+      carrierName: string;
+      trackingCode: string;
+      trackingUrl: string | null;
+    }>;
+  }): Promise<void> {
+    const shipment = order.shipments.find(({ status }) => status === 'HANDED_TO_CARRIER');
+    if (shipment === undefined) return Promise.resolve();
+    const link = safeHttpsUrl(shipment.trackingUrl) ?? this.orderLink(order.orderNumber);
+    return this.sendSafely('shipment.handed_over', order.id, {
+      to: order.contact.email,
+      subject: `[rePhone] Đơn ${order.orderNumber} đã bàn giao vận chuyển`,
+      text: `Đơn ${order.orderNumber} đã bàn giao cho ${shipment.carrierName}. Mã vận đơn: ${shipment.trackingCode}. Theo dõi: ${link}`,
+      html: `<p>Đơn <strong>${escapeHtml(order.orderNumber)}</strong> đã bàn giao cho ${escapeHtml(shipment.carrierName)}.</p><p>Mã vận đơn: <strong>${escapeHtml(shipment.trackingCode)}</strong>.</p><p><a href="${escapeHtml(link)}">Theo dõi đơn hàng</a></p>`,
     });
   }
 

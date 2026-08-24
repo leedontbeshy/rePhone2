@@ -1,4 +1,5 @@
 import { ApiError } from '../../common/errors/api-error.js';
+import { safeHttpsUrl } from '../../common/security/safe-https-url.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { OrderDetailDto } from './order-response.dto.js';
@@ -139,6 +140,7 @@ export function projectOrder(
       reason: refund.reason,
       createdAt: refund.createdAt.toISOString(),
     })),
+    shipment: projectPublicShipment(order.shipments[0]),
     customerNote: order.customerNote,
     placedAt: order.placedAt.toISOString(),
     confirmedAt: order.confirmedAt?.toISOString() ?? null,
@@ -152,6 +154,20 @@ export function projectOrder(
       ...(canCancel(order) ? (['CANCEL'] as const) : []),
       ...(canSubmitPaymentProof(order, now) ? (['SUBMIT_PAYMENT_PROOF'] as const) : []),
     ],
+  };
+}
+
+function projectPublicShipment(shipment: CustomerOrderRecord['shipments'][number] | undefined) {
+  if (shipment === undefined) return null;
+  return {
+    carrierName: shipment.carrierName,
+    trackingCode: shipment.trackingCode,
+    trackingUrl: safeHttpsUrl(shipment.trackingUrl),
+    status: shipment.status,
+    shippedAt: shipment.shippedAt?.toISOString() ?? null,
+    deliveredAt: shipment.deliveredAt?.toISOString() ?? null,
+    failedAt: shipment.failedAt?.toISOString() ?? null,
+    returnedAt: shipment.returnedAt?.toISOString() ?? null,
   };
 }
 

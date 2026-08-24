@@ -30,7 +30,7 @@ export function CatalogHeader() {
         ) : null}
         {status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN') ? (
           <>
-            <Link href="/backoffice/orders">Đơn pickup</Link>
+            <Link href="/backoffice/orders">Đơn hàng</Link>
             <Link href="/backoffice/payments">Review cọc</Link>
           </>
         ) : null}

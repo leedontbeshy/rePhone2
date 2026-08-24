@@ -170,7 +170,7 @@ describe('Slice 08 pickup fulfillment database invariants', () => {
     expect(order).toMatchObject({
       fulfillmentType: 'SHIPPING',
       status: 'CONFIRMED',
-      fulfillmentStatus: 'PREPARING',
+      fulfillmentStatus: 'PENDING',
     });
   });
 
@@ -564,7 +564,7 @@ async function createOrderFixture(
       fulfillmentLocationId: stock.locationId,
       ...(shipping
         ? {
-            fulfillmentStatus: 'PREPARING' as const,
+            fulfillmentStatus: 'PENDING' as const,
             shippingAddressSnapshot: {
               receiverName: 'Khách kiểm thử Slice 08',
               phone: '0900000000',

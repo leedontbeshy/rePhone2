@@ -1,9 +1,14 @@
-import type { FulfillmentOrderRecord } from '../order-transaction-ports/fulfillment-order.gateway.js';
+import type {
+  FulfillmentOrderListRecord,
+  FulfillmentOrderRecord,
+} from '../order-transaction-ports/fulfillment-order.gateway.js';
 import type {
   BackofficeOrderDetailDto,
   BackofficeOrderListItemDto,
+  BackofficeOrderShipmentDto,
 } from './fulfillment-response.dto.js';
-import { availableFulfillmentActions } from './pickup-fulfillment.policy.js';
+import { availableFulfillmentActions } from './fulfillment-action.policy.js';
+import type { ShipmentRecord } from './shipment.gateway.js';
 
 export function projectBackofficeOrderDetail(
   order: FulfillmentOrderRecord,
@@ -52,7 +57,22 @@ export function projectBackofficeOrderDetail(
     pricing: {
       subtotal: order.subtotal.toString(),
       voucherDiscountAmount: order.voucherDiscountAmount.toString(),
+      shippingFeeOriginal: order.shippingFeeOriginal.toString(),
       shippingFee: order.shippingFee.toString(),
+      shippingFeeOverride:
+        order.shippingFeeOverrideReason === null ||
+        order.shippingFeeOverriddenAt === null ||
+        order.shippingFeeOverriddenBy === null
+          ? null
+          : {
+              reason: order.shippingFeeOverrideReason,
+              overriddenAt: order.shippingFeeOverriddenAt.toISOString(),
+              overriddenBy: {
+                id: order.shippingFeeOverriddenBy.id,
+                fullName: order.shippingFeeOverriddenBy.fullName,
+                employeeCode: order.shippingFeeOverriddenBy.employeeCode,
+              },
+            },
       grandTotal: order.grandTotal.toString(),
       depositRequired: order.depositRequired.toString(),
       paidAmount: order.paidAmount.toString(),
@@ -85,19 +105,7 @@ export function projectBackofficeOrderDetail(
       status: refund.status,
       createdAt: refund.createdAt.toISOString(),
     })),
-    shipments: order.shipments.map((shipment) => ({
-      id: shipment.id,
-      attemptNumber: shipment.attemptNumber,
-      carrierName: shipment.carrierName,
-      trackingCode: shipment.trackingCode,
-      trackingUrl: shipment.trackingUrl,
-      status: shipment.status,
-      shippedAt: shipment.shippedAt?.toISOString() ?? null,
-      deliveredAt: shipment.deliveredAt?.toISOString() ?? null,
-      failedAt: shipment.failedAt?.toISOString() ?? null,
-      returnedAt: shipment.returnedAt?.toISOString() ?? null,
-      failureReason: shipment.failureReason,
-    })),
+    shipments: order.shipments.map(projectBackofficeShipment),
     voucherCode: order.voucherCodeSnapshot,
     customerNote: order.customerNote,
     internalNote: order.internalNote,
@@ -114,8 +122,42 @@ export function projectBackofficeOrderDetail(
   };
 }
 
+export function projectBackofficeShipment(shipment: ShipmentRecord): BackofficeOrderShipmentDto {
+  return {
+    id: shipment.id,
+    orderId: shipment.orderId,
+    attemptNumber: shipment.attemptNumber,
+    carrierName: shipment.carrierName,
+    trackingCode: shipment.trackingCode,
+    trackingUrl: shipment.trackingUrl,
+    status: shipment.status,
+    shippedAt: shipment.shippedAt?.toISOString() ?? null,
+    deliveredAt: shipment.deliveredAt?.toISOString() ?? null,
+    failedAt: shipment.failedAt?.toISOString() ?? null,
+    returnedAt: shipment.returnedAt?.toISOString() ?? null,
+    failureReason: shipment.failureReason,
+    returnedToLocation:
+      shipment.returnedToLocation === null
+        ? null
+        : {
+            id: shipment.returnedToLocation.id,
+            code: shipment.returnedToLocation.code,
+            name: shipment.returnedToLocation.name,
+            type: shipment.returnedToLocation.type,
+          },
+    returnNote: shipment.returnNote,
+    createdBy: {
+      id: shipment.createdBy.id,
+      fullName: shipment.createdBy.fullName,
+      employeeCode: shipment.createdBy.employeeCode,
+    },
+    createdAt: shipment.createdAt.toISOString(),
+    updatedAt: shipment.updatedAt.toISOString(),
+  };
+}
+
 export function projectBackofficeOrderListItem(
-  order: FulfillmentOrderRecord,
+  order: FulfillmentOrderListRecord,
   now: Date,
 ): BackofficeOrderListItemDto {
   return {
@@ -143,7 +185,10 @@ export function projectBackofficeOrderListItem(
   };
 }
 
-function isPickupOverdue(order: FulfillmentOrderRecord, now: Date): boolean {
+function isPickupOverdue(
+  order: Pick<FulfillmentOrderRecord, 'fulfillmentType' | 'pickupHoldUntil' | 'status'>,
+  now: Date,
+): boolean {
   return (
     order.fulfillmentType === 'PICKUP' &&
     order.pickupHoldUntil !== null &&

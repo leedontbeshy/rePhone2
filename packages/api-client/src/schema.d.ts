@@ -548,6 +548,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/orders/{id}/override-shipping-fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["overrideShippingFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/shipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createShipment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/orders/{id}/start-preparing": {
         parameters: {
             query?: never;
@@ -755,6 +787,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createBackofficeVariant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/shipments/{id}/hand-over": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["handOverShipment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/shipments/{id}/mark-delivered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markShipmentDelivered"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/shipments/{id}/mark-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markShipmentFailed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/shipments/{id}/mark-returned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markShipmentReturned"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1505,6 +1601,12 @@ export interface components {
             /** @enum {string} */
             status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
         };
+        BackofficeActorDto: {
+            employeeCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+        };
         BackofficeMediaSummaryDto: {
             altText?: string | null;
             /** Format: uuid */
@@ -1520,7 +1622,7 @@ export interface components {
             phone: string;
         };
         BackofficeOrderDetailDto: {
-            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP")[];
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED")[];
             /** Format: date-time */
             cancelledAt?: string | null;
             cancelReason?: string | null;
@@ -1577,7 +1679,7 @@ export interface components {
             warrantyDays: number;
         };
         BackofficeOrderListItemDto: {
-            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP")[];
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED")[];
             balanceDue: string;
             customerName: string;
             firstItemName: string;
@@ -1635,6 +1737,8 @@ export interface components {
             paidAmount: string;
             refundedAmount: string;
             shippingFee: string;
+            shippingFeeOriginal: string;
+            shippingFeeOverride?: components["schemas"]["BackofficeShippingFeeOverrideDto"] | null;
             subtotal: string;
             voucherDiscountAmount: string;
         };
@@ -1651,14 +1755,21 @@ export interface components {
             attemptNumber: number;
             carrierName: string;
             /** Format: date-time */
+            createdAt: string;
+            createdBy?: components["schemas"]["BackofficeActorDto"] | null;
+            /** Format: date-time */
             deliveredAt?: string | null;
             /** Format: date-time */
             failedAt?: string | null;
             failureReason?: string | null;
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            orderId: string;
             /** Format: date-time */
             returnedAt?: string | null;
+            returnedToLocation?: components["schemas"]["BackofficeOrderLocationDto"] | null;
+            returnNote?: string | null;
             /** Format: date-time */
             shippedAt?: string | null;
             /** @enum {string} */
@@ -1666,6 +1777,11 @@ export interface components {
             trackingCode: string;
             /** Format: uri */
             trackingUrl?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BackofficeOrderShipmentResponse: {
+            data: components["schemas"]["BackofficeOrderShipmentDto"];
         };
         BackofficePaymentDetailDto: {
             evidenceAvailable: boolean;
@@ -1822,6 +1938,12 @@ export interface components {
             status: "ACTIVE" | "RELEASED" | "EXPIRED" | "CONSUMED";
             /** @enum {string} */
             targetType: "INVENTORY_UNIT" | "STOCK_LEVEL";
+        };
+        BackofficeShippingFeeOverrideDto: {
+            /** Format: date-time */
+            overriddenAt: string;
+            overriddenBy: components["schemas"]["BackofficeActorDto"];
+            reason: string;
         };
         BackofficeVariantDto: {
             accessoryAttributes?: Record<string, never> | null;
@@ -2088,6 +2210,12 @@ export interface components {
             type: "IPHONE" | "ACCESSORY";
             /** Format: uuid */
             warrantyPolicyId?: string;
+        };
+        CreateShipmentDto: {
+            carrierName: string;
+            trackingCode: string;
+            /** Format: uri */
+            trackingUrl?: string;
         };
         CreateVariantDto: {
             accessoryAttributes?: {
@@ -2389,6 +2517,18 @@ export interface components {
             email: string;
             password: string;
         };
+        MarkShipmentDeliveredDto: {
+            /** @default false */
+            confirmCodCollected: boolean;
+        };
+        MarkShipmentFailedDto: {
+            reason: string;
+        };
+        MarkShipmentReturnedDto: {
+            reason: string;
+            /** Format: uuid */
+            returnedToLocationId: string;
+        };
         MaskedBackofficeIdentifierDto: {
             maskedValue: string;
             /** @enum {string} */
@@ -2447,6 +2587,7 @@ export interface components {
             placedAt: string;
             pricing: components["schemas"]["OrderPricingDto"];
             refunds: components["schemas"]["OrderRefundDto"][];
+            shipment?: components["schemas"]["OrderShipmentDto"] | null;
             shippingAddress?: Record<string, never> | null;
             /** @enum {string} */
             status: "PLACED" | "CONFIRMED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
@@ -2486,6 +2627,7 @@ export interface components {
             paymentStatus: string;
             /** Format: date-time */
             placedAt: string;
+            shipment?: components["schemas"]["OrderShipmentDto"] | null;
             status: string;
             totalItemQuantity: number;
         };
@@ -2550,6 +2692,22 @@ export interface components {
             /** @enum {string} */
             status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
         };
+        OrderShipmentDto: {
+            carrierName: string;
+            /** Format: date-time */
+            deliveredAt?: string | null;
+            /** Format: date-time */
+            failedAt?: string | null;
+            /** Format: date-time */
+            returnedAt?: string | null;
+            /** Format: date-time */
+            shippedAt?: string | null;
+            /** @enum {string} */
+            status: "CREATED" | "HANDED_TO_CARRIER" | "DELIVERED" | "FAILED" | "RETURNED" | "CANCELLED";
+            trackingCode: string;
+            /** Format: uri */
+            trackingUrl?: string | null;
+        };
         OrderWarrantyDto: {
             /** Format: date-time */
             endAt: string;
@@ -2560,6 +2718,10 @@ export interface components {
             /** @enum {string} */
             status: "ACTIVE" | "VOIDED";
             warrantyCode: string;
+        };
+        OverrideShippingFeeDto: {
+            reason: string;
+            shippingFee: string;
         };
         PaginationDto: {
             page: number;
@@ -6358,6 +6520,195 @@ export interface operations {
             };
         };
     };
+    overrideShippingFee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideShippingFeeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    createShipment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateShipmentDto"];
+            };
+        };
+        responses: {
+            /** @description Exact replay */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderShipmentResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderShipmentResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     startPreparingOrder: {
         parameters: {
             query?: never;
@@ -7888,6 +8239,398 @@ export interface operations {
             };
         };
     };
+    handOverShipment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FULLY_PAID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    markShipmentDelivered: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkShipmentDeliveredDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FULLY_PAID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    markShipmentFailed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkShipmentFailedDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FULLY_PAID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    markShipmentReturned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkShipmentReturnedDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description ORDER_NOT_FULLY_PAID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     listBackofficeStockLevels: {
         parameters: {
             query?: {
@@ -7947,7 +8690,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8041,7 +8784,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8129,7 +8872,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8217,7 +8960,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8305,7 +9048,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -8393,7 +9136,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;

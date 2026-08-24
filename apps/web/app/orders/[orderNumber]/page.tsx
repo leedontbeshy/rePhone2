@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiError, captureGuestOrderToken } from '../../../lib/order-access';
 import { submitPaymentProof } from '../../../lib/payment-api';
+import { safeHttpsUrl } from '../../../lib/safe-https-url';
 import { useAuth } from '../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../catalog-ui';
 
@@ -14,9 +15,20 @@ type GeneratedPayment = components['schemas']['OrderPaymentDto'];
 type OrderPayment = GeneratedPayment;
 type OrderItem = GeneratedOrder['items'][number];
 type PublicOrderWarranty = NonNullable<OrderItem['warranty']>;
-type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts'> & {
+interface PublicShipment {
+  carrierName: string;
+  trackingCode: string;
+  trackingUrl?: string | null;
+  status: 'CREATED' | 'HANDED_TO_CARRIER' | 'DELIVERED' | 'FAILED' | 'RETURNED' | 'CANCELLED';
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  failedAt?: string | null;
+  returnedAt?: string | null;
+}
+type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts' | 'shipment'> & {
   availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
   paymentAttempts: OrderPayment[];
+  shipment?: PublicShipment | null;
 };
 
 export default function OrderDetailPage() {
@@ -230,7 +242,11 @@ export default function OrderDetailPage() {
                     <pre className="address-snapshot">{formatAddress(order.shippingAddress)}</pre>
                   )}
                 </div>
-                {order.fulfillmentType === 'PICKUP' ? <PickupTimeline order={order} /> : null}
+                {order.fulfillmentType === 'PICKUP' ? (
+                  <PickupTimeline order={order} />
+                ) : (
+                  <ShippingTimeline order={order} />
+                )}
                 {order.paymentAttempts.map((payment) => (
                   <div className="detail-panel" key={payment.id}>
                     <div className="payment-panel-heading">
@@ -481,6 +497,66 @@ function PickupTimeline({ order }: { order: Order }) {
   );
 }
 
+function ShippingTimeline({ order }: { order: Order }) {
+  const shipment = order.shipment ?? null;
+  const trackingUrl = safeHttpsUrl(shipment?.trackingUrl ?? null);
+  return (
+    <section className="detail-panel pickup-customer-panel">
+      <h2>Tiến độ giao hàng</h2>
+      <p>{shippingStatusMessage(order.fulfillmentStatus, shipment?.status)}</p>
+      <ol className="fulfillment-timeline">
+        <CustomerTimeline label="Đặt đơn" at={order.placedAt} />
+        <CustomerTimeline label="Đã xác nhận" at={order.confirmedAt} />
+        <CustomerTimeline label="Bàn giao vận chuyển" at={shipment?.shippedAt ?? null} />
+        {shipment?.status === 'FAILED' || shipment?.status === 'RETURNED' ? (
+          <CustomerTimeline label="Giao không thành công" at={shipment.failedAt} />
+        ) : (
+          <CustomerTimeline label="Giao thành công" at={shipment?.deliveredAt ?? null} />
+        )}
+        {shipment?.status === 'RETURNED' ? (
+          <CustomerTimeline label="Hàng đã hoàn về" at={shipment.returnedAt} />
+        ) : null}
+        <CustomerTimeline label="Hoàn tất đơn" at={order.completedAt} />
+      </ol>
+      {shipment === null ? (
+        <p>Đơn chưa có mã vận chuyển.</p>
+      ) : (
+        <dl className="stacked-specs">
+          <div>
+            <dt>Đơn vị vận chuyển</dt>
+            <dd>{shipment.carrierName}</dd>
+          </div>
+          <div>
+            <dt>Mã vận đơn</dt>
+            <dd>{shipment.trackingCode}</dd>
+          </div>
+          <div>
+            <dt>Trạng thái</dt>
+            <dd>{shipment.status}</dd>
+          </div>
+        </dl>
+      )}
+      {trackingUrl === null ? null : (
+        <a className="button" href={trackingUrl} target="_blank" rel="noopener noreferrer">
+          Tra cứu vận đơn
+        </a>
+      )}
+    </section>
+  );
+}
+
+function CustomerTimeline({ label, at }: { label: string; at: string | null | undefined }) {
+  return (
+    <li className={at == null ? 'pending' : 'complete'}>
+      <span aria-hidden="true" />
+      <div>
+        <strong>{label}</strong>
+        <time>{at == null ? 'Chưa thực hiện' : formatDateTime(at)}</time>
+      </div>
+    </li>
+  );
+}
+
 function canSubmitProof(order: Order, payment: OrderPayment): boolean {
   if (!order.availableActions.includes('SUBMIT_PAYMENT_PROOF')) return false;
   if (payment.method !== 'BANK_TRANSFER') return false;
@@ -500,6 +576,19 @@ function pickupStatusMessage(status: string): string {
   if (status === 'COMPLETED') return 'Bạn đã nhận hàng thành công.';
   if (status === 'CANCELLED') return 'Đơn pickup đã được hủy.';
   return `Trạng thái hiện tại: ${status}.`;
+}
+
+function shippingStatusMessage(fulfillmentStatus: string, shipmentStatus?: string): string {
+  if (fulfillmentStatus === 'PENDING') return 'Cửa hàng đang chờ xác nhận cọc.';
+  if (fulfillmentStatus === 'PREPARING') return 'Cửa hàng đang chuẩn bị kiện hàng.';
+  if (fulfillmentStatus === 'IN_TRANSIT') return 'Kiện hàng đang được vận chuyển.';
+  if (fulfillmentStatus === 'COMPLETED') return 'Đơn đã được giao và hoàn tất.';
+  if (fulfillmentStatus === 'FAILED') return 'Lần giao hàng không thành công.';
+  if (fulfillmentStatus === 'RETURNED') return 'Kiện hàng đã được hoàn về rePhone.';
+  if (fulfillmentStatus === 'CANCELLED') return 'Đơn giao hàng đã được hủy.';
+  return shipmentStatus === undefined
+    ? `Trạng thái hiện tại: ${fulfillmentStatus}.`
+    : `Trạng thái vận đơn: ${shipmentStatus}.`;
 }
 
 function paymentTitle(payment: OrderPayment): string {

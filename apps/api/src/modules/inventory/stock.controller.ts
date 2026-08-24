@@ -49,7 +49,10 @@ const STOCK_ERRORS = [
   { status: 401 as const, description: 'AUTH_REQUIRED or ACCESS_TOKEN_INVALID' },
   { status: 403 as const, description: 'FORBIDDEN' },
   { status: 404 as const, description: 'RESOURCE_NOT_FOUND' },
-  { status: 409 as const, description: 'INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION' },
+  {
+    status: 409 as const,
+    description: 'DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION',
+  },
   { status: 429 as const, description: 'RATE_LIMITED' },
   { status: 500 as const, description: 'INTERNAL_ERROR' },
 ];

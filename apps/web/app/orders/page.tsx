@@ -7,7 +7,15 @@ import { apiError } from '../../lib/order-access';
 import { useAuth } from '../auth-provider';
 import { CatalogHeader, formatMoney } from '../catalog-ui';
 
-type OrderListItem = components['schemas']['OrderListItemDto'];
+type GeneratedOrderListItem = components['schemas']['OrderListItemDto'];
+type OrderListItem = Omit<GeneratedOrderListItem, 'shipment'> & {
+  shipment?: {
+    carrierName: string;
+    trackingCode: string;
+    trackingUrl?: string | null;
+    status: string;
+  } | null;
+};
 
 export default function OrdersPage() {
   const { client, status, user } = useAuth();
@@ -91,6 +99,12 @@ export default function OrdersPage() {
                   {order.totalItemQuantity} sản phẩm ·{' '}
                   {order.fulfillmentType === 'PICKUP' ? 'Nhận tại cửa hàng' : 'Giao hàng'}
                 </small>
+                {order.fulfillmentType === 'SHIPPING' && order.shipment ? (
+                  <small>
+                    {order.shipment.carrierName} · {order.shipment.trackingCode} ·{' '}
+                    {order.shipment.status}
+                  </small>
+                ) : null}
               </div>
               <div>
                 <strong>{formatMoney(order.grandTotal)} ₫</strong>

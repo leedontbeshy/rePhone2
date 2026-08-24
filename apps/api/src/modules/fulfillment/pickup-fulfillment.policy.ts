@@ -1,6 +1,5 @@
 import { ApiError } from '../../common/errors/api-error.js';
 import type { FulfillmentOrderRecord } from '../order-transaction-ports/fulfillment-order.gateway.js';
-import type { FulfillmentAction } from './fulfillment-response.dto.js';
 
 const TERMINAL_FULFILLMENT = ['COMPLETED', 'CANCELLED', 'IN_TRANSIT', 'FAILED', 'RETURNED'];
 
@@ -46,36 +45,4 @@ export function validatePickupHoldExtension(
     ]);
   }
   return { replayed: false, current };
-}
-
-export function availableFulfillmentActions(
-  order: FulfillmentOrderRecord,
-  now: Date,
-): FulfillmentAction[] {
-  if (order.status === 'COMPLETED' || order.status === 'CANCELLED') return [];
-  const pickupValid =
-    order.fulfillmentType === 'PICKUP' &&
-    order.pickupHoldUntil !== null &&
-    now < order.pickupHoldUntil;
-  const actions: FulfillmentAction[] = [];
-  if (pickupValid && order.status === 'PLACED' && order.fulfillmentStatus === 'PENDING') {
-    actions.push('CONFIRM');
-  }
-  if (
-    order.status === 'CONFIRMED' &&
-    ['PENDING', 'PREPARING'].includes(order.fulfillmentStatus) &&
-    (order.fulfillmentType === 'SHIPPING' || pickupValid)
-  ) {
-    actions.push('START_PREPARING');
-  }
-  if (pickupValid && order.status === 'PROCESSING' && order.fulfillmentStatus === 'PREPARING') {
-    actions.push('MARK_PICKUP_READY');
-  }
-  if (pickupValid && !TERMINAL_FULFILLMENT.includes(order.fulfillmentStatus)) {
-    actions.push('EXTEND_PICKUP_HOLD');
-  }
-  if (pickupValid && order.status === 'PROCESSING' && order.fulfillmentStatus === 'READY') {
-    actions.push('COMPLETE_PICKUP');
-  }
-  return actions;
 }

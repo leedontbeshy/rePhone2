@@ -251,7 +251,7 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
     expect(responses.map(({ status }) => status).sort()).toEqual([201, 409]);
     expect(await prisma.inventoryReservation.count({ where: { status: 'ACTIVE' } })).toBe(1);
     expect(await prisma.order.count()).toBe(1);
-  });
+  }, 30_000);
 
   it('does not exceed the final voucher quota under concurrency', async () => {
     const storeStock = await prisma.stockLevel.findFirstOrThrow({

@@ -542,6 +542,26 @@
         ],
         "type": "object"
       },
+      "BackofficeActorDto": {
+        "properties": {
+          "employeeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName"
+        ],
+        "type": "object"
+      },
       "BackofficeMediaSummaryDto": {
         "properties": {
           "altText": {
@@ -596,7 +616,13 @@
                 "START_PREPARING",
                 "MARK_PICKUP_READY",
                 "EXTEND_PICKUP_HOLD",
-                "COMPLETE_PICKUP"
+                "COMPLETE_PICKUP",
+                "OVERRIDE_SHIPPING_FEE",
+                "CREATE_SHIPMENT",
+                "HAND_OVER_SHIPMENT",
+                "MARK_SHIPMENT_DELIVERED",
+                "MARK_SHIPMENT_FAILED",
+                "MARK_SHIPMENT_RETURNED"
               ],
               "type": "string"
             },
@@ -828,7 +854,13 @@
                 "START_PREPARING",
                 "MARK_PICKUP_READY",
                 "EXTEND_PICKUP_HOLD",
-                "COMPLETE_PICKUP"
+                "COMPLETE_PICKUP",
+                "OVERRIDE_SHIPPING_FEE",
+                "CREATE_SHIPMENT",
+                "HAND_OVER_SHIPMENT",
+                "MARK_SHIPMENT_DELIVERED",
+                "MARK_SHIPMENT_FAILED",
+                "MARK_SHIPMENT_RETURNED"
               ],
               "type": "string"
             },
@@ -1054,6 +1086,19 @@
             "pattern": "^\\d+$",
             "type": "string"
           },
+          "shippingFeeOriginal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "shippingFeeOverride": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeShippingFeeOverrideDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "subtotal": {
             "pattern": "^\\d+$",
             "type": "string"
@@ -1066,6 +1111,7 @@
         "required": [
           "subtotal",
           "voucherDiscountAmount",
+          "shippingFeeOriginal",
           "shippingFee",
           "grandTotal",
           "depositRequired",
@@ -1117,6 +1163,19 @@
           "carrierName": {
             "type": "string"
           },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "deliveredAt": {
             "format": "date-time",
             "nullable": true,
@@ -1135,8 +1194,25 @@
             "format": "uuid",
             "type": "string"
           },
+          "orderId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "returnedAt": {
             "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "returnedToLocation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeOrderLocationDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "returnNote": {
             "nullable": true,
             "type": "string"
           },
@@ -1163,14 +1239,32 @@
             "format": "uri",
             "nullable": true,
             "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
           }
         },
         "required": [
           "id",
+          "orderId",
           "attemptNumber",
           "carrierName",
           "trackingCode",
-          "status"
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "BackofficeOrderShipmentResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BackofficeOrderShipmentDto"
+          }
+        },
+        "required": [
+          "data"
         ],
         "type": "object"
       },
@@ -1755,6 +1849,26 @@
           "holdReason",
           "targetType",
           "quantity"
+        ],
+        "type": "object"
+      },
+      "BackofficeShippingFeeOverrideDto": {
+        "properties": {
+          "overriddenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "overriddenBy": {
+            "$ref": "#/components/schemas/BackofficeActorDto"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "overriddenAt",
+          "overriddenBy"
         ],
         "type": "object"
       },
@@ -2797,6 +2911,30 @@
           "brand",
           "name",
           "slug"
+        ],
+        "type": "object"
+      },
+      "CreateShipmentDto": {
+        "properties": {
+          "carrierName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "trackingCode": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "trackingUrl": {
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "carrierName",
+          "trackingCode"
         ],
         "type": "object"
       },
@@ -3928,6 +4066,46 @@
         ],
         "type": "object"
       },
+      "MarkShipmentDeliveredDto": {
+        "properties": {
+          "confirmCodCollected": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "MarkShipmentFailedDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "MarkShipmentReturnedDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "returnedToLocationId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "returnedToLocationId",
+          "reason"
+        ],
+        "type": "object"
+      },
       "MaskedBackofficeIdentifierDto": {
         "properties": {
           "maskedValue": {
@@ -4137,6 +4315,15 @@
             },
             "type": "array"
           },
+          "shipment": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderShipmentDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "shippingAddress": {
             "nullable": true,
             "type": "object"
@@ -4301,6 +4488,15 @@
           "placedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "shipment": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderShipmentDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "status": {
             "type": "string"
@@ -4571,6 +4767,58 @@
         ],
         "type": "object"
       },
+      "OrderShipmentDto": {
+        "properties": {
+          "carrierName": {
+            "type": "string"
+          },
+          "deliveredAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "failedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "returnedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "shippedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATED",
+              "HANDED_TO_CARRIER",
+              "DELIVERED",
+              "FAILED",
+              "RETURNED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "trackingCode": {
+            "type": "string"
+          },
+          "trackingUrl": {
+            "format": "uri",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "carrierName",
+          "trackingCode",
+          "status"
+        ],
+        "type": "object"
+      },
       "OrderWarrantyDto": {
         "properties": {
           "endAt": {
@@ -4605,6 +4853,24 @@
           "endAt",
           "isValid",
           "isExpired"
+        ],
+        "type": "object"
+      },
+      "OverrideShippingFeeDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          },
+          "shippingFee": {
+            "pattern": "^\\d{1,15}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "shippingFee",
+          "reason"
         ],
         "type": "object"
       },
@@ -11309,6 +11575,268 @@
         ]
       }
     },
+    "/api/v1/backoffice/orders/{id}/override-shipping-fee": {
+      "post": {
+        "operationId": "overrideShippingFee",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideShippingFeeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/shipment": {
+      "post": {
+        "operationId": "createShipment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateShipmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderShipmentResponse"
+                }
+              }
+            },
+            "description": "Exact replay"
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderShipmentResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
     "/api/v1/backoffice/orders/{id}/start-preparing": {
       "post": {
         "operationId": "startPreparingOrder",
@@ -13546,6 +14074,540 @@
         ]
       }
     },
+    "/api/v1/backoffice/shipments/{id}/hand-over": {
+      "post": {
+        "operationId": "handOverShipment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FULLY_PAID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-shipments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/shipments/{id}/mark-delivered": {
+      "post": {
+        "operationId": "markShipmentDelivered",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkShipmentDeliveredDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FULLY_PAID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-shipments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/shipments/{id}/mark-failed": {
+      "post": {
+        "operationId": "markShipmentFailed",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkShipmentFailedDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FULLY_PAID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-shipments"
+        ]
+      }
+    },
+    "/api/v1/backoffice/shipments/{id}/mark-returned": {
+      "post": {
+        "operationId": "markShipmentReturned",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkShipmentReturnedDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "ORDER_NOT_FULLY_PAID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "",
+        "tags": [
+          "backoffice-shipments"
+        ]
+      }
+    },
     "/api/v1/backoffice/stock-levels": {
       "get": {
         "operationId": "listBackofficeStockLevels",
@@ -13657,7 +14719,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {
@@ -13856,7 +14918,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {
@@ -13972,7 +15034,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {
@@ -14088,7 +15150,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {
@@ -14204,7 +15266,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {
@@ -14320,7 +15382,7 @@
                 }
               }
             },
-            "description": "INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION"
           },
           "429": {
             "content": {

@@ -24,6 +24,7 @@ Không hứa exactly-once: crash giữa commit và send có thể bỏ email; SM
 | `payment.verified` | Customer/guest | Xác nhận cọc, balance COD | Có |
 | `payment.rejected` | Customer/guest | Lý do, đơn đã cancel/refund rule | Có |
 | `pickup.ready` | Customer/guest | Địa chỉ, hold deadline | Có |
+| `order.shipping_fee_updated` | Customer/guest | Phí giao, tổng tiền và khoản cọc hiện hành | Có |
 | `shipment.handed_over` | Customer/guest | Carrier, tracking code/url | Có |
 | `order.completed` | Customer/guest | Tóm tắt, warranty code/link | Có |
 | `order.cancelled` | Customer/guest | Lý do và refund status nếu có | Có |
