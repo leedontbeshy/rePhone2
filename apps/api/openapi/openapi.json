@@ -388,6 +388,7 @@
               "CART_ITEM_QUANTITY_FIXED",
               "CHECKOUT_REVIEW_REQUIRED",
               "ORDER_NOT_FOUND",
+              "REFUND_AMOUNT_EXCEEDS_PAID",
               "VOUCHER_NOT_APPLICABLE",
               "VOUCHER_USAGE_LIMIT_REACHED",
               "ONE_TIME_TOKEN_INVALID",
@@ -622,7 +623,9 @@
                 "HAND_OVER_SHIPMENT",
                 "MARK_SHIPMENT_DELIVERED",
                 "MARK_SHIPMENT_FAILED",
-                "MARK_SHIPMENT_RETURNED"
+                "MARK_SHIPMENT_RETURNED",
+                "CANCEL_ORDER",
+                "CREATE_REFUND"
               ],
               "type": "string"
             },
@@ -718,6 +721,10 @@
           "pricing": {
             "$ref": "#/components/schemas/BackofficeOrderPricingDto"
           },
+          "refundableAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
           "refunds": {
             "items": {
               "$ref": "#/components/schemas/BackofficeOrderRefundDto"
@@ -759,6 +766,7 @@
           "location",
           "items",
           "pricing",
+          "refundableAmount",
           "reservations",
           "paymentAttempts",
           "refunds",
@@ -860,7 +868,9 @@
                 "HAND_OVER_SHIPMENT",
                 "MARK_SHIPMENT_DELIVERED",
                 "MARK_SHIPMENT_FAILED",
-                "MARK_SHIPMENT_RETURNED"
+                "MARK_SHIPMENT_RETURNED",
+                "CANCEL_ORDER",
+                "CREATE_REFUND"
               ],
               "type": "string"
             },
@@ -1127,12 +1137,33 @@
             "pattern": "^\\d+$",
             "type": "string"
           },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
           },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "processingAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
             "type": "string"
           },
           "status": {
@@ -1144,12 +1175,23 @@
               "CANCELLED"
             ],
             "type": "string"
+          },
+          "terminalAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "terminalReason": {
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
           "id",
           "amount",
+          "method",
           "status",
+          "reason",
           "createdAt"
         ],
         "type": "object"
@@ -2161,6 +2203,19 @@
         ],
         "type": "object"
       },
+      "CancelBackofficeOrderDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
       "CancelOrderDto": {
         "properties": {
           "reason": {
@@ -2737,6 +2792,19 @@
         },
         "type": "object"
       },
+      "CompleteRefundDto": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "type": "object"
+      },
       "CreateAddressDto": {
         "properties": {
           "addressLine": {
@@ -2911,6 +2979,36 @@
           "brand",
           "name",
           "slug"
+        ],
+        "type": "object"
+      },
+      "CreateRefundDto": {
+        "properties": {
+          "amount": {
+            "pattern": "^[1-9][0-9]{0,14}$",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH"
+            ],
+            "type": "string"
+          },
+          "paymentId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "method",
+          "reason"
         ],
         "type": "object"
       },
@@ -4736,12 +4834,30 @@
             "pattern": "^\\d+$",
             "type": "string"
           },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
           },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "processingAt": {
+            "format": "date-time",
+            "nullable": true,
             "type": "string"
           },
           "reason": {
@@ -4756,11 +4872,21 @@
               "CANCELLED"
             ],
             "type": "string"
+          },
+          "terminalAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "terminalReason": {
+            "nullable": true,
+            "type": "string"
           }
         },
         "required": [
           "id",
           "amount",
+          "method",
           "status",
           "reason",
           "createdAt"
@@ -5541,6 +5667,420 @@
         ],
         "type": "object"
       },
+      "RefundActorDto": {
+        "properties": {
+          "employeeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName"
+        ],
+        "type": "object"
+      },
+      "RefundDetailDto": {
+        "properties": {
+          "amount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "availableActions": {
+            "items": {
+              "enum": [
+                "START_PROCESSING",
+                "COMPLETE_BANK_TRANSFER",
+                "COMPLETE_CASH",
+                "REJECT",
+                "CANCEL",
+                "VIEW_EVIDENCE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidenceAvailable": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/RefundOrderSummaryDto"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "payment": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefundPaymentSourceDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "processingAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "processor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefundActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "requestedByType": {
+            "enum": [
+              "CUSTOMER",
+              "STAFF",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "requester": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefundActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "PROCESSING",
+              "COMPLETED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "terminalActor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefundActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "terminalAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "terminalReason": {
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "amount",
+          "method",
+          "status",
+          "requestedByType",
+          "evidenceAvailable",
+          "createdAt",
+          "order",
+          "reason",
+          "availableActions"
+        ],
+        "type": "object"
+      },
+      "RefundDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RefundDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "RefundEvidenceUrlDto": {
+        "properties": {
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "RefundEvidenceUrlResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RefundEvidenceUrlDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "RefundListItemDto": {
+        "properties": {
+          "amount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidenceAvailable": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "processingAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestedByType": {
+            "enum": [
+              "CUSTOMER",
+              "STAFF",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "requester": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RefundActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "REQUESTED",
+              "PROCESSING",
+              "COMPLETED",
+              "REJECTED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "terminalAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "amount",
+          "method",
+          "status",
+          "requestedByType",
+          "evidenceAvailable",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "RefundListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
+      "RefundListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RefundListItemDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/RefundListMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "RefundOrderSummaryDto": {
+        "properties": {
+          "balanceDue": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "customerEmail": {
+            "format": "email",
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paidAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "refundedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "customerName",
+          "customerEmail",
+          "grandTotal",
+          "paidAmount",
+          "refundedAmount",
+          "balanceDue"
+        ],
+        "type": "object"
+      },
+      "RefundPaymentSourceDto": {
+        "properties": {
+          "expectedAmount": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "BANK_TRANSFER",
+              "CASH",
+              "COD",
+              "OTHER"
+            ],
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "DEPOSIT",
+              "BALANCE",
+              "FULL_PAYMENT"
+            ],
+            "type": "string"
+          },
+          "receivedAmount": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "purpose",
+          "method",
+          "status",
+          "expectedAmount"
+        ],
+        "type": "object"
+      },
       "RegisterDto": {
         "properties": {
           "email": {
@@ -5699,6 +6239,16 @@
         "required": [
           "employeeCode"
         ],
+        "type": "object"
+      },
+      "StartRefundProcessingDto": {
+        "properties": {
+          "note": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "StockCommandResponse": {
@@ -5886,6 +6436,19 @@
         "required": [
           "data",
           "meta"
+        ],
+        "type": "object"
+      },
+      "TerminalRefundDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "minLength": 5,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
         ],
         "type": "object"
       },
@@ -10955,6 +11518,132 @@
         ]
       }
     },
+    "/api/v1/backoffice/orders/{id}/cancel": {
+      "post": {
+        "operationId": "cancelBackofficeOrder",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelBackofficeOrderDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackofficeOrderDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "CONCURRENT_MODIFICATION\n\nINVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Cancel an eligible order",
+        "tags": [
+          "backoffice-orders"
+        ]
+      }
+    },
     "/api/v1/backoffice/orders/{id}/complete-pickup": {
       "post": {
         "operationId": "completePickup",
@@ -11698,6 +12387,142 @@
         "summary": "",
         "tags": [
           "backoffice-orders"
+        ]
+      }
+    },
+    "/api/v1/backoffice/orders/{id}/refunds": {
+      "post": {
+        "operationId": "createRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefundDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a manual refund obligation",
+        "tags": [
+          "backoffice-order-refunds"
         ]
       }
     },
@@ -14071,6 +14896,1162 @@
         "summary": "",
         "tags": [
           "backoffice-catalog"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds": {
+      "get": {
+        "operationId": "listBackofficeRefunds",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "required": false,
+            "schema": {
+              "enum": [
+                "createdAt",
+                "amount",
+                "processingAt"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orderNumber",
+            "required": false,
+            "schema": {
+              "maxLength": 64,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "method",
+            "required": false,
+            "schema": {
+              "enum": [
+                "BANK_TRANSFER",
+                "CASH",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "REQUESTED",
+                "PROCESSING",
+                "COMPLETED",
+                "REJECTED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List refund obligations",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}": {
+      "get": {
+        "operationId": "getBackofficeRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get refund operation detail",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/cancel": {
+      "post": {
+        "operationId": "cancelRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminalRefundDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Cancel a requested refund obligation",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/complete-bank-transfer": {
+      "post": {
+        "operationId": "completeBankTransferRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "note": {
+                    "maxLength": 500,
+                    "minLength": 5,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file",
+                  "note"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FILE_TOO_LARGE"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "UNSUPPORTED_FILE_TYPE"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Complete a bank-transfer refund with private evidence",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/complete-cash": {
+      "post": {
+        "operationId": "completeCashRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteRefundDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Complete a cash refund",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/evidence-url": {
+      "get": {
+        "operationId": "getRefundEvidenceUrl",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundEvidenceUrlResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "EVIDENCE_REQUIRED"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "STORAGE_UNAVAILABLE"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Create a short-lived private refund evidence URL",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/reject": {
+      "post": {
+        "operationId": "rejectRefund",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminalRefundDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Reject a requested refund",
+        "tags": [
+          "backoffice-refunds"
+        ]
+      }
+    },
+    "/api/v1/backoffice/refunds/{id}/start-processing": {
+      "post": {
+        "operationId": "startRefundProcessing",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRefundProcessingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or MALFORMED_JSON"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RESOURCE_NOT_FOUND"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Start processing a requested refund",
+        "tags": [
+          "backoffice-refunds"
         ]
       }
     },

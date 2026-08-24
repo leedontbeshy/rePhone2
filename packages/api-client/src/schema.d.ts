@@ -468,6 +468,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an eligible order */
+        post: operations["cancelBackofficeOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/orders/{id}/complete-pickup": {
         parameters: {
             query?: never;
@@ -558,6 +575,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["overrideShippingFee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/orders/{id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a manual refund obligation */
+        post: operations["createRefund"];
         delete?: never;
         options?: never;
         head?: never;
@@ -787,6 +821,142 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createBackofficeVariant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List refund obligations */
+        get: operations["listBackofficeRefunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get refund operation detail */
+        get: operations["getBackofficeRefund"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a requested refund obligation */
+        post: operations["cancelRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/complete-bank-transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a bank-transfer refund with private evidence */
+        post: operations["completeBankTransferRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/complete-cash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a cash refund */
+        post: operations["completeCashRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/evidence-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Create a short-lived private refund evidence URL */
+        get: operations["getRefundEvidenceUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a requested refund */
+        post: operations["rejectRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/refunds/{id}/start-processing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start processing a requested refund */
+        post: operations["startRefundProcessing"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1561,7 +1731,7 @@ export interface components {
         };
         ApiErrorBodyDto: {
             /** @enum {string} */
-            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "ORDER_NOT_FULLY_PAID" | "RESERVATION_EXPIRED" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_EMPTY" | "CART_NOT_FULFILLABLE" | "CART_ITEM_QUANTITY_FIXED" | "CHECKOUT_REVIEW_REQUIRED" | "ORDER_NOT_FOUND" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
+            code: "VALIDATION_FAILED" | "MALFORMED_JSON" | "AUTH_REQUIRED" | "ACCESS_TOKEN_INVALID" | "INVALID_CREDENTIALS" | "SESSION_REVOKED" | "ACCOUNT_UNAVAILABLE" | "FORBIDDEN" | "CSRF_VALIDATION_FAILED" | "RESOURCE_NOT_FOUND" | "FILE_TOO_LARGE" | "UNSUPPORTED_FILE_TYPE" | "DUPLICATE_RESOURCE" | "INVALID_STATE_TRANSITION" | "ORDER_NOT_FULLY_PAID" | "RESERVATION_EXPIRED" | "CONCURRENT_MODIFICATION" | "INVENTORY_NOT_AVAILABLE" | "INVENTORY_INSPECTION_REQUIRED" | "INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET" | "CART_NOT_ACTIVE" | "CART_EMPTY" | "CART_NOT_FULFILLABLE" | "CART_ITEM_QUANTITY_FIXED" | "CHECKOUT_REVIEW_REQUIRED" | "ORDER_NOT_FOUND" | "REFUND_AMOUNT_EXCEEDS_PAID" | "VOUCHER_NOT_APPLICABLE" | "VOUCHER_USAGE_LIMIT_REACHED" | "ONE_TIME_TOKEN_INVALID" | "CURRENT_PASSWORD_INCORRECT" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "STORAGE_UNAVAILABLE" | "INTERNAL_ERROR";
             details: components["schemas"]["ApiErrorDetailDto"][];
             message: string;
             /** @description Correlation ID for diagnostics */
@@ -1622,7 +1792,7 @@ export interface components {
             phone: string;
         };
         BackofficeOrderDetailDto: {
-            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED")[];
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED" | "CANCEL_ORDER" | "CREATE_REFUND")[];
             /** Format: date-time */
             cancelledAt?: string | null;
             cancelReason?: string | null;
@@ -1653,6 +1823,7 @@ export interface components {
             /** Format: date-time */
             placedAt: string;
             pricing: components["schemas"]["BackofficeOrderPricingDto"];
+            refundableAmount: string;
             refunds: components["schemas"]["BackofficeOrderRefundDto"][];
             reservations: components["schemas"]["BackofficeReservationDto"][];
             shipments: components["schemas"]["BackofficeOrderShipmentDto"][];
@@ -1679,7 +1850,7 @@ export interface components {
             warrantyDays: number;
         };
         BackofficeOrderListItemDto: {
-            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED")[];
+            availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED" | "CANCEL_ORDER" | "CREATE_REFUND")[];
             balanceDue: string;
             customerName: string;
             firstItemName: string;
@@ -1745,11 +1916,21 @@ export interface components {
         BackofficeOrderRefundDto: {
             amount: string;
             /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
             createdAt: string;
             /** Format: uuid */
             id: string;
             /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "OTHER";
+            /** Format: date-time */
+            processingAt?: string | null;
+            reason: string;
+            /** @enum {string} */
             status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+            /** Format: date-time */
+            terminalAt?: string | null;
+            terminalReason?: string | null;
         };
         BackofficeOrderShipmentDto: {
             attemptNumber: number;
@@ -2026,6 +2207,9 @@ export interface components {
             qrUrl?: string | null;
             transferContent: string;
         };
+        CancelBackofficeOrderDto: {
+            reason: string;
+        };
         CancelOrderDto: {
             reason: string;
         };
@@ -2166,6 +2350,9 @@ export interface components {
             /** @default false */
             confirmCashCollected: boolean;
         };
+        CompleteRefundDto: {
+            note: string;
+        };
         CreateAddressDto: {
             addressLine: string;
             district: string;
@@ -2210,6 +2397,14 @@ export interface components {
             type: "IPHONE" | "ACCESSORY";
             /** Format: uuid */
             warrantyPolicyId?: string;
+        };
+        CreateRefundDto: {
+            amount: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH";
+            /** Format: uuid */
+            paymentId?: string;
+            reason: string;
         };
         CreateShipmentDto: {
             carrierName: string;
@@ -2685,12 +2880,21 @@ export interface components {
         OrderRefundDto: {
             amount: string;
             /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
             createdAt: string;
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "OTHER";
+            /** Format: date-time */
+            processingAt?: string | null;
             reason: string;
             /** @enum {string} */
             status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+            /** Format: date-time */
+            terminalAt?: string | null;
+            terminalReason?: string | null;
         };
         OrderShipmentDto: {
             carrierName: string;
@@ -2898,6 +3102,109 @@ export interface components {
             /** Format: uuid */
             variantId: string;
         };
+        RefundActorDto: {
+            employeeCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+        };
+        RefundDetailDto: {
+            amount: string;
+            availableActions: ("START_PROCESSING" | "COMPLETE_BANK_TRANSFER" | "COMPLETE_CASH" | "REJECT" | "CANCEL" | "VIEW_EVIDENCE")[];
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            evidenceAvailable: boolean;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "OTHER";
+            note?: string | null;
+            order: components["schemas"]["RefundOrderSummaryDto"];
+            orderNumber: string;
+            payment?: components["schemas"]["RefundPaymentSourceDto"] | null;
+            /** Format: date-time */
+            processingAt?: string | null;
+            processor?: components["schemas"]["RefundActorDto"] | null;
+            reason: string;
+            /** @enum {string} */
+            requestedByType: "CUSTOMER" | "STAFF" | "SYSTEM";
+            requester?: components["schemas"]["RefundActorDto"] | null;
+            /** @enum {string} */
+            status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+            terminalActor?: components["schemas"]["RefundActorDto"] | null;
+            /** Format: date-time */
+            terminalAt?: string | null;
+            terminalReason?: string | null;
+        };
+        RefundDetailResponse: {
+            data: components["schemas"]["RefundDetailDto"];
+        };
+        RefundEvidenceUrlDto: {
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: uri */
+            url: string;
+        };
+        RefundEvidenceUrlResponse: {
+            data: components["schemas"]["RefundEvidenceUrlDto"];
+        };
+        RefundListItemDto: {
+            amount: string;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            evidenceAvailable: boolean;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "OTHER";
+            orderNumber: string;
+            /** Format: date-time */
+            processingAt?: string | null;
+            /** @enum {string} */
+            requestedByType: "CUSTOMER" | "STAFF" | "SYSTEM";
+            requester?: components["schemas"]["RefundActorDto"] | null;
+            /** @enum {string} */
+            status: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+            /** Format: date-time */
+            terminalAt?: string | null;
+        };
+        RefundListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
+        RefundListResponse: {
+            data: components["schemas"]["RefundListItemDto"][];
+            meta: components["schemas"]["RefundListMetaDto"];
+        };
+        RefundOrderSummaryDto: {
+            balanceDue: string;
+            /** Format: email */
+            customerEmail: string;
+            customerName: string;
+            fulfillmentStatus: string;
+            grandTotal: string;
+            /** Format: uuid */
+            id: string;
+            orderNumber: string;
+            paidAmount: string;
+            paymentStatus: string;
+            refundedAmount: string;
+            status: string;
+        };
+        RefundPaymentSourceDto: {
+            expectedAmount: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            method: "BANK_TRANSFER" | "CASH" | "COD" | "OTHER";
+            /** @enum {string} */
+            purpose: "DEPOSIT" | "BALANCE" | "FULL_PAYMENT";
+            receivedAmount?: string | null;
+            status: string;
+        };
         RegisterDto: {
             /** @example customer@example.com */
             email: string;
@@ -2941,6 +3248,9 @@ export interface components {
             employeeCode: string;
             /** Format: date */
             hiredAt?: string | null;
+        };
+        StartRefundProcessingDto: {
+            note?: string;
         };
         StockCommandResponse: {
             data: components["schemas"]["StockCommandResultDto"];
@@ -2993,6 +3303,9 @@ export interface components {
         StockMovementListResponse: {
             data: components["schemas"]["StockMovementDto"][];
             meta: components["schemas"]["StockListMetaDto"];
+        };
+        TerminalRefundDto: {
+            reason: string;
         };
         TransferInventoryUnitDto: {
             reason?: string;
@@ -6069,6 +6382,100 @@ export interface operations {
             };
         };
     };
+    cancelBackofficeOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBackofficeOrderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackofficeOrderDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /**
+             * @description CONCURRENT_MODIFICATION
+             *
+             *     INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     completePickup: {
         parameters: {
             query?: never;
@@ -6581,6 +6988,105 @@ export interface operations {
             };
             /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    createRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRefundDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8210,6 +8716,789 @@ export interface operations {
             };
             /** @description DUPLICATE_RESOURCE or INVALID_STATE_TRANSITION */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listBackofficeRefunds: {
+        parameters: {
+            query?: {
+                sortOrder?: "asc" | "desc";
+                sortBy?: "createdAt" | "amount" | "processingAt";
+                pageSize?: number;
+                page?: number;
+                createdTo?: string;
+                createdFrom?: string;
+                orderNumber?: string;
+                method?: "BANK_TRANSFER" | "CASH" | "OTHER";
+                status?: "REQUESTED" | "PROCESSING" | "COMPLETED" | "REJECTED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getBackofficeRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    cancelRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminalRefundDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    completeBankTransferRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                    note: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FILE_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description UNSUPPORTED_FILE_TYPE */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    completeCashRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteRefundDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getRefundEvidenceUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundEvidenceUrlResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description EVIDENCE_REQUIRED */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description STORAGE_UNAVAILABLE */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    rejectRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminalRefundDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    startRefundProcessing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartRefundProcessingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDetailResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED or MALFORMED_JSON */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description REFUND_AMOUNT_EXCEEDS_PAID, EVIDENCE_REQUIRED or EVIDENCE_INVALID */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
