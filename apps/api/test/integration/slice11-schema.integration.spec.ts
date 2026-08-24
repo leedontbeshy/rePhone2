@@ -252,6 +252,60 @@ describe('Slice 11 warranty and after-sales database invariants', () => {
     });
     expect(afterSeed).toEqual(policy);
   });
+
+  it('does not mutate an inspecting after-sales case or its private attachment metadata', async () => {
+    const fixture = await createAccessoryOrderItem(prisma);
+    const employee = await prisma.user.findUniqueOrThrow({
+      where: { normalizedEmail: 'employee@rephone.local' },
+      select: { id: true },
+    });
+    const requestedAt = new Date('2026-08-25T01:00:00.000Z');
+    const receivedAt = new Date('2026-08-25T02:00:00.000Z');
+    const inspectedAt = new Date('2026-08-25T03:00:00.000Z');
+    const requestId = randomUUID();
+    const attachmentId = randomUUID();
+    const request = await prisma.afterSalesRequest.create({
+      data: {
+        id: requestId,
+        requestNumber: `${REQUEST_NUMBER_PREFIX}${requestSuffix()}`,
+        orderItemId: fixture.orderItemId,
+        customerId: fixture.customerId,
+        type: 'RETURN',
+        issueDescription: 'Phụ kiện gặp lỗi kết nối và đang chờ nhân viên kiểm định.',
+        requestedResolution: null,
+        status: 'INSPECTING',
+        receivedLocationId: fixture.locationId,
+        receivedById: employee.id,
+        receiveNote: 'Đã nhận đủ phụ kiện và hộp sản phẩm từ khách.',
+        attachments: [
+          {
+            id: attachmentId,
+            bucket: PRIVATE_BUCKET,
+            objectPath: `after-sales/${requestId}/${attachmentId}.png`,
+            mimeType: 'image/png',
+            fileSize: 4096,
+            uploadedByType: 'USER',
+            uploadedById: fixture.customerId,
+            uploadedAt: new Date('2026-08-25T01:30:00.000Z').toISOString(),
+          },
+        ],
+        inspectionSummary: 'Đã xác nhận lỗi kết nối ngắt quãng khi truyền dữ liệu.',
+        requestedAt,
+        receivedAt,
+        inspectedAt,
+        createdAt: requestedAt,
+        updatedAt: inspectedAt,
+      },
+    });
+    const beforeSeed = await operationalAfterSalesFingerprint(prisma, request.id);
+
+    await seedDatabase(prisma);
+    await seedDatabase(prisma);
+
+    expect(await operationalAfterSalesFingerprint(prisma, request.id)).toEqual(beforeSeed);
+    const violations = await findSlice11PreflightViolations(prisma, PRIVATE_BUCKET);
+    expect(violations.filter(({ count }) => count !== 0)).toEqual([]);
+  });
 });
 
 const PREFLIGHT_CHECKS = [
@@ -281,6 +335,106 @@ interface IphoneOrderItemFixture {
   orderItemId: string;
   unitId: string;
   customerId: string;
+}
+
+interface AccessoryOrderItemFixture {
+  orderItemId: string;
+  customerId: string;
+  locationId: string;
+}
+
+async function createAccessoryOrderItem(prisma: PrismaClient): Promise<AccessoryOrderItemFixture> {
+  const [variant, customer, location] = await Promise.all([
+    prisma.productVariant.findFirstOrThrow({
+      where: {
+        inventoryMode: 'QUANTITY',
+        product: { type: 'ACCESSORY' },
+      },
+      include: { product: true },
+    }),
+    prisma.user.findUniqueOrThrow({
+      where: { normalizedEmail: 'customer@rephone.local' },
+      select: { id: true },
+    }),
+    prisma.inventoryLocation.findFirstOrThrow({
+      where: { type: 'STORE', status: 'ACTIVE' },
+      select: { id: true },
+    }),
+  ]);
+  const cart = await prisma.cart.create({
+    data: { customerId: customer.id, status: 'CONVERTED' },
+  });
+  const placedAt = new Date('2026-08-24T22:00:00.000Z');
+  const completedAt = new Date('2026-08-25T00:00:00.000Z');
+  const price = variant.salePrice?.toString() ?? '100000';
+  const order = await prisma.order.create({
+    data: {
+      orderNumber: `RPH-20260825-${randomAlphabet(8)}`,
+      sourceCartId: cart.id,
+      customerId: customer.id,
+      customerName: 'Khách kiểm thử seed Slice 11',
+      customerEmail: 'slice11-seed@example.com',
+      customerPhone: '0900000000',
+      fulfillmentType: 'PICKUP',
+      fulfillmentLocationId: location.id,
+      pickupLocationId: location.id,
+      pickupHoldUntil: new Date('2026-08-26T00:00:00.000Z'),
+      pickupReadyAt: new Date('2026-08-24T23:00:00.000Z'),
+      pickedUpAt: completedAt,
+      status: 'COMPLETED',
+      fulfillmentStatus: 'COMPLETED',
+      paymentStatus: 'PAID',
+      subtotal: price,
+      grandTotal: price,
+      paidAmount: price,
+      balanceDue: '0',
+      placedAt,
+      confirmedAt: new Date('2026-08-24T22:30:00.000Z'),
+      completedAt,
+    },
+  });
+  const item = await prisma.orderItem.create({
+    data: {
+      orderId: order.id,
+      productId: variant.productId,
+      variantId: variant.id,
+      productTypeSnapshot: 'ACCESSORY',
+      productNameSnapshot: variant.product.name,
+      variantNameSnapshot: variant.displayName,
+      skuSnapshot: variant.sku,
+      quantity: 1,
+      unitPrice: price,
+      lineSubtotal: price,
+      lineTotal: price,
+      warrantyDaysSnapshot: 30,
+      warrantyTermsSnapshot: 'Bảo hành phụ kiện kiểm thử Slice 11 trong 30 ngày.',
+    },
+  });
+  return { orderItemId: item.id, customerId: customer.id, locationId: location.id };
+}
+
+async function operationalAfterSalesFingerprint(prisma: PrismaClient, id: string) {
+  return prisma.afterSalesRequest.findUniqueOrThrow({
+    where: { id },
+    select: {
+      requestNumber: true,
+      type: true,
+      status: true,
+      customerId: true,
+      orderItemId: true,
+      requestedResolution: true,
+      receivedLocationId: true,
+      receivedById: true,
+      receiveNote: true,
+      attachments: true,
+      inspectionSummary: true,
+      inventoryInspectionId: true,
+      requestedAt: true,
+      receivedAt: true,
+      inspectedAt: true,
+      updatedAt: true,
+    },
+  });
 }
 
 async function createIphoneOrderItem(
