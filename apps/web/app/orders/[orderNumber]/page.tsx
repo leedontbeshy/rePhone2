@@ -25,9 +25,25 @@ interface PublicShipment {
   failedAt?: string | null;
   returnedAt?: string | null;
 }
-type Order = Omit<GeneratedOrder, 'availableActions' | 'paymentAttempts' | 'shipment'> & {
+interface PublicOrderRefund {
+  id: string;
+  amount: string;
+  method?: 'BANK_TRANSFER' | 'CASH' | 'OTHER';
+  status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+  reason: string;
+  terminalReason?: string | null;
+  createdAt: string;
+  processingAt?: string | null;
+  completedAt?: string | null;
+  terminalAt?: string | null;
+}
+type Order = Omit<
+  GeneratedOrder,
+  'availableActions' | 'paymentAttempts' | 'refunds' | 'shipment'
+> & {
   availableActions: Array<'CANCEL' | 'SUBMIT_PAYMENT_PROOF'>;
   paymentAttempts: OrderPayment[];
+  refunds: PublicOrderRefund[];
   shipment?: PublicShipment | null;
 };
 
@@ -394,9 +410,43 @@ export default function OrderDetailPage() {
                   <div className="detail-panel">
                     <h2>Hoàn tiền</h2>
                     {order.refunds.map((refund) => (
-                      <p key={refund.id}>
-                        {formatMoney(refund.amount)} ₫ · {refund.status}
-                      </p>
+                      <article className="customer-refund-card" key={refund.id}>
+                        <div className="payment-panel-heading">
+                          <strong>{formatMoney(refund.amount)} ₫</strong>
+                          <span className={`payment-status-badge ${refund.status.toLowerCase()}`}>
+                            {refundStatusLabel(refund.status)}
+                          </span>
+                        </div>
+                        <dl className="stacked-specs">
+                          <div>
+                            <dt>Phương thức</dt>
+                            <dd>{refundMethodLabel(refund.method)}</dd>
+                          </div>
+                          <div>
+                            <dt>Lý do</dt>
+                            <dd>{refund.reason}</dd>
+                          </div>
+                          {refund.terminalReason === null ||
+                          refund.terminalReason === undefined ? null : (
+                            <div>
+                              <dt>Kết quả</dt>
+                              <dd>{refund.terminalReason}</dd>
+                            </div>
+                          )}
+                        </dl>
+                        <ol className="fulfillment-timeline customer-refund-timeline">
+                          <CustomerTimeline label="Đã tạo yêu cầu" at={refund.createdAt} />
+                          <CustomerTimeline label="Đang xử lý" at={refund.processingAt} />
+                          {refund.status === 'REJECTED' || refund.status === 'CANCELLED' ? (
+                            <CustomerTimeline
+                              label={refund.status === 'REJECTED' ? 'Đã từ chối' : 'Đã hủy'}
+                              at={refund.terminalAt}
+                            />
+                          ) : (
+                            <CustomerTimeline label="Đã hoàn tất" at={refund.completedAt} />
+                          )}
+                        </ol>
+                      </article>
                     ))}
                   </div>
                 )}
@@ -604,6 +654,21 @@ function paymentMethodLabel(method: string): string {
   if (method === 'CASH') return 'Tiền mặt tại cửa hàng';
   if (method === 'COD') return 'Thu hộ khi giao hàng';
   return method;
+}
+
+function refundMethodLabel(method: string | undefined): string {
+  if (method === 'BANK_TRANSFER') return 'Chuyển khoản';
+  if (method === 'CASH') return 'Tiền mặt';
+  return method === 'OTHER' ? 'Phương thức khác' : 'Đang cập nhật';
+}
+
+function refundStatusLabel(status: string): string {
+  if (status === 'REQUESTED') return 'Chờ xử lý';
+  if (status === 'PROCESSING') return 'Đang xử lý';
+  if (status === 'COMPLETED') return 'Đã hoàn tất';
+  if (status === 'REJECTED') return 'Bị từ chối';
+  if (status === 'CANCELLED') return 'Đã hủy';
+  return status;
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {

@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: ✅ Slice 09 — Shipping fulfillment, COD và tracking đã hoàn thành; bước tiếp theo là Slice 10<br>
-> Kế hoạch chi tiết: [Slice 09 implementation plan](docs/planning/2026-08-23-slice-09-shipping-fulfillment-plan.md)<br>
+> Trạng thái: ✅ Slice 10 — Order cancellation và refund đã hoàn thành; bước tiếp theo là Slice 11<br>
+> Kế hoạch chi tiết: [Slice 10 implementation plan](docs/planning/2026-08-24-slice-10-order-cancellation-refund-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -619,43 +619,54 @@ Nguồn: [Fulfillment transactions](docs/architecture/fulfillment-transactions.m
 
 ### Slice 10 — Order cancellation và refund
 
+> ✅ **COMPLETE** — đã triển khai đủ contract tại [Slice 10 implementation plan](docs/planning/2026-08-24-slice-10-order-cancellation-refund-plan.md), rollout Supabase và nghiệm thu ngày 2026-08-24. OpenAPI đạt `101 → 111`; bước tiếp theo là Slice 11.
+
 **Mục tiêu:** cancel release đúng tài nguyên; tiền đã thu tạo nghĩa vụ refund và chỉ complete an toàn.
 
 **Phụ thuộc:** Slice 07–09.
 
 **Database và migration**
 
-- [ ] Hoàn thiện Refund amount/status/timestamp/actor/evidence constraints và index theo order/status.
-- [ ] Enforce tổng nghĩa vụ active/completed không vượt verified payment chưa hoàn bằng transaction policy.
+- [x] Hoàn thiện Refund amount/status/timestamp/actor/evidence constraints; evidence lưu MIME/size/SHA-256 và có queue/processing index.
+- [x] Enforce Payment/Order alignment bằng composite relation; không auto-backfill dữ liệu lạ.
+- [x] Enforce tổng nghĩa vụ active/completed không vượt verified payment chưa hoàn bằng transaction policy.
 
 **Domain/application**
 
-- [ ] Customer/guest cancel theo ownership, không khi proof UNDER_REVIEW hoặc fulfillment IN_TRANSIT.
-- [ ] Staff cancel theo policy/reason; release reservation/voucher và tạo Refund REQUESTED nếu đã thu tiền trong cùng transaction.
-- [ ] Refund create/start/reject/cancel bằng named command và audit.
-- [ ] Bank evidence upload trước completion transaction; CASH refund cần note/audit nhưng không bắt buộc ảnh.
-- [ ] Complete atomically terminalize refund và recompute `refundedAmount`, `balanceDue`, `paymentStatus`.
-- [ ] Terminal refund immutable; sửa sai bằng record mới hợp lệ.
+- [x] Customer/guest cancel theo ownership qua shared cancellation engine, không khi proof UNDER_REVIEW hoặc fulfillment IN_TRANSIT.
+- [x] Staff cancel pre-handover hoặc sau SHIPPING/RETURNED; không auto-restock hàng returned.
+- [x] Manual Refund chỉ cho Order CANCELLED/COMPLETED; P0 chỉ tạo BANK_TRANSFER/CASH, OTHER là legacy read-only.
+- [x] Refund create/start/reject/cancel bằng named command và audit; PROCESSING chỉ có thể complete.
+- [x] Bank evidence upload trước completion transaction và exact replay bằng SHA-256; CASH refund không có evidence và bắt buộc note/audit.
+- [x] Complete atomically terminalize Refund, recompute `refundedAmount`/`paymentStatus` và giữ nguyên Order status/`balanceDue`.
+- [x] Terminal refund immutable; sửa sai bằng record mới hợp lệ.
 
 **API/OpenAPI/UI**
 
-- [ ] Customer/guest cancel và refund read projection.
-- [ ] Backoffice refund query/create/process/evidence/complete/reject/cancel.
-- [ ] UI demo dùng scenario `refund-processing` để trình diễn evidence + completion.
+- [x] Customer/guest cancel và refund read projection public-safe.
+- [x] Đủ đúng 10 backoffice operation refund/cancellation; OpenAPI tăng `101 → 111` và generated client không drift.
+- [x] Backoffice refund query/create/process/evidence/complete/reject/cancel với private signed URL tối đa 300 giây.
+- [x] UI `/backoffice/refunds`, detail/action, Order cancellation/manual refund và customer refund timeline.
+- [x] UI demo dùng scenario `refund-processing` để trình diễn evidence + completion.
 
 **Test bắt buộc**
 
-- [ ] Cancel chưa thu tiền release đúng và không tạo Refund.
-- [ ] Cancel đã verify deposit tạo đúng một refund obligation.
-- [ ] Hai cancel/review replay không nhân side effect.
-- [ ] Bank refund thiếu evidence không complete; completed refunds không vượt verified payment.
-- [ ] Private refund evidence yêu cầu ownership/role và không lộ object path.
+- [x] Cancel chưa thu tiền release đúng và không tạo Refund.
+- [x] Cancel đã verify deposit tạo đúng một refund obligation.
+- [x] Hai cancel/review replay không nhân side effect.
+- [x] Bank refund thiếu evidence không complete; completed refunds không vượt verified payment.
+- [x] Exact evidence replay không upload/audit/email lại; evidence khác conflict và concurrent loser được cleanup.
+- [x] Private refund evidence yêu cầu ownership/role và không lộ object path.
 
-**Hoàn thành khi:** cancellation/refund happy và failure paths cập nhật Order/Payment/Inventory/Voucher nhất quán.
+**Bằng chứng nghiệm thu:** OpenAPI có đúng 111 operation; generated client không drift. `pnpm verify` xanh với 186 API unit test, 27 Web test, 2 generated-client test, 41 integration test và 77 API E2E test. Migration-from-zero áp dụng đủ 9 migration. Supabase preflight trước/sau rollout đều sạch; seed chạy hai lần giữ nguyên operational state. Full smoke đã hoàn tất BANK_TRANSFER refund `01a033c6-4e6a-760f-8962-07477b809209` và CASH refund `01a033c6-ac19-707c-b4f6-338a3eb54ea3`, kiểm tra exact evidence replay, signed URL, RBAC, no-store, aggregate cap, audit idempotency và public redaction.
+
+**Hoàn thành khi:** ✅ Đạt — cancellation/refund happy và failure paths cập nhật Order/Payment/Inventory/Voucher nhất quán; Slice 11 có thể bắt đầu.
 
 Nguồn: [Cancellation/refund transaction](docs/architecture/order-cancellation-and-refund.md), [Refund processing](docs/architecture/refund-processing.md), [Backoffice refund API](docs/api/backoffice-order-fulfillment-refund-endpoints.md), [Sales data](docs/data-model/sales.md).
 
 ### Slice 11 — Warranty và after-sales
+
+> ⏭️ **NEXT** — bắt đầu sau baseline Slice 10 đã nghiệm thu; chưa đánh dấu IN PROGRESS cho đến khi kế hoạch Slice 11 được chốt.
 
 **Mục tiêu:** completed order phát hành warranty snapshot và customer/staff xử lý case hậu mãi theo state machine.
 

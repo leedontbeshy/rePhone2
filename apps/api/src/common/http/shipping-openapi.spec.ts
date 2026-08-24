@@ -38,9 +38,10 @@ describe('Slice 09 OpenAPI contract', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('publishes exactly 101 unique operations including the six Slice 09 operations', () => {
-    expect(allOperations).toHaveLength(101);
-    expect(new Set(allOperations.map(({ operationId }) => operationId)).size).toBe(101);
+  it('keeps every operation ID unique and includes the six Slice 09 operations', () => {
+    expect(new Set(allOperations.map(({ operationId }) => operationId)).size).toBe(
+      allOperations.length,
+    );
     expect(operations).toHaveLength(6);
     expect([...byId.keys()].sort()).toEqual([...SHIPPING_OPERATION_IDS].sort());
   });

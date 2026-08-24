@@ -35,8 +35,13 @@ describe('OrderNotificationService', () => {
       {
         id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6999',
         amount: '500000',
+        method: 'BANK_TRANSFER',
         status: 'REQUESTED',
         reason: order.cancelReason,
+        terminalReason: null,
+        processingAt: null,
+        completedAt: null,
+        terminalAt: null,
         createdAt: '2026-08-21T00:00:00.000Z',
       },
     ];

@@ -5,7 +5,9 @@ Tài liệu này là contract vận hành P0 sau checkout: xác nhận pickup, c
 ## 1. Phạm vi và quyền
 
 - Mọi endpoint yêu cầu `EMPLOYEE` hoặc `ADMIN`.
+- Mọi success/error response dùng `Cache-Control: no-store`; Bearer sai trả 401 và CUSTOMER/GUEST không fallback vào staff flow.
 - Employee được xử lý Order/Payment/Shipment/Refund nhưng mọi action tài chính, hủy, phí ship và deadline override phải có reason/note và AuditLog.
+- Backoffice mutation và signed evidence URL giới hạn 120 request/phút/actor; Refund bank upload đồng thời chịu giới hạn 20 request/10 phút/actor. `429` trả error envelope và `Retry-After`.
 - Không có generic status PATCH. Mỗi transition là named command với expected-state guard.
 - P0 thu số dư bằng `CASH` khi pickup hoặc `COD` khi shipping. Không có bank-transfer balance workflow; deposit shipping vẫn là bank transfer.
 - P0 chỉ có một Shipment attempt thực tế. Giao thất bại → nhận hàng hoàn → kiểm định tồn → hủy/refund; redelivery tự động thuộc P1.
@@ -116,51 +118,65 @@ page=1, pageSize=20, sortBy=placedAt, sortOrder=desc
 
 ## 6. Backoffice cancellation
 
-| Method/path | Request | Success |
-|---|---|---|
-| `POST /api/v1/backoffice/orders/:id/cancel` | `reason` | `200 BackofficeOrderDetailDto` |
+| Method/path | operationId | Request | Success |
+|---|---|---|---|
+| `POST /api/v1/backoffice/orders/:id/cancel` | `cancelBackofficeOrder` | `{ reason }` | `200 BackofficeOrderDetailDto` |
 
-- Reason 5..500; staff có thể hủy PLACED/CONFIRMED/PROCESSING khi fulfillment chưa IN_TRANSIT, hoặc sau khi fulfillment RETURNED.
+- Reason trim 5..500; staff có thể hủy PLACED/CONFIRMED/PROCESSING khi fulfillment còn PENDING/PREPARING/READY, hoặc hủy SHIPPING Order sau khi fulfillment RETURNED.
 - Payment UNDER_REVIEW phải reject bằng payment command thay vì bypass bằng cancel.
-- Transaction cancel Order/Fulfillment, chuyển Shipment CREATED (nếu có) → CANCELLED, release active reservation/voucher, terminalize awaiting payment và tạo Refund REQUESTED cho verified amount chưa được cover.
-- Request lặp idempotent; không double release/refund.
+- Không hủy Order COMPLETED hoặc fulfillment IN_TRANSIT/FAILED/COMPLETED. Customer/guest tiếp tục bị giới hạn ở pre-handover flow của owned Order.
+- Transaction cancel Order/Fulfillment, chuyển Shipment CREATED (nếu có) → CANCELLED, terminalize awaiting payment, release active reservation/voucher và tạo đúng một Refund REQUESTED cho verified amount chưa được REQUESTED/PROCESSING/COMPLETED Refund cover.
+- Nhánh RETURNED không restock accessory, không đổi reservation CONSUMED và giữ returned iPhone ở INSPECTING.
+- Order đã CANCELLED là replay: trả projection hiện hành, không rewrite reason, release/refund, audit hoặc notification.
 
 ## 7. Refund query/create
 
-| Method/path | Actor | Request | Success |
+| Method/path | operationId | Request | Success |
 |---|---|---|---|
-| `GET /api/v1/backoffice/refunds` | Staff/Admin | Filter/pagination | `200 RefundListItemDto[]` |
-| `GET /api/v1/backoffice/refunds/:id` | Staff/Admin | — | `200 RefundDetailDto` |
-| `POST /api/v1/backoffice/orders/:id/refunds` | Staff/Admin | `paymentId?`, `amount`, `method`, `reason` | `201 RefundDetailDto` REQUESTED |
+| `GET /api/v1/backoffice/refunds` | `listBackofficeRefunds` | Filter/pagination | Paginated `RefundListItemDto` |
+| `GET /api/v1/backoffice/refunds/:id` | `getBackofficeRefund` | — | `200 RefundDetailDto` |
+| `POST /api/v1/backoffice/orders/:id/refunds` | `createRefund` | `{ paymentId?, amount, method, reason }` | `201 RefundDetailDto` REQUESTED |
 
-List filter: `status`, `method`, `orderNumber`, `createdFrom/to`, `page/pageSize`, sort `createdAt|amount|processingAt`.
+List filter: `status`, `method`, `orderNumber`, `createdFrom/to`, `page/pageSize`, sort `createdAt|amount|processingAt`. API default `createdAt desc, id desc`; mọi sort thêm `id` làm tie-breaker và `processingAt` null cuối. `orderNumber` được trim/uppercase và tìm exact/prefix.
 
 - Cancellation tự tạo Refund BANK_TRANSFER khi tiền nguồn là shipping deposit.
-- Manual create chỉ khi Order có verified payment chưa được completed/active refund cover.
-- Serializable transaction tính available refundable amount; client amount > available trả `REFUND_AMOUNT_EXCEEDS_PAID`.
-- `reason` bắt buộc; method `BANK_TRANSFER`, `CASH` hoặc `OTHER`. P0 thông thường dùng BANK_TRANSFER.
+- Manual create chỉ khi Order CANCELLED hoặc COMPLETED và có verified payment chưa được completed/active refund cover.
+- Optional `paymentId` phải là VERIFIED Payment thuộc cùng Order; method là kênh hoàn tiền và không bắt buộc giống Payment nguồn.
+- Serializable transaction tính available refundable amount từ Refund REQUESTED/PROCESSING/COMPLETED; client amount > available trả `REFUND_AMOUNT_EXCEEDS_PAID`.
+- `amount` là positive VND digit string; `reason` trim 5..500. Request P0 chỉ nhận method `BANK_TRANSFER` hoặc `CASH`.
+- `RefundMethod.OTHER` được giữ để đọc dữ liệu legacy. Record OTHER/REQUESTED chỉ được reject/cancel, không được start hoặc complete.
+- Mỗi POST manual create thành công là một obligation mới; không dedupe theo payload vì hai partial Refund giống nhau có thể hợp lệ. Aggregate lock bảo vệ không over-refund.
 
 ## 8. Refund processing commands
 
-| Method/path | Content/request | Success |
-|---|---|---|
-| `POST /api/v1/backoffice/refunds/:id/start-processing` | JSON `note?` | PROCESSING |
-| `POST /api/v1/backoffice/refunds/:id/complete-bank-transfer` | Multipart `file`, `note` | COMPLETED |
-| `POST /api/v1/backoffice/refunds/:id/complete-cash` | JSON `note` | COMPLETED |
-| `POST /api/v1/backoffice/refunds/:id/reject` | JSON `reason` | REJECTED |
-| `POST /api/v1/backoffice/refunds/:id/cancel` | JSON `reason` | CANCELLED |
-| `GET /api/v1/backoffice/refunds/:id/evidence-url` | — | Signed read URL tối đa 5 phút |
+| Method/path | operationId | Content/request | Success |
+|---|---|---|---|
+| `POST /api/v1/backoffice/refunds/:id/start-processing` | `startRefundProcessing` | JSON `{ note? }` | `200 RefundDetailDto` PROCESSING |
+| `POST /api/v1/backoffice/refunds/:id/complete-bank-transfer` | `completeBankTransferRefund` | Multipart `{ file, note }` | `200 RefundDetailDto` COMPLETED |
+| `POST /api/v1/backoffice/refunds/:id/complete-cash` | `completeCashRefund` | JSON `{ note }` | `200 RefundDetailDto` COMPLETED |
+| `POST /api/v1/backoffice/refunds/:id/reject` | `rejectRefund` | JSON `{ reason }` | `200 RefundDetailDto` REJECTED |
+| `POST /api/v1/backoffice/refunds/:id/cancel` | `cancelRefund` | JSON `{ reason }` | `200 RefundDetailDto` CANCELLED |
+| `GET /api/v1/backoffice/refunds/:id/evidence-url` | `getRefundEvidenceUrl` | — | Signed read URL tối đa 300 giây |
 
-- Start chỉ từ REQUESTED; gắn processor/time, amount/method/reason trở thành immutable.
-- Bank complete yêu cầu Refund method BANK_TRANSFER và một evidence JPEG/PNG/WebP/PDF <=10 MiB. Backend upload trước rồi completion transaction theo file policy.
-- Cash complete yêu cầu method CASH; không cần file nhưng note bắt buộc.
+- Start chỉ từ REQUESTED BANK_TRANSFER/CASH; gắn processor/time, amount/method/reason/relations trở thành immutable. Optional note trim 5..500.
+- EMPLOYEE chỉ complete Refund mình đã start; ADMIN có thể break-glass complete nhưng không overwrite original `processedById`. Audit ghi actor thực hiện completion.
+- Bank complete yêu cầu đúng một evidence JPEG/PNG/WebP/PDF <=10 MiB và note 5..500. Backend validate magic bytes/MIME, lưu size + lowercase SHA-256 và upload private object trước completion transaction.
+- Cash complete yêu cầu method CASH và note 5..500; request là JSON và Refund CASH tuyệt đối không có evidence.
 - Completion recheck tổng refund, lưu evidence khi có, cập nhật Order.refundedAmount/paymentStatus và audit atomically.
+- Completion note thay optional start note và là operational note cuối. Completion không đổi Order status hoặc mở lại `balanceDue`.
 - Reject/cancel chỉ từ REQUESTED; PROCESSING chỉ có thể complete sau khi đã kiểm tra đủ điều kiện. Reason bắt buộc và lưu `terminalReason/terminalById/terminalAt`, không overwrite business `reason`. Mọi terminal Refund immutable.
-- Evidence URL chỉ staff/admin, authorize mỗi lần, URL không log/lưu DB.
+- Exact start/reject/cancel replay yêu cầu cùng actor và normalized payload. Bank completion replay yêu cầu cùng evidence SHA-256 và normalized note; payload khác conflict và không overwrite evidence.
+- Evidence URL chỉ staff/admin, authorize/audit mỗi lần, TTL thực tế `min(config, 300 giây)`; URL/path/digest không log, lưu response DTO hoặc public Order projection.
 
 ## 9. DTO và errors
 
-`Payment/Refund/Shipment` backoffice DTO có amounts, state/timeline, safe actor summary và evidence presence; object path/signed URL chỉ xuất hiện qua endpoint read riêng. `BackofficeOrderDetailDto` không serialize Prisma model trực tiếp.
+`Payment/Refund/Shipment` backoffice DTO có amounts, state/timeline, safe actor summary và evidence presence; object path/digest không xuất hiện trong DTO, signed URL chỉ xuất hiện qua endpoint read riêng. `BackofficeOrderDetailDto` không serialize Prisma model trực tiếp.
+
+- `RefundListItemDto`: Order number, amount, method, status, requester type/safe actor, timestamps và `evidenceAvailable`.
+- `RefundDetailDto`: safe Payment source, reason, operational note, processor/terminal actor, terminal reason và backend-authoritative `availableActions`.
+- Public `OrderRefundDto`: amount, method, status, business/terminal reason và timeline; không có internal actor/note/evidence metadata.
+- Backoffice Order detail có `refundableAmount`; `CANCEL_ORDER` và `CREATE_REFUND` chỉ xuất hiện khi policy cho phép.
+- Refund actions: REQUESTED cho start/reject/cancel; PROCESSING cho đúng completion method; COMPLETED/BANK_TRANSFER cho evidence read.
 
 Lỗi chính:
 

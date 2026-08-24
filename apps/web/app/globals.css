@@ -1468,6 +1468,21 @@ main > p:not(.eyebrow) {
   color: #176b3a;
 }
 
+.payment-status-badge.requested {
+  background: #e9f1fb;
+  color: #235f9f;
+}
+
+.payment-status-badge.processing {
+  background: #fff4d6;
+  color: #845200;
+}
+
+.payment-status-badge.completed {
+  background: #e9f8ef;
+  color: #176b3a;
+}
+
 .payment-status-badge.rejected,
 .payment-status-badge.expired,
 .payment-status-badge.cancelled {
@@ -1787,6 +1802,7 @@ main > p:not(.eyebrow) {
 .fulfillment-filters select,
 .fulfillment-note-form textarea,
 .fulfillment-command-form input:not([type='checkbox']),
+.fulfillment-command-form select,
 .fulfillment-command-form textarea {
   width: 100%;
   min-height: 44px;
@@ -1807,6 +1823,7 @@ main > p:not(.eyebrow) {
 .fulfillment-filters select:focus,
 .fulfillment-note-form textarea:focus,
 .fulfillment-command-form input:focus,
+.fulfillment-command-form select:focus,
 .fulfillment-command-form textarea:focus,
 .fulfillment-shell .button:focus-visible,
 .fulfillment-order-card:focus-visible {
@@ -2017,6 +2034,41 @@ main > p:not(.eyebrow) {
   margin: 0;
 }
 
+.refund-order-row,
+.customer-refund-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #e3e8ed;
+}
+
+.refund-order-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.refund-order-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.refund-order-row span,
+.refund-order-row small {
+  color: #66788a;
+}
+
+.customer-refund-card:first-of-type {
+  border-top: 0;
+}
+
+.customer-refund-timeline {
+  margin-top: 4px;
+}
+
+.refund-source-payment {
+  margin-top: 18px;
+}
+
 .cash-confirmation {
   grid-template-columns: auto 1fr;
   align-items: start;
@@ -2192,7 +2244,8 @@ main > p:not(.eyebrow) {
   }
 
   .payment-queue-card,
-  .fulfillment-order-card {
+  .fulfillment-order-card,
+  .refund-order-row {
     grid-template-columns: 1fr;
   }
 

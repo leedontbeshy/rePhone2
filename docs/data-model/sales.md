@@ -94,28 +94,43 @@ CASH/COD Payment được tạo và `VERIFIED` atomically bởi staff trong fulf
 |---|---|---:|---|
 | `id` | Id | No | PK |
 | `orderId` | Id | No | FK Order |
-| `paymentId` | Id | Yes | Payment nguồn |
+| `paymentId` | Id | Yes | Optional Payment nguồn; nếu có phải thuộc cùng `orderId` và đã VERIFIED |
 | `amount` | Money | No | > 0 |
-| `method` | RefundMethod | No | BANK_TRANSFER, CASH, OTHER |
+| `method` | RefundMethod | No | BANK_TRANSFER, CASH; OTHER chỉ để đọc/terminalize dữ liệu legacy |
 | `status` | RefundStatus | No | REQUESTED, PROCESSING, COMPLETED, REJECTED, CANCELLED |
 | `reason` | LongText | No | Bắt buộc |
 | `terminalReason` | LongText | Yes | Bắt buộc khi REJECTED/CANCELLED; tách khỏi business reason ban đầu |
 | `terminalById` | Id | Yes | FK User; bắt buộc khi REJECTED/CANCELLED |
 | `terminalAt` | Instant | Yes | Bắt buộc khi REJECTED/CANCELLED |
-| `evidenceBucket`, `evidenceObjectPath` | Text | Yes | Bắt buộc khi bank completed |
+| `evidenceBucket`, `evidenceObjectPath` | Text | Yes | Private; bắt buộc khi BANK_TRANSFER completed, path thuộc `refunds/{refundId}/` |
+| `evidenceMimeType` | Text | Yes | MIME authoritative JPEG/PNG/WebP/PDF; đi cùng toàn bộ evidence fields |
+| `evidenceFileSize` | BigInt | Yes | Byte size `1..10 MiB`; đi cùng toàn bộ evidence fields |
+| `evidenceSha256` | Text | Yes | Lowercase SHA-256 hex 64 ký tự; exact replay key |
 | `requestedByType` | RefundRequesterType | No | CUSTOMER, STAFF, SYSTEM |
 | `requestedById` | Id | Yes | FK User; null cho guest/system, required với STAFF/account customer |
 | `processedById` | Id | Yes | FK User |
 | `processingAt` | Instant | Yes | Bắt buộc từ PROCESSING |
 | `completedAt` | Instant | Yes | Theo status |
-| `note` | LongText | Yes | Optional |
+| `note` | LongText | Yes | Optional khi start; completion note bắt buộc và thay start note |
 | `createdAt`, `updatedAt` | Instant | No | Timestamps |
 
-Tổng completed refund không vượt verified payment của order.
+Lifecycle shape:
 
-Khi cancellation tạo Refund, amount bằng verified payment chưa được completed/active refund cover. Guest request dùng `requestedByType = CUSTOMER`, `requestedById = null`; ownership được xác định từ Order và request authentication context. Bank evidence được upload/xác thực trước completion transaction; completed record và evidence path immutable.
+- REQUESTED không có processor/completion/terminal/evidence fields.
+- PROCESSING có `processedById/processingAt`, chưa có completion/terminal/evidence fields.
+- COMPLETED có processor, processing/completion time và không có terminal fields. BANK_TRANSFER bắt buộc đủ evidence metadata; CASH bắt buộc mọi evidence field null.
+- REJECTED/CANCELLED có `terminalReason/terminalById/terminalAt`, không có processing/completion/evidence fields.
+- Timestamp theo `createdAt <= processingAt <= completedAt|terminalAt` khi các field tương ứng tồn tại.
 
-`reason` mô tả vì sao cần hoàn tiền và bất biến sau khi bắt đầu processing. `terminalReason/terminalById/terminalAt` chỉ ghi quyết định từ chối/hủy obligation, không overwrite `reason` hoặc `note` xử lý.
+Manual Refund chỉ được tạo cho Order CANCELLED hoặc COMPLETED. P0 create/start/complete chỉ hỗ trợ BANK_TRANSFER/CASH. `RefundMethod.OTHER` là compatibility enum cho legacy record; OTHER/REQUESTED chỉ reject/cancel được.
+
+Tổng Refund REQUESTED/PROCESSING/COMPLETED không vượt verified Payment total của Order. Tổng COMPLETED quyết định `Order.refundedAmount` và payment status partial/full refund. REJECTED/CANCELLED không giữ refundable quota. Cross-row aggregate được khóa/recheck trong Serializable transaction.
+
+Khi cancellation tạo Refund, amount bằng verified payment chưa được REQUESTED/PROCESSING/COMPLETED Refund cover. Guest request dùng `requestedByType = CUSTOMER`, `requestedById = null`; ownership được xác định từ Order và request authentication context. STAFF requester bắt buộc user ID, SYSTEM không có user ID.
+
+Bank evidence được validate và upload private trước completion transaction; completed record, path và digest immutable. Same SHA-256 + normalized note là exact replay; khác digest/note không được overwrite. CASH completion không có evidence.
+
+`reason` mô tả vì sao cần hoàn tiền và bất biến từ khi tạo. `terminalReason/terminalById/terminalAt` chỉ ghi quyết định từ chối/hủy obligation, không overwrite `reason`. Completion note là operational note cuối cùng và thay optional start note. Refund completion recompute `refundedAmount/paymentStatus` nhưng không đổi Order status hoặc mở lại `balanceDue`.
 
 ## 5. Shipment
 

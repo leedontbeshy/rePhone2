@@ -13,6 +13,8 @@ export const FULFILLMENT_ACTIONS = [
   'MARK_SHIPMENT_DELIVERED',
   'MARK_SHIPMENT_FAILED',
   'MARK_SHIPMENT_RETURNED',
+  'CANCEL_ORDER',
+  'CREATE_REFUND',
 ] as const;
 export type FulfillmentAction = (typeof FULFILLMENT_ACTIONS)[number];
 
@@ -89,8 +91,17 @@ export class BackofficeOrderPaymentDto {
 export class BackofficeOrderRefundDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String, pattern: '^\\d+$' }) public amount!: string;
+  @ApiProperty({ enum: ['BANK_TRANSFER', 'CASH', 'OTHER'] }) public method!: string;
   @ApiProperty({ enum: ['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'] })
   public status!: string;
+  @ApiProperty({ type: String }) public reason!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public terminalReason!: string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public processingAt!:
+    string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public completedAt!:
+    string | null;
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public terminalAt!:
+    string | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: string;
 }
 
@@ -186,6 +197,7 @@ export class BackofficeOrderDetailDto {
   @ApiProperty({ type: () => [BackofficeOrderItemDto] }) public items!: BackofficeOrderItemDto[];
   @ApiProperty({ type: () => BackofficeOrderPricingDto })
   public pricing!: BackofficeOrderPricingDto;
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public refundableAmount!: string;
   @ApiProperty({ type: () => [BackofficeReservationDto] })
   public reservations!: BackofficeReservationDto[];
   @ApiProperty({ type: () => [BackofficeOrderPaymentDto] })

@@ -14,6 +14,7 @@ import { CheckoutCartReader } from '../cart/checkout-cart.reader.js';
 import { CheckoutCatalogReader } from '../catalog/checkout-catalog.reader.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
 import { OrderNotificationService } from '../notifications/order-notification.service.js';
+import { OrderCancellationService } from '../order-cancellation/order-cancellation.service.js';
 import { GuestOrderIdentityService } from '../order-transaction-ports/guest-order-identity.service.js';
 import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
 import { CheckoutPaymentGateway } from '../payments/checkout-payment.gateway.js';
@@ -79,6 +80,8 @@ export class OrdersService {
     @Inject(AuditWriter) private readonly audit: AuditWriter,
     @Inject(OrderNotificationService)
     private readonly notifications: OrderNotificationService,
+    @Inject(OrderCancellationService)
+    private readonly cancellations: OrderCancellationService,
   ) {}
 
   public preview(request: Request, input: CheckoutPreviewRequestDto): Promise<CheckoutPreviewDto> {
@@ -390,76 +393,8 @@ export class OrdersService {
     orderNumber: string,
     reason: string,
   ): Promise<OrderDetailDto> {
-    const initial = requireOrder(
-      await this.prisma.order.findUnique({
-        where: { orderNumber },
-        include: customerOrderInclude,
-      }),
-    );
-    this.orderOwnership.assertAccess(request, initial);
-    const actorIdentity = this.carts.resolveIdentity(request.auth, request);
-    const actor = this.auditActor(actorIdentity, request);
-    const outcome = await this.transactions.run('orders.cancel', async (transaction) => {
-      await transaction.$queryRaw`SELECT id FROM orders WHERE id = ${initial.id}::uuid FOR UPDATE`;
-      const order = requireOrder(
-        await transaction.order.findUnique({
-          where: { id: initial.id },
-          include: customerOrderInclude,
-        }),
-      );
-      this.orderOwnership.assertAccess(request, order);
-      if (order.status === 'CANCELLED') return { orderId: order.id, cancelled: false };
-      if (
-        order.status === 'COMPLETED' ||
-        ['IN_TRANSIT', 'COMPLETED', 'FAILED', 'RETURNED'].includes(order.fulfillmentStatus) ||
-        order.shipments.some(({ status }) => status === 'HANDED_TO_CARRIER')
-      ) {
-        throw new ApiError('INVALID_STATE_TRANSITION');
-      }
-
-      const finance = await this.payments.cancelAndPrepareRefund(
-        order.id,
-        order.customerId,
-        reason,
-        new Date(),
-        transaction,
-      );
-      const now = new Date();
-      const cancelled = await transaction.order.updateMany({
-        where: { id: order.id, status: { notIn: ['CANCELLED', 'COMPLETED'] } },
-        data: {
-          status: 'CANCELLED',
-          fulfillmentStatus: 'CANCELLED',
-          cancelReason: reason,
-          cancelledAt: now,
-        },
-      });
-      if (cancelled.count !== 1) throw new ApiError('INVALID_STATE_TRANSITION');
-      await transaction.shipment.updateMany({
-        where: { orderId: order.id, status: 'CREATED' },
-        data: { status: 'CANCELLED' },
-      });
-      await this.inventory.releaseOrderReservations(order.id, now, transaction);
-      await this.vouchers.release(order.id, now, transaction);
-      await this.audit.write(transaction, actor, {
-        action: 'order.cancelled',
-        resourceType: 'Order',
-        resourceId: order.id,
-        changes: {
-          before: { status: order.status, fulfillmentStatus: order.fulfillmentStatus },
-          after: { status: 'CANCELLED', fulfillmentStatus: 'CANCELLED' },
-        },
-        metadata: {
-          orderNumber: order.orderNumber,
-          reason,
-          ...(finance.refund === null
-            ? {}
-            : { refundId: finance.refund.id, refundAmount: finance.refund.amount }),
-        },
-      });
-      return { orderId: order.id, cancelled: true };
-    });
-    const projectedOrder = projectOrder(
+    const outcome = await this.cancellations.cancelOwned(request, orderNumber, reason);
+    return projectOrder(
       requireOrder(
         await this.prisma.order.findUnique({
           where: { id: outcome.orderId },
@@ -468,8 +403,6 @@ export class OrdersService {
       ),
       { config: this.config },
     );
-    if (outcome.cancelled) await this.notifications.sendCancelled(projectedOrder);
-    return projectedOrder;
   }
 
   private async calculate(

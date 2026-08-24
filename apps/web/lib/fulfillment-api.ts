@@ -25,7 +25,9 @@ export type FulfillmentAction =
   | 'HAND_OVER_SHIPMENT'
   | 'MARK_SHIPMENT_DELIVERED'
   | 'MARK_SHIPMENT_FAILED'
-  | 'MARK_SHIPMENT_RETURNED';
+  | 'MARK_SHIPMENT_RETURNED'
+  | 'CANCEL_ORDER'
+  | 'CREATE_REFUND';
 export type PickupOrderAction = FulfillmentAction;
 
 export interface BackofficeOrderLocation {
@@ -149,7 +151,18 @@ export interface BackofficeOrderDetail {
   };
   reservations: BackofficeReservationSummary[];
   paymentAttempts: BackofficeOrderPayment[];
-  refunds: Array<{ id: string; amount: string; status: string; reason: string }>;
+  refundableAmount: string;
+  refunds: Array<{
+    id: string;
+    amount: string;
+    method: string;
+    status: string;
+    reason: string;
+    terminalReason: string | null;
+    createdAt: string | null;
+    completedAt: string | null;
+    terminalAt: string | null;
+  }>;
   shipments: BackofficeOrderShipment[];
   customerNote: string | null;
   internalNote: string | null;
@@ -160,6 +173,7 @@ export interface BackofficeOrderDetail {
   pickedUpAt: string | null;
   completedAt: string | null;
   cancelledAt: string | null;
+  cancelReason: string | null;
   availableActions: FulfillmentAction[];
 }
 
@@ -304,6 +318,10 @@ export function overrideShippingFee(
   );
 }
 
+export function cancelBackofficeOrder(client: unknown, orderId: string, reason: string) {
+  return runOrderCommand(client, orderId, 'cancel', { reason }, 'Không thể hủy đơn hàng.');
+}
+
 export async function createShipment(
   client: unknown,
   orderId: string,
@@ -402,7 +420,8 @@ async function runOrderCommand(
     | 'mark-pickup-ready'
     | 'extend-pickup-hold'
     | 'complete-pickup'
-    | 'override-shipping-fee',
+    | 'override-shipping-fee'
+    | 'cancel',
   body: unknown,
   fallback: string,
 ): Promise<BackofficeOrderDetail> {
@@ -550,13 +569,20 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
       };
     }),
     paymentAttempts: payments.map(parsePayment),
+    refundableAmount:
+      moneyOrNull(input['refundableAmount']) ?? moneyOrZero(pricing['refundableAmount']),
     refunds: refunds.map((row) => {
       const refund = recordOrEmpty(row);
       return {
         id: stringOr(refund['id']),
         amount: moneyOrZero(refund['amount']),
+        method: stringOr(refund['method']),
         status: stringOr(refund['status']),
         reason: stringOr(refund['reason']),
+        terminalReason: stringOrNull(refund['terminalReason']),
+        createdAt: stringOrNull(refund['createdAt']),
+        completedAt: stringOrNull(refund['completedAt']),
+        terminalAt: stringOrNull(refund['terminalAt']),
       };
     }),
     shipments: shipments.map(parseShipment),
@@ -569,6 +595,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     pickedUpAt: stringOrNull(input['pickedUpAt']) ?? stringOrNull(pickup['pickedUpAt']),
     completedAt: stringOrNull(input['completedAt']),
     cancelledAt: stringOrNull(input['cancelledAt']),
+    cancelReason: stringOrNull(input['cancelReason']),
     availableActions: fulfillmentActions(input['availableActions']),
   };
 }
@@ -697,7 +724,9 @@ function isFulfillmentAction(value: unknown): value is FulfillmentAction {
     value === 'HAND_OVER_SHIPMENT' ||
     value === 'MARK_SHIPMENT_DELIVERED' ||
     value === 'MARK_SHIPMENT_FAILED' ||
-    value === 'MARK_SHIPMENT_RETURNED'
+    value === 'MARK_SHIPMENT_RETURNED' ||
+    value === 'CANCEL_ORDER' ||
+    value === 'CREATE_REFUND'
   );
 }
 

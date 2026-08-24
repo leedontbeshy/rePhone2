@@ -11,10 +11,7 @@ import type {
   FulfillmentOrderGateway,
   FulfillmentOrderRecord,
 } from '../order-transaction-ports/fulfillment-order.gateway.js';
-import type {
-  FulfillmentPaymentGateway,
-  LockedOrderFinance,
-} from '../payments/fulfillment-payment.gateway.js';
+import type { RefundCoreGateway } from '../refunds/refund-core.gateway.js';
 import type { FulfillmentVoucherGateway } from '../vouchers/fulfillment-voucher.gateway.js';
 import { PickupExpiryService } from './pickup-expiry.service.js';
 
@@ -209,19 +206,17 @@ function expiryFixture(orders: FulfillmentOrderRecord[], options: ExpiryFixtureO
       return result;
     },
   );
-  const finance: LockedOrderFinance = { payments: [], refunds: [] };
-  const lockFinance = vi.fn((orderId: string) => {
-    if (options.failFinanceFor?.has(orderId) === true) {
+  const prepareSystemRefund = vi.fn((input: { orderId: string }) => {
+    if (options.failFinanceFor?.has(input.orderId) === true) {
       return Promise.reject(new Error('finance unavailable'));
     }
-    return Promise.resolve(finance);
+    return Promise.resolve(null);
   });
   const lockActiveReservations = vi.fn((orderId: string) =>
     Promise.resolve([pickupReservation(orderId)]),
   );
   const expirePickup = vi.fn().mockResolvedValue(undefined);
   const releaseVoucher = vi.fn().mockResolvedValue(undefined);
-  const prepareSystemRefund = vi.fn().mockResolvedValue(null);
   const auditWrite = vi.fn().mockResolvedValue(undefined);
   const sendCancelled = vi.fn().mockResolvedValue(undefined);
   const service = new PickupExpiryService(
@@ -235,10 +230,7 @@ function expiryFixture(orders: FulfillmentOrderRecord[], options: ExpiryFixtureO
       assertPickupHold: vi.fn(),
       expirePickup,
     } as unknown as FulfillmentInventoryGateway,
-    {
-      lockFinance,
-      prepareSystemRefund,
-    } as unknown as FulfillmentPaymentGateway,
+    { prepareCancellationRefund: prepareSystemRefund } as unknown as RefundCoreGateway,
     { release: releaseVoucher } as unknown as FulfillmentVoucherGateway,
     { run: transactionRun } as unknown as SerializableTransactionRunner,
     { write: auditWrite },
