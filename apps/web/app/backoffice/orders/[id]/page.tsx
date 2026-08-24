@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import {
+  cancelBackofficeOrder,
   completePickup,
   confirmPickupOrder,
   createShipment,
@@ -23,6 +24,7 @@ import {
   type BackofficeOrderLocation,
   type FulfillmentAction,
 } from '../../../../lib/fulfillment-api';
+import { createRefund } from '../../../../lib/refund-api';
 import { useAuth } from '../../../auth-provider';
 import { CatalogHeader, formatMoney } from '../../../catalog-ui';
 
@@ -48,6 +50,11 @@ export default function BackofficeOrderDetailPage() {
   const [returnReason, setReturnReason] = useState('Kho đã nhận và kiểm đếm kiện hoàn');
   const [returnLocationId, setReturnLocationId] = useState('');
   const [returnLocations, setReturnLocations] = useState<BackofficeOrderLocation[]>([]);
+  const [cancelReason, setCancelReason] = useState('Khách hàng xác nhận không tiếp tục đơn hàng');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundMethod, setRefundMethod] = useState<'BANK_TRANSFER' | 'CASH'>('BANK_TRANSFER');
+  const [refundPaymentId, setRefundPaymentId] = useState('');
+  const [refundReason, setRefundReason] = useState('Hoàn khoản đã thu theo đối soát đơn hàng');
   const [busy, setBusy] = useState<BusyAction>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +66,7 @@ export default function BackofficeOrderDetailPage() {
     setDetail(next);
     setInternalNote(next.internalNote ?? '');
     setShippingFee(next.pricing.shippingFee);
+    setRefundAmount((current) => current || next.refundableAmount);
     setError(null);
   }, [client, orderId]);
 
@@ -76,6 +84,7 @@ export default function BackofficeOrderDetailPage() {
         setDetail(next);
         setInternalNote(next.internalNote ?? '');
         setShippingFee(next.pricing.shippingFee);
+        setRefundAmount((current) => current || next.refundableAmount);
         setError(null);
       })
       .catch((caught: unknown) => {
@@ -126,6 +135,7 @@ export default function BackofficeOrderDetailPage() {
       setDetail(next);
       setInternalNote(next.internalNote ?? '');
       setShippingFee(next.pricing.shippingFee);
+      setRefundAmount((current) => current || next.refundableAmount);
       setNotice(success);
     } catch (caught) {
       const message = errorMessage(caught, 'Không thể cập nhật đơn hàng.');
@@ -324,6 +334,54 @@ export default function BackofficeOrderDetailPage() {
           reason,
         }),
       'Đã ghi nhận hàng hoàn về kho; iPhone sẽ chờ kiểm định lại.',
+    );
+  };
+
+  const submitCancellation = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const reason = cancelReason.trim();
+    if (reason.length < 5 || reason.length > 500) {
+      setError('Lý do hủy đơn phải có từ 5 đến 500 ký tự.');
+      return;
+    }
+    void runAction(
+      'CANCEL_ORDER',
+      () => cancelBackofficeOrder(client, orderId, reason),
+      'Đã hủy đơn và tạo obligation hoàn tiền nếu có khoản đã thu.',
+    );
+  };
+
+  const submitRefund = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (detail === null) return;
+    const amount = refundAmount.trim();
+    const reason = refundReason.trim();
+    if (!/^\d{1,15}$/.test(amount) || !positiveMoney(amount)) {
+      setError('Số tiền hoàn phải là số VND nguyên dương, tối đa 15 chữ số.');
+      return;
+    }
+    if (moneyGreaterThan(amount, detail.refundableAmount)) {
+      setError('Số tiền hoàn vượt quá khoản còn có thể hoàn của đơn.');
+      return;
+    }
+    if (reason.length < 5 || reason.length > 500) {
+      setError('Lý do hoàn tiền phải có từ 5 đến 500 ký tự.');
+      return;
+    }
+    void runAction(
+      'CREATE_REFUND',
+      async () => {
+        await createRefund(client, orderId, {
+          ...(refundPaymentId === '' ? {} : { paymentId: refundPaymentId }),
+          amount,
+          method: refundMethod,
+          reason,
+        });
+        const next = await getBackofficeOrder(client, orderId);
+        setRefundAmount(next.refundableAmount);
+        return next;
+      },
+      'Đã tạo yêu cầu hoàn tiền.',
     );
   };
 
@@ -533,10 +591,21 @@ export default function BackofficeOrderDetailPage() {
                     </dl>
                   ))}
                   {detail.refunds.map((refund) => (
-                    <p key={refund.id}>
-                      Refund {formatMoney(refund.amount)} ₫ · {refund.status}
-                      {refund.reason === '' ? '' : ` · ${refund.reason}`}
-                    </p>
+                    <div className="refund-order-row" key={refund.id}>
+                      <div>
+                        <strong>{formatMoney(refund.amount)} ₫</strong>
+                        <span>
+                          {refund.method || '—'} · {refund.status}
+                        </span>
+                        {refund.reason === '' ? null : <small>{refund.reason}</small>}
+                        {refund.terminalReason === null ? null : (
+                          <small>Kết quả: {refund.terminalReason}</small>
+                        )}
+                      </div>
+                      <Link className="button" href={`/backoffice/refunds/${refund.id}`}>
+                        Mở refund
+                      </Link>
+                    </div>
                   ))}
                 </section>
 
@@ -642,6 +711,7 @@ export default function BackofficeOrderDetailPage() {
                     <MoneyLine label="Tổng" value={detail.pricing.grandTotal} total />
                     <MoneyLine label="Đã thu" value={detail.pricing.paidAmount} />
                     <MoneyLine label="Đã hoàn" value={detail.pricing.refundedAmount} />
+                    <MoneyLine label="Có thể hoàn" value={detail.refundableAmount} />
                     <MoneyLine label="Còn thu" value={detail.pricing.balanceDue} total />
                   </div>
                   {detail.pricing.shippingFeeOverride === null ? null : (
@@ -651,7 +721,130 @@ export default function BackofficeOrderDetailPage() {
                       {detail.pricing.shippingFeeOverride.reason}
                     </p>
                   )}
+                  {detail.cancelReason === null ? null : (
+                    <p className="payment-rejection">
+                      <strong>Lý do hủy</strong>
+                      <span>{detail.cancelReason}</span>
+                    </p>
+                  )}
                 </section>
+
+                {hasAction(detail, 'CANCEL_ORDER') || hasAction(detail, 'CREATE_REFUND') ? (
+                  <section className="detail-panel fulfillment-command-card refund-order-actions">
+                    <h2>Hủy đơn & hoàn tiền</h2>
+                    <p>
+                      Backend sẽ khóa Order và tính lại số tiền có thể hoàn trước khi ghi dữ liệu.
+                    </p>
+
+                    {hasAction(detail, 'CANCEL_ORDER') ? (
+                      <form className="fulfillment-command-form" onSubmit={submitCancellation}>
+                        <h3>Hủy đơn hàng</h3>
+                        <label htmlFor="backoffice-cancel-reason">
+                          Lý do
+                          <textarea
+                            id="backoffice-cancel-reason"
+                            required
+                            minLength={5}
+                            maxLength={500}
+                            rows={3}
+                            value={cancelReason}
+                            onChange={(event) => {
+                              setCancelReason(event.target.value);
+                            }}
+                          />
+                        </label>
+                        <button
+                          className="button danger"
+                          type="submit"
+                          disabled={busy !== null || cancelReason.trim().length < 5}
+                        >
+                          {busy === 'CANCEL_ORDER' ? 'Đang hủy…' : 'Hủy đơn'}
+                        </button>
+                      </form>
+                    ) : null}
+
+                    {hasAction(detail, 'CREATE_REFUND') ? (
+                      <form className="fulfillment-command-form" onSubmit={submitRefund}>
+                        <h3>Tạo yêu cầu hoàn tiền</h3>
+                        <p>
+                          Còn có thể hoàn: <strong>{formatMoney(detail.refundableAmount)} ₫</strong>
+                        </p>
+                        <label htmlFor="refund-amount">
+                          Số tiền (VND)
+                          <input
+                            id="refund-amount"
+                            inputMode="numeric"
+                            pattern="[0-9]+"
+                            maxLength={15}
+                            required
+                            value={refundAmount}
+                            onChange={(event) => {
+                              setRefundAmount(event.target.value.replace(/\D/g, ''));
+                            }}
+                          />
+                        </label>
+                        <label htmlFor="refund-method">
+                          Phương thức hoàn
+                          <select
+                            id="refund-method"
+                            value={refundMethod}
+                            onChange={(event) => {
+                              setRefundMethod(event.target.value as 'BANK_TRANSFER' | 'CASH');
+                            }}
+                          >
+                            <option value="BANK_TRANSFER">Chuyển khoản</option>
+                            <option value="CASH">Tiền mặt</option>
+                          </select>
+                        </label>
+                        <label htmlFor="refund-payment-source">
+                          Payment nguồn (không bắt buộc)
+                          <select
+                            id="refund-payment-source"
+                            value={refundPaymentId}
+                            onChange={(event) => {
+                              setRefundPaymentId(event.target.value);
+                            }}
+                          >
+                            <option value="">Đối chiếu toàn bộ Order</option>
+                            {detail.paymentAttempts
+                              .filter((payment) => payment.status === 'VERIFIED')
+                              .map((payment) => (
+                                <option key={payment.id} value={payment.id}>
+                                  {payment.purpose} · {payment.method} ·{' '}
+                                  {formatMoney(payment.receivedAmount ?? payment.expectedAmount)} ₫
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label htmlFor="refund-reason">
+                          Lý do
+                          <textarea
+                            id="refund-reason"
+                            required
+                            minLength={5}
+                            maxLength={500}
+                            rows={3}
+                            value={refundReason}
+                            onChange={(event) => {
+                              setRefundReason(event.target.value);
+                            }}
+                          />
+                        </label>
+                        <button
+                          className="button primary"
+                          type="submit"
+                          disabled={
+                            busy !== null ||
+                            !positiveMoney(refundAmount) ||
+                            refundReason.trim().length < 5
+                          }
+                        >
+                          {busy === 'CREATE_REFUND' ? 'Đang tạo…' : 'Tạo refund'}
+                        </button>
+                      </form>
+                    ) : null}
+                  </section>
+                ) : null}
 
                 <section className="detail-panel fulfillment-command-card">
                   <h2>
@@ -1097,6 +1290,14 @@ function positiveMoney(value: string): boolean {
     return BigInt(value) > BigInt(0);
   } catch {
     return false;
+  }
+}
+
+function moneyGreaterThan(left: string, right: string): boolean {
+  try {
+    return BigInt(left) > BigInt(right);
+  } catch {
+    return true;
   }
 }
 

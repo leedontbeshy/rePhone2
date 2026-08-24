@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  cancelBackofficeOrder,
   completePickup,
   createShipment,
   fulfillmentError,
@@ -338,5 +339,27 @@ describe('fulfillment api adapter', () => {
       },
     ]);
     expect(client.GET).toHaveBeenCalledWith('/api/v1/backoffice/inventory-locations');
+  });
+
+  it('maps refund actions and uses the named staff cancellation command', async () => {
+    const refundableOrder = {
+      ...ORDER,
+      refundableAmount: '1000000',
+      availableActions: ['CANCEL_ORDER', 'CREATE_REFUND'],
+    };
+    const client = {
+      GET: vi.fn().mockResolvedValue({ data: { data: refundableOrder } }),
+      POST: vi.fn().mockResolvedValue({ data: { data: refundableOrder } }),
+    };
+
+    const detail = await getBackofficeOrder(client, ORDER.id);
+    await cancelBackofficeOrder(client, ORDER.id, 'Khách hàng xác nhận hủy đơn');
+
+    expect(detail.refundableAmount).toBe('1000000');
+    expect(detail.availableActions).toEqual(['CANCEL_ORDER', 'CREATE_REFUND']);
+    expect(client.POST).toHaveBeenCalledWith('/api/v1/backoffice/orders/{id}/cancel', {
+      params: { path: { id: ORDER.id } },
+      body: { reason: 'Khách hàng xác nhận hủy đơn' },
+    });
   });
 });

@@ -32,6 +32,7 @@ export function CatalogHeader() {
           <>
             <Link href="/backoffice/orders">Đơn hàng</Link>
             <Link href="/backoffice/payments">Review cọc</Link>
+            <Link href="/backoffice/refunds">Hoàn tiền</Link>
           </>
         ) : null}
         {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}
