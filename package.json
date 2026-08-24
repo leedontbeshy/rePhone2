@@ -39,6 +39,7 @@
     "preflight:slice08": "pnpm --filter @rephone/api preflight:slice08",
     "preflight:slice09": "pnpm --filter @rephone/api preflight:slice09",
     "preflight:slice10": "pnpm --filter @rephone/api preflight:slice10",
+    "preflight:slice11": "pnpm --filter @rephone/api preflight:slice11",
     "smoke:slice05": "pnpm --filter @rephone/api smoke:slice05",
     "smoke:slice06": "pnpm --filter @rephone/api smoke:slice06",
     "smoke:slice07": "pnpm --filter @rephone/api smoke:slice07",

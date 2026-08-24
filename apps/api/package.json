@@ -26,6 +26,7 @@
     "preflight:slice08": "tsx prisma/scripts/preflight-slice08.ts",
     "preflight:slice09": "tsx prisma/scripts/preflight-slice09.ts",
     "preflight:slice10": "tsx prisma/scripts/preflight-slice10.ts",
+    "preflight:slice11": "tsx prisma/scripts/preflight-slice11.ts",
     "smoke:slice05": "tsx prisma/scripts/smoke-slice05.ts",
     "smoke:slice06": "tsx prisma/scripts/smoke-slice06.ts",
     "smoke:slice07": "tsx prisma/scripts/smoke-slice07.ts",

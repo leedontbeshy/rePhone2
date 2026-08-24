@@ -68,7 +68,7 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
     }),
     prisma.warrantyPolicy.upsert({
       where: { code: 'IPHONE-90D' },
-      update: { name: 'Bảo hành iPhone 90 ngày', defaultDays: 90, status: 'ACTIVE' },
+      update: {},
       create: {
         code: 'IPHONE-90D',
         name: 'Bảo hành iPhone 90 ngày',
@@ -80,7 +80,7 @@ export async function seedDatabase(prisma: PrismaClient): Promise<void> {
     }),
     prisma.warrantyPolicy.upsert({
       where: { code: 'ACCESSORY-30D' },
-      update: { name: 'Bảo hành phụ kiện 30 ngày', defaultDays: 30, status: 'ACTIVE' },
+      update: {},
       create: {
         code: 'ACCESSORY-30D',
         name: 'Bảo hành phụ kiện 30 ngày',
