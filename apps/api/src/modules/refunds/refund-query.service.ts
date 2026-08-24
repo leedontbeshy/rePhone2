@@ -68,11 +68,7 @@ export class RefundQueryService {
     request: Request,
   ): Promise<RefundEvidenceUrlDto> {
     const refund = await this.refunds.findById(id);
-    if (
-      refund === null ||
-      refund.status !== 'COMPLETED' ||
-      refund.method !== 'BANK_TRANSFER'
-    ) {
+    if (refund === null || refund.status !== 'COMPLETED' || refund.method !== 'BANK_TRANSFER') {
       throw new ApiError(refund === null ? 'RESOURCE_NOT_FOUND' : 'EVIDENCE_REQUIRED');
     }
     if (

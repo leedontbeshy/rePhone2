@@ -150,10 +150,10 @@ export class BackofficeOrderController {
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: CancelBackofficeOrderDto })
   @ApiOkResponse({ type: BackofficeOrderDetailResponse })
-  @ApiErrorResponses(
-    ...BACKOFFICE_ORDER_QUERY_ERRORS,
-    { status: 409, description: 'INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION' },
-  )
+  @ApiErrorResponses(...BACKOFFICE_ORDER_QUERY_ERRORS, {
+    status: 409,
+    description: 'INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION',
+  })
   public cancel(
     @Param() params: BackofficeOrderIdParamsDto,
     @Body() input: CancelBackofficeOrderDto,

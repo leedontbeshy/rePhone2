@@ -23,10 +23,7 @@ export class RefundBankCompletionGuard implements CanActivate {
     if (auth === undefined) throw new ApiError('AUTH_REQUIRED');
     const refund = await this.refunds.findById(id);
     if (refund === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    if (
-      refund.method !== 'BANK_TRANSFER' ||
-      !['PROCESSING', 'COMPLETED'].includes(refund.status)
-    ) {
+    if (refund.method !== 'BANK_TRANSFER' || !['PROCESSING', 'COMPLETED'].includes(refund.status)) {
       throw new ApiError('INVALID_STATE_TRANSITION');
     }
     if (refund.processedById !== auth.userId && auth.role !== 'ADMIN') {

@@ -91,7 +91,10 @@ export class RefundOperationsRepository {
   }
 
   public async findOrderId(id: string): Promise<string | null> {
-    const refund = await this.prisma.refund.findUnique({ where: { id }, select: { orderId: true } });
+    const refund = await this.prisma.refund.findUnique({
+      where: { id },
+      select: { orderId: true },
+    });
     return refund?.orderId ?? null;
   }
 

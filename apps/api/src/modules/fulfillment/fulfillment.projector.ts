@@ -7,10 +7,7 @@ import type {
   BackofficeOrderListItemDto,
   BackofficeOrderShipmentDto,
 } from './fulfillment-response.dto.js';
-import {
-  availableFulfillmentActions,
-  canStaffCancelOrder,
-} from './fulfillment-action.policy.js';
+import { availableFulfillmentActions, canStaffCancelOrder } from './fulfillment-action.policy.js';
 import type { ShipmentRecord } from './shipment.gateway.js';
 
 export function projectBackofficeOrderDetail(
@@ -208,10 +205,7 @@ export function projectBackofficeOrderListItem(
 function calculateRefundableAmount(order: FulfillmentOrderRecord): bigint {
   const verified = order.payments
     .filter(({ status }) => status === 'VERIFIED')
-    .reduce(
-      (sum, payment) => sum + BigInt(payment.receivedAmount?.toString() ?? '0'),
-      0n,
-    );
+    .reduce((sum, payment) => sum + BigInt(payment.receivedAmount?.toString() ?? '0'), 0n);
   const covered = order.refunds
     .filter(({ status }) => ['REQUESTED', 'PROCESSING', 'COMPLETED'].includes(status))
     .reduce((sum, refund) => sum + BigInt(refund.amount.toString()), 0n);

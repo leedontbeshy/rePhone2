@@ -49,8 +49,8 @@ export class RefundListItemDto {
   @ApiProperty({ enum: REFUND_METHODS }) public method!: string;
   @ApiProperty({ enum: REFUND_STATUSES }) public status!: string;
   @ApiProperty({ enum: ['CUSTOMER', 'STAFF', 'SYSTEM'] }) public requestedByType!: string;
-  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true }) public requester!:
-    RefundActorDto | null;
+  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true })
+  public requester!: RefundActorDto | null;
   @ApiProperty({ type: Boolean }) public evidenceAvailable!: boolean;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true }) public processingAt!:
     string | null;
@@ -63,14 +63,14 @@ export class RefundListItemDto {
 
 export class RefundDetailDto extends RefundListItemDto {
   @ApiProperty({ type: () => RefundOrderSummaryDto }) public order!: RefundOrderSummaryDto;
-  @ApiPropertyOptional({ type: () => RefundPaymentSourceDto, nullable: true }) public payment!:
-    RefundPaymentSourceDto | null;
+  @ApiPropertyOptional({ type: () => RefundPaymentSourceDto, nullable: true })
+  public payment!: RefundPaymentSourceDto | null;
   @ApiProperty({ type: String }) public reason!: string;
   @ApiPropertyOptional({ type: String, nullable: true }) public note!: string | null;
-  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true }) public processor!:
-    RefundActorDto | null;
-  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true }) public terminalActor!:
-    RefundActorDto | null;
+  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true })
+  public processor!: RefundActorDto | null;
+  @ApiPropertyOptional({ type: () => RefundActorDto, nullable: true })
+  public terminalActor!: RefundActorDto | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public terminalReason!: string | null;
   @ApiProperty({ type: [String], enum: REFUND_ACTIONS }) public availableActions!: RefundAction[];
 }

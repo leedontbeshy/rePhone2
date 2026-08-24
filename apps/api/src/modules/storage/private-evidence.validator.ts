@@ -7,12 +7,7 @@ import { ApiError } from '../../common/errors/api-error.js';
 
 export const MAX_PRIVATE_EVIDENCE_BYTES = 10 * 1024 * 1024;
 
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf',
-]);
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 
 export interface ValidatedPrivateEvidence {
   bytes: Uint8Array;

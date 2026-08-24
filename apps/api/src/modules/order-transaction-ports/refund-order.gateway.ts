@@ -29,9 +29,7 @@ export class RefundOrderGateway {
       where: { id: orderId },
       select: { id: true, orderNumber: true, status: true, grandTotal: true },
     });
-    return order === null
-      ? null
-      : { ...order, grandTotal: order.grandTotal.toString() };
+    return order === null ? null : { ...order, grandTotal: order.grandTotal.toString() };
   }
 
   public markCancelled(

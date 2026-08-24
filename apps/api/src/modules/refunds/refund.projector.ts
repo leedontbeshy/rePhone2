@@ -1,9 +1,5 @@
 import type { RefundOperationsRecord } from './refund-operations.repository.js';
-import type {
-  RefundAction,
-  RefundDetailDto,
-  RefundListItemDto,
-} from './refund-response.dto.js';
+import type { RefundAction, RefundDetailDto, RefundListItemDto } from './refund-response.dto.js';
 
 export function projectRefundListItem(refund: RefundOperationsRecord): RefundListItemDto {
   return {
@@ -121,9 +117,7 @@ function hasCompleteEvidence(
   );
 }
 
-function actor(
-  value: { id: string; fullName: string; employeeCode: string | null } | null,
-) {
+function actor(value: { id: string; fullName: string; employeeCode: string | null } | null) {
   return value === null
     ? null
     : { id: value.id, fullName: value.fullName, employeeCode: value.employeeCode };

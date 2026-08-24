@@ -87,14 +87,30 @@ export class BackofficeRefundController {
 
   @Get()
   @ApiOperation({ operationId: 'listBackofficeRefunds', summary: 'List refund obligations' })
-  @ApiQuery({ name: 'status', required: false, enum: ['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['REQUESTED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'],
+  })
   @ApiQuery({ name: 'method', required: false, enum: ['BANK_TRANSFER', 'CASH', 'OTHER'] })
   @ApiQuery({ name: 'orderNumber', required: false, type: String, maxLength: 64 })
   @ApiQuery({ name: 'createdFrom', required: false, type: String, format: 'date-time' })
   @ApiQuery({ name: 'createdTo', required: false, type: String, format: 'date-time' })
   @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number, minimum: 1, maximum: 100, default: 20 })
-  @ApiQuery({ name: 'sortBy', required: false, enum: ['createdAt', 'amount', 'processingAt'], default: 'createdAt' })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'amount', 'processingAt'],
+    default: 'createdAt',
+  })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], default: 'desc' })
   @ApiOkResponse({ type: RefundListResponse })
   @ApiErrorResponses(...REFUND_QUERY_ERRORS)
@@ -104,7 +120,10 @@ export class BackofficeRefundController {
 
   @Get(':id/evidence-url')
   @BackofficeRateLimit('mutation')
-  @ApiOperation({ operationId: 'getRefundEvidenceUrl', summary: 'Create a short-lived private refund evidence URL' })
+  @ApiOperation({
+    operationId: 'getRefundEvidenceUrl',
+    summary: 'Create a short-lived private refund evidence URL',
+  })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: RefundEvidenceUrlResponse })
   @ApiErrorResponses(
@@ -132,7 +151,10 @@ export class BackofficeRefundController {
   @Post(':id/start-processing')
   @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit('mutation')
-  @ApiOperation({ operationId: 'startRefundProcessing', summary: 'Start processing a requested refund' })
+  @ApiOperation({
+    operationId: 'startRefundProcessing',
+    summary: 'Start processing a requested refund',
+  })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: StartRefundProcessingDto })
   @ApiOkResponse({ type: RefundDetailResponse })
@@ -153,7 +175,10 @@ export class BackofficeRefundController {
   @UseInterceptors(
     FileInterceptor('file', { limits: { files: 1, fileSize: MAX_PRIVATE_EVIDENCE_BYTES } }),
   )
-  @ApiOperation({ operationId: 'completeBankTransferRefund', summary: 'Complete a bank-transfer refund with private evidence' })
+  @ApiOperation({
+    operationId: 'completeBankTransferRefund',
+    summary: 'Complete a bank-transfer refund with private evidence',
+  })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

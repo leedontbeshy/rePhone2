@@ -162,11 +162,10 @@ function cancellationFixture(record: TestOrder) {
       findUnique: vi.fn(async () => record.sourceCart),
     },
     shipment: {
-      findMany: vi.fn(
-        async (input: { select: { id?: boolean; status?: boolean } }) =>
-          input.select.id === true
-            ? record.shipments.map(({ id }) => ({ id }))
-            : record.shipments.map(({ status }) => ({ status })),
+      findMany: vi.fn(async (input: { select: { id?: boolean; status?: boolean } }) =>
+        input.select.id === true
+          ? record.shipments.map(({ id }) => ({ id }))
+          : record.shipments.map(({ status }) => ({ status })),
       ),
       updateMany: shipmentUpdateMany,
     },

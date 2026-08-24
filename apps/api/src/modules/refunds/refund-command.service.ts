@@ -259,39 +259,43 @@ export class RefundCommandService {
     auth: AuthContext,
     request: Request,
   ): Promise<RefundDetailDto> {
-    await this.withLockedRefund(id, `refunds.${target.toLowerCase()}`, async (refund, _finance, tx) => {
-      if (
-        refund.status === target &&
-        refund.terminalById === auth.userId &&
-        refund.terminalReason === reason
-      ) {
-        return false;
-      }
-      if (refund.status !== 'REQUESTED') throw new ApiError('INVALID_STATE_TRANSITION');
-      const now = this.clock.now();
-      const updated = await tx.refund.updateMany({
-        where: { id: refund.id, status: 'REQUESTED' },
-        data: {
-          status: target,
-          terminalReason: reason,
-          terminalById: auth.userId,
-          terminalAt: now,
-        },
-      });
-      if (updated.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
-      await this.auditAction(
-        tx,
-        auth,
-        request,
-        refund,
-        target === 'REJECTED' ? 'refund.rejected' : 'refund.cancelled',
-        {
-          before: { status: 'REQUESTED' },
-          after: { status: target, reason },
-        },
-      );
-      return true;
-    });
+    await this.withLockedRefund(
+      id,
+      `refunds.${target.toLowerCase()}`,
+      async (refund, _finance, tx) => {
+        if (
+          refund.status === target &&
+          refund.terminalById === auth.userId &&
+          refund.terminalReason === reason
+        ) {
+          return false;
+        }
+        if (refund.status !== 'REQUESTED') throw new ApiError('INVALID_STATE_TRANSITION');
+        const now = this.clock.now();
+        const updated = await tx.refund.updateMany({
+          where: { id: refund.id, status: 'REQUESTED' },
+          data: {
+            status: target,
+            terminalReason: reason,
+            terminalById: auth.userId,
+            terminalAt: now,
+          },
+        });
+        if (updated.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
+        await this.auditAction(
+          tx,
+          auth,
+          request,
+          refund,
+          target === 'REJECTED' ? 'refund.rejected' : 'refund.cancelled',
+          {
+            before: { status: 'REQUESTED' },
+            after: { status: target, reason },
+          },
+        );
+        return true;
+      },
+    );
     return this.detail(id);
   }
 
@@ -299,13 +303,11 @@ export class RefundCommandService {
     refund: RefundOperationsRecord,
     finance: LockedRefundFinance,
     note: string,
-    storedEvidence:
-      | {
-          evidence: ValidatedPrivateEvidence;
-          bucket: string;
-          objectPath: string;
-        }
-      | null,
+    storedEvidence: {
+      evidence: ValidatedPrivateEvidence;
+      bucket: string;
+      objectPath: string;
+    } | null,
     auth: AuthContext,
     request: Request,
     transaction: Prisma.TransactionClient,
@@ -465,15 +467,16 @@ export class RefundCommandService {
 }
 
 function isExactBankReplay(
-  refund: Pick<
-    RefundOperationsRecord,
-    'status' | 'method' | 'note' | 'evidenceSha256'
-  >,
+  refund: Pick<RefundOperationsRecord, 'status' | 'method' | 'note' | 'evidenceSha256'>,
   note: string,
   digest: string,
 ): boolean {
   if (refund.status !== 'COMPLETED') return false;
-  if (refund.method !== 'BANK_TRANSFER' || refund.note !== note || refund.evidenceSha256 !== digest) {
+  if (
+    refund.method !== 'BANK_TRANSFER' ||
+    refund.note !== note ||
+    refund.evidenceSha256 !== digest
+  ) {
     throw new ApiError('INVALID_STATE_TRANSITION');
   }
   return true;
