@@ -53,6 +53,11 @@ function applyOptionalCommerceSecurity(document: OpenAPIObject): void {
       { guestOrderToken: [] },
       { rephone_guest_cart: [] },
     ],
+    getCustomerWarranty: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
   };
   for (const pathItem of Object.values(document.paths)) {
     for (const method of HTTP_METHODS) {
