@@ -11,6 +11,7 @@ import type { AuthContext } from '../auth/auth-context.js';
 import { CheckoutInventoryGateway } from '../inventory/checkout-inventory.gateway.js';
 import { OrderNotificationService } from '../notifications/order-notification.service.js';
 import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
+import { RefundOrderGateway } from '../order-transaction-ports/refund-order.gateway.js';
 import { customerOrderInclude, requireOrder } from '../orders/order-projector.js';
 import { RefundCoreGateway, type RefundObligationActor } from '../refunds/refund-core.gateway.js';
 import { CheckoutVoucherGateway } from '../vouchers/checkout-voucher.gateway.js';
@@ -31,6 +32,8 @@ export class OrderCancellationService {
     private readonly transactions: SerializableTransactionRunner,
     @Inject(OrderOwnershipPolicy)
     private readonly ownership: OrderOwnershipPolicy,
+    @Inject(RefundOrderGateway)
+    private readonly orders: RefundOrderGateway,
     @Inject(CheckoutInventoryGateway)
     private readonly inventory: CheckoutInventoryGateway,
     @Inject(CheckoutVoucherGateway)
@@ -88,7 +91,10 @@ export class OrderCancellationService {
     request: Request,
   ): Promise<OrderCancellationOutcome> {
     const outcome = await this.transactions.run('orders.cancel', async (transaction) => {
-      await transaction.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
+      const lockedOrder = await this.orders.lockById(orderId, transaction);
+      if (lockedOrder === null) {
+        throw new ApiError(kind === 'OWNER' ? 'ORDER_NOT_FOUND' : 'RESOURCE_NOT_FOUND');
+      }
       const order = await transaction.order.findUnique({
         where: { id: orderId },
         include: customerOrderInclude,
@@ -107,15 +113,7 @@ export class OrderCancellationService {
         transaction,
       );
 
-      const cancelled = await transaction.order.updateMany({
-        where: { id: order.id, status: { in: ['PLACED', 'CONFIRMED', 'PROCESSING'] } },
-        data: {
-          status: 'CANCELLED',
-          fulfillmentStatus: 'CANCELLED',
-          cancelReason: reason,
-          cancelledAt: now,
-        },
-      });
+      const cancelled = await this.orders.markCancelled(order.id, reason, now, transaction);
       if (cancelled.count !== 1) throw new ApiError('INVALID_STATE_TRANSITION');
       await transaction.shipment.updateMany({
         where: { orderId: order.id, status: 'CREATED' },

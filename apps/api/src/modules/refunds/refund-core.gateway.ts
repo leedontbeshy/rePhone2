@@ -1,14 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import type { Prisma } from '../../generated/prisma/client.js';
+import {
+  RefundPaymentGateway,
+  type LockedRefundPayment,
+} from '../payments/refund-payment.gateway.js';
 
-export interface LockedRefundPayment {
-  id: string;
-  method: 'BANK_TRANSFER' | 'CASH' | 'COD' | 'OTHER';
-  status: 'AWAITING_PROOF' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
-  expectedAmount: string;
-  receivedAmount: string | null;
-}
+export type { LockedRefundPayment } from '../payments/refund-payment.gateway.js';
 
 export interface LockedRefundRecord {
   id: string;
@@ -30,19 +28,16 @@ export interface RefundObligationActor {
 
 @Injectable()
 export class RefundCoreGateway {
+  public constructor(
+    @Inject(RefundPaymentGateway)
+    private readonly payments: RefundPaymentGateway,
+  ) {}
+
   public async lockFinance(
     orderId: string,
     transaction: Prisma.TransactionClient,
   ): Promise<LockedRefundFinance> {
-    const paymentIds = await transaction.payment.findMany({
-      where: { orderId },
-      select: { id: true },
-      orderBy: { id: 'asc' },
-    });
-    for (const { id } of paymentIds) {
-      await transaction.$queryRaw`SELECT id FROM payments WHERE id = ${id}::uuid FOR UPDATE`;
-    }
-
+    const payments = await this.payments.lockForRefund(orderId, transaction);
     const refundIds = await transaction.refund.findMany({
       where: { orderId },
       select: { id: true },
@@ -52,17 +47,6 @@ export class RefundCoreGateway {
       await transaction.$queryRaw`SELECT id FROM refunds WHERE id = ${id}::uuid FOR UPDATE`;
     }
 
-    const payments = await transaction.payment.findMany({
-      where: { orderId },
-      select: {
-        id: true,
-        method: true,
-        status: true,
-        expectedAmount: true,
-        receivedAmount: true,
-      },
-      orderBy: { id: 'asc' },
-    });
     const refunds = await transaction.refund.findMany({
       where: { orderId },
       select: { id: true, paymentId: true, amount: true, method: true, status: true },
@@ -70,11 +54,7 @@ export class RefundCoreGateway {
     });
 
     return {
-      payments: payments.map((payment) => ({
-        ...payment,
-        expectedAmount: payment.expectedAmount.toString(),
-        receivedAmount: payment.receivedAmount?.toString() ?? null,
-      })),
+      payments,
       refunds: refunds.map((refund) => ({ ...refund, amount: refund.amount.toString() })),
     };
   }
@@ -147,10 +127,7 @@ export class RefundCoreGateway {
       throw new ApiError('INVALID_STATE_TRANSITION');
     }
     const refundable = this.availableTotal(finance);
-    await transaction.payment.updateMany({
-      where: { orderId: input.orderId, status: 'AWAITING_PROOF' },
-      data: { status: 'CANCELLED' },
-    });
+    await this.payments.cancelAwaitingProof(input.orderId, transaction);
     if (refundable === 0n) return null;
 
     const verified = finance.payments.filter(({ status }) => status === 'VERIFIED');

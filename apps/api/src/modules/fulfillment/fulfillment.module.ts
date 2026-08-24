@@ -6,6 +6,7 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { OrderCancellationModule } from '../order-cancellation/order-cancellation.module.js';
 import { OrderTransactionPortsModule } from '../order-transaction-ports/order-transaction-ports.module.js';
 import { PaymentCoreModule } from '../payments/payment-core.module.js';
+import { RefundCoreModule } from '../refunds/refund-core.module.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { WarrantyModule } from '../warranty/warranty.module.js';
@@ -33,6 +34,7 @@ import { ShippingOrderController } from './shipping-order.controller.js';
     OrderTransactionPortsModule,
     InventoryModule,
     PaymentCoreModule,
+    RefundCoreModule,
     VouchersModule,
     WarrantyModule,
     SettingsModule,

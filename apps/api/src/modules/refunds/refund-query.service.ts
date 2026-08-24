@@ -79,6 +79,7 @@ export class RefundQueryService {
       refund.evidenceBucket === null ||
       refund.evidenceObjectPath === null ||
       refund.evidenceMimeType === null ||
+      refund.evidenceFileSize === null ||
       refund.evidenceSha256 === null
     ) {
       throw new ApiError('EVIDENCE_REQUIRED');
@@ -98,6 +99,7 @@ export class RefundQueryService {
     );
 
     const ttlSeconds = Math.min(this.config.storage.signedUrlTtlSeconds, 300);
+    const issuedAt = this.clock.now();
     let url: string;
     try {
       url = await this.storage.createSignedReadUrl(
@@ -113,7 +115,7 @@ export class RefundQueryService {
     }
     return {
       url,
-      expiresAt: new Date(this.clock.now().getTime() + ttlSeconds * 1_000).toISOString(),
+      expiresAt: new Date(issuedAt.getTime() + ttlSeconds * 1_000).toISOString(),
     };
   }
 }

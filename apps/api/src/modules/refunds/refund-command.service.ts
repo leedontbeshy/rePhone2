@@ -6,12 +6,12 @@ import { requestContext } from '../../common/http/request-context.js';
 import { STORAGE_PROVIDER, type StorageProvider } from '../../common/providers/storage-provider.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
-import { PrismaService } from '../../database/prisma.service.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuthContext } from '../auth/auth-context.js';
 import { RefundNotificationService } from '../notifications/refund-notification.service.js';
+import { RefundOrderGateway } from '../order-transaction-ports/refund-order.gateway.js';
 import { projectOrderFinance } from '../payments/payment-finance.policy.js';
 import {
   PrivateEvidenceValidator,
@@ -37,10 +37,10 @@ export class RefundCommandService {
   private readonly logger = new Logger(RefundCommandService.name);
 
   public constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SerializableTransactionRunner)
     private readonly transactions: SerializableTransactionRunner,
     @Inject(RefundCoreGateway) private readonly finance: RefundCoreGateway,
+    @Inject(RefundOrderGateway) private readonly orders: RefundOrderGateway,
     @Inject(RefundOperationsRepository)
     private readonly refunds: RefundOperationsRepository,
     @Inject(PrivateEvidenceValidator)
@@ -60,7 +60,7 @@ export class RefundCommandService {
     request: Request,
   ): Promise<RefundDetailDto> {
     const refundId = await this.transactions.run('refunds.create', async (transaction) => {
-      const order = await lockOrder(orderId, transaction);
+      const order = await this.orders.lockById(orderId, transaction);
       if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
       if (!['CANCELLED', 'COMPLETED'].includes(order.status)) {
         throw new ApiError('INVALID_STATE_TRANSITION');
@@ -159,6 +159,7 @@ export class RefundCommandService {
           refund.evidenceBucket === null &&
           refund.evidenceObjectPath === null
         ) {
+          this.assertCompletionActor(refund, auth);
           return false;
         }
         this.assertCompletable(refund, 'CASH', auth);
@@ -309,10 +310,7 @@ export class RefundCommandService {
     request: Request,
     transaction: Prisma.TransactionClient,
   ): Promise<void> {
-    const order = await transaction.order.findUnique({
-      where: { id: refund.orderId },
-      select: { id: true, orderNumber: true, grandTotal: true },
-    });
+    const order = await this.orders.findById(refund.orderId, transaction);
     if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
     const verifiedAmounts = finance.payments.flatMap((payment) => {
       if (payment.status !== 'VERIFIED') return [];
@@ -326,7 +324,7 @@ export class RefundCommandService {
     const completedTotal = completedAmounts.reduce((sum, amount) => sum + amount, 0n);
     if (completedTotal > verifiedTotal) throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
     const projection = projectOrderFinance(
-      BigInt(order.grandTotal.toString()),
+      BigInt(order.grandTotal),
       verifiedAmounts,
       completedAmounts,
     );
@@ -349,15 +347,16 @@ export class RefundCommandService {
       },
     });
     if (updated.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
-    await transaction.order.update({
-      where: { id: order.id },
-      data: {
+    await this.orders.updateFinance(
+      order.id,
+      {
         paidAmount: projection.paidAmount.toString(),
         refundedAmount: projection.refundedAmount.toString(),
         balanceDue: projection.balanceDue.toString(),
         paymentStatus: projection.paymentStatus,
       },
-    });
+      transaction,
+    );
     await this.auditAction(transaction, auth, request, refund, 'refund.completed', {
       before: { status: 'PROCESSING' },
       after: {
@@ -382,7 +381,7 @@ export class RefundCommandService {
     const orderId = await this.refunds.findOrderId(id);
     if (orderId === null) throw new ApiError('RESOURCE_NOT_FOUND');
     return this.transactions.run(operation, async (transaction) => {
-      const order = await lockOrder(orderId, transaction);
+      const order = await this.orders.lockById(orderId, transaction);
       if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
       const finance = await this.finance.lockFinance(orderId, transaction);
       const refund = await this.refunds.findById(id, transaction);
@@ -463,20 +462,6 @@ export class RefundCommandService {
       });
     }
   }
-}
-
-async function lockOrder(
-  orderId: string,
-  transaction: Prisma.TransactionClient,
-): Promise<{ id: string; orderNumber: string; status: string } | null> {
-  const rows = await transaction.$queryRaw<Array<{ id: string }>>`
-    SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE
-  `;
-  if (rows.length === 0) return null;
-  return transaction.order.findUnique({
-    where: { id: orderId },
-    select: { id: true, orderNumber: true, status: true },
-  });
 }
 
 function isExactBankReplay(

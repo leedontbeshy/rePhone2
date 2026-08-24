@@ -36,6 +36,7 @@ import { RolesGuard } from '../auth/roles.guard.js';
 import { SessionGuard } from '../auth/session.guard.js';
 import { MAX_PRIVATE_EVIDENCE_BYTES } from '../storage/private-evidence.validator.js';
 import { RefundCommandService } from './refund-command.service.js';
+import { RefundBankCompletionGuard } from './refund-bank-completion.guard.js';
 import { RefundQueryService } from './refund-query.service.js';
 import {
   BackofficeRefundListQueryDto,
@@ -147,7 +148,8 @@ export class BackofficeRefundController {
 
   @Post(':id/complete-bank-transfer')
   @HttpCode(HttpStatus.OK)
-  @BackofficeRateLimit('upload')
+  @BackofficeRateLimit(['mutation', 'upload'])
+  @UseGuards(RefundBankCompletionGuard)
   @UseInterceptors(
     FileInterceptor('file', { limits: { files: 1, fileSize: MAX_PRIVATE_EVIDENCE_BYTES } }),
   )

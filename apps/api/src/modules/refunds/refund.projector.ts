@@ -14,10 +14,7 @@ export function projectRefundListItem(refund: RefundOperationsRecord): RefundLis
     status: refund.status,
     requestedByType: refund.requestedByType,
     requester: actor(refund.requestedBy),
-    evidenceAvailable:
-      refund.evidenceBucket !== null &&
-      refund.evidenceObjectPath !== null &&
-      refund.evidenceSha256 !== null,
+    evidenceAvailable: hasCompleteEvidence(refund),
     processingAt: refund.processingAt?.toISOString() ?? null,
     completedAt: refund.completedAt?.toISOString() ?? null,
     terminalAt: refund.terminalAt?.toISOString() ?? null,
@@ -76,7 +73,13 @@ export function projectRefundDetail(refund: RefundOperationsRecord): RefundDetai
 export function availableRefundActions(
   refund: Pick<
     RefundOperationsRecord,
-    'status' | 'method' | 'evidenceBucket' | 'evidenceObjectPath'
+    | 'status'
+    | 'method'
+    | 'evidenceBucket'
+    | 'evidenceObjectPath'
+    | 'evidenceMimeType'
+    | 'evidenceFileSize'
+    | 'evidenceSha256'
   >,
 ): RefundAction[] {
   if (refund.status === 'REQUESTED') {
@@ -92,12 +95,30 @@ export function availableRefundActions(
   if (
     refund.status === 'COMPLETED' &&
     refund.method === 'BANK_TRANSFER' &&
-    refund.evidenceBucket !== null &&
-    refund.evidenceObjectPath !== null
+    hasCompleteEvidence(refund)
   ) {
     return ['VIEW_EVIDENCE'];
   }
   return [];
+}
+
+function hasCompleteEvidence(
+  refund: Pick<
+    RefundOperationsRecord,
+    | 'evidenceBucket'
+    | 'evidenceObjectPath'
+    | 'evidenceMimeType'
+    | 'evidenceFileSize'
+    | 'evidenceSha256'
+  >,
+): boolean {
+  return (
+    refund.evidenceBucket !== null &&
+    refund.evidenceObjectPath !== null &&
+    refund.evidenceMimeType !== null &&
+    refund.evidenceFileSize !== null &&
+    refund.evidenceSha256 !== null
+  );
 }
 
 function actor(

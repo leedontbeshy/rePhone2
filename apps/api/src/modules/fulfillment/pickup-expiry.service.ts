@@ -8,7 +8,7 @@ import { AuditWriter } from '../audit/audit-writer.service.js';
 import { FulfillmentInventoryGateway } from '../inventory/fulfillment-inventory.gateway.js';
 import { OrderNotificationService } from '../notifications/order-notification.service.js';
 import { FulfillmentOrderGateway } from '../order-transaction-ports/fulfillment-order.gateway.js';
-import { FulfillmentPaymentGateway } from '../payments/fulfillment-payment.gateway.js';
+import { RefundCoreGateway } from '../refunds/refund-core.gateway.js';
 import { FulfillmentVoucherGateway } from '../vouchers/fulfillment-voucher.gateway.js';
 import { FulfillmentClock } from './fulfillment-clock.service.js';
 import { projectBackofficeOrderDetail } from './fulfillment.projector.js';
@@ -33,7 +33,7 @@ export class PickupExpiryService {
     @Inject(FulfillmentOrderGateway) private readonly orders: FulfillmentOrderGateway,
     @Inject(FulfillmentInventoryGateway)
     private readonly inventory: FulfillmentInventoryGateway,
-    @Inject(FulfillmentPaymentGateway) private readonly payments: FulfillmentPaymentGateway,
+    @Inject(RefundCoreGateway) private readonly refunds: RefundCoreGateway,
     @Inject(FulfillmentVoucherGateway) private readonly vouchers: FulfillmentVoucherGateway,
     @Inject(SerializableTransactionRunner)
     private readonly transactions: SerializableTransactionRunner,
@@ -154,7 +154,15 @@ export class PickupExpiryService {
       ) {
         return null;
       }
-      const finance = await this.payments.lockFinance(order.id, transaction);
+      const refund = await this.refunds.prepareCancellationRefund(
+        {
+          orderId: order.id,
+          reason: EXPIRY_REASON,
+          now,
+          actor: { requesterType: 'SYSTEM', requesterId: null },
+        },
+        transaction,
+      );
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
       this.inventory.assertPickupHold(
         reservations,
@@ -165,12 +173,6 @@ export class PickupExpiryService {
       );
       await this.inventory.expirePickup(reservations, now, transaction);
       await this.vouchers.release(order.id, now, transaction);
-      const refund = await this.payments.prepareSystemRefund(
-        order.id,
-        EXPIRY_REASON,
-        finance,
-        transaction,
-      );
       const cancelled = await transaction.order.updateMany({
         where: {
           id: order.id,

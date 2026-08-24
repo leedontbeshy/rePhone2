@@ -5,6 +5,7 @@ import { ApiError } from '../../common/errors/api-error.js';
 import {
   BACKOFFICE_RATE_LIMIT_METADATA_KEY,
   type BackofficeRateLimitKind,
+  type BackofficeRateLimitRule,
 } from './backoffice-rate-limit.decorator.js';
 import { BackofficeRateLimiter } from './backoffice-rate-limiter.service.js';
 
@@ -16,18 +17,19 @@ export class BackofficeRateLimitGuard implements CanActivate {
   ) {}
 
   public canActivate(context: ExecutionContext): boolean {
-    const kind = this.reflector.getAllAndOverride<BackofficeRateLimitKind | undefined>(
+    const rule = this.reflector.getAllAndOverride<BackofficeRateLimitRule | undefined>(
       BACKOFFICE_RATE_LIMIT_METADATA_KEY,
       [context.getHandler(), context.getClass()],
     );
-    if (kind === undefined) {
+    if (rule === undefined) {
       return true;
     }
     const auth = context.switchToHttp().getRequest<Request>().auth;
     if (auth === undefined) {
       throw new ApiError('AUTH_REQUIRED');
     }
-    this.rateLimiter.consume(auth.userId, kind);
+    const kinds: readonly BackofficeRateLimitKind[] = Array.isArray(rule) ? rule : [rule];
+    for (const kind of kinds) this.rateLimiter.consume(auth.userId, kind);
     return true;
   }
 }
