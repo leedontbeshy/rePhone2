@@ -16,7 +16,7 @@ describe('AfterSalesInventoryGateway', () => {
     const stockLevelUpdate = vi.fn();
     const stockMovementCreate = vi.fn();
     const unit = iphoneUnit({ lifecycleStatus: 'SOLD' });
-    const originalSoldAt = unit.soldAt as Date;
+    const originalSoldAt = unit.soldAt;
     const transaction = {
       inventoryLocation: {
         findFirst: vi.fn().mockResolvedValue({ id: LOCATION_ID, status: 'ACTIVE' }),
@@ -66,6 +66,7 @@ describe('AfterSalesInventoryGateway', () => {
 
   it('rejects a sold iPhone that belongs to a different completed order', async () => {
     const unit = iphoneUnit({ lifecycleStatus: 'SOLD' });
+    const updateMany = vi.fn();
     const transaction = {
       inventoryLocation: {
         findFirst: vi.fn().mockResolvedValue({ id: LOCATION_ID, status: 'ACTIVE' }),
@@ -73,7 +74,7 @@ describe('AfterSalesInventoryGateway', () => {
       $queryRaw: vi.fn().mockResolvedValue([{ id: UNIT_ID }]),
       inventoryUnit: {
         findUnique: vi.fn().mockResolvedValue(unit),
-        updateMany: vi.fn(),
+        updateMany,
       },
     } as unknown as Prisma.TransactionClient;
 
@@ -87,7 +88,7 @@ describe('AfterSalesInventoryGateway', () => {
         transaction,
       ),
     ).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
-    expect(transaction.inventoryUnit.updateMany).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it('restores the original sale timestamp when an inspected iPhone is returned', async () => {
