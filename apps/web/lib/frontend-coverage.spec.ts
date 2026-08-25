@@ -11,14 +11,23 @@ const repositoryRoot = resolve(import.meta.dirname, '../../..');
 
 describe('FE-0 frontend coverage contract', () => {
   it('assigns every OpenAPI operation to exactly one route, phase and automated test', () => {
-    const openApiOperationIds = readOpenApiOperationIds();
+    const openApiOperations = readOpenApiOperations();
+    const openApiOperationIds = openApiOperations.map(({ operationId }) => operationId);
     const manifestOperationIds = FRONTEND_OPERATION_COVERAGE.map(([operationId]) => operationId);
+    const manifestOperations = FRONTEND_OPERATION_COVERAGE.map(
+      ([operationId, method, apiPath]) => ({
+        apiPath,
+        method,
+        operationId,
+      }),
+    );
 
     expect(openApiOperationIds).toHaveLength(160);
     expect(new Set(openApiOperationIds).size).toBe(160);
     expect(manifestOperationIds).toHaveLength(160);
     expect(new Set(manifestOperationIds).size).toBe(160);
     expect([...manifestOperationIds].sort()).toEqual([...openApiOperationIds].sort());
+    expect(sortOperations(manifestOperations)).toEqual(sortOperations(openApiOperations));
 
     for (const [
       operationId,
@@ -111,17 +120,34 @@ describe('FE-0 frontend coverage contract', () => {
   });
 });
 
-function readOpenApiOperationIds(): string[] {
+function readOpenApiOperations(): Array<{
+  apiPath: string;
+  method: string;
+  operationId: string;
+}> {
   const document = JSON.parse(
     readFileSync(join(repositoryRoot, 'apps/api/openapi/openapi.json'), 'utf8'),
   ) as { paths: Record<string, Record<string, { operationId?: string }>> };
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete']);
 
-  return Object.values(document.paths).flatMap((pathItem) =>
+  return Object.entries(document.paths).flatMap(([apiPath, pathItem]) =>
     Object.entries(pathItem)
       .filter(([method]) => methods.has(method))
-      .map(([, operation]) => operation.operationId)
-      .filter((operationId): operationId is string => operationId !== undefined),
+      .flatMap(([method, operation]) =>
+        operation.operationId === undefined
+          ? []
+          : [{ apiPath, method: method.toUpperCase(), operationId: operation.operationId }],
+      ),
+  );
+}
+
+function sortOperations<T extends { apiPath: string; method: string; operationId: string }>(
+  operations: readonly T[],
+) {
+  return [...operations].sort((left, right) =>
+    `${left.operationId}|${left.method}|${left.apiPath}`.localeCompare(
+      `${right.operationId}|${right.method}|${right.apiPath}`,
+    ),
   );
 }
 

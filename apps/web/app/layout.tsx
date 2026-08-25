@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import '../styles/base.css';
 import './globals.css';
 import { AuthProvider } from './auth-provider';
 import { CommerceProvider } from './commerce-provider';
