@@ -7,10 +7,10 @@
 > Design contract: [design.md](design.md)  
 > Frontend baseline SHA: `801ad26`  
 > Ngày cập nhật: `2026-08-25`  
-> Trạng thái triển khai: **FE-0 DONE · FE-1 IN PROGRESS**
+> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 NOT STARTED**<br>
 > HTTP baseline: `apps/api/openapi/openapi.json` — **160 operations**
 
-Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đang triển khai storefront discovery. Tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
+Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 là bước kế tiếp nhưng chưa bắt đầu. Tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
 
 ## 1. Vai trò tài liệu và thứ tự nguồn sự thật
 
@@ -248,21 +248,21 @@ Contract chung cho mọi phase:
 
 ### FE-1 — Storefront discovery và inspection dossier
 
-| Thuộc tính        | Nội dung                                                                                                                                        |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **IN PROGRESS**                                                                                                                                 |
-| Mục tiêu          | Tạo storefront light technical-editorial; exact-unit dossier là design authority; hoàn thiện public store/catalog/voucher discovery.            |
-| Non-goal          | Không đổi catalog query/API, pricing, availability hoặc thêm claim kiểm định không có trong DTO.                                                |
-| Dependency        | FE-0.                                                                                                                                           |
-| Route             | `/`, `/store`, `/products`, `/products/[slug]`, `/products/[slug]/units/[inventoryCode]`, `/vouchers`.                                          |
-| API group         | Catalog 3, Store 1, public Voucher 1 — tổng 5 operations.                                                                                       |
-| Design anchor     | Dossier masthead, evidence gallery, key metrics, 18-check index, condition/repair record, masked identifier, purchase rail; model ≠ exact unit. |
-| State bắt buộc    | SSR success, empty, 404, API error, missing/broken media, in/out of stock, filter result, pagination boundary.                                  |
-| Test              | Catalog query unit; server rendering; semantic headings/alt; back-forward/filter; public browser desktop/mobile; no private field.              |
-| Commit dự kiến    | `feat(web): add storefront shell`; `feat(web): redesign inspection-first catalog`; `feat(web): expose public store experience`.                 |
-| DoD/checkpoint C1 | Anonymous browse home→catalog→model→unit; `/store` an toàn; vouchers hiển thị đúng visibility; SSR/mobile/a11y gates xanh.                      |
-| Rollback          | Route-by-route revert về legacy `CatalogHeader`/classes qua compatibility export; không đổi API/data.                                           |
-| Evidence          | Chưa có — cần browser screenshots, route smoke, accessibility report và commit SHA.                                                             |
+| Thuộc tính        | Nội dung                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trạng thái        | **DONE**                                                                                                                                                                                           |
+| Mục tiêu          | Tạo storefront light technical-editorial; exact-unit dossier là design authority; hoàn thiện public store/catalog/voucher discovery.                                                               |
+| Non-goal          | Không đổi catalog query/API, pricing, availability hoặc thêm claim kiểm định không có trong DTO.                                                                                                   |
+| Dependency        | FE-0.                                                                                                                                                                                              |
+| Route             | `/`, `/store`, `/products`, `/products/[slug]`, `/products/[slug]/units/[inventoryCode]`, `/vouchers`.                                                                                             |
+| API group         | Catalog 3, Store 1, public Voucher 1 — tổng 5 operations.                                                                                                                                          |
+| Design anchor     | Dossier masthead, evidence gallery, key metrics, 18-check index, condition/repair record, masked identifier, purchase rail; model ≠ exact unit.                                                    |
+| State bắt buộc    | SSR success, empty, 404, API error, missing/broken media, in/out of stock, filter result, pagination boundary.                                                                                     |
+| Test              | Catalog query unit; server rendering; semantic headings/alt; back-forward/filter; public browser desktop/mobile; no private field.                                                                 |
+| Commit dự kiến    | `feat(web): add storefront shell`; `feat(web): redesign inspection-first catalog`; `feat(web): expose public store experience`.                                                                    |
+| DoD/checkpoint C1 | Anonymous browse home→catalog→model→unit; `/store` an toàn; vouchers hiển thị đúng visibility; SSR/mobile/a11y gates xanh.                                                                         |
+| Rollback          | Route-by-route revert về legacy `CatalogHeader`/classes qua compatibility export; không đổi API/data.                                                                                              |
+| Evidence          | Code SHA `aae6f12`; 5/5 operation `DONE`; Web unit `79/79`; FE-1 browser `8/8`; full browser regression `11/11`; desktop/mobile snapshots đã duyệt; `pnpm verify:release` xanh trên closeout tree. |
 
 ### FE-2 — Auth và self-service account đầy đủ
 
@@ -493,6 +493,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-25 | FE-0              | IN PROGRESS            | Bắt đầu token, primitive, shell và executable coverage contract                                    | Branch `feat/fe-0-design-foundation`; implementation record trong `docs/planning/2026-08-25-fe-0-frontend-foundation.md`                                         |
 | 2026-08-25 | FE-0              | DONE                   | Khóa token, primitive, bốn shell, a11y contract, exact operation/route coverage và visual baseline | Code SHA `c4d2b3c`; `pnpm verify` xanh lại trên final closeout tree; `pnpm test:browser` xanh `3/3` sau `c4d2b3c`; rollback rehearsal xanh; FE-1 là bước kế tiếp |
 | 2026-08-25 | FE-1              | IN PROGRESS            | Bắt đầu storefront shell, discovery, exact-unit dossier, public store và voucher                   | Branch `feat/fe-1-storefront-discovery`; record `docs/planning/2026-08-25-fe-1-storefront-discovery.md`                                                          |
+| 2026-08-25 | FE-1              | DONE                   | Khóa sáu public surface, exact-unit dossier, voucher auth visibility và public store               | Code SHA `aae6f12`; 5/5 operation; FE-1 browser `8/8`; full browser `11/11`; visual desktop/mobile; `pnpm verify:release` xanh; FE-2 là bước kế tiếp             |
 
 ## 12. Operation coverage ledger — 160/160
 
@@ -653,11 +654,11 @@ Quy ước:
 | 146 | `getCustomerOrder`                      | `GET /api/v1/orders/{orderNumber}`                                       | CUSTOMER Bearer hoặc guest order credential | `/orders/[orderNumber]`                                        | Đọc detail; loading, 404/permission, error                                                       | FE-4  | `browser:customer-post-purchase` | NOT STARTED |
 | 147 | `cancelCustomerOrder`                   | `POST /api/v1/orders/{orderNumber}/cancel`                               | CUSTOMER Bearer hoặc guest order credential | `/orders/[orderNumber]`                                        | Action `cancelCustomerOrder`; confirm/reason, pending, success, replay/conflict                  | FE-4  | `browser:customer-post-purchase` | NOT STARTED |
 | 148 | `submitPaymentProof`                    | `POST /api/v1/payments/{paymentId}/submit-proof`                         | CUSTOMER Bearer hoặc guest order credential | `/orders/[orderNumber]`                                        | Command `submitPaymentProof`; pending, authoritative success, replay/conflict                    | FE-4  | `browser:customer-post-purchase` | NOT STARTED |
-| 149 | `listProducts`                          | `GET /api/v1/products`                                                   | Public                                      | `/products`                                                    | Đọc collection; loading, empty, error, filter/pagination                                         | FE-1  | `browser:storefront-discovery`   | IN PROGRESS |
-| 150 | `getProductBySlug`                      | `GET /api/v1/products/{slug}`                                            | Public                                      | `/products/[slug]`                                             | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | IN PROGRESS |
-| 151 | `getUsedIphoneByInventoryCode`          | `GET /api/v1/products/{slug}/units/{inventoryCode}`                      | Public                                      | `/products/[slug]/units/[inventoryCode]`                       | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | IN PROGRESS |
-| 152 | `getPublicStore`                        | `GET /api/v1/store`                                                      | Public                                      | `/store`                                                       | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | IN PROGRESS |
-| 153 | `listPublicVouchers`                    | `GET /api/v1/vouchers`                                                   | Public; CUSTOMER Bearer optional            | `/vouchers`                                                    | Đọc collection; loading, empty, error, filter/pagination                                         | FE-1  | `browser:storefront-discovery`   | IN PROGRESS |
+| 149 | `listProducts`                          | `GET /api/v1/products`                                                   | Public                                      | `/products`                                                    | Đọc collection; loading, empty, error, filter/pagination                                         | FE-1  | `browser:storefront-discovery`   | DONE        |
+| 150 | `getProductBySlug`                      | `GET /api/v1/products/{slug}`                                            | Public                                      | `/products/[slug]`                                             | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | DONE        |
+| 151 | `getUsedIphoneByInventoryCode`          | `GET /api/v1/products/{slug}/units/{inventoryCode}`                      | Public                                      | `/products/[slug]/units/[inventoryCode]`                       | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | DONE        |
+| 152 | `getPublicStore`                        | `GET /api/v1/store`                                                      | Public                                      | `/store`                                                       | Đọc detail; loading, 404/permission, error                                                       | FE-1  | `browser:storefront-discovery`   | DONE        |
+| 153 | `listPublicVouchers`                    | `GET /api/v1/vouchers`                                                   | Public; CUSTOMER Bearer optional            | `/vouchers`                                                    | Đọc collection; loading, empty, error, filter/pagination                                         | FE-1  | `browser:storefront-discovery`   | DONE        |
 | 154 | `listCustomerWarranties`                | `GET /api/v1/warranties`                                                 | CUSTOMER Bearer                             | `/warranties`                                                  | Đọc collection; loading, empty, error, filter/pagination                                         | FE-4  | `browser:customer-post-purchase` | NOT STARTED |
 | 155 | `getCustomerWarranty`                   | `GET /api/v1/warranties/{warrantyCode}`                                  | CUSTOMER Bearer hoặc guest order credential | `/warranties/[warrantyCode]`                                   | Đọc detail; loading, 404/permission, error                                                       | FE-4  | `browser:customer-post-purchase` | NOT STARTED |
 | 156 | `getWishlist`                           | `GET /api/v1/wishlist`                                                   | CUSTOMER Bearer                             | `/wishlist`                                                    | Đọc collection; loading, empty, error, filter/pagination                                         | FE-3  | `browser:cart-checkout`          | NOT STARTED |

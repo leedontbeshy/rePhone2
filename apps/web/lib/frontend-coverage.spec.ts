@@ -58,11 +58,12 @@ describe('FE-0 frontend coverage contract', () => {
       expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
     }
 
-    expect(
-      Object.entries(FRONTEND_PHASE_STATUS)
-        .filter(([, status]) => status === 'IN PROGRESS')
-        .map(([phase]) => phase),
-    ).toEqual(['FE-1']);
+    const phaseStatuses: ReadonlyArray<readonly [string, string]> =
+      Object.entries(FRONTEND_PHASE_STATUS);
+    const inProgressPhases = phaseStatuses
+      .filter(([, status]) => status === 'IN PROGRESS')
+      .map(([phase]) => phase);
+    expect(inProgressPhases).toHaveLength(0);
     expect(readPlanPhaseStatuses()).toEqual(FRONTEND_PHASE_STATUS);
   });
 

@@ -5,7 +5,7 @@ export type FrontendCoverageStatus = 'NOT STARTED' | 'IN PROGRESS' | 'DONE';
 
 export const FRONTEND_PHASE_STATUS = {
   'FE-0': 'DONE',
-  'FE-1': 'IN PROGRESS',
+  'FE-1': 'DONE',
   'FE-2': 'NOT STARTED',
   'FE-3': 'NOT STARTED',
   'FE-4': 'NOT STARTED',
@@ -1679,7 +1679,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-1',
     'browser:storefront-discovery',
-    'IN PROGRESS',
+    'DONE',
   ],
   [
     'getProductBySlug',
@@ -1690,7 +1690,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'IN PROGRESS',
+    'DONE',
   ],
   [
     'getUsedIphoneByInventoryCode',
@@ -1701,7 +1701,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'IN PROGRESS',
+    'DONE',
   ],
   [
     'getPublicStore',
@@ -1712,7 +1712,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'IN PROGRESS',
+    'DONE',
   ],
   [
     'listPublicVouchers',
@@ -1723,7 +1723,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-1',
     'browser:storefront-discovery',
-    'IN PROGRESS',
+    'DONE',
   ],
   [
     'listCustomerWarranties',

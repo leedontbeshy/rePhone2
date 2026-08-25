@@ -1,6 +1,6 @@
 # FE-1 — Storefront discovery & inspection dossier implementation record
 
-> Trạng thái: **IN PROGRESS**  
+> Trạng thái: **DONE**<br>
 > Branch: `feat/fe-1-storefront-discovery`  
 > Main baseline SHA: `83c004b`  
 > Frontend foundation SHA: `0b0fc52`  
@@ -120,3 +120,15 @@ Mỗi commit chỉ stage concern liên quan và được push riêng lên `origi
 - [Testing strategy](../quality/testing-strategy.md)
 - [Seed và demo scenarios](seed-and-demo-scenarios.md)
 
+## 9. Nghiệm thu và evidence
+
+- Sáu public surface đã được migrate theo route group riêng: `/`, `/products`, model detail, exact-unit detail, `/store` và `/vouchers`; URL công khai không đổi.
+- Năm operation của FE-1 đã chuyển `DONE` đồng thời trong executable coverage manifest và ledger `plan-fe.md`.
+- Exact-unit dossier hiển thị ảnh thật, mã máy, giá hiện hành, Grade, pin, bảo hành, fulfillment, dữ liệu sửa chữa, identifier masked và đúng 18 hạng mục inspection; không render cost, raw identifier hoặc claim ngoài contract.
+- Voucher giữ đúng public/account visibility; public store chỉ dùng projection an toàn; public routes vẫn đọc được khi tắt JavaScript.
+- Evidence code: `05f32f2..aae6f12`; canonical code SHA `aae6f12`.
+- Test evidence: Web unit `79/79`; FE-1 Playwright `8/8`; toàn bộ browser regression `11/11`; axe không có finding serious/critical trên sáu route và không overflow ở 320 px.
+- Visual evidence: desktop 1440 và mobile 390 tại `tests/browser/storefront-discovery.spec.ts-snapshots/`; FE-0 baseline đã migrate có chủ đích sang surface mới.
+- Release gate: `pnpm verify:release` xanh trên closeout tree.
+
+Rollback rehearsal được xác nhận ở mức commit boundary: các concern shell, catalog/dossier, voucher, test và contract fix có thể revert độc lập; không có database migration hoặc business state cần rollback. FE-2 là bước kế tiếp nhưng vẫn `NOT STARTED`.
