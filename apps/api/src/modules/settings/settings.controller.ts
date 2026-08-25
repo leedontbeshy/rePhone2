@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   Patch,
   Post,
@@ -90,6 +92,7 @@ export class BackofficeSettingsController {
   }
 
   @Post('bank-qr')
+  @HttpCode(HttpStatus.OK)
   @BackofficeRateLimit(['mutation', 'upload'])
   @UseInterceptors(FileInterceptor('file', { limits: { files: 1, fileSize: 5 * 1024 * 1024 } }))
   @ApiConsumes('multipart/form-data')

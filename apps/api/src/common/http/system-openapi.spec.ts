@@ -33,7 +33,12 @@ const SLICE_12_OPERATIONS = [
 describe('Slice 12 final OpenAPI artifact', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
-  ) as { paths: Record<string, Record<string, Operation>> };
+  ) as {
+    paths: Record<string, Record<string, Operation>>;
+    components?: {
+      schemas?: Record<string, { properties?: Record<string, { enum?: string[] }> }>;
+    };
+  };
   const operations = Object.values(document.paths).flatMap((pathItem) =>
     Object.entries(pathItem)
       .filter(([method]) => ['get', 'post', 'patch', 'put', 'delete'].includes(method))
@@ -78,5 +83,21 @@ describe('Slice 12 final OpenAPI artifact', () => {
       '415': {},
       '503': {},
     });
+  });
+
+  it('documents every domain error that can cross the HTTP boundary', () => {
+    const codes = document.components?.schemas?.['ApiErrorBodyDto']?.properties?.['code']?.enum;
+    expect(codes).toEqual(
+      expect.arrayContaining([
+        'PAYMENT_PROOF_DEADLINE_PASSED',
+        'PAYMENT_ALREADY_REVIEWED',
+        'DEPOSIT_AMOUNT_INSUFFICIENT',
+        'WARRANTY_NOT_ACTIVE',
+        'AFTER_SALES_REQUEST_ALREADY_OPEN',
+        'AFTER_SALES_RESOLUTION_REQUIREMENTS_NOT_MET',
+        'EVIDENCE_REQUIRED',
+        'EVIDENCE_INVALID',
+      ]),
+    );
   });
 });

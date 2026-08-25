@@ -105,4 +105,25 @@ describe('createLoggerParams', () => {
     });
     expect(JSON.stringify(summary)).not.toContain('private-order');
   });
+
+  it('correlates an authenticated request with only the safe actor identity', () => {
+    const request = {
+      method: 'PATCH',
+      baseUrl: '/api/v1',
+      route: { path: '/backoffice/settings' },
+      auth: {
+        userId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6701',
+        role: 'ADMIN',
+        sessionId: 'must-not-be-logged',
+      },
+    } as unknown as IncomingMessage;
+
+    expect(httpLogFields(request, { statusCode: 200 } as ServerResponse)).toEqual({
+      method: 'PATCH',
+      route: '/api/v1/backoffice/settings',
+      actorType: 'USER',
+      actorId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6701',
+      statusCode: 200,
+    });
+  });
 });

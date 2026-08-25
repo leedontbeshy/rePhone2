@@ -95,6 +95,7 @@ export class UserOperationsService {
       result.employee.id,
       result.employee.email,
       result.invitation.rawToken,
+      result.invitation.expiresAt,
     );
     return { employee: result.employee, deliveryStatus };
   }
@@ -185,6 +186,7 @@ export class UserOperationsService {
       result.employee.id,
       result.employee.email,
       result.invitation.rawToken,
+      result.invitation.expiresAt,
     );
     return { employeeId: result.employee.id, deliveryStatus };
   }
@@ -260,6 +262,7 @@ export class UserOperationsService {
         result.employee.id,
         result.employee.email,
         result.invitation.rawToken,
+        result.invitation.expiresAt,
       );
     }
     return result.employee;

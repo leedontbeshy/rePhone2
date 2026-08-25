@@ -97,6 +97,7 @@ export class SettingsService {
         resourceType: 'StoreSettings',
         resourceId: after.id,
         changes: { before: safeAuditSettings(before), after: safeAuditSettings(after) },
+        metadata: { fields: Object.keys(data).sort() },
       });
       return after;
     });
@@ -231,26 +232,14 @@ function projectSettings(settings: SettingsRecord, config: AppConfig): StoreSett
 function safeAuditSettings(settings: SettingsRecord) {
   return {
     version: settings.version,
-    storeName: settings.storeName,
-    storePhone: settings.storePhone,
-    storeAddress: settings.storeAddress,
-    defaultShippingFee: settings.defaultShippingFee.toString(),
-    shippingDepositAmount: settings.shippingDepositAmount.toString(),
-    pickupHoldMinutes: settings.pickupHoldMinutes,
-    depositProofWindowMinutes: settings.depositProofWindowMinutes,
-    depositReviewWindowMinutes: settings.depositReviewWindowMinutes,
-    defaultWarrantyDays: settings.defaultWarrantyDays,
-    defaultWarrantyTerms: settings.defaultWarrantyTerms,
-    bankName: settings.bankName,
-    bankAccountNumberMasked: maskAccount(settings.bankAccountNumber),
-    bankAccountHolder: settings.bankAccountHolder,
+    bankConfigured: settings.bankAccountNumber.trim().length > 0,
+    bankAccountSuffix: accountSuffix(settings.bankAccountNumber),
     bankQrConfigured: settings.bankQrBucket !== null,
   };
 }
 
-function maskAccount(value: string): string {
-  const suffix = value.slice(-4);
-  return `${'*'.repeat(Math.max(0, value.length - suffix.length))}${suffix}`;
+function accountSuffix(value: string): string {
+  return value.slice(-4);
 }
 
 function publicObjectUrl(config: AppConfig, bucket: string, objectPath: string): string {

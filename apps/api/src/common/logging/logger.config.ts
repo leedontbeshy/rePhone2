@@ -82,6 +82,7 @@ export const REDACTED_LOG_PATHS = [
 ];
 
 interface RoutedRequest extends IncomingMessage {
+  auth?: { userId: string };
   baseUrl?: string;
   route?: { path?: unknown };
 }
@@ -94,6 +95,9 @@ export function httpLogFields(request: IncomingMessage, response: ServerResponse
   return {
     method: request.method,
     ...(route === undefined ? {} : { route }),
+    ...(routedRequest.auth === undefined
+      ? {}
+      : { actorType: 'USER', actorId: routedRequest.auth.userId }),
     statusCode: response.statusCode,
   };
 }

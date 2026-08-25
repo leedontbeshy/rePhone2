@@ -228,9 +228,9 @@ export class AuthService {
     const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/reset-password', rawToken);
     await this.sendMailSafely('auth.password_reset_requested', user.id, {
       to: user.email,
-      subject: 'Đặt lại mật khẩu rePhone',
-      text: `Mở liên kết sau để đặt lại mật khẩu: ${url}`,
-      html: `<p>Mở liên kết sau để đặt lại mật khẩu:</p><p><a href="${url}">${url}</a></p>`,
+      subject: '[rePhone] Đặt lại mật khẩu',
+      text: `Mở liên kết sau để đặt lại mật khẩu trước ${expiresAt.toISOString()}: ${url}`,
+      html: `<p>Mở liên kết sau để đặt lại mật khẩu trước <strong>${expiresAt.toISOString()}</strong>:</p><p><a href="${url}">${url}</a></p>`,
     });
     return { message: GENERIC_FORGOT_MESSAGE };
   }

@@ -67,16 +67,18 @@ export class EmployeeIdentityGateway {
     userId: string,
     email: string,
     rawToken: string,
+    expiresAt: Date,
   ): Promise<NotificationDelivery> {
     const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/accept-invitation', rawToken);
+    const expiry = expiresAt.toISOString();
     return this.notifications.deliver({
       template: 'employee.invited',
       resourceId: userId,
       message: {
         to: email,
-        subject: 'Lời mời nhân viên rePhone',
-        text: `Mở liên kết sau để kích hoạt tài khoản nhân viên: ${url}`,
-        html: `<p>Mở liên kết sau để kích hoạt tài khoản nhân viên:</p><p><a href="${url}">${url}</a></p>`,
+        subject: '[rePhone] Lời mời nhân viên',
+        text: `Mở liên kết sau để kích hoạt tài khoản nhân viên trước ${expiry}: ${url}`,
+        html: `<p>Mở liên kết sau để kích hoạt tài khoản nhân viên trước <strong>${expiry}</strong>:</p><p><a href="${url}">${url}</a></p>`,
       },
     });
   }
