@@ -4,11 +4,14 @@
 > Kế hoạch chi tiết: [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
-> Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
+> Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening<br>
+> Hậu P0 — Frontend refinement: [Quy chuẩn UX/UI](design.md) · [Kế hoạch triển khai frontend](plan-fe.md)
 
 ## 1. Cách sử dụng kế hoạch
 
 `plan.md` là tài liệu điều phối thứ tự thực hiện và tiêu chí bàn giao. File này không thay thế requirement, data dictionary, API contract hay state machine. Khi có khác biệt, áp dụng thứ tự ưu tiên trong [docs index](docs/readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
+
+P0 đã đóng tại SHA nghiệm thu nêu trên. [`design.md`](design.md) và [`plan-fe.md`](plan-fe.md) chỉ điều phối workstream frontend Post-P0/P1; chúng không mở lại P0, không tạo Slice 13 và không thay đổi backend contract.
 
 Quy trình cho mỗi vertical slice:
 
@@ -993,6 +996,8 @@ Nguồn: [Local/deployment runbook](docs/operations/local-development-and-deploy
 
 ## 14. Tài liệu điều hướng chính
 
+- [Quy chuẩn UX/UI Post-P0](design.md)
+- [Kế hoạch triển khai frontend Post-P0](plan-fe.md)
 - [Docs index và source precedence](docs/readme.md)
 - [Implementation roadmap](docs/planning/implementation-roadmap.md)
 - [Requirements traceability](docs/quality/requirements-traceability.md)
