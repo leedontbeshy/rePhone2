@@ -69,7 +69,7 @@ export class AfterSalesInventoryGateway {
   }
 
   public async receiveSoldUnit(
-    input: { unitId: string; receivedLocationId: string },
+    input: { unitId: string; receivedLocationId: string; originalSoldAt: Date },
     transaction: Prisma.TransactionClient,
   ): Promise<AfterSalesInventoryUnit> {
     const location = await this.findActiveLocation(input.receivedLocationId, transaction);
@@ -78,6 +78,7 @@ export class AfterSalesInventoryGateway {
     if (
       unit === null ||
       unit.lifecycleStatus !== 'SOLD' ||
+      unit.soldAt?.getTime() !== input.originalSoldAt.getTime() ||
       unit.variant.product.type !== 'IPHONE' ||
       unit.variant.inventoryMode !== 'SERIALIZED' ||
       unit._count.reservations !== 0
@@ -88,9 +89,14 @@ export class AfterSalesInventoryGateway {
       where: {
         id: input.unitId,
         lifecycleStatus: 'SOLD',
+        soldAt: input.originalSoldAt,
         reservations: { none: { status: 'ACTIVE' } },
       },
-      data: { lifecycleStatus: 'INSPECTING', locationId: input.receivedLocationId },
+      data: {
+        lifecycleStatus: 'INSPECTING',
+        locationId: input.receivedLocationId,
+        soldAt: null,
+      },
     });
     if (updated.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
     return transaction.inventoryUnit.findUniqueOrThrow({
@@ -150,18 +156,18 @@ export class AfterSalesInventoryGateway {
   }
 
   public async returnUnitToCustomer(
-    unitId: string,
+    input: { unitId: string; originalSoldAt: Date },
     transaction: Prisma.TransactionClient,
   ): Promise<AfterSalesInventoryUnit> {
-    const unit = await this.lockUnit(unitId, transaction);
+    const unit = await this.lockUnit(input.unitId, transaction);
     if (unit?.lifecycleStatus !== 'INSPECTING') throw new ApiError('INVALID_STATE_TRANSITION');
     const updated = await transaction.inventoryUnit.updateMany({
-      where: { id: unitId, lifecycleStatus: 'INSPECTING' },
-      data: { lifecycleStatus: 'SOLD' },
+      where: { id: input.unitId, lifecycleStatus: 'INSPECTING' },
+      data: { lifecycleStatus: 'SOLD', soldAt: input.originalSoldAt },
     });
     if (updated.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
     return transaction.inventoryUnit.findUniqueOrThrow({
-      where: { id: unitId },
+      where: { id: input.unitId },
       select: afterSalesUnitSelect,
     });
   }

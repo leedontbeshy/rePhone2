@@ -123,7 +123,11 @@ export class AfterSalesBackofficeCommandService {
       if (isIphone(item)) {
         const unitId = requireOriginalUnit(item);
         await this.inventory.receiveSoldUnit(
-          { unitId, receivedLocationId: location.id },
+          {
+            unitId,
+            receivedLocationId: location.id,
+            originalSoldAt: requireOrderCompletedAt(item),
+          },
           transaction,
         );
       }
@@ -276,7 +280,13 @@ export class AfterSalesBackofficeCommandService {
       const iphone = isIphone(item);
       if (iphone && returnNote === null) throw requirementsNotMet();
       if (iphone) {
-        await this.inventory.returnUnitToCustomer(requireOriginalUnit(item), transaction);
+        await this.inventory.returnUnitToCustomer(
+          {
+            unitId: requireOriginalUnit(item),
+            originalSoldAt: requireOrderCompletedAt(item),
+          },
+          transaction,
+        );
       }
       const now = this.clock.now();
       const updated = await this.repository.reject(
@@ -487,7 +497,13 @@ export class AfterSalesBackofficeCommandService {
         const now = this.clock.now();
         const returnsIphone = resolutionType !== 'OTHER' && isIphone(item);
         if (returnsIphone) {
-          await this.inventory.returnUnitToCustomer(requireOriginalUnit(item), transaction);
+          await this.inventory.returnUnitToCustomer(
+            {
+              unitId: requireOriginalUnit(item),
+              originalSoldAt: requireOrderCompletedAt(item),
+            },
+            transaction,
+          );
         }
         const update: AfterSalesResolutionUpdate = {
           resolutionType,
@@ -612,6 +628,11 @@ function isIphone(item: AfterSalesOrderItemContext): boolean {
 function requireOriginalUnit(item: AfterSalesOrderItemContext): string {
   if (!isIphone(item) || item.inventoryUnitId === null) throw requirementsNotMet();
   return item.inventoryUnitId;
+}
+
+function requireOrderCompletedAt(item: AfterSalesOrderItemContext): Date {
+  if (item.order.completedAt === null) throw requirementsNotMet();
+  return item.order.completedAt;
 }
 
 function expectedInspectionType(request: AfterSalesCommandRecord): 'WARRANTY' | 'RETURN' {

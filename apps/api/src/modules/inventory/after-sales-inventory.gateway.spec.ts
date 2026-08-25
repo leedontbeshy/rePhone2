@@ -16,6 +16,7 @@ describe('AfterSalesInventoryGateway', () => {
     const stockLevelUpdate = vi.fn();
     const stockMovementCreate = vi.fn();
     const unit = iphoneUnit({ lifecycleStatus: 'SOLD' });
+    const originalSoldAt = unit.soldAt as Date;
     const transaction = {
       inventoryLocation: {
         findFirst: vi.fn().mockResolvedValue({ id: LOCATION_ID, status: 'ACTIVE' }),
@@ -28,6 +29,7 @@ describe('AfterSalesInventoryGateway', () => {
           ...unit,
           lifecycleStatus: 'INSPECTING',
           locationId: LOCATION_ID,
+          soldAt: null,
         }),
       },
       stockLevel: { updateMany: stockLevelUpdate },
@@ -36,18 +38,87 @@ describe('AfterSalesInventoryGateway', () => {
     const gateway = new AfterSalesInventoryGateway({} as PrismaService);
 
     await expect(
-      gateway.receiveSoldUnit({ unitId: UNIT_ID, receivedLocationId: LOCATION_ID }, transaction),
-    ).resolves.toMatchObject({ lifecycleStatus: 'INSPECTING', locationId: LOCATION_ID });
+      gateway.receiveSoldUnit(
+        { unitId: UNIT_ID, receivedLocationId: LOCATION_ID, originalSoldAt },
+        transaction,
+      ),
+    ).resolves.toMatchObject({
+      lifecycleStatus: 'INSPECTING',
+      locationId: LOCATION_ID,
+      soldAt: null,
+    });
     expect(updateMany).toHaveBeenCalledWith({
       where: {
         id: UNIT_ID,
         lifecycleStatus: 'SOLD',
+        soldAt: originalSoldAt,
         reservations: { none: { status: 'ACTIVE' } },
       },
-      data: { lifecycleStatus: 'INSPECTING', locationId: LOCATION_ID },
+      data: {
+        lifecycleStatus: 'INSPECTING',
+        locationId: LOCATION_ID,
+        soldAt: null,
+      },
     });
     expect(stockLevelUpdate).not.toHaveBeenCalled();
     expect(stockMovementCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a sold iPhone that belongs to a different completed order', async () => {
+    const unit = iphoneUnit({ lifecycleStatus: 'SOLD' });
+    const transaction = {
+      inventoryLocation: {
+        findFirst: vi.fn().mockResolvedValue({ id: LOCATION_ID, status: 'ACTIVE' }),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: UNIT_ID }]),
+      inventoryUnit: {
+        findUnique: vi.fn().mockResolvedValue(unit),
+        updateMany: vi.fn(),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await expect(
+      new AfterSalesInventoryGateway({} as PrismaService).receiveSoldUnit(
+        {
+          unitId: UNIT_ID,
+          receivedLocationId: LOCATION_ID,
+          originalSoldAt: new Date('2026-08-23T00:00:00.000Z'),
+        },
+        transaction,
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
+    expect(transaction.inventoryUnit.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('restores the original sale timestamp when an inspected iPhone is returned', async () => {
+    const originalSoldAt = new Date('2026-08-20T07:30:00.000Z');
+    const updateMany = vi.fn<(input: unknown) => Promise<{ count: number }>>().mockResolvedValue({
+      count: 1,
+    });
+    const unit = iphoneUnit({ lifecycleStatus: 'INSPECTING', soldAt: null });
+    const transaction = {
+      $queryRaw: vi.fn().mockResolvedValue([{ id: UNIT_ID }]),
+      inventoryUnit: {
+        findUnique: vi.fn().mockResolvedValue(unit),
+        updateMany,
+        findUniqueOrThrow: vi.fn().mockResolvedValue({
+          ...unit,
+          lifecycleStatus: 'SOLD',
+          soldAt: originalSoldAt,
+        }),
+      },
+    } as unknown as Prisma.TransactionClient;
+
+    await expect(
+      new AfterSalesInventoryGateway({} as PrismaService).returnUnitToCustomer(
+        { unitId: UNIT_ID, originalSoldAt },
+        transaction,
+      ),
+    ).resolves.toMatchObject({ lifecycleStatus: 'SOLD', soldAt: originalSoldAt });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: UNIT_ID, lifecycleStatus: 'INSPECTING' },
+      data: { lifecycleStatus: 'SOLD', soldAt: originalSoldAt },
+    });
   });
 
   it('creates a WARRANTY draft using the existing inspection aggregate shape', async () => {

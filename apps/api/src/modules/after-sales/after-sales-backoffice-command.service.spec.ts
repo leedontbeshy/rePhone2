@@ -65,7 +65,7 @@ describe('AfterSalesBackofficeCommandService', () => {
     );
 
     expect(fixture.inventory.receiveSoldUnit).toHaveBeenCalledWith(
-      { unitId: ORIGINAL_UNIT_ID, receivedLocationId: LOCATION_ID },
+      { unitId: ORIGINAL_UNIT_ID, receivedLocationId: LOCATION_ID, originalSoldAt: NOW },
       fixture.transaction,
     );
     expect(fixture.repository.receive).toHaveBeenCalledWith(
@@ -174,7 +174,7 @@ describe('AfterSalesBackofficeCommandService', () => {
     );
 
     expect(fixture.inventory.returnUnitToCustomer).toHaveBeenCalledWith(
-      ORIGINAL_UNIT_ID,
+      { unitId: ORIGINAL_UNIT_ID, originalSoldAt: NOW },
       fixture.transaction,
     );
     expect(fixture.repository.reject).toHaveBeenCalledWith(
