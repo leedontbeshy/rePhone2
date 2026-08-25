@@ -22,6 +22,7 @@ import { FulfillmentModule } from './modules/fulfillment/fulfillment.module.js';
 import { RefundOperationsModule } from './modules/refunds/refund-operations.module.js';
 import { WarrantyOperationsModule } from './modules/warranty/warranty-operations.module.js';
 import { AfterSalesModule } from './modules/after-sales/after-sales.module.js';
+import { AuditOperationsModule } from './modules/audit-operations/audit-operations.module.js';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AfterSalesModule } from './modules/after-sales/after-sales.module.js';
     RefundOperationsModule,
     WarrantyOperationsModule,
     AfterSalesModule,
+    AuditOperationsModule,
     SchedulerModule,
     HealthModule,
   ],
