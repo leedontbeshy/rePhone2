@@ -1,7 +1,7 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: ✅ Slice 11 — Warranty và after-sales đã hoàn thành; bước tiếp theo là Slice 12 — Settings, audit, jobs, email, UI và demo hardening<br>
-> Kế hoạch chi tiết: [Slice 11 implementation plan](docs/planning/2026-08-25-slice-11-warranty-aftersales-plan.md)<br>
+> Trạng thái: 🚧 Slice 12 — System administration và release hardening đang triển khai<br>
+> Kế hoạch chi tiết: [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
 > Phạm vi: backend/core P0, typed API client, frontend tối thiểu cho demo và hardening
@@ -710,6 +710,8 @@ Nguồn: [Cancellation/refund transaction](docs/architecture/order-cancellation-
 Nguồn: [Warranty requirement](docs/requirements/warranty-and-aftersales.md), [Warranty/after-sales API](docs/api/warranty-and-aftersales-endpoints.md), [After-sales data](docs/data-model/after-sales.md), [State machines](docs/architecture/state-machines.md).
 
 ### Slice 12 — Settings, audit, jobs, email, UI và demo hardening
+
+> 🚧 **IN PROGRESS** — triển khai trên branch `feat/slice-12-system-hardening` từ baseline Slice 11 `444636d`; kế hoạch chi tiết tại [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md). OpenAPI mục tiêu `143 → 160`.
 
 **Mục tiêu:** hoàn tất API surface còn lại, nối UI demo, vận hành/release và bằng chứng kỹ thuật.
 
