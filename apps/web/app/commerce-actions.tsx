@@ -6,8 +6,8 @@ import { useAuth } from './auth-provider';
 import { useCommerce } from './commerce-provider';
 
 type CommerceActionProps =
-  | { itemType: 'IPHONE'; inventoryCode: string; available?: boolean }
-  | { itemType: 'ACCESSORY'; variantId: string; available: boolean };
+  | { itemType: 'IPHONE'; inventoryCode: string; available?: boolean; compact?: boolean }
+  | { itemType: 'ACCESSORY'; variantId: string; available: boolean; compact?: boolean };
 
 export function CommerceActions(props: CommerceActionProps) {
   const { status, user } = useAuth();
@@ -47,7 +47,7 @@ export function CommerceActions(props: CommerceActionProps) {
   };
 
   return (
-    <div className="commerce-actions">
+    <div className={`commerce-actions${props.compact === true ? ' commerce-actions-compact' : ''}`}>
       {props.itemType === 'ACCESSORY' ? (
         <label>
           Số lượng
@@ -72,7 +72,7 @@ export function CommerceActions(props: CommerceActionProps) {
         >
           {pending === 'cart' ? 'Đang thêm…' : 'Thêm vào giỏ'}
         </button>
-        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
+        {!props.compact && status === 'authenticated' && user?.role === 'CUSTOMER' ? (
           <button
             className="button"
             type="button"
@@ -81,13 +81,13 @@ export function CommerceActions(props: CommerceActionProps) {
           >
             {pending === 'wishlist' ? 'Đang lưu…' : 'Lưu wishlist'}
           </button>
-        ) : status === 'anonymous' ? (
+        ) : !props.compact && status === 'anonymous' ? (
           <Link className="button" href="/login">
             Đăng nhập để lưu
           </Link>
         ) : null}
       </div>
-      {!storefrontActor ? (
+      {!props.compact && !storefrontActor ? (
         <p className="muted">Tài khoản nhân viên không có giỏ mua hàng.</p>
       ) : null}
       <p className="commerce-message" aria-live="polite">
