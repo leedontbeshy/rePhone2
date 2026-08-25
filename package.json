@@ -50,6 +50,7 @@
     "smoke:slice09": "pnpm --filter @rephone/api smoke:slice09",
     "smoke:slice10": "pnpm --filter @rephone/api smoke:slice10",
     "smoke:slice11": "pnpm --filter @rephone/api smoke:slice11",
+    "smoke:slice12": "pnpm --filter @rephone/api smoke:slice12",
     "demo:refund-processing": "pnpm --filter @rephone/api demo:refund-processing",
     "demo:after-sales-inspecting": "pnpm --filter @rephone/api demo:after-sales-inspecting",
     "demo:scenarios": "pnpm --filter @rephone/api demo:scenarios",
