@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../config/app-config.js';
 import { createLoggerParams, httpLogFields, REDACTED_LOG_PATHS } from './logger.config.js';
 
-function loggerTestConfig() {
+function loggerTestConfig(environment = 'test') {
   return loadConfig({
-    NODE_ENV: 'test',
+    NODE_ENV: environment,
     API_PORT: '4001',
     API_PUBLIC_URL: 'http://localhost:4001',
     WEB_PUBLIC_URL: 'http://localhost:3001',
@@ -30,6 +30,19 @@ function loggerTestConfig() {
 }
 
 describe('createLoggerParams', () => {
+  it('enables pretty transport only for local development', () => {
+    const development = createLoggerParams(loggerTestConfig('development')).pinoHttp;
+    const test = createLoggerParams(loggerTestConfig('test')).pinoHttp;
+
+    expect(development).toMatchObject({
+      transport: {
+        target: 'pino-pretty',
+        options: { colorize: true, singleLine: true, translateTime: 'SYS:standard' },
+      },
+    });
+    expect(test).not.toHaveProperty('transport');
+  });
+
   it('removes sensitive HTTP and domain fields', () => {
     const params = createLoggerParams(loggerTestConfig());
     const pinoHttp = params.pinoHttp;
@@ -124,6 +137,57 @@ describe('createLoggerParams', () => {
       actorType: 'USER',
       actorId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6701',
       statusCode: 200,
+    });
+  });
+
+  it('omits actor and route when Express has not resolved them', () => {
+    const request = {
+      method: 'OPTIONS',
+      baseUrl: '/api/v1',
+      route: { path: 42 },
+    } as unknown as IncomingMessage;
+
+    expect(httpLogFields(request, { statusCode: 204 } as ServerResponse)).toEqual({
+      method: 'OPTIONS',
+      statusCode: 204,
+    });
+  });
+
+  it('merges safe HTTP fields into success and error log objects', () => {
+    const pinoHttp = createLoggerParams(loggerTestConfig()).pinoHttp;
+    if (typeof pinoHttp !== 'object' || Array.isArray(pinoHttp)) {
+      throw new Error('Expected object pinoHttp configuration');
+    }
+    const configured = pinoHttp as typeof pinoHttp & {
+      customSuccessObject: (
+        request: IncomingMessage,
+        response: ServerResponse,
+        value: unknown,
+      ) => Record<string, unknown>;
+      customErrorObject: (
+        request: IncomingMessage,
+        response: ServerResponse,
+        error: Error,
+        value: unknown,
+      ) => Record<string, unknown>;
+    };
+    const request = { method: 'POST' } as IncomingMessage;
+    const response = { statusCode: 503 } as ServerResponse;
+    const successObject = configured.customSuccessObject;
+    const errorObject = configured.customErrorObject;
+
+    expect(successObject(request, response, { requestId: 'request-1' })).toEqual({
+      requestId: 'request-1',
+      method: 'POST',
+      statusCode: 503,
+    });
+    expect(errorObject(request, response, new Error('safe'), ['ignored'])).toEqual({
+      method: 'POST',
+      statusCode: 503,
+    });
+    expect(successObject(request, response, null)).toEqual({
+      method: 'POST',
+      statusCode: 503,
     });
   });
 });

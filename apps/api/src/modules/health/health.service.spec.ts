@@ -33,6 +33,26 @@ describe('HealthService', () => {
     );
   });
 
+  it.each([
+    ['does not return a probe row', []],
+    [
+      'cannot reach the database',
+      [{ databaseReady: 0, appliedMigrationCount: 12, incompleteMigrationCount: 0 }],
+    ],
+    [
+      'has no applied migrations',
+      [{ databaseReady: 1, appliedMigrationCount: 0, incompleteMigrationCount: 0 }],
+    ],
+  ])('returns unavailable when readiness %s', async (_case, result) => {
+    const prisma = {
+      $queryRaw: vi.fn().mockResolvedValue(result),
+    } as unknown as PrismaService;
+
+    await expect(new HealthService(prisma).readiness()).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+  });
+
   it('bounds the readiness probe to two seconds', async () => {
     vi.useFakeTimers();
     try {

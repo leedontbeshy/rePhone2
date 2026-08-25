@@ -145,6 +145,37 @@ describe('OverduePaymentReviewReporter', () => {
       }),
     );
   });
+
+  it('categorizes non-Error row and scan failures without wedging the mutex', async () => {
+    const candidates = [candidate(1)];
+    const repository = {
+      findOverdueReviewCandidates: vi
+        .fn()
+        .mockResolvedValueOnce(candidates)
+        .mockRejectedValueOnce('scan unavailable'),
+    } as unknown as PaymentOperationsRepository;
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation((value: unknown) => {
+      if (isRecord(value) && value['event'] === 'payment.review_overdue') {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error -- exercises the defensive unknown catch branch.
+        throw 'log unavailable';
+      }
+      warningEntries.push(value);
+    });
+    const reporter = new OverduePaymentReviewReporter(
+      repository,
+      { scheduler: { batchSize: 100 } } as AppConfig,
+      { now: () => NOW },
+    );
+
+    await expect(reporter.report()).resolves.toMatchObject({ failed: 1 });
+    await expect(reporter.report()).rejects.toBe('scan unavailable');
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.record_failed', errorCategory: 'UnknownError' }),
+    );
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.failed', errorCategory: 'UnknownError' }),
+    );
+  });
 });
 
 function candidate(index: number) {

@@ -29,4 +29,29 @@ describe('requestContext', () => {
 
     expect(requestContext(request).requestId).toBe('unknown');
   });
+
+  it('falls back to the socket address without inventing a user agent', () => {
+    const request = {
+      headers: {},
+      get: () => undefined,
+      ip: '',
+      socket: { remoteAddress: '10.0.0.8' },
+    } as unknown as Request;
+
+    expect(requestContext(request)).toEqual({
+      requestId: 'unknown',
+      ipAddress: '10.0.0.8',
+    });
+  });
+
+  it('uses an explicit unknown IP when Express and the socket have none', () => {
+    const request = {
+      headers: {},
+      get: () => undefined,
+      ip: '',
+      socket: {},
+    } as unknown as Request;
+
+    expect(requestContext(request).ipAddress).toBe('unknown');
+  });
 });

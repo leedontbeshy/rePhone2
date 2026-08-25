@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../common/errors/api-error.js';
+import { StorageProviderError } from '../../common/providers/supabase-storage.provider.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { PrismaService } from '../../database/prisma.service.js';
 import type { AuditActorContext } from '../audit/audit.types.js';
@@ -13,6 +15,10 @@ const actor: AuditActorContext = {
 };
 
 describe('SettingsService', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('projects only public-safe store fields', async () => {
     const fixture = createFixture();
     fixture.repository.find.mockResolvedValue(settingsRecord());
@@ -37,6 +43,52 @@ describe('SettingsService', () => {
     });
     expect(result).not.toHaveProperty('bankAccountNumber');
     expect(result).not.toHaveProperty('version');
+  });
+
+  it.each([
+    [null, { id: 'location', name: 'Store' }],
+    [settingsRecord(), null],
+  ])(
+    'returns SERVICE_UNAVAILABLE when public store input is incomplete',
+    async (settings, pickup) => {
+      const fixture = createFixture();
+      fixture.repository.find.mockResolvedValue(settings);
+      fixture.repository.findPickupLocation.mockResolvedValue(pickup);
+
+      await expect(fixture.service.getPublicStore()).rejects.toMatchObject({
+        code: 'SERVICE_UNAVAILABLE',
+      });
+    },
+  );
+
+  it('projects configured backoffice QR data into an encoded public URL', async () => {
+    const fixture = createFixture();
+    fixture.config.storage.url = 'https://project.supabase.co/';
+    fixture.repository.find.mockResolvedValue(
+      settingsRecord({
+        bankQrBucket: 'store assets',
+        bankQrObjectPath: 'bank-qr/demo qr.png',
+        updatedBy: {
+          id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6799',
+          fullName: 'Admin',
+        },
+      }),
+    );
+
+    await expect(fixture.service.getBackoffice()).resolves.toMatchObject({
+      bankQrUrl:
+        'https://project.supabase.co/storage/v1/object/public/store%20assets/bank-qr/demo%20qr.png',
+      updatedBy: { fullName: 'Admin' },
+    });
+  });
+
+  it('returns SERVICE_UNAVAILABLE when settings are absent', async () => {
+    const fixture = createFixture();
+    fixture.repository.find.mockResolvedValue(null);
+
+    await expect(fixture.service.getBackoffice()).rejects.toMatchObject({
+      code: 'SERVICE_UNAVAILABLE',
+    });
   });
 
   it('rejects an update with no mutable field', async () => {
@@ -71,7 +123,103 @@ describe('SettingsService', () => {
     expect(fixture.audit.write).toHaveBeenCalledWith(
       fixture.transaction,
       actor,
-      expect.objectContaining({ action: 'settings.updated' }),
+      expect.objectContaining({
+        action: 'settings.updated',
+        metadata: { fields: ['defaultShippingFee'] },
+      }),
+    );
+    const auditPayload = JSON.stringify(fixture.audit.write.mock.calls[0]?.[2]);
+    expect(auditPayload).toContain('0000');
+    expect(auditPayload).not.toContain('REPHONE DEMO');
+    expect(auditPayload).not.toContain('Điều khoản demo');
+    expect(auditPayload).not.toContain('123 Demo');
+    expect(auditPayload).not.toContain('0000000000');
+  });
+
+  it('passes every mutable field through CAS and masks bank data in audit', async () => {
+    const fixture = createFixture();
+    const before = settingsRecord({ bankAccountNumber: '123', bankQrBucket: null });
+    const after = settingsRecord({
+      version: 2,
+      storeName: 'rePhone mới',
+      storePhone: '0911111111',
+      storeAddress: '456 Demo',
+      defaultShippingFee: money('45000'),
+      shippingDepositAmount: money('600000'),
+      pickupHoldMinutes: 2_000,
+      depositProofWindowMinutes: 60,
+      depositReviewWindowMinutes: 2_000,
+      defaultWarrantyDays: 365,
+      defaultWarrantyTerms: 'Điều khoản mới',
+      bankName: 'NEW BANK',
+      bankAccountNumber: '1234567890',
+      bankAccountHolder: 'REPHONE NEW',
+      bankQrBucket: 'store-assets',
+      bankQrObjectPath: 'bank-qr/existing.png',
+    });
+    fixture.repository.find.mockResolvedValueOnce(before).mockResolvedValueOnce(after);
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 1 });
+    const data = {
+      expectedVersion: 1,
+      storeName: after.storeName,
+      storePhone: after.storePhone,
+      storeAddress: after.storeAddress,
+      defaultShippingFee: '45000',
+      shippingDepositAmount: '600000',
+      pickupHoldMinutes: after.pickupHoldMinutes,
+      depositProofWindowMinutes: after.depositProofWindowMinutes,
+      depositReviewWindowMinutes: after.depositReviewWindowMinutes,
+      defaultWarrantyDays: after.defaultWarrantyDays,
+      defaultWarrantyTerms: after.defaultWarrantyTerms,
+      bankName: after.bankName,
+      bankAccountNumber: after.bankAccountNumber,
+      bankAccountHolder: after.bankAccountHolder,
+    };
+
+    await fixture.service.update(data, actor);
+
+    expect(fixture.repository.updateIfVersion).toHaveBeenCalledWith(
+      1,
+      actor.actorUserId,
+      dataWithoutVersion(data),
+      fixture.transaction,
+    );
+    expect(fixture.audit.write).toHaveBeenCalledWith(
+      fixture.transaction,
+      actor,
+      expect.objectContaining({
+        changes: {
+          before: {
+            version: 1,
+            bankConfigured: true,
+            bankAccountSuffix: '123',
+            bankQrConfigured: false,
+          },
+          after: {
+            version: 2,
+            bankConfigured: true,
+            bankAccountSuffix: '7890',
+            bankQrConfigured: true,
+          },
+        },
+        metadata: {
+          fields: [
+            'bankAccountHolder',
+            'bankAccountNumber',
+            'bankName',
+            'defaultShippingFee',
+            'defaultWarrantyDays',
+            'defaultWarrantyTerms',
+            'depositProofWindowMinutes',
+            'depositReviewWindowMinutes',
+            'pickupHoldMinutes',
+            'shippingDepositAmount',
+            'storeAddress',
+            'storeName',
+            'storePhone',
+          ],
+        },
+      }),
     );
   });
 
@@ -92,6 +240,101 @@ describe('SettingsService', () => {
       details: [expect.objectContaining({ current: { version: 3 } })],
     });
     expect(fixture.audit.write).not.toHaveBeenCalled();
+  });
+
+  it('returns SERVICE_UNAVAILABLE when the CAS conflict cannot reload settings', async () => {
+    const fixture = createFixture();
+    fixture.repository.find.mockResolvedValueOnce(settingsRecord()).mockResolvedValueOnce(null);
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 0 });
+
+    await expect(
+      fixture.service.update({ expectedVersion: 1, storeName: 'rePhone mới' }, actor),
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+  });
+
+  it('rejects a stale QR version before parsing or uploading bytes', async () => {
+    const fixture = createFixture();
+    fixture.repository.find.mockResolvedValue(settingsRecord({ version: 2 }));
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).rejects.toMatchObject({
+      code: 'SETTINGS_VERSION_CONFLICT',
+      details: [expect.objectContaining({ current: { version: 2 } })],
+    });
+    expect(fixture.qrValidator.validate).not.toHaveBeenCalled();
+    expect(fixture.storage.upload).not.toHaveBeenCalled();
+  });
+
+  it.each([new StorageProviderError('upload'), new Error('provider unavailable')])(
+    'maps a storage provider failure to STORAGE_UNAVAILABLE',
+    async (failure) => {
+      const fixture = createFixture();
+      fixture.repository.find.mockResolvedValue(settingsRecord());
+      fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+      fixture.storage.upload.mockRejectedValue(failure);
+
+      await expect(fixture.service.uploadBankQr(1, file(), actor)).rejects.toMatchObject({
+        code: 'STORAGE_UNAVAILABLE',
+      });
+      expect(fixture.prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not hide a non-Error storage failure', async () => {
+    const fixture = createFixture();
+    const failure = { provider: 'unknown-failure' };
+    fixture.repository.find.mockResolvedValue(settingsRecord());
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockRejectedValue(failure);
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).rejects.toBe(failure);
+  });
+
+  it('attaches a validated bank QR with CAS and audits metadata', async () => {
+    const fixture = createFixture();
+    const before = settingsRecord();
+    const after = settingsRecord({
+      version: 2,
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/new.png',
+    });
+    fixture.repository.find
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockResolvedValue({
+      bucket: 'rephone-store-assets',
+      objectPath: 'bank-qr/new.png',
+      mimeType: 'image/png',
+      fileSize: 1,
+    });
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 1 });
+
+    const result = await fixture.service.uploadBankQr(1, file(), actor);
+
+    expect(result).toMatchObject({
+      version: 2,
+      bankQrUrl:
+        'https://project.supabase.co/storage/v1/object/public/rephone-store-assets/bank-qr/new.png',
+    });
+    expect(fixture.repository.updateIfVersion).toHaveBeenCalledWith(
+      1,
+      actor.actorUserId,
+      {
+        bankQrBucket: 'rephone-store-assets',
+        bankQrObjectPath: 'bank-qr/new.png',
+      },
+      fixture.transaction,
+    );
+    expect(fixture.audit.write).toHaveBeenCalledWith(
+      fixture.transaction,
+      actor,
+      expect.objectContaining({
+        action: 'settings.bank_qr_updated',
+        metadata: { mimeType: 'image/png', fileSize: 1 },
+      }),
+    );
+    expect(fixture.storage.delete).not.toHaveBeenCalled();
   });
 
   it('cleans the uploaded QR object when the database attach loses', async () => {
@@ -118,6 +361,33 @@ describe('SettingsService', () => {
       code: 'SETTINGS_VERSION_CONFLICT',
     });
     expect(fixture.storage.delete).toHaveBeenCalledWith('rephone-store-assets', 'bank-qr/new.png');
+  });
+
+  it('logs an orphan candidate without replacing the database error when cleanup fails', async () => {
+    const fixture = createFixture();
+    const logger = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    fixture.repository.find
+      .mockResolvedValueOnce(settingsRecord())
+      .mockResolvedValueOnce(settingsRecord())
+      .mockResolvedValueOnce(settingsRecord({ version: 2 }));
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 0 });
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockResolvedValue({
+      bucket: 'rephone-store-assets',
+      objectPath: 'bank-qr/orphan.png',
+      mimeType: 'image/png',
+      fileSize: 1,
+    });
+    fixture.storage.delete.mockRejectedValue(new Error('cleanup unavailable'));
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).rejects.toMatchObject({
+      code: 'SETTINGS_VERSION_CONFLICT',
+    });
+    expect(logger).toHaveBeenCalledWith({
+      event: 'storage_orphan_candidate',
+      requestId: actor.requestId,
+      scope: 'store-bank-qr',
+    });
   });
 });
 
@@ -153,6 +423,7 @@ function createFixture() {
     qrValidator,
     storage,
     audit,
+    config,
     service: new SettingsService(
       prisma as unknown as PrismaService,
       repository as unknown as SettingsRepository,
@@ -162,6 +433,23 @@ function createFixture() {
       audit,
     ),
   };
+}
+
+function validatedImage() {
+  return {
+    bytes: new Uint8Array([1]),
+    mimeType: 'image/png',
+    extension: 'png',
+    fileSize: 1,
+  };
+}
+
+function dataWithoutVersion<T extends { expectedVersion: number }>(
+  input: T,
+): Omit<T, 'expectedVersion'> {
+  const { expectedVersion: _expectedVersion, ...data } = input;
+  void _expectedVersion;
+  return data;
 }
 
 function settingsRecord(overrides: Partial<SettingsRecord> = {}): SettingsRecord {

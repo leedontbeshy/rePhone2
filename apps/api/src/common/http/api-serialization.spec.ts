@@ -40,4 +40,25 @@ describe('API serialization', () => {
       body: { error: { code: 'RESOURCE_NOT_FOUND', requestId } },
     });
   });
+
+  it('maps malformed JSON without exposing the parser message', () => {
+    const malformed = Object.assign(new SyntaxError('Unexpected token containing request data'), {
+      type: 'entity.parse.failed',
+    });
+
+    const serialized = serializeApiError(malformed, requestId);
+
+    expect(serialized).toMatchObject({
+      status: HttpStatus.BAD_REQUEST,
+      body: { error: { code: 'MALFORMED_JSON', requestId } },
+    });
+    expect(JSON.stringify(serialized)).not.toContain('Unexpected token');
+  });
+
+  it('maps unknown failures to the stable internal error envelope', () => {
+    expect(serializeApiError(new Error('database secret'), requestId)).toMatchObject({
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      body: { error: { code: 'INTERNAL_ERROR', requestId } },
+    });
+  });
 });

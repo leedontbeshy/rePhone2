@@ -92,6 +92,26 @@ describe('AuthMaintenanceService', () => {
       }),
     );
   });
+
+  it('categorizes non-Error row and scan failures without wedging the mutex', async () => {
+    const repository = {
+      findCleanupCandidates: vi
+        .fn()
+        .mockResolvedValueOnce([candidate('TOKEN', 1)])
+        .mockRejectedValueOnce('scan unavailable'),
+      deleteCandidate: vi.fn().mockRejectedValue('row unavailable'),
+    } as unknown as AuthMaintenanceRepository;
+    const service = new AuthMaintenanceService(repository, config());
+
+    await expect(service.purgeExpired(NOW)).resolves.toMatchObject({ failed: 1 });
+    await expect(service.purgeExpired(NOW)).rejects.toBe('scan unavailable');
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.record_failed', errorCategory: 'UnknownError' }),
+    );
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.failed', errorCategory: 'UnknownError' }),
+    );
+  });
 });
 
 function candidate(recordType: 'SESSION' | 'TOKEN', index: number) {

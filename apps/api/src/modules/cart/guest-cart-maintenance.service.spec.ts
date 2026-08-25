@@ -92,6 +92,26 @@ describe('GuestCartMaintenanceService', () => {
       }),
     );
   });
+
+  it('categorizes non-Error row and scan failures without stopping later runs', async () => {
+    const repository = {
+      findExpiredGuestCartCandidates: vi
+        .fn()
+        .mockResolvedValueOnce([candidate(1)])
+        .mockRejectedValueOnce('scan unavailable'),
+      markExpiredGuestCart: vi.fn().mockRejectedValue('row unavailable'),
+    } as unknown as CartRepository;
+    const service = new GuestCartMaintenanceService(repository, config());
+
+    await expect(service.markExpired(NOW)).resolves.toMatchObject({ failed: 1 });
+    await expect(service.markExpired(NOW)).rejects.toBe('scan unavailable');
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.record_failed', errorCategory: 'UnknownError' }),
+    );
+    expect(errorEntries).toContainEqual(
+      expect.objectContaining({ event: 'job.failed', errorCategory: 'UnknownError' }),
+    );
+  });
 });
 
 function candidate(index: number) {
