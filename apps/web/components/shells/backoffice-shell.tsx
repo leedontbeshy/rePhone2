@@ -32,7 +32,7 @@ export function BackofficeShell({
   mainClassName,
 }: Readonly<BackofficeShellProps>) {
   return (
-    <div className={styles.backofficeShell} data-shell="backoffice">
+    <div className={joinClassNames('rp-surface', styles.backofficeShell)} data-shell="backoffice">
       <SkipLink targetId={mainId} />
       <header className={styles.backofficeTopbar}>
         <div className={styles.backofficeBrand}>

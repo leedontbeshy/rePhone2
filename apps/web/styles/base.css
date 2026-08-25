@@ -16,6 +16,9 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+}
+
+.rp-surface {
   background: var(--color-canvas);
   color: var(--color-body);
   font-family: var(--font-sans);
@@ -24,71 +27,70 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body,
-button,
-input,
-select,
-textarea {
+.rp-surface button,
+.rp-surface input,
+.rp-surface select,
+.rp-surface textarea {
   font-family: var(--font-sans);
 }
 
-button,
-input,
-select,
-textarea {
+.rp-surface button,
+.rp-surface input,
+.rp-surface select,
+.rp-surface textarea {
   font: inherit;
 }
 
-button,
-select {
+.rp-surface button,
+.rp-surface select {
   text-transform: none;
 }
 
-h1,
-h2,
-h3,
-p,
-dl,
-dd,
-figure,
-blockquote {
+.rp-surface h1,
+.rp-surface h2,
+.rp-surface h3,
+.rp-surface p,
+.rp-surface dl,
+.rp-surface dd,
+.rp-surface figure,
+.rp-surface blockquote {
   margin-block-start: 0;
 }
 
-h1,
-h2,
-h3 {
+.rp-surface h1,
+.rp-surface h2,
+.rp-surface h3 {
   color: var(--color-ink);
   text-wrap: balance;
 }
 
-h1 {
+.rp-surface h1 {
   font-size: var(--font-size-page-title);
   line-height: var(--line-height-page-title);
 }
 
-h2 {
+.rp-surface h2 {
   font-size: var(--font-size-section-title);
   line-height: var(--line-height-section-title);
 }
 
-h3 {
+.rp-surface h3 {
   font-size: var(--font-size-card-title);
   line-height: var(--line-height-card-title);
 }
 
-p,
-li {
+.rp-surface p,
+.rp-surface li {
   text-wrap: pretty;
 }
 
-a {
+.rp-surface a {
   color: var(--color-primary);
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.16em;
 }
 
-a:hover {
+.rp-surface a:hover {
   color: var(--color-primary-hover);
 }
 
@@ -98,28 +100,28 @@ a:hover {
   box-shadow: var(--focus-ring);
 }
 
-img,
-picture,
-svg,
-video,
-canvas {
+.rp-surface img,
+.rp-surface picture,
+.rp-surface svg,
+.rp-surface video,
+.rp-surface canvas {
   display: block;
   max-width: 100%;
 }
 
-img,
-video {
+.rp-surface img,
+.rp-surface video {
   height: auto;
 }
 
-code,
-kbd,
-samp,
-pre {
+.rp-surface code,
+.rp-surface kbd,
+.rp-surface samp,
+.rp-surface pre {
   font-family: var(--font-mono);
 }
 
-table,
+.rp-surface table,
 .rp-tabular-numerals {
   font-variant-numeric: tabular-nums;
 }
@@ -170,7 +172,7 @@ table,
 }
 
 @media (min-width: 40rem) {
-  h1 {
+  .rp-surface h1 {
     font-size: var(--font-size-display);
     line-height: var(--line-height-display);
   }

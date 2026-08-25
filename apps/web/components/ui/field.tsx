@@ -1,4 +1,5 @@
 import type {
+  FieldsetHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
@@ -24,7 +25,14 @@ function fieldMessages(id: string, hint?: ReactNode, error?: ReactNode): FieldMe
   };
 }
 
-interface FieldFrameProps {
+function mergeDescribedBy(...values: Array<string | undefined>) {
+  return (
+    values.filter((value): value is string => value !== undefined && value.length > 0).join(' ') ||
+    undefined
+  );
+}
+
+export interface FieldProps {
   children: ReactNode;
   className?: string | undefined;
   error?: ReactNode | undefined;
@@ -36,7 +44,7 @@ interface FieldFrameProps {
   required?: boolean | undefined;
 }
 
-function FieldFrame({
+export function Field({
   children,
   className,
   error,
@@ -46,7 +54,7 @@ function FieldFrame({
   id,
   label,
   required,
-}: FieldFrameProps) {
+}: FieldProps) {
   return (
     <div className={classNames(styles.field, className)}>
       <label className={styles.label} htmlFor={id}>
@@ -94,9 +102,10 @@ export function Input({
   ...props
 }: InputProps) {
   const messages = fieldMessages(id, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
 
   return (
-    <FieldFrame
+    <Field
       className={containerClassName}
       error={error}
       errorId={messages.errorId}
@@ -108,13 +117,13 @@ export function Input({
     >
       <input
         {...props}
-        aria-describedby={messages.describedBy}
+        aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
         aria-invalid={error ? true : undefined}
         className={classNames(styles.control, className)}
         id={id}
         required={required}
       />
-    </FieldFrame>
+    </Field>
   );
 }
 
@@ -137,9 +146,10 @@ export function Textarea({
   ...props
 }: TextareaProps) {
   const messages = fieldMessages(id, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
 
   return (
-    <FieldFrame
+    <Field
       className={containerClassName}
       error={error}
       errorId={messages.errorId}
@@ -151,13 +161,13 @@ export function Textarea({
     >
       <textarea
         {...props}
-        aria-describedby={messages.describedBy}
+        aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
         aria-invalid={error ? true : undefined}
         className={classNames(styles.control, styles.textarea, className)}
         id={id}
         required={required}
       />
-    </FieldFrame>
+    </Field>
   );
 }
 
@@ -181,9 +191,10 @@ export function Select({
   ...props
 }: SelectProps) {
   const messages = fieldMessages(id, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
 
   return (
-    <FieldFrame
+    <Field
       className={containerClassName}
       error={error}
       errorId={messages.errorId}
@@ -195,7 +206,7 @@ export function Select({
     >
       <select
         {...props}
-        aria-describedby={messages.describedBy}
+        aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
         aria-invalid={error ? true : undefined}
         className={classNames(styles.control, className)}
         id={id}
@@ -203,7 +214,7 @@ export function Select({
       >
         {children}
       </select>
-    </FieldFrame>
+    </Field>
   );
 }
 
@@ -216,13 +227,14 @@ export interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Checkbox({ className, description, error, id, label, ...props }: CheckboxProps) {
   const messages = fieldMessages(id, description, error);
+  const callerDescribedBy = props['aria-describedby'];
 
   return (
     <div>
       <label className={styles.checkboxField}>
         <input
           {...props}
-          aria-describedby={messages.describedBy}
+          aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
           aria-invalid={error ? true : undefined}
           className={classNames(styles.checkbox, className)}
           id={id}
@@ -230,6 +242,7 @@ export function Checkbox({ className, description, error, id, label, ...props }:
         />
         <span className={styles.checkboxCopy}>
           <span className={styles.label}>{label}</span>
+          {props.required ? <span className={styles.visuallyHidden}> (bắt buộc)</span> : null}
           {description ? (
             <span className={styles.hint} id={messages.hintId}>
               {description}
@@ -254,12 +267,13 @@ export interface RadioCardProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 
 export function RadioCard({ className, description, id, label, ...props }: RadioCardProps) {
   const descriptionId = description ? `${id}-description` : undefined;
+  const callerDescribedBy = props['aria-describedby'];
 
   return (
     <label className={styles.radioCard}>
       <input
         {...props}
-        aria-describedby={descriptionId}
+        aria-describedby={mergeDescribedBy(callerDescribedBy, descriptionId)}
         className={classNames(styles.radio, className)}
         id={id}
         type="radio"
@@ -273,5 +287,60 @@ export function RadioCard({ className, description, id, label, ...props }: Radio
         ) : null}
       </span>
     </label>
+  );
+}
+
+export interface RadioGroupProps extends FieldsetHTMLAttributes<HTMLFieldSetElement> {
+  error?: ReactNode;
+  hint?: ReactNode;
+  legend: ReactNode;
+  required?: boolean;
+}
+
+export function RadioGroup({
+  children,
+  className,
+  error,
+  hint,
+  id,
+  legend,
+  required,
+  ...props
+}: RadioGroupProps) {
+  const groupId = id ?? 'radio-group';
+  const messages = fieldMessages(groupId, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
+
+  return (
+    <fieldset
+      {...props}
+      aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
+      aria-invalid={error ? true : undefined}
+      className={classNames(styles.fieldGroup, className)}
+      id={id}
+    >
+      <legend className={styles.fieldGroupLegend}>
+        {legend}
+        {required ? (
+          <>
+            <span aria-hidden="true" className={styles.requiredMark}>
+              {' *'}
+            </span>
+            <span className={styles.visuallyHidden}> (bắt buộc)</span>
+          </>
+        ) : null}
+      </legend>
+      <div className={styles.fieldGroupContent}>{children}</div>
+      {hint ? (
+        <p className={styles.hint} id={messages.hintId}>
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p className={styles.error} id={messages.errorId}>
+          {error}
+        </p>
+      ) : null}
+    </fieldset>
   );
 }

@@ -72,7 +72,6 @@
 }
 
 .compact {
-  min-height: 2.5rem;
   padding-block: var(--space-2);
 }
 
@@ -178,6 +177,11 @@
   border-radius: var(--radius-control);
 }
 
+.checkboxField:has(.checkbox:focus-visible),
+.radioCard:has(.radio:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
 .checkboxField {
   gap: var(--space-2);
 }
@@ -206,7 +210,28 @@
 
 .radioCard:has(.radio:checked) {
   border-color: var(--color-primary);
-  box-shadow: var(--focus-ring);
+  background: var(--color-brand-soft);
+}
+
+.fieldGroup {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fieldGroupLegend {
+  margin-block-end: var(--space-2);
+  padding: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
+}
+
+.fieldGroupContent {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .radioCard:has(.radio:disabled) {
@@ -262,6 +287,26 @@
 
 .errorSummary {
   scroll-margin-block-start: calc(var(--header-height) + var(--space-4));
+}
+
+.link {
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
+  text-underline-offset: 0.16em;
+}
+
+.link:hover {
+  color: var(--color-primary-active);
+}
+
+.linkQuiet {
+  color: var(--color-body);
+}
+
+.linkStandalone {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
 }
 
 .errorSummaryList {

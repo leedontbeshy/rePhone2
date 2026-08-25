@@ -61,6 +61,7 @@
     "test:db:prepare": "pnpm --filter @rephone/api test:db:prepare",
     "test:browser": "playwright test",
     "fe:coverage": "pnpm --filter @rephone/web test:coverage-contract",
+    "fe:a11y": "pnpm --filter @rephone/web test:a11y-contract",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db:prepare && pnpm test:integration && pnpm test:e2e && pnpm api:openapi && pnpm api:client && pnpm build",
     "verify:release": "pnpm verify && pnpm test:coverage && pnpm test:browser",
     "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"

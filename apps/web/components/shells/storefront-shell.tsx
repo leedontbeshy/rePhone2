@@ -22,7 +22,7 @@ export function StorefrontShell({
   mainClassName,
 }: Readonly<StorefrontShellProps>) {
   return (
-    <div className={styles.storefrontShell} data-shell="storefront">
+    <div className={joinClassNames('rp-surface', styles.storefrontShell)} data-shell="storefront">
       <SkipLink targetId={mainId} />
       <header className={styles.storefrontHeader}>
         <div className={styles.headerInner}>

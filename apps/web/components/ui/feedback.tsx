@@ -1,10 +1,14 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { forwardRef } from 'react';
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from 'react';
 import { classNames } from './class-names';
 import styles from './primitives.module.css';
 
 export type FeedbackTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
-export interface InlineAlertProps {
+export interface InlineAlertProps extends Omit<
+  ComponentPropsWithoutRef<'div'>,
+  'children' | 'role' | 'title'
+> {
   children: ReactNode;
   className?: string;
   role?: 'alert' | 'status';
@@ -12,44 +16,51 @@ export interface InlineAlertProps {
   tone?: FeedbackTone;
 }
 
-export function InlineAlert({ children, className, role, title, tone = 'info' }: InlineAlertProps) {
+export const InlineAlert = forwardRef<HTMLDivElement, InlineAlertProps>(function InlineAlert(
+  { children, className, role, title, tone = 'info', ...props },
+  ref,
+) {
   return (
     <div
+      {...props}
       className={classNames(styles.alert, styles[tone], className)}
+      ref={ref}
       role={role ?? (tone === 'danger' ? 'alert' : 'status')}
     >
       {title ? <strong className={styles.alertTitle}>{title}</strong> : null}
       <div className={styles.alertBody}>{children}</div>
     </div>
   );
-}
+});
 
 export interface ErrorSummaryItem {
   href?: `#${string}`;
   message: string;
 }
 
-export interface ErrorSummaryProps {
-  className?: string;
+export interface ErrorSummaryProps extends Omit<
+  ComponentPropsWithoutRef<'div'>,
+  'children' | 'title'
+> {
   errors: ErrorSummaryItem[];
   id?: string;
   title?: string;
 }
 
-export function ErrorSummary({
-  className,
-  errors,
-  id,
-  title = 'Kiểm tra lại thông tin',
-}: ErrorSummaryProps) {
+export const ErrorSummary = forwardRef<HTMLDivElement, ErrorSummaryProps>(function ErrorSummary(
+  { className, errors, id, tabIndex = -1, title = 'Kiểm tra lại thông tin', ...props },
+  ref,
+) {
   if (errors.length === 0) return null;
 
   return (
     <div
+      {...props}
       className={classNames(styles.alert, styles.danger, styles.errorSummary, className)}
       id={id}
+      ref={ref}
       role="alert"
-      tabIndex={-1}
+      tabIndex={tabIndex}
     >
       <strong className={styles.alertTitle}>{title}</strong>
       <ul className={styles.errorSummaryList}>
@@ -61,7 +72,7 @@ export function ErrorSummary({
       </ul>
     </div>
   );
-}
+});
 
 export interface SkeletonProps {
   className?: string;

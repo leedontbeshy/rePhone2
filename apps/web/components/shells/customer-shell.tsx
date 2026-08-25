@@ -24,7 +24,7 @@ export function CustomerShell({
   mainClassName,
 }: Readonly<CustomerShellProps>) {
   return (
-    <div className={styles.customerShell} data-shell="customer">
+    <div className={joinClassNames('rp-surface', styles.customerShell)} data-shell="customer">
       <SkipLink targetId={mainId} />
       <header className={styles.storefrontHeader}>
         <div className={styles.headerInner}>

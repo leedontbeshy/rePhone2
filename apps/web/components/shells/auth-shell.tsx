@@ -20,7 +20,7 @@ export function AuthShell({
   mainClassName,
 }: Readonly<AuthShellProps>) {
   return (
-    <div className={styles.authShell} data-shell="auth">
+    <div className={joinClassNames('rp-surface', styles.authShell)} data-shell="auth">
       <SkipLink targetId={mainId} />
       <header className={styles.authHeader}>
         <Wordmark brand={brand} />
