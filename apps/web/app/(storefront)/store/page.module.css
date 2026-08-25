@@ -1,0 +1,52 @@
+.page {
+  display: grid;
+  gap: var(--space-8);
+  max-width: 72rem;
+  margin-inline: auto;
+}
+
+.heading {
+  max-width: var(--content-reading-max);
+}
+
+.heading > p {
+  margin: 0 0 var(--space-3);
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-label);
+  text-transform: uppercase;
+}
+
+.heading h1 {
+  margin: 0;
+}
+
+.heading > span {
+  display: block;
+  margin-block-start: var(--space-4);
+  color: var(--color-muted);
+}
+
+.note {
+  padding: var(--space-6);
+  border-inline-start: 3px solid var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.note h2 {
+  margin: 0;
+}
+
+.note p {
+  max-width: 64ch;
+  margin: var(--space-2) 0 0;
+  color: var(--color-body);
+}
+
+@media (max-width: 39.999rem) {
+  .note {
+    padding: var(--space-5);
+  }
+}

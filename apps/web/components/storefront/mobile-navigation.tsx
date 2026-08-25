@@ -1,0 +1,159 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/app/auth-provider';
+import { useCommerce } from '@/app/commerce-provider';
+import styles from './mobile-navigation.module.css';
+
+const NAVIGATION_ITEMS = [
+  {
+    href: '/products?productType=IPHONE&inStock=true',
+    label: 'Máy đã kiểm định',
+  },
+  {
+    href: '/products?productType=ACCESSORY&inStock=true',
+    label: 'Phụ kiện',
+  },
+  { href: '/#quy-trinh', label: 'Quy trình' },
+  { href: '/store', label: 'Cửa hàng' },
+] as const;
+
+export function MobileNavigation() {
+  const { status, user } = useAuth();
+  const { totalQuantity } = useCommerce();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeNavigation = () => {
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const panel = panelRef.current;
+    const focusable = panel?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled])',
+    );
+    focusable?.[0]?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || focusable === undefined || focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      triggerRef.current?.focus();
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        className={styles.trigger}
+        type="button"
+        aria-controls="storefront-mobile-navigation"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Menu
+      </button>
+      {open ? (
+        <div
+          className={styles.overlay}
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setOpen(false);
+          }}
+        >
+          <div
+            ref={panelRef}
+            id="storefront-mobile-navigation"
+            className={styles.panel}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="storefront-mobile-navigation-title"
+          >
+            <div className={styles.panelHeader}>
+              <strong id="storefront-mobile-navigation-title">Điều hướng</strong>
+              <button className={styles.closeButton} type="button" onClick={closeNavigation}>
+                Đóng
+              </button>
+            </div>
+
+            <form className={styles.search} action="/products" method="get" role="search">
+              <label htmlFor="mobile-storefront-search">Tìm iPhone hoặc phụ kiện</label>
+              <div>
+                <input
+                  id="mobile-storefront-search"
+                  name="q"
+                  type="search"
+                  maxLength={100}
+                  placeholder="Nhập tên sản phẩm"
+                />
+                <button type="submit">Tìm</button>
+              </div>
+            </form>
+
+            <nav aria-label="Điều hướng storefront trên di động">
+              <ul className={styles.navigationList}>
+                {NAVIGATION_ITEMS.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} onClick={closeNavigation}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            <div className={styles.sessionLinks} role="group" aria-label="Tài khoản và giỏ hàng">
+              {status === 'loading' ? (
+                <span role="status">Đang tải phiên đăng nhập…</span>
+              ) : status === 'anonymous' ? (
+                <Link href="/login" onClick={closeNavigation}>
+                  Đăng nhập
+                </Link>
+              ) : user?.role === 'CUSTOMER' ? (
+                <Link href="/orders" onClick={closeNavigation}>
+                  Đơn hàng của bạn
+                </Link>
+              ) : (
+                <Link href="/backoffice/orders" onClick={closeNavigation}>
+                  Mở backoffice
+                </Link>
+              )}
+              {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
+                <Link href="/cart" onClick={closeNavigation}>
+                  Giỏ hàng · {totalQuantity}
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}

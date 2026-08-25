@@ -9,6 +9,11 @@ import {
 } from './frontend-coverage';
 
 const repositoryRoot = resolve(import.meta.dirname, '../../..');
+const allowedOperationStatuses = {
+  DONE: ['DONE'],
+  'IN PROGRESS': ['NOT STARTED', 'IN PROGRESS'],
+  'NOT STARTED': ['NOT STARTED'],
+} as const;
 
 describe('FE-0 frontend coverage contract', () => {
   it('assigns every OpenAPI operation to exactly one route, phase and automated test', () => {
@@ -50,13 +55,7 @@ describe('FE-0 frontend coverage contract', () => {
       expect(phase).toMatch(/^FE-[1-8]$/);
       expect(automatedTest.startsWith('browser:')).toBe(true);
       const owningPhaseStatus = FRONTEND_PHASE_STATUS[phase];
-      if (owningPhaseStatus === 'NOT STARTED') {
-        expect(status).toBe('NOT STARTED');
-      } else if (owningPhaseStatus === 'IN PROGRESS') {
-        expect(['NOT STARTED', 'IN PROGRESS']).toContain(status);
-      } else {
-        expect(status).toBe('DONE');
-      }
+      expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
     }
 
     expect(
@@ -220,7 +219,7 @@ function readPlanRouteCoverage(): Array<{ route: string; kind: string; phase: st
     });
 }
 
-function readPlanPhaseStatuses() {
+function readPlanPhaseStatuses(): Record<string, string> {
   const plan = readFileSync(join(repositoryRoot, 'plan-fe.md'), 'utf8');
   return Object.fromEntries(
     [
@@ -228,7 +227,7 @@ function readPlanPhaseStatuses() {
         /^### (FE-\d) —[^\n]*\n\n[\s\S]*?^\| Trạng thái\s+\| \*\*(NOT STARTED|IN PROGRESS|DONE)\*\*/gm,
       ),
     ].map(([, phase, status]) => [phase, status]),
-  );
+  ) as Record<string, string>;
 }
 
 function readCurrentNextRoutes(): string[] {

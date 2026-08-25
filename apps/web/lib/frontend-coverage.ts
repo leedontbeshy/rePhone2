@@ -1843,7 +1843,7 @@ export const FRONTEND_ROUTE_COVERAGE = [
   ['/backoffice/settings', 'EXISTING', 'FE-8'],
   ['/backoffice/audit-logs', 'EXISTING', 'FE-8'],
   ['/backoffice/audit-logs/[id]', 'EXISTING', 'FE-8'],
-  ['/store', 'PLANNED', 'FE-1'],
+  ['/store', 'EXISTING', 'FE-1'],
   ['/account', 'PLANNED', 'FE-2'],
   ['/account/addresses', 'PLANNED', 'FE-2'],
   ['/account/security', 'PLANNED', 'FE-2'],

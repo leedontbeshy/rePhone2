@@ -138,7 +138,7 @@ Component ownership dự kiến:
 - `features/**`: API adapter, state hook và domain form cho từng bounded UI feature; không import Prisma/internal API DTO.
 - `styles/tokens.css` + `styles/base.css` và CSS Modules; `globals.css` tồn tại tạm thời cho legacy route đến khi route owner hoàn tất migration.
 
-### 5.1. Route ownership ledger — 37 hiện có + 18 mới
+### 5.1. Route ownership ledger — 38 hiện có + 17 mới
 
 Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc embedded workflow không được tạo URL công khai khác.
 
@@ -181,7 +181,7 @@ Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc
 |  35 | `/backoffice/settings`                   | Hiện có | FE-8        |
 |  36 | `/backoffice/audit-logs`                 | Hiện có | FE-8        |
 |  37 | `/backoffice/audit-logs/[id]`            | Hiện có | FE-8        |
-|  38 | `/store`                                 | Mới     | FE-1        |
+|  38 | `/store`                                 | Hiện có | FE-1        |
 |  39 | `/account`                               | Mới     | FE-2        |
 |  40 | `/account/addresses`                     | Mới     | FE-2        |
 |  41 | `/account/security`                      | Mới     | FE-2        |
