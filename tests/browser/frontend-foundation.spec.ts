@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const EXACT_UNIT_PATH = '/products/iphone-13/units/IP13-BLU-001';
+const EXACT_UNIT_PATH = '/products/iphone-14-pro/units/IP14P-128-001';
 
 test.describe('FE-0 frontend foundation baseline', () => {
   test('captures the representative exact-unit surface at desktop and mobile', async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe('FE-0 frontend foundation baseline', () => {
     ] as const) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(EXACT_UNIT_PATH);
-      await expect(page.getByText('Máy thật · IP13-BLU-001', { exact: true })).toBeVisible();
+      await expect(page.getByText('Máy thật · IP14P-128-001', { exact: true })).toBeVisible();
       await page.evaluate(async () => document.fonts.ready);
       await page.addStyleTag({
         content:
