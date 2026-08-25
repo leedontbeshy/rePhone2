@@ -16,6 +16,13 @@ export class UsersRepository {
     return client.user.findUnique({ where: { id } });
   }
 
+  public async lockById(id: string, client: Prisma.TransactionClient): Promise<boolean> {
+    const rows = await client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM users WHERE id = ${id}::uuid FOR UPDATE
+    `;
+    return rows.length === 1;
+  }
+
   public createCustomer(
     data: {
       email: string;
@@ -31,26 +38,6 @@ export class UsersRepository {
         ...data,
         role: 'CUSTOMER',
         status: 'ACTIVE',
-      },
-    });
-  }
-
-  public createPendingEmployee(
-    data: {
-      email: string;
-      normalizedEmail: string;
-      fullName: string;
-      phone?: string;
-      employeeCode: string;
-      hiredAt?: Date;
-    },
-    client: DbClient = this.prisma,
-  ) {
-    return client.user.create({
-      data: {
-        ...data,
-        role: 'EMPLOYEE',
-        status: 'PENDING_VERIFICATION',
       },
     });
   }

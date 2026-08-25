@@ -39,6 +39,10 @@ export class AuthSessionsRepository {
     return this.prisma.authSession.findUnique({ where: { id }, include: { user: true } });
   }
 
+  public findByRefreshTokenHash(refreshTokenHash: string) {
+    return this.prisma.authSession.findUnique({ where: { refreshTokenHash } });
+  }
+
   public async lockByRefreshTokenHash(
     refreshTokenHash: string,
     client: Prisma.TransactionClient,

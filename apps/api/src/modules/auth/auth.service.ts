@@ -24,14 +24,6 @@ import { TokenService } from './token.service.js';
 
 const GENERIC_FORGOT_MESSAGE = 'Nếu tài khoản phù hợp, hướng dẫn sẽ được gửi qua email.';
 
-interface InviteEmployeeInput {
-  email: string;
-  fullName: string;
-  employeeCode: string;
-  phone?: string;
-  hiredAt?: Date;
-}
-
 type RefreshOutcome =
   | { kind: 'missing' | 'revoked' | 'reused' }
   | { kind: 'success'; user: User; sessionId: string; expiresAt: Date };
@@ -122,13 +114,21 @@ export class AuthService {
     const successorToken = this.tokenService.createOpaqueToken();
     const successorHash = this.tokenService.digestOpaqueToken(successorToken);
     const now = new Date();
+    const candidate = await this.sessionsRepository.findByRefreshTokenHash(currentHash);
+
+    if (candidate === null) {
+      throw new ApiError('AUTH_REQUIRED');
+    }
 
     const outcome = await this.prisma.$transaction<RefreshOutcome>(async (transaction) => {
+      if (!(await this.usersRepository.lockById(candidate.userId, transaction))) {
+        return { kind: 'missing' };
+      }
       const current = await this.sessionsRepository.lockByRefreshTokenHash(
         currentHash,
         transaction,
       );
-      if (current === null) {
+      if (current === null || current.userId !== candidate.userId) {
         return { kind: 'missing' };
       }
       if (current.revokedAt !== null) {
@@ -140,7 +140,7 @@ export class AuthService {
         return { kind: 'revoked' };
       }
 
-      const user = await this.usersRepository.findById(current.userId, transaction);
+      const user = await this.usersRepository.findById(candidate.userId, transaction);
       if (user === null || user.status !== 'ACTIVE') {
         await this.sessionsRepository.revokeAllForUser(current.userId, transaction);
         return { kind: 'revoked' };
@@ -205,13 +205,25 @@ export class AuthService {
     const tokenHash = this.tokenService.digestOpaqueToken(rawToken);
     const now = new Date();
     const expiresAt = addMinutes(now, this.config.auth.passwordResetTtlMinutes);
-    await this.prisma.$transaction(async (transaction) => {
+    const issued = await this.prisma.$transaction(async (transaction) => {
+      if (!(await this.usersRepository.lockById(user.id, transaction))) return false;
+      const currentUser = await this.usersRepository.findById(user.id, transaction);
+      if (
+        currentUser === null ||
+        currentUser.status !== 'ACTIVE' ||
+        currentUser.passwordHash === null
+      ) {
+        return false;
+      }
       await this.authTokensRepository.invalidateActive(user.id, 'RESET_PASSWORD', now, transaction);
       await this.authTokensRepository.create(
         { userId: user.id, purpose: 'RESET_PASSWORD', tokenHash, expiresAt },
         transaction,
       );
+      return true;
     });
+
+    if (!issued) return { message: GENERIC_FORGOT_MESSAGE };
 
     const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/reset-password', rawToken);
     await this.sendMailSafely('auth.password_reset_requested', user.id, {
@@ -232,31 +244,44 @@ export class AuthService {
     this.rateLimiter.reset(metadata.ipAddress, tokenHash);
     const passwordHash = await this.passwordService.hash(newPassword);
     const now = new Date();
+    const candidate = await this.authTokensRepository.findByHash(tokenHash);
 
-    const changed = await this.prisma.$transaction(async (transaction) => {
-      const token = await this.authTokensRepository.lockByHash(tokenHash, transaction);
-      if (
-        token === null ||
-        token.purpose !== 'RESET_PASSWORD' ||
-        token.consumedAt !== null ||
-        token.expiresAt <= now
-      ) {
-        return false;
-      }
-      const user = await this.usersRepository.findById(token.userId, transaction);
-      if (user === null || user.status !== 'ACTIVE' || user.passwordHash === null) {
-        return false;
-      }
+    const changed =
+      candidate === null
+        ? false
+        : await this.prisma.$transaction(async (transaction) => {
+            if (!(await this.usersRepository.lockById(candidate.userId, transaction))) {
+              return false;
+            }
+            const token = await this.authTokensRepository.lockByHash(tokenHash, transaction);
+            if (
+              token === null ||
+              token.userId !== candidate.userId ||
+              token.purpose !== 'RESET_PASSWORD' ||
+              token.consumedAt !== null ||
+              token.expiresAt <= now
+            ) {
+              return false;
+            }
+            const user = await this.usersRepository.findById(candidate.userId, transaction);
+            if (user === null || user.status !== 'ACTIVE' || user.passwordHash === null) {
+              return false;
+            }
 
-      await this.authTokensRepository.consume(token.id, now, transaction);
-      await this.authTokensRepository.invalidateActive(user.id, 'RESET_PASSWORD', now, transaction);
-      await transaction.user.update({
-        where: { id: user.id },
-        data: { passwordHash, passwordChangedAt: now },
-      });
-      await this.sessionsRepository.revokeAllForUser(user.id, transaction);
-      return true;
-    });
+            await this.authTokensRepository.consume(token.id, now, transaction);
+            await this.authTokensRepository.invalidateActive(
+              user.id,
+              'RESET_PASSWORD',
+              now,
+              transaction,
+            );
+            await transaction.user.update({
+              where: { id: user.id },
+              data: { passwordHash, passwordChangedAt: now },
+            });
+            await this.sessionsRepository.revokeAllForUser(user.id, transaction);
+            return true;
+          });
 
     if (!changed) {
       throw new ApiError('ONE_TIME_TOKEN_INVALID');
@@ -272,45 +297,53 @@ export class AuthService {
     this.rateLimiter.invitation(metadata.ipAddress, tokenHash);
     const passwordHash = await this.passwordService.hash(password);
     const now = new Date();
+    const candidate = await this.authTokensRepository.findByHash(tokenHash);
 
-    const accepted = await this.prisma.$transaction(async (transaction) => {
-      const token = await this.authTokensRepository.lockByHash(tokenHash, transaction);
-      if (
-        token === null ||
-        token.purpose !== 'EMPLOYEE_INVITATION' ||
-        token.consumedAt !== null ||
-        token.expiresAt <= now
-      ) {
-        return false;
-      }
-      const user = await this.usersRepository.findById(token.userId, transaction);
-      if (
-        user === null ||
-        user.role !== 'EMPLOYEE' ||
-        user.status !== 'PENDING_VERIFICATION' ||
-        user.passwordHash !== null
-      ) {
-        return false;
-      }
+    const accepted =
+      candidate === null
+        ? false
+        : await this.prisma.$transaction(async (transaction) => {
+            if (!(await this.usersRepository.lockById(candidate.userId, transaction))) {
+              return false;
+            }
+            const token = await this.authTokensRepository.lockByHash(tokenHash, transaction);
+            if (
+              token === null ||
+              token.userId !== candidate.userId ||
+              token.purpose !== 'EMPLOYEE_INVITATION' ||
+              token.consumedAt !== null ||
+              token.expiresAt <= now
+            ) {
+              return false;
+            }
+            const user = await this.usersRepository.findById(candidate.userId, transaction);
+            if (
+              user === null ||
+              user.role !== 'EMPLOYEE' ||
+              user.status !== 'PENDING_VERIFICATION' ||
+              user.passwordHash !== null
+            ) {
+              return false;
+            }
 
-      await this.authTokensRepository.consume(token.id, now, transaction);
-      await this.authTokensRepository.invalidateActive(
-        user.id,
-        'EMPLOYEE_INVITATION',
-        now,
-        transaction,
-      );
-      await transaction.user.update({
-        where: { id: user.id },
-        data: {
-          status: 'ACTIVE',
-          passwordHash,
-          emailVerifiedAt: now,
-          passwordChangedAt: now,
-        },
-      });
-      return true;
-    });
+            await this.authTokensRepository.consume(token.id, now, transaction);
+            await this.authTokensRepository.invalidateActive(
+              user.id,
+              'EMPLOYEE_INVITATION',
+              now,
+              transaction,
+            );
+            await transaction.user.update({
+              where: { id: user.id },
+              data: {
+                status: 'ACTIVE',
+                passwordHash,
+                emailVerifiedAt: now,
+                passwordChangedAt: now,
+              },
+            });
+            return true;
+          });
 
     if (!accepted) {
       throw new ApiError('ONE_TIME_TOKEN_INVALID');
@@ -333,6 +366,17 @@ export class AuthService {
     const passwordHash = await this.passwordService.hash(newPassword);
     const now = new Date();
     await this.prisma.$transaction(async (transaction) => {
+      if (!(await this.usersRepository.lockById(userId, transaction))) {
+        throw new ApiError('CURRENT_PASSWORD_INCORRECT');
+      }
+      const currentUser = await this.usersRepository.findById(userId, transaction);
+      if (
+        currentUser === null ||
+        currentUser.status !== 'ACTIVE' ||
+        currentUser.passwordHash !== user.passwordHash
+      ) {
+        throw new ApiError('CURRENT_PASSWORD_INCORRECT');
+      }
       await transaction.user.update({
         where: { id: userId },
         data: { passwordHash, passwordChangedAt: now },
@@ -345,76 +389,18 @@ export class AuthService {
     });
   }
 
-  public async inviteEmployee(input: InviteEmployeeInput): Promise<{ id: string }> {
-    const rawToken = this.tokenService.createOpaqueToken();
-    const tokenHash = this.tokenService.digestOpaqueToken(rawToken);
-    const now = new Date();
-    const expiresAt = addHours(now, this.config.auth.employeeInviteTtlHours);
-
-    try {
-      const user = await this.prisma.$transaction(async (transaction) => {
-        const created = await this.usersRepository.createPendingEmployee(
-          {
-            email: input.email.trim(),
-            normalizedEmail: normalizeEmail(input.email),
-            fullName: input.fullName.trim(),
-            employeeCode: input.employeeCode.trim(),
-            ...(input.phone === undefined ? {} : { phone: input.phone.trim() }),
-            ...(input.hiredAt === undefined ? {} : { hiredAt: input.hiredAt }),
-          },
-          transaction,
-        );
-        await this.authTokensRepository.create(
-          { userId: created.id, purpose: 'EMPLOYEE_INVITATION', tokenHash, expiresAt },
-          transaction,
-        );
-        return created;
-      });
-      await this.sendInvitation(user.id, user.email, rawToken);
-      return { id: user.id };
-    } catch (error) {
-      if (isPrismaUniqueViolation(error)) {
-        throw new ApiError('DUPLICATE_RESOURCE');
-      }
-      throw error;
-    }
-  }
-
-  public async resendEmployeeInvitation(userId: string): Promise<void> {
-    const user = await this.usersRepository.findById(userId);
-    if (
-      user === null ||
-      user.role !== 'EMPLOYEE' ||
-      user.status !== 'PENDING_VERIFICATION' ||
-      user.passwordHash !== null
-    ) {
-      throw new ApiError('RESOURCE_NOT_FOUND');
-    }
-
-    const rawToken = this.tokenService.createOpaqueToken();
-    const tokenHash = this.tokenService.digestOpaqueToken(rawToken);
-    const now = new Date();
-    const expiresAt = addHours(now, this.config.auth.employeeInviteTtlHours);
-    await this.prisma.$transaction(async (transaction) => {
-      await this.authTokensRepository.invalidateActive(
-        user.id,
-        'EMPLOYEE_INVITATION',
-        now,
-        transaction,
-      );
-      await this.authTokensRepository.create(
-        { userId: user.id, purpose: 'EMPLOYEE_INVITATION', tokenHash, expiresAt },
-        transaction,
-      );
-    });
-    await this.sendInvitation(user.id, user.email, rawToken);
-  }
-
   private async issueSession(user: User, metadata: RequestMetadata): Promise<SessionIssueResult> {
     const refreshToken = this.tokenService.createOpaqueToken();
     const refreshTokenHash = this.tokenService.digestOpaqueToken(refreshToken);
     const expiresAt = addDays(new Date(), this.config.auth.refreshTtlDays);
-    const session = await this.prisma.$transaction(async (transaction) => {
+    const result = await this.prisma.$transaction(async (transaction) => {
+      if (!(await this.usersRepository.lockById(user.id, transaction))) {
+        throw new ApiError('INVALID_CREDENTIALS');
+      }
+      const currentUser = await this.usersRepository.findById(user.id, transaction);
+      if (currentUser === null || currentUser.status !== 'ACTIVE') {
+        throw new ApiError('ACCOUNT_UNAVAILABLE');
+      }
       const created = await this.sessionsRepository.create(
         {
           userId: user.id,
@@ -427,12 +413,12 @@ export class AuthService {
         transaction,
       );
       await transaction.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-      return created;
+      return { session: created, user: currentUser };
     });
     return {
-      ...(await this.createSessionPayload(user, session.id)),
+      ...(await this.createSessionPayload(result.user, result.session.id)),
       refreshToken,
-      refreshExpiresAt: expiresAt,
+      refreshExpiresAt: result.session.expiresAt,
     };
   }
 
@@ -442,16 +428,6 @@ export class AuthService {
       expiresIn: this.config.auth.accessTtlSeconds,
       user: toSafeUser(user),
     };
-  }
-
-  private sendInvitation(userId: string, email: string, rawToken: string): Promise<void> {
-    const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/accept-invitation', rawToken);
-    return this.sendMailSafely('employee.invited', userId, {
-      to: email,
-      subject: 'Lời mời nhân viên rePhone',
-      text: `Mở liên kết sau để kích hoạt tài khoản nhân viên: ${url}`,
-      html: `<p>Mở liên kết sau để kích hoạt tài khoản nhân viên:</p><p><a href="${url}">${url}</a></p>`,
-    });
   }
 
   private async sendMailSafely(
@@ -493,10 +469,6 @@ function isPrismaUniqueViolation(error: unknown): boolean {
 
 function addMinutes(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * 60_000);
-}
-
-function addHours(date: Date, hours: number): Date {
-  return new Date(date.getTime() + hours * 3_600_000);
 }
 
 function addDays(date: Date, days: number): Date {

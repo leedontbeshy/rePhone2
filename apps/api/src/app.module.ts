@@ -23,6 +23,7 @@ import { RefundOperationsModule } from './modules/refunds/refund-operations.modu
 import { WarrantyOperationsModule } from './modules/warranty/warranty-operations.module.js';
 import { AfterSalesModule } from './modules/after-sales/after-sales.module.js';
 import { AuditOperationsModule } from './modules/audit-operations/audit-operations.module.js';
+import { UserOperationsModule } from './modules/user-operations/user-operations.module.js';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AuditOperationsModule } from './modules/audit-operations/audit-operatio
     WarrantyOperationsModule,
     AfterSalesModule,
     AuditOperationsModule,
+    UserOperationsModule,
     SchedulerModule,
     HealthModule,
   ],

@@ -22,6 +22,7 @@ import { GuestCartIdentityService } from './guest-cart-identity.service.js';
 import { GuestCommerceCsrfGuard } from './guest-commerce-csrf.guard.js';
 import { OptionalSessionGuard } from './optional-session.guard.js';
 import { SessionResolver } from './session-resolver.service.js';
+import { EmployeeIdentityGateway } from './employee-identity.gateway.js';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { SessionResolver } from './session-resolver.service.js';
     UsersRepository,
     AuthSessionsRepository,
     AuthTokensRepository,
+    EmployeeIdentityGateway,
   ],
   exports: [
     AuthService,
@@ -68,6 +70,7 @@ import { SessionResolver } from './session-resolver.service.js';
     BackofficeRateLimitGuard,
     UsersRepository,
     AuthSessionsRepository,
+    EmployeeIdentityGateway,
   ],
 })
 export class AuthModule {}
