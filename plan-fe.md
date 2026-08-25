@@ -7,10 +7,10 @@
 > Design contract: [design.md](design.md)  
 > Frontend baseline SHA: `801ad26`  
 > Ngày cập nhật: `2026-08-25`  
-> Trạng thái triển khai: **NOT STARTED**  
+> Trạng thái triển khai: **FE-0 DONE · FE-1 NOT STARTED**
 > HTTP baseline: `apps/api/openapi/openapi.json` — **160 operations**
 
-Tài liệu điều phối triển khai toàn bộ frontend rePhone. Kế hoạch đã được phê duyệt nhưng implementation chưa bắt đầu; tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
+Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; các phase triển khai business UI FE-1…FE-9 chưa bắt đầu. Tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
 
 ## 1. Vai trò tài liệu và thứ tự nguồn sự thật
 
@@ -63,7 +63,7 @@ Khi hai nguồn ở cấp cao hơn mâu thuẫn, dừng work package, ghi risk/s
 
 ## 3. Baseline route inventory tại `801ad26`
 
-Baseline có 37 `page.tsx`: 32 client page và 5 server page. Các route đã chạy ở P0 nhưng **toàn bộ work P1 trong tài liệu này vẫn là `NOT STARTED`**.
+Baseline có 37 `page.tsx`: 32 client page và 5 server page. Các route đã chạy ở P0; FE-0 foundation đã hoàn thành nhưng **toàn bộ business operation trong chương trình redesign P1 vẫn là `NOT STARTED`** cho đến khi phase sở hữu có evidence triển khai.
 
 | Nhóm hiện hành        | Route                                                                                                                                                                                                                                                                                                        | Số route | Bằng chứng/gap chính                                                                        |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------: | ------------------------------------------------------------------------------------------- |
@@ -80,7 +80,7 @@ Các boundary legacy đáng chú ý:
 
 - `apps/web/app/layout.tsx` chỉ mount `AuthProvider` và `CommerceProvider`; chưa có route-group layout theo surface.
 - `CatalogHeader` nằm trong `apps/web/app/catalog-ui.tsx` và được nhúng thủ công ở nhiều storefront, customer và backoffice page.
-- `apps/web/app/globals.css` có 2.774 dòng, không dùng design token/CSS variable và chứa generic selector dùng chéo surface.
+- `apps/web/app/globals.css` có 2.773 dòng, không dùng design token/CSS variable và chứa generic selector dùng chéo surface.
 - Chưa có `components/`, `hooks/`, `styles/` hoặc `public/`; nhiều page detail dài 900–1.300 dòng.
 
 ## 4. Route bắt buộc bổ sung
@@ -230,21 +230,21 @@ Contract chung cho mọi phase:
 
 ### FE-0 — Durable sources, baseline và frontend foundation
 
-| Thuộc tính        | Nội dung                                                                                                                                        |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **IN PROGRESS**                                                                                                                                 |
-| Mục tiêu          | Khóa `design.md`/`plan-fe.md`, coverage manifest 160 operations, token, base style, primitive và route shell contracts trước khi đổi giao diện. |
-| Non-goal          | Không đổi output route, business flow, backend hoặc xóa legacy CSS.                                                                             |
-| Dependency        | Baseline `801ad26`; OpenAPI 160 operations; generated client hiện hành.                                                                         |
-| Route             | Không thêm behavior route; chuẩn bị layout `(storefront)`, `(auth)`, `(account)`, `backoffice`.                                                 |
-| API group         | Không gọi API mới; chỉ lập ledger/contract tests.                                                                                               |
-| Design anchor     | Light technical-editorial; paper/ink/rule/accent; mono metadata; operational backoffice density; focus visible.                                 |
-| State bắt buộc    | Loading, empty, error, success, warning, permission, stale/conflict, disabled/pending, upload progress.                                         |
-| Test              | Route/role/state inventory; desktop 1440 + mobile 390 screenshots; keyboard baseline; lint/typecheck/unit/build; current Playwright flow.       |
-| Commit dự kiến    | `docs(fe): establish post-p0 frontend sources`; `feat(web): add frontend design foundations`.                                                   |
-| DoD/checkpoint C0 | 160/160 operation được map đúng một lần; 37 route baseline có owner; primitives không đổi behavior; gates xanh.                                 |
-| Rollback          | Revert foundation/layout commit; giữ nguyên providers, route và `globals.css`. Không có data rollback.                                          |
-| Evidence          | Chưa có — ghi commit SHA, route/role matrix, command log và baseline screenshots khi hoàn thành.                                                |
+| Thuộc tính        | Nội dung                                                                                                                                                                                                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trạng thái        | **DONE**                                                                                                                                                                                                                                                                          |
+| Mục tiêu          | Khóa `design.md`/`plan-fe.md`, coverage manifest 160 operations, token, base style, primitive và route shell contracts trước khi đổi giao diện.                                                                                                                                   |
+| Non-goal          | Không đổi output route, business flow, backend hoặc xóa legacy CSS.                                                                                                                                                                                                               |
+| Dependency        | Baseline `801ad26`; OpenAPI 160 operations; generated client hiện hành.                                                                                                                                                                                                           |
+| Route             | Không thêm behavior route; chuẩn bị layout `(storefront)`, `(auth)`, `(account)`, `backoffice`.                                                                                                                                                                                   |
+| API group         | Không gọi API mới; chỉ lập ledger/contract tests.                                                                                                                                                                                                                                 |
+| Design anchor     | Light technical-editorial; paper/ink/rule/accent; mono metadata; operational backoffice density; focus visible.                                                                                                                                                                   |
+| State bắt buộc    | Loading, empty, error, success, warning, permission, stale/conflict, disabled/pending, upload progress.                                                                                                                                                                           |
+| Test              | Route/role/state inventory; desktop 1440 + mobile 390 screenshots; keyboard baseline; lint/typecheck/unit/build; current Playwright flow.                                                                                                                                         |
+| Commit thực tế    | `9b7f72f`, `ffe4b84`, `5a6e302`, `ea6de09`, `e0cd7ca`, `881bd98`, `c4d2b3c`; strict-lint unblock `9542623`.                                                                                                                                                                       |
+| DoD/checkpoint C0 | 160/160 operation được map đúng một lần; 37 route baseline có owner; primitives không đổi behavior; gates xanh.                                                                                                                                                                   |
+| Rollback          | Revert foundation/layout commit; giữ nguyên providers, route và `globals.css`. Không có data rollback.                                                                                                                                                                            |
+| Evidence          | Code SHA `c4d2b3c`; exact coverage `160/160`; route ownership `37 + 18`; Web `69`, API unit `600`, integration `54`, E2E `93`, browser `3/3`; `pnpm verify` xanh trên final closeout tree; desktop/mobile snapshots trong `tests/browser/frontend-foundation.spec.ts-snapshots/`. |
 
 ### FE-1 — Storefront discovery và inspection dossier
 
@@ -487,10 +487,11 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 
 ## 11. Status log
 
-| Ngày       | Phase             | Trạng thái             | Thay đổi                                                         | Evidence/ghi chú                                                                                                         |
-| ---------- | ----------------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 2026-08-25 | Toàn chương trình | APPROVED / NOT STARTED | Khóa scope Post-P0/P1, baseline `801ad26`, full backend coverage | OpenAPI hiện hành có 160 operations; chưa có implementation commit                                                       |
-| 2026-08-25 | FE-0              | IN PROGRESS            | Bắt đầu token, primitive, shell và executable coverage contract  | Branch `feat/fe-0-design-foundation`; implementation record trong `docs/planning/2026-08-25-fe-0-frontend-foundation.md` |
+| Ngày       | Phase             | Trạng thái             | Thay đổi                                                                                           | Evidence/ghi chú                                                                                                                                                 |
+| ---------- | ----------------- | ---------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-25 | Toàn chương trình | APPROVED / NOT STARTED | Khóa scope Post-P0/P1, baseline `801ad26`, full backend coverage                                   | OpenAPI hiện hành có 160 operations; chưa có implementation commit                                                                                               |
+| 2026-08-25 | FE-0              | IN PROGRESS            | Bắt đầu token, primitive, shell và executable coverage contract                                    | Branch `feat/fe-0-design-foundation`; implementation record trong `docs/planning/2026-08-25-fe-0-frontend-foundation.md`                                         |
+| 2026-08-25 | FE-0              | DONE                   | Khóa token, primitive, bốn shell, a11y contract, exact operation/route coverage và visual baseline | Code SHA `c4d2b3c`; `pnpm verify` xanh lại trên final closeout tree; `pnpm test:browser` xanh `3/3` sau `c4d2b3c`; rollback rehearsal xanh; FE-1 là bước kế tiếp |
 
 ## 12. Operation coverage ledger — 160/160
 
