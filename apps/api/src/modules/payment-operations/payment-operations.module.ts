@@ -21,6 +21,7 @@ import { PaymentRateLimiter } from './payment-rate-limiter.service.js';
 import { PaymentReviewQueryService } from './payment-review-query.service.js';
 import { PaymentReviewCommandService } from './payment-review-command.service.js';
 import { DepositExpiryService } from './deposit-expiry.service.js';
+import { OverduePaymentReviewReporter } from './overdue-payment-review-reporter.service.js';
 
 @Module({
   imports: [
@@ -44,8 +45,14 @@ import { DepositExpiryService } from './deposit-expiry.service.js';
     PaymentReviewQueryService,
     PaymentReviewCommandService,
     DepositExpiryService,
+    OverduePaymentReviewReporter,
   ],
-  exports: [PaymentOperationsRepository, PaymentClock, DepositExpiryService],
+  exports: [
+    PaymentOperationsRepository,
+    PaymentClock,
+    DepositExpiryService,
+    OverduePaymentReviewReporter,
+  ],
 })
 export class PaymentOperationsModule implements NestModule {
   public configure(consumer: MiddlewareConsumer): void {

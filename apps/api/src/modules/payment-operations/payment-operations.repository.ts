@@ -23,6 +23,12 @@ export interface PaymentListPage {
   totalItems: number;
 }
 
+export interface OverduePaymentReviewCandidate {
+  id: string;
+  orderId: string;
+  reviewDueAt: Date;
+}
+
 @Injectable()
 export class PaymentOperationsRepository {
   public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -131,6 +137,27 @@ export class PaymentOperationsRepository {
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
       take: batchSize,
     });
+  }
+
+  public findOverdueReviewCandidates(
+    now: Date,
+    batchSize: number,
+  ): Promise<OverduePaymentReviewCandidate[]> {
+    return this.prisma.$queryRaw<OverduePaymentReviewCandidate[]>`
+      SELECT
+        id,
+        order_id AS "orderId",
+        submitted_at + review_window_minutes_snapshot * INTERVAL '1 minute' AS "reviewDueAt"
+      FROM payments
+      WHERE purpose = 'DEPOSIT'
+        AND status = 'UNDER_REVIEW'
+        AND submitted_at IS NOT NULL
+        AND review_window_minutes_snapshot IS NOT NULL
+        AND review_window_minutes_snapshot > 0
+        AND submitted_at + review_window_minutes_snapshot * INTERVAL '1 minute' <= ${now}
+      ORDER BY "reviewDueAt" ASC, id ASC
+      LIMIT ${batchSize}
+    `;
   }
 }
 
