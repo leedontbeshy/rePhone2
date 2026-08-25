@@ -3275,7 +3275,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/VoucherListMetaDto"
           }
         },
         "required": [
@@ -7585,7 +7585,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/VoucherListMetaDto"
           }
         },
         "required": [
@@ -9576,6 +9576,17 @@
         ],
         "type": "object"
       },
+      "VoucherListMetaDto": {
+        "properties": {
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationDto"
+          }
+        },
+        "required": [
+          "pagination"
+        ],
+        "type": "object"
+      },
       "VoucherReasonDto": {
         "properties": {
           "reason": {
@@ -9663,7 +9674,7 @@
             "type": "array"
           },
           "meta": {
-            "$ref": "#/components/schemas/PaginationDto"
+            "$ref": "#/components/schemas/VoucherListMetaDto"
           }
         },
         "required": [
