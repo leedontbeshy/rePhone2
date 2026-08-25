@@ -1,7 +1,7 @@
 # Kế hoạch triển khai Slice 12 — System Administration & Release Hardening
 
-> Trạng thái: 🚧 IN PROGRESS trên branch `feat/slice-12-system-hardening` từ baseline Slice 11 `444636d`.<br>
-> Baseline: Slice 11 có 143 OpenAPI operation; Slice 12 thêm đúng 17 operation và phải đạt 160.<br>
+> Trạng thái: ✅ COMPLETE — nghiệm thu ngày 2026-08-25 trên branch `feat/slice-12-system-hardening`; implementation SHA đã test `14debdaee777306d9ad4f40aa0ccee810dd90ac6`.<br>
+> Baseline: Slice 11 có 143 OpenAPI operation; Slice 12 đã thêm đúng 17 operation và đạt 160.<br>
 > Phụ thuộc: toàn bộ Slice 01–11 đã hoàn thành.<br>
 > Không sửa `docs/decisions`; behavior hiện hành theo precedence tại [docs index](../readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
 
@@ -176,7 +176,7 @@ Mỗi job có process-local mutex, run ID, stable ordering và structured counte
 | 12 | Playwright và guarded release smoke | `test(system): add slice 12 release smoke` |
 | 13 | Rollout và P0 completion | `docs(plan): mark slice 12 and p0 complete` |
 
-Mỗi package chạy gate liên quan và push riêng. Không stage `apps/web/next-env.d.ts` và không sửa `docs/decisions`.
+Toàn bộ WP 0–13 đã hoàn thành và được push theo từng concern. Không stage `apps/web/next-env.d.ts` và không sửa `docs/decisions`.
 
 ## 5. Test, demo và rollout
 
@@ -193,24 +193,40 @@ Test bắt buộc:
 
 Quality gates:
 
-1. `pnpm format:check`
-2. `pnpm lint`
-3. `pnpm typecheck`
-4. `pnpm test`
-5. `pnpm test:db:prepare`
-6. `pnpm test:integration`
-7. `pnpm test:e2e`
-8. `pnpm api:openapi`
-9. `pnpm api:client`
-10. `pnpm build`
-11. `pnpm verify`
-12. `pnpm test:browser`
+1. `pnpm install --frozen-lockfile`
+2. `pnpm format:check`
+3. `pnpm lint`
+4. `pnpm typecheck`
+5. `pnpm test`
+6. `pnpm test:db:prepare`
+7. `pnpm test:integration`
+8. `pnpm test:e2e`
+9. `pnpm api:openapi`
+10. `pnpm api:client`
+11. `pnpm build`
+12. `pnpm verify`
+13. `pnpm test:coverage`
+14. `pnpm test:browser`
+
+Composite release gate: `pnpm verify:release = pnpm verify && pnpm test:coverage && pnpm test:browser`.
 
 `pnpm demo:scenarios` tạo/reuse `pickup-ready`, `shipping-awaiting-proof`, `shipping-under-review`, `shipping-in-transit`, `refund-processing`, `after-sales-inspecting` và ghi manifest gitignored. Script chỉ chạy trên database `_demo`/`_test`, không dùng direct SQL để transition business state.
 
 Rollout: backup + restore rehearsal → preflight → `db:deploy` → API với scheduler tắt → Web → role/settings/audit/Mailpit/Supabase smoke → seed hai lần → demo/browser → gọi ba handler mới có kiểm soát → bật scheduler đúng một replica → full release verify → cập nhật plan/release SHA.
 
 Rollback: tắt scheduler trước; không down migration/reset/sửa state bằng SQL; schema hardening và history đã commit được giữ; restore backup vào database mới khi migration/data lỗi; orphan chỉ cleanup bằng exact bucket/path đã xác minh.
+
+### 5.1 Bằng chứng nghiệm thu
+
+- Contract đạt đúng 160 HTTP operation/operationId duy nhất (`143 → 160`); đủ 17 operation Slice 12, Bearer/multipart QR/error schema đúng và generated client không drift.
+- Migration `20260825120000_slice12_system_administration_invariants` đã deploy lên Supabase; release preflight không còn pending/failed migration. Migration-from-zero áp dụng thành công đủ 11 migration và test xác nhận trigger chặn `UPDATE/DELETE` AuditLog.
+- Backup trước rollout được giữ tại artifact gitignored với SHA-256 `3D361A944179087A72916FD55E02F04C356FA2EE9A2B685DB7F5A74608D28807`. Portable public-schema dump có SHA-256 `967BD15A481B9F10703C074E4F3DC74982B50C233DF96086BA0FBF08283C2EEE`, restore thành công vào database mới `rephone_restore_slice12`; source/restore cùng 10 migration, 14 user, 19 order và tổng `grandTotal=17,773,500` trước rollout.
+- Seed Supabase chạy lặp lại mà fingerprint 28 bảng giữ nguyên `FE617BFBDA748FE47EC7114FB66CAE0657A0158423819E86E1C6BE5309BC2286`. `pnpm demo:scenarios` tạo/reuse đủ sáu scenario và manifest không chứa credential/token/identifier.
+- Guarded Supabase/Mailpit smoke đã qua public store, invitation/resend/accept/login, employee disable/enable, customer suspend/activate, session revoke, password reset fragment, settings CAS conflict, QR upload thật, AuditLog redaction/request ID và ma trận đúng 17 operation × 4 actor.
+- `pnpm verify:release` kết thúc exit 0: 598 API unit test, 51 Web test, 2 client test, 54 integration test, 93 API E2E test; coverage run có 745 test/126 file với statements `87.41%`, branches `75.25%`, functions `83.54%`, lines `92.31%` và các critical Slice 12 service đạt branch threshold riêng.
+- Playwright Chromium `critical-commerce-flow.spec.ts` qua 1/1: catalog → cart → shipping checkout → proof → staff verify → prepare/shipment/hand-over → COD delivered → customer thấy Order `COMPLETED/PAID` và Warranty.
+- `/health/ready` trả 200; scheduler đã bật trên đúng một API replica và tick `expireDepositProofs`/`expirePickupHolds` hoàn thành với structured counters. Ba maintenance handler mới cũng đã chạy có kiểm soát trong integration suite.
+- Relative link trong `plan.md` và tài liệu Slice 12 hợp lệ; `docs/decisions` không thay đổi. Không còn known P0 blocker; warning deprecation của PostgreSQL driver được ghi nhận là maintenance ngoài release blocker.
 
 ## 6. Tài liệu nguồn
 

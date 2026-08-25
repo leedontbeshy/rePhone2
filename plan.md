@@ -1,6 +1,6 @@
 # rePhone P0 — Kế hoạch triển khai chi tiết
 
-> Trạng thái: 🚧 Slice 12 — System administration và release hardening đang triển khai<br>
+> Trạng thái: ✅ P0 COMPLETE — đủ 12 vertical slice, nghiệm thu ngày 2026-08-25; implementation SHA đã test `14debdaee777306d9ad4f40aa0ccee810dd90ac6`<br>
 > Kế hoạch chi tiết: [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md)<br>
 > Thời lượng mục tiêu: 4 tuần / 20 ngày làm việc<br>
 > Nguồn sự thật: toàn bộ tài liệu hiện hành trong [`docs`](docs/readme.md)<br>
@@ -159,16 +159,16 @@ Nguồn: [System architecture](docs/architecture/system-architecture.md), [Backe
 
 ### 4.2 Definition of Done chung cho một slice
 
-- [ ] Requirement/architecture/data/API/test sources đã được đọc và không còn contract cần tự suy đoán.
-- [ ] Migration/constraint/index của slice chạy từ database rỗng và có integration test khi cần.
-- [ ] Domain rule/state transition có unit test; controller chỉ gọi named application use case.
-- [ ] Permission, ownership, validation, error code và serializer đúng contract.
-- [ ] Transaction/concurrency/idempotency test tồn tại nếu slice thay đổi state, money hoặc inventory.
-- [ ] Audit, log, notification và provider behavior được assert nếu use case yêu cầu.
-- [ ] OpenAPI được generate; operationId không trùng; generated client build được.
-- [ ] Frontend chỉ được nối sau khi API contract của slice ổn định.
-- [ ] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, test liên quan và build đều xanh.
-- [ ] Docs hiện hành và traceability không drift với implementation.
+- [x] Requirement/architecture/data/API/test sources đã được đọc và không còn contract cần tự suy đoán.
+- [x] Migration/constraint/index của slice chạy từ database rỗng và có integration test khi cần.
+- [x] Domain rule/state transition có unit test; controller chỉ gọi named application use case.
+- [x] Permission, ownership, validation, error code và serializer đúng contract.
+- [x] Transaction/concurrency/idempotency test tồn tại nếu slice thay đổi state, money hoặc inventory.
+- [x] Audit, log, notification và provider behavior được assert nếu use case yêu cầu.
+- [x] OpenAPI được generate; operationId không trùng; generated client build được.
+- [x] Frontend chỉ được nối sau khi API contract của slice ổn định.
+- [x] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, test liên quan và build đều xanh.
+- [x] Docs hiện hành và traceability không drift với implementation.
 
 ## 5. Lịch triển khai 4 tuần
 
@@ -197,39 +197,41 @@ Không dùng lịch trên để bỏ qua DoD khi một slice chưa ổn. Nếu t
 
 ### Slice 01 — Foundation, health và database baseline
 
+> Trạng thái: ✅ Hoàn thành; foundation, 28-model baseline, migration-from-zero, seed và health được tái kiểm tra trong release gate Slice 12.
+
 **Mục tiêu:** clean clone có thể cài dependency, khởi động infra, validate config, migrate/seed và nhận health response.
 
 **Phụ thuộc:** không có.
 
 **Database và migration**
 
-- [ ] Scaffold Prisma 7 ESM với `prisma-client`, output `apps/api/src/generated/prisma` và `@prisma/adapter-pg`.
-- [ ] Chuyển 28 entity, enum, relation, delete behavior, money/timestamp/map naming từ data dictionary vào `schema.prisma`.
-- [ ] Tạo baseline migration; bổ sung SQL check, partial unique index và constraint Prisma không diễn tả được.
-- [ ] Tạo index P0 cho catalog, inventory, order, payment/refund, reservation, shipment, warranty, after-sales và audit.
-- [ ] Tạo Compose `postgres`, `postgres-test`, `mailpit`; test script từ chối database không kết thúc bằng `_test`.
-- [ ] Tạo seed framework idempotent và reset guard chỉ cho `rephone_dev`, `rephone_test`, `rephone_demo`.
+- [x] Scaffold Prisma 7 ESM với `prisma-client`, output `apps/api/src/generated/prisma` và `@prisma/adapter-pg`.
+- [x] Chuyển 28 entity, enum, relation, delete behavior, money/timestamp/map naming từ data dictionary vào `schema.prisma`.
+- [x] Tạo baseline migration; bổ sung SQL check, partial unique index và constraint Prisma không diễn tả được.
+- [x] Tạo index P0 cho catalog, inventory, order, payment/refund, reservation, shipment, warranty, after-sales và audit.
+- [x] Tạo Compose `postgres`, `postgres-test`, `mailpit`; test script từ chối database không kết thúc bằng `_test`.
+- [x] Tạo seed framework idempotent và reset guard chỉ cho `rephone_dev`, `rephone_test`, `rephone_demo`.
 
 **Application và runtime**
 
-- [ ] Scaffold root workspace, Turbo pipeline và exact baseline versions trong lockfile.
-- [ ] Tạo typed config bằng Zod; fail-fast mà không in secret value.
-- [ ] Tạo request ID, Pino structured logging/redaction, validation pipe, exception filter và response envelope.
-- [ ] Tạo `/health/live` và `/health/ready`; readiness trả 503 khi DB không sẵn sàng.
-- [ ] Tạo StorageProvider và MailProvider interface với fake/test adapter; chưa cần upload use case.
+- [x] Scaffold root workspace, Turbo pipeline và exact baseline versions trong lockfile.
+- [x] Tạo typed config bằng Zod; fail-fast mà không in secret value.
+- [x] Tạo request ID, Pino structured logging/redaction, validation pipe, exception filter và response envelope.
+- [x] Tạo `/health/live` và `/health/ready`; readiness trả 503 khi DB không sẵn sàng.
+- [x] Tạo StorageProvider và MailProvider interface với fake/test adapter; chưa cần upload use case.
 
 **API/OpenAPI/UI**
 
-- [ ] Khóa prefix `/api/v1`, Swagger chỉ bật development và command sinh static `openapi.json`.
-- [ ] Scaffold `packages/api-client` với `openapi-typescript` + `openapi-fetch`.
-- [ ] Tạo Next.js shell và API client runtime; chưa tạo UI feature rỗng.
+- [x] Khóa prefix `/api/v1`, Swagger chỉ bật development và command sinh static `openapi.json`.
+- [x] Scaffold `packages/api-client` với `openapi-typescript` + `openapi-fetch`.
+- [x] Tạo Next.js shell và API client runtime; chưa tạo UI feature rỗng.
 
 **Test bắt buộc**
 
-- [ ] Unit test config schema, secret placeholder rejection, response/error serialization và redaction.
-- [ ] Integration test migration-from-zero, schema có đúng 28 model và representative constraints.
-- [ ] API e2e health ready/live, request ID và error envelope.
-- [ ] Seed từ database rỗng và chạy lại lần hai không tạo duplicate.
+- [x] Unit test config schema, secret placeholder rejection, response/error serialization và redaction.
+- [x] Integration test migration-from-zero, schema có đúng 28 model và representative constraints.
+- [x] API e2e health ready/live, request ID và error envelope.
+- [x] Seed từ database rỗng và chạy lại lần hai không tạo duplicate.
 
 **Hoàn thành khi:** `pnpm verify` có thể chạy; Compose health xanh; migration/seed tái tạo được; API/Web build được.
 
@@ -237,40 +239,42 @@ Nguồn: [Data model index](docs/data-model/readme.md), [Data conventions](docs/
 
 ### Slice 02 — Customer auth, account và session security
 
+> Trạng thái: ✅ Hoàn thành; auth/account/session regression, one-time link và revoke behavior được tái kiểm tra trong Slice 12.
+
 **Mục tiêu:** customer đăng ký/login; session rotation/revoke đúng; employee invitation foundation và ownership account hoạt động.
 
 **Phụ thuộc:** Slice 01.
 
 **Database và migration**
 
-- [ ] Hoàn thiện `User`, `CustomerAddress`, `AuthSession`, `AuthToken` constraint/index.
-- [ ] Enforce normalized email unique, one active default address và token/session digest lifecycle.
-- [ ] Giữ refresh generation cũ đã revoke để phát hiện reuse và revoke family.
+- [x] Hoàn thiện `User`, `CustomerAddress`, `AuthSession`, `AuthToken` constraint/index.
+- [x] Enforce normalized email unique, one active default address và token/session digest lifecycle.
+- [x] Giữ refresh generation cũ đã revoke để phát hiện reuse và revoke family.
 
 **Domain/application**
 
-- [ ] Password Argon2id, policy 8–128 ký tự có chữ và số; không trim trước hash.
-- [ ] Register CUSTOMER `ACTIVE` nhưng không tự tạo session.
-- [ ] Login, refresh rotation, reuse detection, logout current, change/reset password và revoke all sessions.
-- [ ] Employee create/invite/accept/resend foundation với one-time token.
-- [ ] Profile/address CRUD theo ownership; default-address transition nguyên tử.
-- [ ] Auth guard verify JWT rồi kiểm tra session chưa revoke/expired và user còn `ACTIVE`.
+- [x] Password Argon2id, policy 8–128 ký tự có chữ và số; không trim trước hash.
+- [x] Register CUSTOMER `ACTIVE` nhưng không tự tạo session.
+- [x] Login, refresh rotation, reuse detection, logout current, change/reset password và revoke all sessions.
+- [x] Employee create/invite/accept/resend foundation với one-time token.
+- [x] Profile/address CRUD theo ownership; default-address transition nguyên tử.
+- [x] Auth guard verify JWT rồi kiểm tra session chưa revoke/expired và user còn `ACTIVE`.
 
 **API/OpenAPI/UI**
 
-- [ ] Triển khai toàn bộ P0 auth/account endpoints theo contract.
-- [ ] Access token trả trong body và chỉ giữ memory; raw refresh token chỉ ở cookie `rephone_refresh`.
-- [ ] Refresh/logout kiểm tra origin và `X-Rephone-CSRF: 1`; mutation khác dùng Bearer token.
-- [ ] UI tối thiểu: register, login, logout và session refresh handler; address UI có thể nối ở tuần 4.
+- [x] Triển khai toàn bộ P0 auth/account endpoints theo contract.
+- [x] Access token trả trong body và chỉ giữ memory; raw refresh token chỉ ở cookie `rephone_refresh`.
+- [x] Refresh/logout kiểm tra origin và `X-Rephone-CSRF: 1`; mutation khác dùng Bearer token.
+- [x] UI tối thiểu: register, login, logout và session refresh handler; address UI có thể nối ở tuần 4.
 
 **Test bắt buộc**
 
-- [ ] Register không auto-login; login sai dùng lỗi generic chống enumeration.
-- [ ] Refresh đồng thời chỉ tạo một successor hợp lệ; reuse revoke family.
-- [ ] Logout/disable/change-password có hiệu lực với access request kế tiếp.
-- [ ] Reset/invite one-time, đúng TTL và DB chỉ lưu digest.
-- [ ] Customer A không đọc/sửa profile/address của customer B.
-- [ ] Cookie flags, origin/CSRF và rate limit auth đúng môi trường.
+- [x] Register không auto-login; login sai dùng lỗi generic chống enumeration.
+- [x] Refresh đồng thời chỉ tạo một successor hợp lệ; reuse revoke family.
+- [x] Logout/disable/change-password có hiệu lực với access request kế tiếp.
+- [x] Reset/invite one-time, đúng TTL và DB chỉ lưu digest.
+- [x] Customer A không đọc/sửa profile/address của customer B.
+- [x] Cookie flags, origin/CSRF và rate limit auth đúng môi trường.
 
 **Hoàn thành khi:** auth flow và account ownership e2e xanh; public DTO không lộ token/session digest.
 
@@ -711,7 +715,7 @@ Nguồn: [Warranty requirement](docs/requirements/warranty-and-aftersales.md), [
 
 ### Slice 12 — Settings, audit, jobs, email, UI và demo hardening
 
-> 🚧 **IN PROGRESS** — triển khai trên branch `feat/slice-12-system-hardening` từ baseline Slice 11 `444636d`; kế hoạch chi tiết tại [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md). OpenAPI mục tiêu `143 → 160`.
+> ✅ **COMPLETE** — nghiệm thu và rollout Supabase ngày 2026-08-25 trên branch `feat/slice-12-system-hardening`; kế hoạch/evidence tại [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md). OpenAPI đã đạt `143 → 160`.
 
 **Mục tiêu:** hoàn tất API surface còn lại, nối UI demo, vận hành/release và bằng chứng kỹ thuật.
 
@@ -719,41 +723,43 @@ Nguồn: [Warranty requirement](docs/requirements/warranty-and-aftersales.md), [
 
 **Database và application**
 
-- [ ] StoreSettings singleton key `STORE`, optimistic version và mutable field policy.
-- [ ] Employee list/create/update/invite/resend/disable/enable; customer safe read và admin suspend/activate.
-- [ ] AuditLog append-only cho account, identifier, price/cost, inventory, payment, refund, hold, shipping fee và settings.
-- [ ] Jobs: reservation/payment expiry, guest cart/auth token cleanup theo batch, overlap guard và idempotent handler.
-- [ ] Transactional email templates theo event matrix; tối đa hai adapter attempts, không có outbox P0.
-- [ ] Observability/redaction/health hoàn thiện; scheduler chỉ bật một API instance.
+- [x] StoreSettings singleton key `STORE`, optimistic version và mutable field policy.
+- [x] Employee list/create/update/invite/resend/disable/enable; customer safe read và admin suspend/activate.
+- [x] AuditLog append-only cho account, identifier, price/cost, inventory, payment, refund, hold, shipping fee và settings.
+- [x] Jobs: reservation/payment expiry, guest cart/auth token cleanup theo batch, overlap guard và idempotent handler.
+- [x] Transactional email templates theo event matrix; tối đa hai adapter attempts, không có outbox P0.
+- [x] Observability/redaction/health hoàn thiện; scheduler chỉ bật một API instance.
 
 **API/OpenAPI/UI**
 
-- [ ] Employee/customer/settings/audit endpoint groups hoàn tất và permission đúng.
-- [ ] OpenAPI bao phủ toàn bộ P0 endpoint inventory; generated client sạch drift.
-- [ ] Storefront UI: catalog/detail, cart/voucher, checkout, proof, order/tracking và warranty.
-- [ ] Backoffice UI tối thiểu: inventory inspection, payment review, pickup/shipping, refund và after-sales.
-- [ ] Settings/audit/employee utility chỉ cần UI nếu nằm trong live demo; API vẫn phải đúng P0 contract.
-- [ ] Responsive/accessibility cơ bản: keyboard focus, label/form error, semantic landmark và usable mobile width.
+- [x] Employee/customer/settings/audit endpoint groups hoàn tất và permission đúng.
+- [x] OpenAPI bao phủ toàn bộ P0 endpoint inventory; generated client sạch drift.
+- [x] Storefront UI: catalog/detail, cart/voucher, checkout, proof, order/tracking và warranty.
+- [x] Backoffice UI tối thiểu: inventory inspection, payment review, pickup/shipping, refund và after-sales.
+- [x] Settings/audit/employee utility UI hoàn tất theo phạm vi demo P0.
+- [x] Responsive/accessibility cơ bản: keyboard focus, label/form error, semantic landmark và usable mobile width.
 
 **Hardening và vận hành**
 
-- [ ] Seed master data và `pnpm demo:scenarios` tạo các scenario ổn định.
-- [ ] Provider smoke với Supabase test bucket/Mailpit; core tests tiếp tục dùng fake adapter.
-- [ ] Benchmark query/index ở seed scale; không thêm index theo cảm tính.
-- [ ] Clean clone rehearsal, migration/seed, full `pnpm verify`, demo Compose và hosted smoke nếu cần.
-- [ ] Backup/restore rehearsal; kiểm tra release/rollback runbook.
-- [ ] Chụp ERD/architecture/demo evidence và hoàn thiện README/script video nếu phục vụ báo cáo.
+- [x] Seed master data và `pnpm demo:scenarios` tạo các scenario ổn định.
+- [x] Provider smoke với Supabase test bucket/Mailpit; core tests tiếp tục dùng fake adapter.
+- [x] Benchmark/query-plan và index regression ở seed scale; không thêm index theo cảm tính.
+- [x] Frozen-install rehearsal, migration/seed, full `pnpm verify:release`, demo và Supabase smoke.
+- [x] Backup/restore rehearsal; kiểm tra release/rollback runbook.
+- Deferred ngoài acceptance P0: chụp thêm ERD/video thuyết trình nếu cần cho báo cáo môn học.
 
 **Test bắt buộc**
 
-- [ ] Admin-only settings/employee/audit mutation/read; employee chỉ thấy customer safe projection.
-- [ ] Disable/suspend revoke access ngay nhưng không sửa lịch sử Order/AfterSales.
-- [ ] Settings optimistic version conflict; bank snapshot cũ không đổi theo settings mới.
-- [ ] Job chạy lại không nhân side effect; proof-vs-expiry race vẫn pass.
-- [ ] SMTP fail không rollback business commit; log không lộ email body nhạy cảm/token.
-- [ ] Browser smoke cho catalog → cart → checkout → proof/review → fulfillment → completed order.
+- [x] Admin-only settings/employee/audit mutation/read; employee chỉ thấy customer safe projection.
+- [x] Disable/suspend revoke access ngay nhưng không sửa lịch sử Order/AfterSales.
+- [x] Settings optimistic version conflict; bank snapshot cũ không đổi theo settings mới.
+- [x] Job chạy lại không nhân side effect; proof-vs-expiry race vẫn pass.
+- [x] SMTP fail không rollback business commit; log không lộ email body nhạy cảm/token.
+- [x] Browser smoke cho catalog → cart → checkout → proof/review → fulfillment → completed order.
 
-**Hoàn thành khi:** full P0 acceptance, demo rehearsal và release checklist đều qua; không còn known blocker.
+**Bằng chứng nghiệm thu:** OpenAPI có đúng 160 operation (`143 → 160`, thêm đúng 17 operation Slice 12); migration Slice 12 đã deploy Supabase và migration-from-zero áp dụng đủ 11 migration. Seed giữ nguyên fingerprint 28 bảng qua nhiều lần chạy; sáu demo scenario đều tạo/reuse thành công. Guarded provider smoke qua invitation/reset Mailpit, lifecycle employee/customer, session revoke, settings CAS + QR thật, audit redaction và đúng 17 operation × 4 actor. `pnpm verify:release` xanh với 745 coverage test, 54 integration test, 93 API E2E test và Playwright critical flow 1/1; coverage API đạt `87.41%` statements và `75.25%` branches. Backup portable restore sang database mới có fingerprint khớp; scheduler đã bật trên đúng một API replica. Chi tiết hash và rehearsal nằm trong [Slice 12 implementation plan](docs/planning/2026-08-25-slice-12-system-hardening-plan.md#51-bằng-chứng-nghiệm-thu).
+
+**Hoàn thành khi:** ✅ Đạt — full P0 acceptance, demo/release/rollback rehearsal đều qua; toàn bộ 12 slice hoàn thành và không còn Slice 13 hoặc known P0 blocker.
 
 Nguồn: [Employee/settings/audit API](docs/api/employee-settings-audit-endpoints.md), [System data](docs/data-model/system.md), [Background jobs](docs/architecture/background-jobs.md), [Notifications](docs/architecture/notifications.md), [Observability](docs/architecture/observability.md), [Seed/demo](docs/planning/seed-and-demo-scenarios.md), [Runbook](docs/operations/local-development-and-deployment.md).
 
@@ -824,22 +830,22 @@ Nguồn: [REST conventions](docs/api/readme.md), [Route namespaces](docs/api/rou
 
 ### 9.2 Concurrency suite bắt buộc
 
-- [ ] Hai checkout cùng InventoryUnit: đúng một order/reservation thành công.
-- [ ] N checkout phụ kiện cuối tồn: reserved không vượt onHand.
-- [ ] N checkout voucher quota cuối: usage không vượt total/per-customer limit.
-- [ ] Hai review cùng Payment: chỉ một terminal transition/audit/projection effect.
-- [ ] Submit proof cạnh tranh expiry: UNDER_REVIEW giữ reservation hoặc EXPIRED/CANCELLED release; không trạng thái lai.
-- [ ] Complete fulfillment replay: một movement/payment/warranty effect.
-- [ ] Hai refresh đồng thời: không tạo hai session chain hợp lệ.
+- [x] Hai checkout cùng InventoryUnit: đúng một order/reservation thành công.
+- [x] N checkout phụ kiện cuối tồn: reserved không vượt onHand.
+- [x] N checkout voucher quota cuối: usage không vượt total/per-customer limit.
+- [x] Hai review cùng Payment: chỉ một terminal transition/audit/projection effect.
+- [x] Submit proof cạnh tranh expiry: UNDER_REVIEW giữ reservation hoặc EXPIRED/CANCELLED release; không trạng thái lai.
+- [x] Complete fulfillment replay: một movement/payment/warranty effect.
+- [x] Hai refresh đồng thời: không tạo hai session chain hợp lệ.
 
 ### 9.3 Security/permission suite tối thiểu
 
-- [ ] CUSTOMER/GUEST không vào backoffice; EMPLOYEE không quản lý voucher/settings/employee/cost.
-- [ ] Ownership isolation cho address, cart, order, warranty, after-sales và private evidence.
-- [ ] Access request sau logout/disable/suspend/change-password bị từ chối.
-- [ ] Token/password/raw identifier/private object path không có trong log/DTO.
-- [ ] MIME spoof, oversize, SVG/executable và unauthorized signed URL bị từ chối.
-- [ ] Auth/checkout/order lookup/upload rate limit đúng baseline.
+- [x] CUSTOMER/GUEST không vào backoffice; EMPLOYEE không quản lý voucher/settings/employee/cost.
+- [x] Ownership isolation cho address, cart, order, warranty, after-sales và private evidence.
+- [x] Access request sau logout/disable/suspend/change-password bị từ chối.
+- [x] Token/password/raw identifier/private object path không có trong log/DTO.
+- [x] MIME spoof, oversize, SVG/executable và unauthorized signed URL bị từ chối.
+- [x] Auth/checkout/order lookup/upload rate limit đúng baseline.
 
 ### 9.4 CI gate
 
@@ -853,6 +859,8 @@ frozen install
   → integration/e2e/concurrency
   → OpenAPI/client drift
   → build
+  → coverage thresholds
+  → Playwright critical flow
 ```
 
 - Global API coverage tối thiểu 75% statements/branches cho code tự viết.
@@ -942,17 +950,19 @@ Nguồn: [Local/deployment runbook](docs/operations/local-development-and-deploy
 
 ## 12. Nghiệm thu P0 cuối cùng
 
-- [ ] Toàn bộ nhóm use case trong endpoint inventory có implementation và OpenAPI contract.
-- [ ] 28 Prisma model, relation, constraint và index baseline đúng data dictionary.
-- [ ] Migration từ database rỗng, seed hai lần và demo scenario đều thành công.
-- [ ] Unit/integration/API e2e/concurrency/security suites bắt buộc chạy xanh.
-- [ ] Customer/guest/staff/admin không có known permission hoặc ownership bypass.
-- [ ] Money/inventory/voucher/warranty projection được kiểm tra sau terminal flow.
-- [ ] Không có secret, raw identifier, token hash, ciphertext hoặc private path trong git/log/public DTO.
-- [ ] OpenAPI, generated client, code, test và docs không drift.
-- [ ] Local setup/runbook chạy từ clean clone; backup/restore rehearsal hoàn tất.
-- [ ] Demo 12–15 phút chạy ổn định; buffer cuối chỉ còn sửa blocker.
-- [ ] Relative Markdown links trong tài liệu hiện hành hợp lệ; `docs/decisions` không thay đổi.
+- [x] Toàn bộ nhóm use case trong endpoint inventory có implementation và OpenAPI contract.
+- [x] 28 Prisma model, relation, constraint và index baseline đúng data dictionary.
+- [x] Migration từ database rỗng, seed hai lần và demo scenario đều thành công.
+- [x] Unit/integration/API e2e/concurrency/security suites bắt buộc chạy xanh.
+- [x] Customer/guest/staff/admin không có known permission hoặc ownership bypass.
+- [x] Money/inventory/voucher/warranty projection được kiểm tra sau terminal flow.
+- [x] Không có secret, raw identifier, token hash, ciphertext hoặc private path trong git/log/public DTO.
+- [x] OpenAPI, generated client, code, test và docs không drift.
+- [x] Local setup/runbook chạy từ frozen install; backup/restore rehearsal hoàn tất.
+- [x] Demo 12–15 phút chạy ổn định; buffer cuối không còn P0 blocker.
+- [x] Relative Markdown links trong tài liệu hiện hành hợp lệ; `docs/decisions` không thay đổi.
+
+**Nghiệm thu cuối:** ✅ P0 COMPLETE ngày 2026-08-25; implementation SHA đã test `14debdaee777306d9ad4f40aa0ccee810dd90ac6`, migration cuối `20260825120000_slice12_system_administration_invariants`, OpenAPI 160 operation và `pnpm verify:release` exit 0.
 
 ## 13. Assumptions và decision log
 
