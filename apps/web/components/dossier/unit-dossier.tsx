@@ -70,13 +70,13 @@ export function UnitDossier({ detail }: Readonly<{ detail: UsedIphoneDetail }>) 
             />
             <Metric label="Bảo hành" value={`${String(unit.warrantyDays)} ngày`} />
           </dl>
-          <div className={styles.purchaseFacts}>
+          <dl className={styles.purchaseFacts}>
             <Fact label="Khóa mạng" value={catalogLabel(unit.simLockStatus)} />
             <Fact label="Cấu hình SIM" value={catalogLabel(unit.simConfiguration)} />
             <Fact label="Pin" value={catalogLabel(unit.batteryReplacementStatus)} />
             <Fact label="Mã máy" value={unit.modelNumber} />
             <Fact label="Thị trường" value={unit.regionCode} />
-          </div>
+          </dl>
           <div className={styles.fulfillmentPanel}>
             <h2>Nhận hàng</h2>
             <p>

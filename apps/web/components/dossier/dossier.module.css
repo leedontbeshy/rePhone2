@@ -220,7 +220,7 @@
 }
 
 .metricRail dt {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
 }
