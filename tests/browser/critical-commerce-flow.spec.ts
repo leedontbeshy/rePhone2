@@ -26,15 +26,20 @@ test('catalog to completed shipping order through customer and staff portals', a
 
     await customerPage.goto('/products');
     await expect(
-      customerPage.getByRole('heading', { name: 'Chọn đúng chiếc iPhone dành cho bạn.' }),
+      customerPage.getByRole('heading', {
+        name: 'Chọn model để khám phá. Chọn đúng máy để quyết định.',
+      }),
     ).toBeVisible();
-    await customerPage.getByRole('link', { name: 'Xem iPhone 13', exact: true }).click();
+    await customerPage.locator('a[href="/products/iphone-13"]').first().click();
     await expect(
       customerPage.getByRole('heading', { name: 'iPhone 13', exact: true }),
     ).toBeVisible();
-    await customerPage.locator(`a[href="/products/iphone-13/units/${INVENTORY_CODE}"]`).click();
+    await customerPage
+      .locator(`a[href="/products/iphone-13/units/${INVENTORY_CODE}"]`)
+      .first()
+      .click();
     await expect(
-      customerPage.getByText(`Máy thật · ${INVENTORY_CODE}`, { exact: true }),
+      customerPage.getByText(`Ảnh thật · Mã máy ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
 
     await customerPage.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();

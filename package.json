@@ -67,6 +67,7 @@
     "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "1.62.1",
     "@rephone/eslint-config": "workspace:*",
