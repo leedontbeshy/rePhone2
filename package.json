@@ -51,6 +51,7 @@
     "smoke:slice11": "pnpm --filter @rephone/api smoke:slice11",
     "demo:refund-processing": "pnpm --filter @rephone/api demo:refund-processing",
     "demo:after-sales-inspecting": "pnpm --filter @rephone/api demo:after-sales-inspecting",
+    "demo:scenarios": "pnpm --filter @rephone/api demo:scenarios",
     "db:studio": "pnpm --filter @rephone/api db:studio",
     "db:reset": "pnpm --filter @rephone/api db:reset",
     "test:db:up": "docker compose --profile test up -d postgres-test",

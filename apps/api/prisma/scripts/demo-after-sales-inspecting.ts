@@ -1,9 +1,10 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { loadWorkspaceEnvironment } from '../../src/config/load-environment.js';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
+import { writeDemoManifestScenario } from './demo-scenarios-support.js';
 import {
   afterSalesMultipart,
   assertAfterSalesPublicProjection,
@@ -26,11 +27,6 @@ import {
 const SCENARIO_KEY = 'after-sales-inspecting';
 const SCENARIO_MARKER = 'Demo scenario after-sales-inspecting v1';
 const SCENARIO_DESCRIPTION = 'Phụ kiện demo mất kết nối ngắt quãng và đang chờ kết luận kiểm định.';
-
-interface DemoManifest {
-  version: number;
-  scenarios: Record<string, unknown>;
-}
 
 export async function provisionAfterSalesInspectingScenario(): Promise<void> {
   loadWorkspaceEnvironment();
@@ -240,37 +236,13 @@ async function writeManifest(
   requestId: string,
   requestNumber: string,
 ): Promise<void> {
-  const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
-  const manifestPath = resolve(workspaceRoot, '.local', 'demo-manifest.json');
-  const manifest = await readManifest(manifestPath);
-  manifest.scenarios[SCENARIO_KEY] = {
+  await writeDemoManifestScenario(SCENARIO_KEY, {
     orderId: order.id,
     orderNumber: order.orderNumber,
     afterSalesRequestId: requestId,
     requestNumber,
     requestStatus: 'INSPECTING',
-  };
-  await mkdir(dirname(manifestPath), { recursive: true });
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-}
-
-async function readManifest(path: string): Promise<DemoManifest> {
-  try {
-    const parsed: unknown = JSON.parse(await readFile(path, 'utf8'));
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed) &&
-      typeof (parsed as { scenarios?: unknown }).scenarios === 'object' &&
-      (parsed as { scenarios?: unknown }).scenarios !== null
-    ) {
-      return parsed as DemoManifest;
-    }
-    throw new Error('manifest shape is invalid');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { version: 1, scenarios: {} };
-    throw error;
-  }
+  });
 }
 
 function writeResult(orderNumber: string, requestNumber: string, reused: boolean): void {

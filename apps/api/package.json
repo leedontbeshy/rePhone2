@@ -38,6 +38,7 @@
     "smoke:slice11": "tsx prisma/scripts/smoke-slice11.ts",
     "demo:refund-processing": "tsx prisma/scripts/demo-refund-processing.ts",
     "demo:after-sales-inspecting": "tsx prisma/scripts/demo-after-sales-inspecting.ts",
+    "demo:scenarios": "tsx prisma/scripts/demo-scenarios.ts",
     "db:studio": "prisma studio --config prisma.config.ts",
     "db:reset": "tsx prisma/scripts/guarded-reset.ts",
     "openapi": "tsx src/openapi/generate-openapi.ts"

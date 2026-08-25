@@ -1,10 +1,10 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { loadWorkspaceEnvironment } from '../../src/config/load-environment.js';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import { findSlice10PreflightViolations } from './preflight-slice10.js';
+import { writeDemoManifestScenario } from './demo-scenarios-support.js';
 import {
   Slice10ApiClient,
   authenticated,
@@ -20,11 +20,6 @@ import {
 const SCENARIO_KEY = 'refund-processing';
 const SCENARIO_MARKER = 'Demo scenario refund-processing v1';
 const SCENARIO_REASON = 'Hoàn tiền demo đang được nhân viên xử lý';
-
-interface DemoManifest {
-  version: number;
-  scenarios: Record<string, unknown>;
-}
 
 export async function provisionRefundProcessingScenario(): Promise<void> {
   loadWorkspaceEnvironment();
@@ -244,40 +239,14 @@ async function writeManifest(
   refundId: string,
   amount: string,
 ): Promise<void> {
-  const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
-  const manifestPath = resolve(workspaceRoot, '.local', 'demo-manifest.json');
-  const manifest = await readManifest(manifestPath);
-  manifest.scenarios[SCENARIO_KEY] = {
+  await writeDemoManifestScenario(SCENARIO_KEY, {
     orderId,
     orderNumber,
     refundId,
     refundStatus: 'PROCESSING',
     method: 'BANK_TRANSFER',
     amount,
-  };
-  await mkdir(dirname(manifestPath), { recursive: true });
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-}
-
-async function readManifest(path: string): Promise<DemoManifest> {
-  try {
-    const parsed: unknown = JSON.parse(await readFile(path, 'utf8'));
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed) &&
-      typeof (parsed as { scenarios?: unknown }).scenarios === 'object' &&
-      (parsed as { scenarios?: unknown }).scenarios !== null
-    ) {
-      return parsed as DemoManifest;
-    }
-    throw new Error('manifest shape is invalid');
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return { version: 1, scenarios: {} };
-    }
-    throw error;
-  }
+  });
 }
 
 function writeResult(orderNumber: string, refundId: string, reused: boolean): void {
