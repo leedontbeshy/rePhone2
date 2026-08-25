@@ -232,7 +232,7 @@ Contract chung cho mọi phase:
 
 | Thuộc tính        | Nội dung                                                                                                                                        |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **NOT STARTED**                                                                                                                                 |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                 |
 | Mục tiêu          | Khóa `design.md`/`plan-fe.md`, coverage manifest 160 operations, token, base style, primitive và route shell contracts trước khi đổi giao diện. |
 | Non-goal          | Không đổi output route, business flow, backend hoặc xóa legacy CSS.                                                                             |
 | Dependency        | Baseline `801ad26`; OpenAPI 160 operations; generated client hiện hành.                                                                         |
@@ -487,9 +487,10 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 
 ## 11. Status log
 
-| Ngày       | Phase             | Trạng thái             | Thay đổi                                                         | Evidence/ghi chú                                                   |
-| ---------- | ----------------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
-| 2026-08-25 | Toàn chương trình | APPROVED / NOT STARTED | Khóa scope Post-P0/P1, baseline `801ad26`, full backend coverage | OpenAPI hiện hành có 160 operations; chưa có implementation commit |
+| Ngày       | Phase             | Trạng thái             | Thay đổi                                                         | Evidence/ghi chú                                                                                                         |
+| ---------- | ----------------- | ---------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-25 | Toàn chương trình | APPROVED / NOT STARTED | Khóa scope Post-P0/P1, baseline `801ad26`, full backend coverage | OpenAPI hiện hành có 160 operations; chưa có implementation commit                                                       |
+| 2026-08-25 | FE-0              | IN PROGRESS            | Bắt đầu token, primitive, shell và executable coverage contract  | Branch `feat/fe-0-design-foundation`; implementation record trong `docs/planning/2026-08-25-fe-0-frontend-foundation.md` |
 
 ## 12. Operation coverage ledger — 160/160
 
