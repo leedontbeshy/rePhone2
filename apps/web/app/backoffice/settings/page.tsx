@@ -6,6 +6,7 @@ import {
   getSettings,
   updateSettings,
   uploadBankQr,
+  SystemAdminError,
   type StoreSettings,
 } from '../../../lib/system-admin-api';
 import { useAuth } from '../../auth-provider';
@@ -98,6 +99,9 @@ export default function SettingsPage() {
       setDraft(toDraft(updated));
       setNotice(`Đã lưu cấu hình phiên bản ${String(updated.version)}.`);
     } catch (caught) {
+      if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
+        await refetchAfterConflict();
+      }
       showError(caught);
     } finally {
       setBusy(undefined);
@@ -117,9 +121,20 @@ export default function SettingsPage() {
       setNotice(`Đã cập nhật QR ở phiên bản ${String(updated.version)}.`);
       event.currentTarget.reset();
     } catch (caught) {
+      if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
+        await refetchAfterConflict();
+      }
       showError(caught);
     } finally {
       setBusy(undefined);
+    }
+  }
+
+  async function refetchAfterConflict() {
+    try {
+      await load();
+    } catch {
+      // Preserve the authoritative CAS error; the explicit reload action remains available.
     }
   }
 

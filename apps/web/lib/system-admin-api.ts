@@ -22,6 +22,16 @@ export interface Page<T> {
   pagination: Pagination;
 }
 
+export class SystemAdminError extends Error {
+  public constructor(
+    message: string,
+    public readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'SystemAdminError';
+  }
+}
+
 export interface EmployeeQuery {
   q?: string;
   status?: 'PENDING_VERIFICATION' | 'ACTIVE' | 'DISABLED';
@@ -213,17 +223,30 @@ export async function getAuditLog(client: SystemApiClient, id: string): Promise<
 export function systemError(value: unknown, fallback: string): Error {
   const code = errorCode(value);
   if (code === 'SETTINGS_VERSION_CONFLICT') {
-    return new Error('Cấu hình vừa được thay đổi ở phiên khác. Hãy tải lại trước khi lưu.');
+    return new SystemAdminError(
+      'Cấu hình vừa được thay đổi ở phiên khác. Dữ liệu mới nhất đã được tải lại.',
+      code,
+    );
   }
-  if (code === 'DUPLICATE_RESOURCE') return new Error('Email hoặc mã nhân viên đã tồn tại.');
+  if (code === 'DUPLICATE_RESOURCE') {
+    return new SystemAdminError('Email hoặc mã nhân viên đã tồn tại.', code);
+  }
   if (code === 'INVALID_STATE_TRANSITION') {
-    return new Error('Tài khoản đã đổi trạng thái. Hãy tải lại dữ liệu mới nhất.');
+    return new SystemAdminError('Tài khoản đã đổi trạng thái. Hãy tải lại dữ liệu mới nhất.', code);
   }
-  if (code === 'RESOURCE_NOT_FOUND') return new Error('Không tìm thấy dữ liệu yêu cầu.');
-  if (code === 'RATE_LIMITED') return new Error('Bạn thao tác quá nhanh. Vui lòng thử lại sau.');
-  if (code === 'FILE_TOO_LARGE') return new Error('Tệp QR vượt quá 5 MiB.');
-  if (code === 'UNSUPPORTED_FILE_TYPE') return new Error('QR chỉ hỗ trợ JPEG, PNG hoặc WebP.');
-  return new Error(apiError(value, fallback));
+  if (code === 'RESOURCE_NOT_FOUND') {
+    return new SystemAdminError('Không tìm thấy dữ liệu yêu cầu.', code);
+  }
+  if (code === 'RATE_LIMITED') {
+    return new SystemAdminError('Bạn thao tác quá nhanh. Vui lòng thử lại sau.', code);
+  }
+  if (code === 'FILE_TOO_LARGE') {
+    return new SystemAdminError('Tệp QR vượt quá 5 MiB.', code);
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE') {
+    return new SystemAdminError('QR chỉ hỗ trợ JPEG, PNG hoặc WebP.', code);
+  }
+  return new SystemAdminError(apiError(value, fallback), code);
 }
 
 async function employeeLifecycle(
