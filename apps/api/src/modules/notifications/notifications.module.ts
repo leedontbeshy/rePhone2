@@ -7,6 +7,7 @@ import { OrderNotificationService } from './order-notification.service.js';
 import { PaymentLifecycleNotificationService } from './payment-lifecycle-notification.service.js';
 import { RefundNotificationService } from './refund-notification.service.js';
 import { AfterSalesNotificationService } from './after-sales-notification.service.js';
+import { NotificationDeliveryService } from './notification-delivery.service.js';
 
 @Module({
   providers: [
@@ -16,13 +17,14 @@ import { AfterSalesNotificationService } from './after-sales-notification.servic
       useFactory: (config: AppConfig) =>
         config.environment === 'test' ? new NoopMailProvider() : new SmtpMailProvider(config.mail),
     },
+    NotificationDeliveryService,
     OrderNotificationService,
     PaymentLifecycleNotificationService,
     RefundNotificationService,
     AfterSalesNotificationService,
   ],
   exports: [
-    MAIL_PROVIDER,
+    NotificationDeliveryService,
     OrderNotificationService,
     PaymentLifecycleNotificationService,
     RefundNotificationService,

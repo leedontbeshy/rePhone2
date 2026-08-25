@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { AuditWriteActorContext, AuditWriteInput } from './audit.types.js';
+import { toAuditInputJson } from './audit-sanitizer.js';
 
 @Injectable()
 export class AuditWriter {
@@ -9,6 +10,8 @@ export class AuditWriter {
     actor: AuditWriteActorContext,
     input: AuditWriteInput,
   ) {
+    const changes = toAuditInputJson(input.changes);
+    const metadata = toAuditInputJson(input.metadata);
     return transaction.auditLog.create({
       data: {
         actorType: actor.actorType ?? 'USER',
@@ -20,8 +23,8 @@ export class AuditWriter {
         ipAddress: actor.ipAddress,
         ...(actor.userAgent === undefined ? {} : { userAgent: actor.userAgent }),
         ...(input.resourceId === undefined ? {} : { resourceId: input.resourceId }),
-        ...(input.changes === undefined ? {} : { changes: input.changes }),
-        ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+        ...(changes === undefined ? {} : { changes }),
+        ...(metadata === undefined ? {} : { metadata }),
       },
     });
   }

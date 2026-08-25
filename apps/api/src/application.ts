@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { ApiExceptionFilter } from './common/http/api-exception.filter.js';
 import { ApiResponseInterceptor } from './common/http/api-response.interceptor.js';
+import { shouldEnableSwaggerUi } from './common/http/swagger-ui-policy.js';
 import { createValidationError } from './common/http/validation.js';
 import { AppModule } from './app.module.js';
 import { APP_CONFIG } from './config/app-config.module.js';
@@ -52,7 +53,7 @@ export async function createApplication(
   app.useGlobalInterceptors(new ApiResponseInterceptor());
   app.useGlobalFilters(new ApiExceptionFilter());
 
-  if ((options.enableSwagger ?? true) && config.environment === 'development') {
+  if (shouldEnableSwaggerUi(config.environment, options.enableSwagger)) {
     SwaggerModule.setup('docs', app, createOpenApiDocument(app));
   }
 

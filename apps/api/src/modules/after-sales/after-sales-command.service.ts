@@ -39,6 +39,7 @@ export class AfterSalesCommandService {
     request: Request,
     input: CreateAfterSalesRequestDto,
   ): Promise<AfterSalesDetailDto> {
+    const actor = afterSalesAuditActor(request);
     const preflight = await this.orders.findItemContext(input.orderItemId);
     if (preflight === null) throw new ApiError('RESOURCE_NOT_FOUND');
     assertAfterSalesOwnership(this.ownership, request, preflight.order, this.clock.now());
@@ -78,7 +79,7 @@ export class AfterSalesCommandService {
             },
             transaction,
           );
-          await this.audit.write(transaction, afterSalesAuditActor(request), {
+          await this.audit.write(transaction, actor, {
             action: 'after_sales.created',
             resourceType: 'AfterSalesRequest',
             resourceId: record.id,
@@ -100,7 +101,7 @@ export class AfterSalesCommandService {
       }
       throw error;
     }
-    await this.notify(created);
+    await this.notify(created, actor.requestId);
     return projectAfterSalesDetail(created, this.clock.now());
   }
 
@@ -109,6 +110,7 @@ export class AfterSalesCommandService {
     requestNumber: string,
     reason: string,
   ): Promise<AfterSalesDetailDto> {
+    const actor = afterSalesAuditActor(request);
     const preflight = await this.repository.findByRequestNumber(requestNumber);
     if (preflight === null) throw new ApiError('RESOURCE_NOT_FOUND');
     assertAfterSalesOwnership(this.ownership, request, preflight.orderItem.order, this.clock.now());
@@ -128,7 +130,7 @@ export class AfterSalesCommandService {
         { status: 'CANCELLED', cancelReason: reason, cancelledAt: now },
         transaction,
       );
-      await this.audit.write(transaction, afterSalesAuditActor(request), {
+      await this.audit.write(transaction, actor, {
         action: 'after_sales.cancelled',
         resourceType: 'AfterSalesRequest',
         resourceId: record.id,
@@ -137,13 +139,13 @@ export class AfterSalesCommandService {
       });
       return { record: updated, changed: true };
     });
-    if (outcome.changed) await this.notify(outcome.record);
+    if (outcome.changed) await this.notify(outcome.record, actor.requestId);
     return projectAfterSalesDetail(outcome.record, this.clock.now());
   }
 
-  private notify(record: AfterSalesPublicRecord): Promise<void> {
+  private notify(record: AfterSalesPublicRecord, requestId: string): Promise<void> {
     return this.notifications.sendUpdated({
-      requestId: record.id,
+      requestId,
       requestNumber: record.requestNumber,
       orderNumber: record.orderItem.order.orderNumber,
       customerEmail: record.orderItem.order.customerEmail,

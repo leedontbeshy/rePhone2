@@ -36,6 +36,9 @@ describe('loadConfig', () => {
     expect(config.api.port).toBe(4001);
     expect(config.auth.accessTtlSeconds).toBe(900);
     expect(config.scheduler.enabled).toBe(true);
+    expect(config.scheduler.batchSize).toBe(100);
+    expect(config.scheduler.guestCartBatchSize).toBe(200);
+    expect(config.scheduler.authCleanupBatchSize).toBe(500);
     expect(config.logging.level).toBe('silent');
     expect(config.storage.url).toBe('https://example.supabase.co');
   });
@@ -53,6 +56,21 @@ describe('loadConfig', () => {
     environment.IDENTIFIER_HMAC_KEY = environment.IDENTIFIER_ENCRYPTION_KEY;
 
     expect(() => loadConfig(environment)).toThrow(/IDENTIFIER_HMAC_KEY/);
+  });
+
+  it('accepts explicit bounded maintenance batch sizes', () => {
+    const environment = validEnvironment();
+    environment.SCHEDULER_BATCH_SIZE = '75';
+    environment.SCHEDULER_GUEST_CART_BATCH_SIZE = '175';
+    environment.SCHEDULER_AUTH_CLEANUP_BATCH_SIZE = '450';
+
+    const config = loadConfig(environment);
+
+    expect(config.scheduler).toMatchObject({
+      batchSize: 75,
+      guestCartBatchSize: 175,
+      authCleanupBatchSize: 450,
+    });
   });
 
   it('rejects placeholder infrastructure secrets in production', () => {

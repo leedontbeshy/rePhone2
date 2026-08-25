@@ -9,10 +9,34 @@ export function isValidRequestId(value: string): boolean {
   return value.length <= 64 && (validateUuid(value) || ULID_PATTERN.test(value));
 }
 
-export function generateRequestId(request: IncomingMessage, response: ServerResponse): string {
+function establishedRequestId(request: IncomingMessage): string | undefined {
+  const established = request.id;
+  if (typeof established === 'string' && established.length > 0 && established.length <= 64) {
+    return established;
+  }
+  return undefined;
+}
+
+export function requestIdFromRequest(request: IncomingMessage): string | undefined {
+  const established = establishedRequestId(request);
+  if (established !== undefined) return established;
   const candidate = request.headers['x-request-id'];
+  return typeof candidate === 'string' && isValidRequestId(candidate) ? candidate : undefined;
+}
+
+export function ensureRequestId(request: IncomingMessage, response: ServerResponse): string {
+  const responseRequestId = response.getHeader(REQUEST_ID_HEADER);
   const requestId =
-    typeof candidate === 'string' && isValidRequestId(candidate) ? candidate : uuidv7();
+    establishedRequestId(request) ??
+    (typeof responseRequestId === 'string' && isValidRequestId(responseRequestId)
+      ? responseRequestId
+      : (requestIdFromRequest(request) ?? uuidv7()));
+
+  request.id = requestId;
   response.setHeader(REQUEST_ID_HEADER, requestId);
   return requestId;
+}
+
+export function generateRequestId(request: IncomingMessage, response: ServerResponse): string {
+  return ensureRequestId(request, response);
 }

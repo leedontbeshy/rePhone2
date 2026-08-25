@@ -91,7 +91,7 @@ export async function seedVouchers(prisma: PrismaClient): Promise<void> {
     };
     await prisma.voucher.upsert({
       where: { normalizedCode: voucher.code },
-      update: data,
+      update: {},
       create: { id: voucher.id, normalizedCode: voucher.code, ...data },
     });
   }

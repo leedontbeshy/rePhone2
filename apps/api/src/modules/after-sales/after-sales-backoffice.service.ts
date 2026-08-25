@@ -51,7 +51,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.receiveAfterSalesRequest(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -60,7 +60,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.startAfterSalesInspection(id, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -84,7 +84,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.approveAfterSalesRequest(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -98,7 +98,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.rejectAfterSalesRequest(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -112,7 +112,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.resolveAfterSalesRepaired(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -126,7 +126,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.resolveAfterSalesReplaced(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -140,7 +140,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.resolveAfterSalesRefunded(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -154,7 +154,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.resolveAfterSalesReturnedUnchanged(id, input, actor),
-      true,
+      actor.requestId,
     );
   }
 
@@ -168,7 +168,7 @@ export class AfterSalesBackofficeService {
       id,
       role,
       this.commands.resolveAfterSalesOther(id, input, actor, role),
-      true,
+      actor.requestId,
     );
   }
 
@@ -176,13 +176,13 @@ export class AfterSalesBackofficeService {
     id: string,
     role: StaffRole,
     command: Promise<AfterSalesCommandOutcome>,
-    notify: boolean,
+    requestId: string,
   ): Promise<BackofficeAfterSalesDetailDto> {
     const outcome = await command;
     const detail = await this.queries.detail(id, role);
-    if (notify && outcome.changed) {
+    if (outcome.changed) {
       await this.notifications.sendUpdated({
-        requestId: detail.id,
+        requestId,
         requestNumber: detail.requestNumber,
         orderNumber: detail.orderItem.orderNumber,
         customerEmail: detail.customer.email,

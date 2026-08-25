@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MailMessage, MailProvider } from '../../common/providers/mail-provider.js';
+import { NotificationDeliveryService } from './notification-delivery.service.js';
 import { PaymentLifecycleNotificationService } from './payment-lifecycle-notification.service.js';
 
 class RecordingMailProvider implements MailProvider {
@@ -19,7 +20,7 @@ describe('PaymentLifecycleNotificationService', () => {
 
   it('renders submitted, verified, rejected and expired messages without evidence data', async () => {
     const mail = new RecordingMailProvider();
-    const service = new PaymentLifecycleNotificationService(mail);
+    const service = new PaymentLifecycleNotificationService(new NotificationDeliveryService(mail));
     const context = {
       paymentId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6997',
       orderNumber: 'RPH-20260821-23456789',
@@ -52,12 +53,14 @@ describe('PaymentLifecycleNotificationService', () => {
   it('returns FAILED after provider retries and logs expiry with order-cancelled semantics', async () => {
     let attempts = 0;
     const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const service = new PaymentLifecycleNotificationService({
-      send: () => {
-        attempts += 1;
-        return Promise.reject(new Error('SMTP unavailable'));
-      },
-    });
+    const service = new PaymentLifecycleNotificationService(
+      new NotificationDeliveryService({
+        send: () => {
+          attempts += 1;
+          return Promise.reject(new Error('SMTP unavailable'));
+        },
+      }),
+    );
     await expect(
       service.sendExpired({
         paymentId: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6997',

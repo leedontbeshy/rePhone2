@@ -40,6 +40,14 @@ export function CatalogHeader() {
             <Link href="/backoffice/payments">Review cọc</Link>
             <Link href="/backoffice/refunds">Hoàn tiền</Link>
             <Link href="/backoffice/after-sales">Hậu mãi</Link>
+            <Link href="/backoffice/customers">Khách hàng</Link>
+          </>
+        ) : null}
+        {status === 'authenticated' && user?.role === 'ADMIN' ? (
+          <>
+            <Link href="/backoffice/employees">Nhân viên</Link>
+            <Link href="/backoffice/settings">Cấu hình</Link>
+            <Link href="/backoffice/audit-logs">Audit</Link>
           </>
         ) : null}
         {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}

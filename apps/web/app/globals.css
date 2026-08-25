@@ -21,6 +21,190 @@ body {
   min-height: 100vh;
 }
 
+.system-admin-shell {
+  display: grid;
+  gap: 22px;
+}
+
+.system-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.system-admin-panel,
+.system-settings-form,
+.audit-detail-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #d8e0e7;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.system-admin-panel {
+  position: sticky;
+  top: 92px;
+}
+
+.system-record-list,
+.audit-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+.system-record-card,
+.audit-log-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 16px;
+  border: 1px solid #d8e0e7;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.system-record-card:hover,
+.audit-log-row:hover {
+  border-color: #8497aa;
+}
+
+.system-record-card span,
+.audit-log-row span {
+  display: grid;
+  gap: 5px;
+}
+
+.system-record-card span:last-child,
+.audit-log-row span:last-child {
+  justify-items: end;
+  text-align: right;
+}
+
+.system-record-card small,
+.audit-log-row small,
+.audit-log-row time,
+.system-result-count,
+.settings-version-row span {
+  color: #5f6f7e;
+}
+
+.system-result-count {
+  margin: 16px 0 10px;
+  font-weight: 700;
+}
+
+.system-detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.system-detail-list div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.6fr) minmax(0, 1.4fr);
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.system-detail-list dt {
+  color: #5f6f7e;
+  font-weight: 650;
+}
+
+.system-detail-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settings-field-grid label,
+.system-settings-form label {
+  display: grid;
+  gap: 7px;
+  font-weight: 650;
+}
+
+.settings-field-grid input,
+.settings-field-grid textarea,
+.system-admin-panel input,
+.system-admin-panel textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #b8c4cf;
+  border-radius: 9px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.settings-field-grid .field-wide {
+  grid-column: 1 / -1;
+}
+
+.settings-version-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audit-json {
+  max-height: 360px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 10px;
+  background: #101820;
+  color: #e8f0f6;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .system-admin-grid,
+  .settings-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .system-admin-panel {
+    position: static;
+  }
+
+  .settings-field-grid .field-wide {
+    grid-column: auto;
+  }
+
+  .system-record-card,
+  .audit-log-row,
+  .settings-version-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .system-record-card span:last-child,
+  .audit-log-row span:last-child {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
 a {
   color: inherit;
 }

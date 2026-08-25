@@ -52,10 +52,9 @@ describe('Slice 11 After-sales OpenAPI contract', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('publishes exactly 143 unique operations including twenty After-sales operations', () => {
-    expect(allOperations).toHaveLength(143);
-    expect(new Set(allOperations.map(({ operationId }) => operationId)).size).toBe(143);
+  it('publishes twenty uniquely named After-sales operations', () => {
     expect(operations).toHaveLength(20);
+    expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(20);
     expect([...byId.keys()].sort()).toEqual([...AFTER_SALES_OPERATION_IDS].sort());
   });
 

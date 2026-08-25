@@ -74,6 +74,8 @@ export const environmentSchema = z
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).optional(),
     SCHEDULER_ENABLED: strictBoolean.default(true),
     SCHEDULER_BATCH_SIZE: integerString(1, 500).default(100),
+    SCHEDULER_GUEST_CART_BATCH_SIZE: integerString(1, 1_000).default(200),
+    SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: integerString(1, 1_000).default(500),
     REQUEST_BODY_LIMIT: z
       .string()
       .regex(/^\d+(?:kb|mb)$/i)
@@ -223,6 +225,8 @@ export interface AppConfig {
   scheduler: {
     enabled: boolean;
     batchSize: number;
+    guestCartBatchSize: number;
+    authCleanupBatchSize: number;
   };
   version: string;
 }
@@ -301,6 +305,8 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
     scheduler: {
       enabled: environment.SCHEDULER_ENABLED,
       batchSize: environment.SCHEDULER_BATCH_SIZE,
+      guestCartBatchSize: environment.SCHEDULER_GUEST_CART_BATCH_SIZE,
+      authCleanupBatchSize: environment.SCHEDULER_AUTH_CLEANUP_BATCH_SIZE,
     },
     version: environment.APP_VERSION,
   };

@@ -26,6 +26,10 @@ export class AuthTokensRepository {
     return client.authToken.create({ data });
   }
 
+  public findByHash(tokenHash: string) {
+    return this.prisma.authToken.findUnique({ where: { tokenHash } });
+  }
+
   public invalidateActive(
     userId: string,
     purpose: AuthTokenPurpose,

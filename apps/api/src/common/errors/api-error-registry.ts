@@ -159,6 +159,10 @@ export const API_ERROR_REGISTRY: Record<ApiErrorCode, ApiErrorDefinition> = {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Token không hợp lệ, đã hết hạn hoặc đã được sử dụng.',
   },
+  SETTINGS_VERSION_CONFLICT: {
+    status: HttpStatus.CONFLICT,
+    message: 'Cấu hình cửa hàng đã được cập nhật. Vui lòng tải lại phiên bản mới.',
+  },
   CURRENT_PASSWORD_INCORRECT: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,
     message: 'Mật khẩu hiện tại không đúng.',
