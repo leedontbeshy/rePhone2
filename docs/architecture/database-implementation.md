@@ -71,7 +71,7 @@ Không sửa migration đã được chia sẻ. Nếu sai, tạo migration tiế
 
 - Một Warranty/OrderItem bằng unique `order_item_id`; `end_at >= start_at`.
 - Tối đa một AfterSalesRequest chưa terminal/OrderItem bằng partial unique trên status `REQUESTED`, `RECEIVED`, `INSPECTING`, `APPROVED`.
-- Warranty VOIDED cần reason/actor/time. After-sales receive/decision/resolution/cancel timestamp, actor, note và received location phải phù hợp status; REJECTED iPhone đã nhận có return note/time và application atomically trả unit về SOLD.
+- Warranty VOIDED cần reason/actor/time. `AfterSalesRequest.requestedResolution` nullable và không dùng empty string; receive note được persist riêng ở `receiveNote` (nullable, 5..1000 khi có). After-sales receive/decision/resolution/cancel timestamp, actor, note và received location phải phù hợp status; REJECTED iPhone đã nhận có return note/time và application atomically trả unit về SOLD.
 - Replacement unit khác original unit; chỉ iPhone được service cho phép replacement trực tiếp.
 - `store_settings.key` unique và CHECK `key = 'STORE'`, nhờ đó chỉ có một singleton row; `version > 0`.
 - `store_settings.shipping_deposit_amount > 0`; bank name/account/holder nonblank. Shipping `deposit_required` chỉ bằng 0 khi `grand_total = 0`.

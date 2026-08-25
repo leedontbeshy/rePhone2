@@ -28,11 +28,18 @@ export function CatalogHeader() {
         {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
           <Link href="/orders">Đơn hàng</Link>
         ) : null}
+        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
+          <Link href="/warranties">Bảo hành</Link>
+        ) : null}
+        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
+          <Link href="/after-sales">Hậu mãi</Link>
+        ) : null}
         {status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN') ? (
           <>
             <Link href="/backoffice/orders">Đơn hàng</Link>
             <Link href="/backoffice/payments">Review cọc</Link>
             <Link href="/backoffice/refunds">Hoàn tiền</Link>
+            <Link href="/backoffice/after-sales">Hậu mãi</Link>
           </>
         ) : null}
         {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}

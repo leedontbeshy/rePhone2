@@ -7,6 +7,7 @@ import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuditActorContext } from '../audit/audit.types.js';
+import { WarrantyPolicyReader } from '../warranty/warranty-policy.reader.js';
 import type {
   ArchiveReasonDto,
   BackofficeProductListQueryDto,
@@ -34,6 +35,8 @@ export class BackofficeCatalogService {
     private readonly transactions: SerializableTransactionRunner,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Inject(WarrantyPolicyReader)
+    private readonly warrantyPolicies: WarrantyPolicyReader,
   ) {}
 
   public async listProducts(query: BackofficeProductListQueryDto) {
@@ -145,6 +148,12 @@ export class BackofficeCatalogService {
       if (existing.status === 'ARCHIVED') throw new ApiError('INVALID_STATE_TRANSITION');
       if (!existing.variants.some((variant) => variant.status === 'ACTIVE')) {
         throw validation('variants', 'ACTIVE_VARIANT_REQUIRED');
+      }
+      await this.assertUsableWarrantyPolicy(existing.warrantyPolicyId, transaction);
+      for (const variant of existing.variants) {
+        if (variant.status === 'ACTIVE') {
+          await this.assertUsableWarrantyPolicy(variant.warrantyPolicyId, transaction);
+        }
       }
       const updated = await this.repository.updateProduct(id, { status: 'ACTIVE' }, transaction);
       await this.audit.write(transaction, actor, {
@@ -269,6 +278,10 @@ export class BackofficeCatalogService {
       ) {
         throw validation('variant', 'IPHONE_CONFIGURATION_REQUIRED');
       }
+      await this.assertUsableWarrantyPolicy(
+        existing.warrantyPolicyId ?? existing.product.warrantyPolicyId,
+        transaction,
+      );
       const updated = await transaction.productVariant.update({
         where: { id },
         data: { status: 'ACTIVE' },
@@ -319,6 +332,16 @@ export class BackofficeCatalogService {
       throw new ApiError('INVALID_STATE_TRANSITION');
     }
     return variant;
+  }
+
+  private async assertUsableWarrantyPolicy(
+    policyId: string | null,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (policyId === null) return;
+    if ((await this.warrantyPolicies.findUsableById(policyId, transaction)) === null) {
+      throw validation('warrantyPolicyId', 'WARRANTY_POLICY_NOT_ACTIVE');
+    }
   }
 
   private toProductDetail(product: BackofficeProductRecord): BackofficeProductDetailDto {

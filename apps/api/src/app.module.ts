@@ -20,6 +20,8 @@ import { PaymentOperationsModule } from './modules/payment-operations/payment-op
 import { SchedulerModule } from './modules/scheduler/scheduler.module.js';
 import { FulfillmentModule } from './modules/fulfillment/fulfillment.module.js';
 import { RefundOperationsModule } from './modules/refunds/refund-operations.module.js';
+import { WarrantyOperationsModule } from './modules/warranty/warranty-operations.module.js';
+import { AfterSalesModule } from './modules/after-sales/after-sales.module.js';
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { RefundOperationsModule } from './modules/refunds/refund-operations.modu
     PaymentOperationsModule,
     FulfillmentModule,
     RefundOperationsModule,
+    WarrantyOperationsModule,
+    AfterSalesModule,
     SchedulerModule,
     HealthModule,
   ],

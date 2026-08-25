@@ -12,7 +12,6 @@ import { SettingsModule } from '../settings/settings.module.js';
 import { VouchersModule } from '../vouchers/voucher.module.js';
 import { OrderRateLimitGuard } from './order-rate-limit.guard.js';
 import { OrderRateLimiter } from './order-rate-limiter.service.js';
-import { OrderMutationCsrfGuard } from './order-mutation-csrf.guard.js';
 import { CheckoutsController, OrdersController } from './orders.controller.js';
 import { OrdersService } from './orders.service.js';
 
@@ -31,7 +30,7 @@ import { OrdersService } from './orders.service.js';
     OrderCancellationModule,
   ],
   controllers: [CheckoutsController, OrdersController],
-  providers: [OrdersService, OrderRateLimiter, OrderRateLimitGuard, OrderMutationCsrfGuard],
+  providers: [OrdersService, OrderRateLimiter, OrderRateLimitGuard],
   exports: [OrdersService],
 })
 export class OrdersModule {}

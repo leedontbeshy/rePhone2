@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
@@ -310,16 +309,20 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
       direction: 'OUT',
       reason: 'Điều chỉnh kiểm kê demo',
     });
-    await stockCommand(server, employee, 'return', {
-      variantId: variant.id,
-      locationId: store.id,
-      quantity: 1,
-      referenceType: 'Order',
-      referenceId: randomUUID(),
-      reason: 'Khách trả phụ kiện demo',
-    });
+    await request(server)
+      .post('/api/v1/backoffice/stock/return')
+      .set(bearer(employee))
+      .send({
+        variantId: variant.id,
+        locationId: store.id,
+        quantity: 1,
+        referenceType: 'Order',
+        referenceId: '0198e6c6-5798-7cde-a964-000000000099',
+        reason: 'Reference generic cũ phải bị từ chối',
+      })
+      .expect(400);
 
-    expect(await stockOnHand(prisma, variant.id, store.id)).toBe(beforeStore + 4);
+    expect(await stockOnHand(prisma, variant.id, store.id)).toBe(beforeStore + 3);
     expect(await stockOnHand(prisma, variant.id, warehouse.id)).toBe(beforeWarehouse + 1);
     const movements = await request(server)
       .get('/api/v1/backoffice/stock-movements')
@@ -327,7 +330,7 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
       .query({ variantId: variant.id, pageSize: 100 })
       .expect(200);
     expect(successArray(movements).map((item) => item['type'])).toEqual(
-      expect.arrayContaining(['RECEIPT', 'TRANSFER', 'ADJUSTMENT_OUT', 'RETURN']),
+      expect.arrayContaining(['RECEIPT', 'TRANSFER', 'ADJUSTMENT_OUT']),
     );
   });
 

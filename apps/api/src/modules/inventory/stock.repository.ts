@@ -115,6 +115,18 @@ export class StockRepository {
     });
   }
 
+  public findAfterSalesReturn(referenceId: string, variantId: string, client: DbClient) {
+    return client.stockMovement.findFirst({
+      where: {
+        type: 'RETURN',
+        referenceType: 'AFTER_SALES_REQUEST',
+        referenceId,
+        variantId,
+      },
+      orderBy: { id: 'asc' },
+    });
+  }
+
   public async lockLevels(ids: string[], client: Prisma.TransactionClient): Promise<void> {
     const uniqueIds = [...new Set(ids)].sort();
     await client.$queryRaw`

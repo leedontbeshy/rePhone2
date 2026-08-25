@@ -53,6 +53,36 @@ function applyOptionalCommerceSecurity(document: OpenAPIObject): void {
       { guestOrderToken: [] },
       { rephone_guest_cart: [] },
     ],
+    getCustomerWarranty: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
+    createAfterSalesRequest: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
+    getAfterSalesRequest: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
+    uploadAfterSalesAttachment: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
+    getAfterSalesAttachmentUrl: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
+    cancelAfterSalesRequest: [
+      { 'access-token': [] },
+      { guestOrderToken: [] },
+      { rephone_guest_cart: [] },
+    ],
   };
   for (const pathItem of Object.values(document.paths)) {
     for (const method of HTTP_METHODS) {

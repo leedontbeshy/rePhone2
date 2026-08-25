@@ -527,7 +527,7 @@ model InventoryUnit {
   cartItems                CartItem[]
   wishlistItems            WishlistItem[]
   orderItems               OrderItem[]
-  warranty                 Warranty?
+  warranties               Warranty[]
   replacementAfterSales    AfterSalesRequest[]      @relation("AfterSalesReplacementUnit")
 
   @@index([variantId, lifecycleStatus, locationId])
@@ -556,7 +556,7 @@ model InventoryInspection {
   updatedAt                DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
   inventoryUnit            InventoryUnit            @relation(fields: [inventoryUnitId], references: [id], onDelete: Restrict)
   inspector                User                     @relation("InspectionInspector", fields: [inspectorId], references: [id], onDelete: Restrict)
-  afterSalesRequests       AfterSalesRequest[]
+  afterSalesRequest        AfterSalesRequest?
 
   @@index([inventoryUnitId, status])
   @@index([inspectorId])
@@ -914,7 +914,7 @@ model Refund {
   terminalBy         User?               @relation("RefundTerminalActor", fields: [terminalById], references: [id], onDelete: Restrict)
   requestedBy        User?               @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: Restrict)
   processedBy        User?               @relation("RefundProcessor", fields: [processedById], references: [id], onDelete: Restrict)
-  afterSalesRequests AfterSalesRequest[]
+  afterSalesRequest  AfterSalesRequest?
 
   @@index([orderId, status])
   @@index([paymentId])
@@ -956,7 +956,7 @@ model WarrantyPolicy {
   name         String           @db.VarChar(255)
   defaultDays  Int              @map("default_days")
   terms        String           @db.Text
-  status       PolicyStatus     @default(ACTIVE)
+  status       PolicyStatus     @default(INACTIVE)
   createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
   archivedAt   DateTime?        @map("archived_at") @db.Timestamptz(3)
@@ -972,7 +972,7 @@ model Warranty {
   warrantyCode    String            @unique @map("warranty_code") @db.VarChar(64)
   orderItemId     String            @unique @map("order_item_id") @db.Uuid
   customerId      String?           @map("customer_id") @db.Uuid
-  inventoryUnitId String?           @unique @map("inventory_unit_id") @db.Uuid
+  inventoryUnitId String?           @map("inventory_unit_id") @db.Uuid
   policyId        String?           @map("policy_id") @db.Uuid
   daysSnapshot    Int               @map("days_snapshot")
   termsSnapshot   String            @map("terms_snapshot") @db.Text
@@ -991,7 +991,9 @@ model Warranty {
   voidedBy        User?             @relation("WarrantyVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
   afterSales      AfterSalesRequest[]
 
-  @@index([customerId, createdAt])
+  @@unique([id, orderItemId])
+  @@index([customerId, createdAt, id])
+  @@index([status, endAt, id])
   @@index([policyId])
   @@map("warranties")
 }
@@ -1004,21 +1006,22 @@ model AfterSalesRequest {
   customerId                 String?               @map("customer_id") @db.Uuid
   type                       AfterSalesType
   issueDescription           String                @map("issue_description") @db.Text
-  requestedResolution        String                @map("requested_resolution") @db.Text
+  requestedResolution        String?               @map("requested_resolution") @db.Text
   status                     AfterSalesStatus      @default(REQUESTED)
   assignedToId               String?               @map("assigned_to_id") @db.Uuid
   receivedLocationId         String?               @map("received_location_id") @db.Uuid
   receivedById               String?               @map("received_by_id") @db.Uuid
+  receiveNote                String?               @map("receive_note") @db.Text
   attachments                Json?                 @db.JsonB
   inspectionSummary          String?               @map("inspection_summary") @db.Text
-  inventoryInspectionId      String?               @map("inventory_inspection_id") @db.Uuid
+  inventoryInspectionId      String?               @unique @map("inventory_inspection_id") @db.Uuid
   decisionNote               String?               @map("decision_note") @db.Text
   decidedById                String?               @map("decided_by_id") @db.Uuid
   decidedAt                  DateTime?             @map("decided_at") @db.Timestamptz(3)
   resolutionType             AfterSalesResolution? @map("resolution_type")
   resolutionNote             String?               @map("resolution_note") @db.Text
   replacementInventoryUnitId String?               @map("replacement_inventory_unit_id") @db.Uuid
-  refundId                   String?               @map("refund_id") @db.Uuid
+  refundId                   String?               @unique @map("refund_id") @db.Uuid
   resolvedById               String?               @map("resolved_by_id") @db.Uuid
   returnNote                 String?               @map("return_note") @db.Text
   cancelReason               String?               @map("cancel_reason") @db.Text
@@ -1030,7 +1033,7 @@ model AfterSalesRequest {
   cancelledAt                DateTime?             @map("cancelled_at") @db.Timestamptz(3)
   createdAt                  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                  DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
-  warranty                   Warranty?             @relation(fields: [warrantyId], references: [id], onDelete: Restrict)
+  warranty                   Warranty?             @relation(fields: [warrantyId, orderItemId], references: [id, orderItemId], onDelete: Restrict)
   orderItem                  OrderItem             @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
   customer                   User?                 @relation("AfterSalesCustomer", fields: [customerId], references: [id], onDelete: Restrict)
   assignedTo                 User?                 @relation("AfterSalesAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
@@ -1044,8 +1047,9 @@ model AfterSalesRequest {
 
   @@index([orderItemId, status])
   @@index([warrantyId])
-  @@index([customerId, requestedAt])
-  @@index([assignedToId, status])
+  @@index([customerId, requestedAt, id])
+  @@index([assignedToId, status, updatedAt, id])
+  @@index([status, requestedAt, id])
   @@map("after_sales_requests")
 }
 

@@ -38,7 +38,7 @@ requestedResolution?
 - WARRANTY yêu cầu Warranty hiện valid; `warrantyId` backend resolve, client không chọn warranty khác.
 - RETURN/EXCHANGE không có hard-coded day window trong P0; staff quyết định theo chính sách/description. Việc nhận request không đồng nghĩa approve.
 - Tối đa một AfterSalesRequest non-terminal trên mỗi OrderItem.
-- `issueDescription` 10..2000; requestedResolution optional <=500.
+- `issueDescription` 10..2000; `requestedResolution` optional, trim/nonblank và <=500 khi có. Khi client omit, backend persist `NULL`, không thay bằng empty string.
 - Backend sinh `requestNumber` dạng `RPH-AS-YYYYMMDD-XXXXXX`.
 - Guest request lưu customerId null nhưng ownership suy từ Order; request number không cấp quyền.
 
@@ -94,7 +94,7 @@ List filter: `q` request/order/warranty code/customer, type/status/assignedTo/cr
 
 ### Receive/start inspection
 
-- Receive only REQUESTED; records server `receivedAt`, location and actor. For iPhone, move unit `SOLD → INSPECTING` and update location atomically.
+- Receive only REQUESTED; records server `receivedAt`, location and actor. Optional `note` được trim, dài 5..1000 và persist vào `receiveNote`; omit thì lưu `NULL`. For iPhone, move unit `SOLD → INSPECTING` and update location atomically.
 - Accessory is not added to sellable stock at receive.
 - Start inspection only RECEIVED.
 - iPhone: create/link DRAFT InventoryInspection type WARRANTY hoặc RETURN and transition case INSPECTING.

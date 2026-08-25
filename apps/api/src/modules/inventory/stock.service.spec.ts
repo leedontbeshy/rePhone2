@@ -12,6 +12,7 @@ import { StockService } from './stock.service.js';
 const VARIANT_ID = cryptoId(1);
 const LOCATION_ID = cryptoId(2);
 const SHIPMENT_ID = cryptoId(3);
+const AFTER_SALES_ID = cryptoId(7);
 const MOVEMENT_ID = cryptoId(4);
 const USER_ID = cryptoId(5);
 const input: ReturnStockDto = {
@@ -23,6 +24,14 @@ const input: ReturnStockDto = {
   reason: 'Hang hoan con nguyen ven',
 };
 const actor = { actorUserId: USER_ID } as AuditActorContext;
+const afterSalesInput: ReturnStockDto = {
+  variantId: VARIANT_ID,
+  locationId: LOCATION_ID,
+  quantity: 2,
+  referenceType: 'AFTER_SALES_REQUEST',
+  referenceId: AFTER_SALES_ID,
+  reason: 'Hang hoan con nguyen ven',
+};
 
 describe('StockService shipment return', () => {
   it('returns an exact replay without incrementing stock or duplicating audit', async () => {
@@ -100,6 +109,70 @@ describe('StockService shipment return', () => {
     );
     expect(auditWrite).toHaveBeenCalledOnce();
   });
+
+  it('returns an exact AFTER_SALES_REQUEST replay without incrementing stock', async () => {
+    const updateLevel = vi.fn();
+    const auditWrite = vi.fn();
+    const service = stockService(runnerFixture(), {
+      findAfterSalesReturn: vi.fn(async () =>
+        returnMovement({
+          referenceType: 'AFTER_SALES_REQUEST',
+          referenceId: AFTER_SALES_ID,
+        }),
+      ),
+      updateLevel,
+      auditWrite,
+    });
+
+    await expect(service.returnStock(afterSalesInput, actor)).resolves.toMatchObject({
+      movement: { referenceType: 'AFTER_SALES_REQUEST', referenceId: AFTER_SALES_ID },
+    });
+    expect(updateLevel).not.toHaveBeenCalled();
+    expect(auditWrite).not.toHaveBeenCalled();
+  });
+
+  it('creates an idempotent accessory return for a resolved after-sales case', async () => {
+    const updateLevel = vi.fn(async () => stockLevel({ quantityOnHand: 9 }));
+    const createMovement = vi.fn(async () =>
+      returnMovement({
+        referenceType: 'AFTER_SALES_REQUEST',
+        referenceId: AFTER_SALES_ID,
+      }),
+    );
+    const service = stockService(runnerFixture(), {
+      findAfterSalesReturn: vi.fn(async () => null),
+      updateLevel,
+      createMovement,
+    });
+
+    await expect(service.returnStock(afterSalesInput, actor)).resolves.toMatchObject({
+      movement: { type: 'RETURN', referenceType: 'AFTER_SALES_REQUEST' },
+      affectedLevels: [{ quantityOnHand: 9 }],
+    });
+    expect(createMovement).toHaveBeenCalledWith(
+      expect.objectContaining({
+        referenceType: 'AFTER_SALES_REQUEST',
+        referenceId: AFTER_SALES_ID,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('rejects an after-sales stock return before the accessory case is resolved', async () => {
+    const updateLevel = vi.fn();
+    const service = stockService(
+      runnerFixture(transactionFixture({ afterSalesStatus: 'APPROVED' })),
+      {
+        findAfterSalesReturn: vi.fn(async () => null),
+        updateLevel,
+      },
+    );
+
+    await expect(service.returnStock(afterSalesInput, actor)).rejects.toMatchObject({
+      code: 'INVALID_STATE_TRANSITION',
+    } satisfies Partial<ApiError>);
+    expect(updateLevel).not.toHaveBeenCalled();
+  });
 });
 
 interface RunnerFixture {
@@ -132,6 +205,7 @@ function stockService(
   runner: RunnerFixture,
   overrides: {
     findShipmentReturn?: object;
+    findAfterSalesReturn?: object;
     updateLevel?: object;
     createMovement?: object;
     auditWrite?: object;
@@ -142,6 +216,7 @@ function stockService(
     lockLevels: vi.fn(async () => undefined),
     findLevel: vi.fn(async () => stockLevel()),
     findShipmentReturn: vi.fn(async () => null),
+    findAfterSalesReturn: vi.fn(async () => null),
     updateLevel: vi.fn(async () => stockLevel({ quantityOnHand: 9 })),
     createMovement: vi.fn(async () => returnMovement()),
     ...overrides,
@@ -152,7 +227,7 @@ function stockService(
 }
 
 function transactionFixture(
-  overrides: { fulfillmentStatus?: string } = {},
+  overrides: { fulfillmentStatus?: string; afterSalesStatus?: string } = {},
 ): Prisma.TransactionClient {
   return {
     productVariant: {
@@ -174,6 +249,21 @@ function transactionFixture(
           fulfillmentType: 'SHIPPING',
           fulfillmentStatus: overrides.fulfillmentStatus ?? 'RETURNED',
           items: [{ quantity: input.quantity }],
+        },
+      })),
+    },
+    afterSalesRequest: {
+      findUnique: vi.fn(async () => ({
+        status: overrides.afterSalesStatus ?? 'RESOLVED',
+        resolutionType: 'REFUNDED',
+        receivedLocationId: LOCATION_ID,
+        inspectionSummary: 'Phụ kiện đã được kiểm tra và đủ điều kiện nhập lại kho.',
+        receivedLocation: { status: 'ACTIVE', type: 'WAREHOUSE' },
+        orderItem: {
+          variantId: VARIANT_ID,
+          inventoryUnitId: null,
+          productTypeSnapshot: 'ACCESSORY',
+          quantity: input.quantity,
         },
       })),
     },
