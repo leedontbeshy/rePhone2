@@ -296,7 +296,6 @@ function voucherCodes(result: Awaited<ReturnType<typeof call>>): string[] {
 
 async function cleanupSmokeData(): Promise<void> {
   if (smokeVoucherId !== undefined) {
-    await prisma.auditLog.deleteMany({ where: { resourceId: smokeVoucherId } });
     await prisma.voucherUsage.deleteMany({ where: { voucherId: smokeVoucherId } });
     await prisma.voucher.deleteMany({ where: { id: smokeVoucherId } });
   }
@@ -314,7 +313,6 @@ async function cleanupSmokeData(): Promise<void> {
     await prisma.wishlistItem.deleteMany({ where: { customerId: smokeUser.id } });
     await prisma.authSession.deleteMany({ where: { userId: smokeUser.id } });
     await prisma.authToken.deleteMany({ where: { userId: smokeUser.id } });
-    await prisma.auditLog.deleteMany({ where: { actorUserId: smokeUser.id } });
     await prisma.user.delete({ where: { id: smokeUser.id } });
   }
 
