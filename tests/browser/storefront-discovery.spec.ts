@@ -68,7 +68,7 @@ test.describe('FE-1 storefront discovery', () => {
     page,
   }) => {
     await page.goto(
-      '/products?productType=IPHONE&storageCapacityGb=128&pageSize=2&sortBy=name&sortOrder=asc',
+      '/products?productType=IPHONE&storageCapacityGb=128&pageSize=1&sortBy=name&sortOrder=asc',
     );
 
     const filterForm = page.locator('form:has(#desktop-catalog-type)');
@@ -214,11 +214,22 @@ async function expectServerRenderedPublicRoutes(browser: Browser): Promise<void>
 async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('Ảnh thật · Mã máy IP14P-128-001', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'iPhone 14 Pro' })).toBeVisible();
-  await expect(page.getByText('128 GB Space Black', { exact: true })).toBeVisible();
-  await expect(page.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
-  await expect(page.getByText('Grade A', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('93%', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('90 ngày', { exact: true }).first()).toBeVisible();
+  const purchaseRail = page.getByLabel('Tóm tắt mua hàng');
+  await expect(
+    page.getByText('128 GB Space Black', { exact: true }).filter({ visible: true }),
+  ).toBeVisible();
+  await expect(purchaseRail.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
+  await expect(page.getByText('Grade A', { exact: true }).filter({ visible: true })).toBeVisible();
+  await expect(purchaseRail.getByText('93%', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
+  ).toBeVisible();
+  const identifierDisclosure = page.locator('details').filter({
+    has: page.getByText('Định danh đã che', { exact: true }),
+  });
+  if (!(await identifierDisclosure.evaluate((element) => (element as HTMLDetailsElement).open))) {
+    await identifierDisclosure.locator('summary').click();
+  }
   await expect(page.getByText('•••• 2801', { exact: true })).toBeVisible();
   await expect(page.locator('[data-inspection-check]')).toHaveCount(18);
 }
@@ -275,7 +286,13 @@ async function expectNoSeriousAccessibilityViolations(page: Page, route: string)
     .analyze();
   const violations = results.violations
     .filter(({ impact }) => impact === 'serious' || impact === 'critical')
-    .map(({ id, impact, nodes }) => ({ id, impact, nodes: nodes.length, route }));
+    .map(({ id, impact, nodes }) => ({
+      id,
+      impact,
+      nodes: nodes.length,
+      route,
+      targets: nodes.map(({ target }) => target),
+    }));
 
   expect(violations).toEqual([]);
 }
@@ -283,6 +300,15 @@ async function expectNoSeriousAccessibilityViolations(page: Page, route: string)
 async function stabilizeVisualPage(page: Page): Promise<void> {
   await page.evaluate(async () => document.fonts.ready);
   await page.addStyleTag({
-    content: 'nextjs-portal { display: none !important; }',
+    content: `
+      nextjs-portal,
+      [data-shell='storefront'] > a[href^='#'] {
+        display: none !important;
+      }
+
+      [data-shell='storefront'] > header {
+        position: static !important;
+      }
+    `,
   });
 }
