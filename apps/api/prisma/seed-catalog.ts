@@ -1,10 +1,6 @@
 import { Prisma, type PrismaClient } from '../src/generated/prisma/client.js';
 import { IdentifierCodec } from '../src/modules/inventory/identifier-protection.js';
-import {
-  DEMO_CATALOG_ASSETS,
-  LEGACY_DEMO_CATALOG_OBJECT_PATHS,
-  type DemoCatalogAssetKey,
-} from './demo-catalog-assets.js';
+import { DEMO_CATALOG_ASSETS, type DemoCatalogAssetKey } from './demo-catalog-assets.js';
 
 const PASSED_CHECK_KEYS = [
   'DISPLAY',
@@ -237,12 +233,6 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     requiredEnvironment('IDENTIFIER_HMAC_KEY'),
   );
   const publicBucket = requiredEnvironment('SUPABASE_PUBLIC_BUCKET');
-  await prisma.productMedia.deleteMany({
-    where: {
-      bucket: publicBucket,
-      objectPath: { in: LEGACY_DEMO_CATALOG_OBJECT_PATHS },
-    },
-  });
   const iphonePolicy = await prisma.warrantyPolicy.findUniqueOrThrow({
     where: { code: 'IPHONE-90D' },
   });
@@ -264,19 +254,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     const isIphone = definition.type === 'IPHONE';
     const product = await prisma.product.upsert({
       where: { slug: definition.slug },
-      update: {
-        type: definition.type,
-        brand: 'Apple',
-        name: definition.name,
-        description: definition.description,
-        status: 'ACTIVE',
-        archivedAt: null,
-        releaseYear: 'releaseYear' in definition ? definition.releaseYear : null,
-        chipset: 'chipset' in definition ? definition.chipset : null,
-        ramGb: 'ramGb' in definition ? definition.ramGb : null,
-        screenSizeInches: 'screenSizeInches' in definition ? definition.screenSizeInches : null,
-        warrantyPolicyId: isIphone ? iphonePolicy.id : accessoryPolicy.id,
-      },
+      update: {},
       create: {
         slug: definition.slug,
         type: definition.type,
@@ -306,20 +284,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     const product = requiredMapValue(products, definition.productSlug);
     const variant = await prisma.productVariant.upsert({
       where: { sku: definition.sku },
-      update: {
-        productId: product.id,
-        displayName: definition.displayName,
-        storageCapacityGb: definition.storageCapacityGb,
-        colorName: definition.colorName,
-        colorHex: definition.colorHex,
-        inventoryMode: 'SERIALIZED',
-        salePrice: null,
-        compareAtPrice: null,
-        accessoryAttributes: Prisma.DbNull,
-        warrantyPolicyId: iphonePolicy.id,
-        status: 'ACTIVE',
-        archivedAt: null,
-      },
+      update: {},
       create: {
         productId: product.id,
         sku: definition.sku,
@@ -339,20 +304,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     const product = requiredMapValue(products, definition.productSlug);
     const variant = await prisma.productVariant.upsert({
       where: { sku: definition.sku },
-      update: {
-        productId: product.id,
-        displayName: definition.displayName,
-        storageCapacityGb: null,
-        colorName: 'colorName' in definition ? definition.colorName : null,
-        colorHex: 'colorHex' in definition ? definition.colorHex : null,
-        inventoryMode: 'QUANTITY',
-        salePrice: definition.salePrice,
-        compareAtPrice: definition.compareAtPrice,
-        accessoryAttributes: definition.attributes,
-        warrantyPolicyId: accessoryPolicy.id,
-        status: 'ACTIVE',
-        archivedAt: null,
-      },
+      update: {},
       create: {
         productId: product.id,
         sku: definition.sku,
@@ -407,21 +359,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     const protectedSerial = identifierCodec.protect('SERIAL', definition.serial);
     const unit = await prisma.inventoryUnit.upsert({
       where: { inventoryCode: definition.inventoryCode },
-      update: {
-        variantId: variant.id,
-        modelNumber: definition.modelNumber,
-        regionCode: definition.regionCode,
-        simLockStatus: 'UNLOCKED',
-        carrierName: null,
-        simConfiguration: 'PHYSICAL_AND_ESIM',
-        serialEncrypted: protectedSerial.encrypted,
-        serialHmac: protectedSerial.hmac,
-        serialSuffix: protectedSerial.suffix,
-        identifierKeyVersion: 1,
-        salePrice: definition.salePrice,
-        compareAtPrice: definition.compareAtPrice,
-        warrantyDaysOverride: null,
-      },
+      update: {},
       create: {
         variantId: variant.id,
         locationId: location.id,
@@ -488,18 +426,12 @@ async function seedHiddenCatalogRows(
 ): Promise<void> {
   const draft = await prisma.product.upsert({
     where: { slug: 'iphone-demo-draft' },
-    update: { name: 'iPhone Demo Draft', type: 'IPHONE', status: 'DRAFT', archivedAt: null },
+    update: {},
     create: { slug: 'iphone-demo-draft', name: 'iPhone Demo Draft', type: 'IPHONE' },
   });
   const variant = await prisma.productVariant.upsert({
     where: { sku: 'IP13-RECEIVED-DEMO' },
-    update: {
-      productId: draft.id,
-      displayName: 'Received demo',
-      inventoryMode: 'SERIALIZED',
-      warrantyPolicyId: iphonePolicyId,
-      status: 'DRAFT',
-    },
+    update: {},
     create: {
       productId: draft.id,
       sku: 'IP13-RECEIVED-DEMO',
@@ -511,9 +443,7 @@ async function seedHiddenCatalogRows(
   });
   await prisma.inventoryUnit.upsert({
     where: { inventoryCode: 'IP13-RECEIVED-001' },
-    update: {
-      variantId: variant.id,
-    },
+    update: {},
     create: {
       variantId: variant.id,
       locationId: storeLocationId,
@@ -543,16 +473,7 @@ async function upsertMedia(
   };
   await prisma.productMedia.upsert({
     where: { bucket_objectPath: { bucket: input.publicBucket, objectPath: input.objectPath } },
-    update: {
-      ...owner,
-      visibility: 'PUBLIC',
-      mimeType: asset.mimeType,
-      width: asset.width,
-      height: asset.height,
-      fileSize: asset.fileSize,
-      sortOrder: 0,
-      altText: input.altText,
-    },
+    update: {},
     create: {
       ...owner,
       bucket: input.publicBucket,

@@ -389,6 +389,7 @@ model AuthSession {
 
   @@index([userId, revokedAt, expiresAt])
   @@index([tokenFamilyId, revokedAt])
+  @@index([expiresAt, id])
   @@map("auth_sessions")
 }
 
@@ -403,6 +404,7 @@ model AuthToken {
   user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([userId, purpose, expiresAt])
+  @@index([expiresAt, id])
   @@map("auth_tokens")
 }
 
@@ -1100,6 +1102,7 @@ model AuditLog {
 
   @@index([resourceType, resourceId, createdAt(sort: Desc)])
   @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([actorType, createdAt(sort: Desc), id])
   @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
 }
