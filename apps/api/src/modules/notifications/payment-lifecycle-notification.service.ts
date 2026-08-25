@@ -1,12 +1,10 @@
-import { createHash } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
-  MAIL_PROVIDER,
-  type MailMessage,
-  type MailProvider,
-} from '../../common/providers/mail-provider.js';
+  NotificationDeliveryService,
+  type NotificationDelivery,
+} from './notification-delivery.service.js';
 
-export type NotificationDelivery = 'SENT' | 'FAILED';
+export type { NotificationDelivery } from './notification-delivery.service.js';
 
 export interface PaymentNotificationContext {
   paymentId: string;
@@ -21,16 +19,17 @@ export interface PaymentNotificationContext {
 
 @Injectable()
 export class PaymentLifecycleNotificationService {
-  private readonly logger = new Logger(PaymentLifecycleNotificationService.name);
-
-  public constructor(@Inject(MAIL_PROVIDER) private readonly mail: MailProvider) {}
+  public constructor(
+    @Inject(NotificationDeliveryService)
+    private readonly delivery: NotificationDeliveryService,
+  ) {}
 
   public sendProofSubmitted(context: PaymentNotificationContext): Promise<NotificationDelivery> {
     const reviewSla =
       context.reviewSlaDueAt === undefined || context.reviewSlaDueAt === null
         ? 'Thời hạn xử lý theo SLA review được hiển thị trên đơn hàng.'
         : `SLA review dự kiến hoàn tất trước ${formatVietnamDeadline(context.reviewSlaDueAt)}.`;
-    return this.sendSafely('payment.proof_submitted', context, {
+    return this.deliver('payment.proof_submitted', context, {
       to: context.customerEmail,
       subject: `[rePhone] Đã nhận bằng chứng cọc cho ${context.orderNumber}`,
       text: `rePhone đã nhận bằng chứng cọc cho đơn ${context.orderNumber}. Khoản thanh toán đang được kiểm tra. ${reviewSla}`,
@@ -44,7 +43,7 @@ export class PaymentLifecycleNotificationService {
       context.balanceDue === undefined
         ? 'Số tiền còn lại được hiển thị trên đơn hàng.'
         : `Số tiền còn lại khi nhận hàng: ${formatVnd(context.balanceDue)}.`;
-    return this.sendSafely('payment.verified', context, {
+    return this.deliver('payment.verified', context, {
       to: context.customerEmail,
       subject: `[rePhone] Đã xác nhận cọc cho ${context.orderNumber}`,
       text: `rePhone đã xác nhận ${received} cho đơn ${context.orderNumber}. ${balance} Đơn hàng chuyển sang bước chuẩn bị giao.`,
@@ -54,7 +53,7 @@ export class PaymentLifecycleNotificationService {
 
   public sendRejected(context: PaymentNotificationContext): Promise<NotificationDelivery> {
     const reason = context.rejectionReason ?? 'Bằng chứng thanh toán không hợp lệ.';
-    return this.sendSafely('payment.rejected', context, {
+    return this.deliver('payment.rejected', context, {
       to: context.customerEmail,
       subject: `[rePhone] Bằng chứng cọc của ${context.orderNumber} bị từ chối`,
       text: `Bằng chứng cọc cho đơn ${context.orderNumber} bị từ chối. Lý do: ${reason}. Đơn hàng đã bị hủy. Hệ thống chưa ghi nhận khoản cọc đã xác minh để hoàn; vui lòng liên hệ rePhone nếu cần đối soát.`,
@@ -63,7 +62,7 @@ export class PaymentLifecycleNotificationService {
   }
 
   public sendExpired(context: PaymentNotificationContext): Promise<NotificationDelivery> {
-    return this.sendSafely('order.cancelled', context, {
+    return this.deliver('order.cancelled', context, {
       to: context.customerEmail,
       subject: `[rePhone] Đơn ${context.orderNumber} đã hủy`,
       text: `Đơn ${context.orderNumber} đã bị hủy. Lý do: quá hạn nộp bằng chứng cọc. Không có khoản cọc đã xác minh cần hoàn.`,
@@ -71,28 +70,16 @@ export class PaymentLifecycleNotificationService {
     });
   }
 
-  private async sendSafely(
+  private deliver(
     template: string,
     context: PaymentNotificationContext,
-    message: MailMessage,
+    message: { to: string; subject: string; text: string; html: string },
   ): Promise<NotificationDelivery> {
-    let lastError: unknown;
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        await withTimeout(this.mail.send(message), 1_500);
-        return 'SENT';
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    this.logger.error({
-      event: 'notification.failed',
+    return this.delivery.deliver({
       template,
       resourceId: context.paymentId,
-      recipientHash: createHash('sha256').update(message.to).digest('hex'),
-      errorCategory: lastError instanceof Error ? lastError.name : 'UnknownError',
+      message,
     });
-    return 'FAILED';
   }
 }
 
@@ -117,20 +104,4 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
-}
-
-async function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => {
-          reject(new Error('MailTimeout'));
-        }, milliseconds);
-      }),
-    ]);
-  } finally {
-    if (timeout !== undefined) clearTimeout(timeout);
-  }
 }

@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
-import { MAIL_PROVIDER, type MailProvider } from '../../common/providers/mail-provider.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { User } from '../../generated/prisma/client.js';
+import { NotificationDeliveryService } from '../notifications/notification-delivery.service.js';
 import type { RegisterDto } from './auth.dto.js';
 import type { RegisteredAccountDto } from './auth-response.dto.js';
 import { AuthRateLimiter } from './auth-rate-limiter.service.js';
+import { buildOneTimeAuthLink } from './auth-one-time-link.js';
 import type {
   RequestMetadata,
   SafeUser,
@@ -37,8 +38,6 @@ type RefreshOutcome =
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   public constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(UsersRepository) private readonly usersRepository: UsersRepository,
@@ -48,7 +47,8 @@ export class AuthService {
     @Inject(TokenService) private readonly tokenService: TokenService,
     @Inject(AuthRateLimiter) private readonly rateLimiter: AuthRateLimiter,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
-    @Inject(MAIL_PROVIDER) private readonly mailProvider: MailProvider,
+    @Inject(NotificationDeliveryService)
+    private readonly notifications: NotificationDeliveryService,
   ) {}
 
   public async register(
@@ -213,8 +213,8 @@ export class AuthService {
       );
     });
 
-    const url = `${this.config.api.webPublicUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
-    await this.sendMailSafely(user.id, {
+    const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/reset-password', rawToken);
+    await this.sendMailSafely('auth.password_reset_requested', user.id, {
       to: user.email,
       subject: 'Đặt lại mật khẩu rePhone',
       text: `Mở liên kết sau để đặt lại mật khẩu: ${url}`,
@@ -445,8 +445,8 @@ export class AuthService {
   }
 
   private sendInvitation(userId: string, email: string, rawToken: string): Promise<void> {
-    const url = `${this.config.api.webPublicUrl}/accept-invitation?token=${encodeURIComponent(rawToken)}`;
-    return this.sendMailSafely(userId, {
+    const url = buildOneTimeAuthLink(this.config.api.webPublicUrl, '/accept-invitation', rawToken);
+    return this.sendMailSafely('employee.invited', userId, {
       to: email,
       subject: 'Lời mời nhân viên rePhone',
       text: `Mở liên kết sau để kích hoạt tài khoản nhân viên: ${url}`,
@@ -455,14 +455,15 @@ export class AuthService {
   }
 
   private async sendMailSafely(
+    template: 'auth.password_reset_requested' | 'employee.invited',
     userId: string,
     message: { to: string; subject: string; text: string; html: string },
   ): Promise<void> {
-    try {
-      await this.mailProvider.send(message);
-    } catch (error) {
-      this.logger.error({ event: 'auth.mail.failed', userId, error });
-    }
+    await this.notifications.deliver({
+      template,
+      resourceId: userId,
+      message,
+    });
   }
 }
 

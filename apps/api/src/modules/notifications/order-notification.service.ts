@@ -1,21 +1,15 @@
-import { createHash } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import {
-  MAIL_PROVIDER,
-  type MailMessage,
-  type MailProvider,
-} from '../../common/providers/mail-provider.js';
+import { Inject, Injectable } from '@nestjs/common';
 import { safeHttpsUrl } from '../../common/security/safe-https-url.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { OrderDetailDto } from '../orders/order-response.dto.js';
+import { NotificationDeliveryService } from './notification-delivery.service.js';
 
 @Injectable()
 export class OrderNotificationService {
-  private readonly logger = new Logger(OrderNotificationService.name);
-
   public constructor(
-    @Inject(MAIL_PROVIDER) private readonly mail: MailProvider,
+    @Inject(NotificationDeliveryService)
+    private readonly delivery: NotificationDeliveryService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -27,7 +21,7 @@ export class OrderNotificationService {
       : order.paymentAttempts[0] === undefined
         ? 'Đơn không yêu cầu cọc.'
         : `Số tiền cọc: ${formatVnd(order.paymentAttempts[0].expectedAmount)}. Nội dung: ${order.paymentAttempts[0].transferContent ?? order.orderNumber}.`;
-    return this.sendSafely(pickup ? 'order.placed_pickup' : 'order.placed_shipping', order.id, {
+    return this.deliver(pickup ? 'order.placed_pickup' : 'order.placed_shipping', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Đã nhận đơn ${order.orderNumber}`,
       text: `rePhone đã nhận đơn ${order.orderNumber}. ${instructions} Xem đơn: ${link}`,
@@ -47,7 +41,7 @@ export class OrderNotificationService {
       refund === undefined
         ? ''
         : ` Nghĩa vụ hoàn tiền: ${formatVnd(refund.amount)} đang chờ xử lý.`;
-    return this.sendSafely('order.cancelled', order.id, {
+    return this.deliver('order.cancelled', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Đơn ${order.orderNumber} đã hủy`,
       text: `Đơn ${order.orderNumber} đã được hủy. Lý do: ${order.cancelReason ?? 'Theo yêu cầu khách hàng'}.${refundText}`,
@@ -68,7 +62,7 @@ export class OrderNotificationService {
         ? 'theo xác nhận của cửa hàng'
         : formatDateTime(order.pickupHoldUntil);
     const link = this.orderLink(order.orderNumber);
-    return this.sendSafely('pickup.ready', order.id, {
+    return this.deliver('pickup.ready', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Đơn ${order.orderNumber} đã sẵn sàng nhận`,
       text: `Đơn ${order.orderNumber} đã sẵn sàng tại ${order.location.name}, ${order.storeAddress}. Vui lòng nhận trước ${deadline}. Xem đơn: ${link}`,
@@ -91,7 +85,7 @@ export class OrderNotificationService {
         ? 'Đơn không phát sinh bảo hành.'
         : `Mã bảo hành: ${warrantyCodes.join(', ')}.`;
     const link = this.orderLink(order.orderNumber);
-    return this.sendSafely('order.completed', order.id, {
+    return this.deliver('order.completed', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Đơn ${order.orderNumber} đã hoàn tất`,
       text: `Đơn ${order.orderNumber} đã hoàn tất. Đã thanh toán: ${formatVnd(order.pricing.paidAmount)}. Đã hoàn: ${formatVnd(order.pricing.refundedAmount)}. ${warrantyText} Xem đơn: ${link}`,
@@ -106,7 +100,7 @@ export class OrderNotificationService {
     pricing: { shippingFee: string; grandTotal: string; depositRequired: string };
   }): Promise<void> {
     const link = this.orderLink(order.orderNumber);
-    return this.sendSafely('order.shipping_fee_updated', order.id, {
+    return this.deliver('order.shipping_fee_updated', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Phí giao đơn ${order.orderNumber} đã cập nhật`,
       text: `Phí giao mới của đơn ${order.orderNumber}: ${formatVnd(order.pricing.shippingFee)}. Tổng đơn: ${formatVnd(order.pricing.grandTotal)}. Cọc cần thanh toán: ${formatVnd(order.pricing.depositRequired)}. Xem đơn: ${link}`,
@@ -128,7 +122,7 @@ export class OrderNotificationService {
     const shipment = order.shipments.find(({ status }) => status === 'HANDED_TO_CARRIER');
     if (shipment === undefined) return Promise.resolve();
     const link = safeHttpsUrl(shipment.trackingUrl) ?? this.orderLink(order.orderNumber);
-    return this.sendSafely('shipment.handed_over', order.id, {
+    return this.deliver('shipment.handed_over', order.id, {
       to: order.contact.email,
       subject: `[rePhone] Đơn ${order.orderNumber} đã bàn giao vận chuyển`,
       text: `Đơn ${order.orderNumber} đã bàn giao cho ${shipment.carrierName}. Mã vận đơn: ${shipment.trackingCode}. Theo dõi: ${link}`,
@@ -141,27 +135,12 @@ export class OrderNotificationService {
     return token === undefined ? base : `${base}#token=${encodeURIComponent(token)}`;
   }
 
-  private async sendSafely(
+  private async deliver(
     template: string,
     resourceId: string,
-    message: MailMessage,
+    message: { to: string; subject: string; text: string; html: string },
   ): Promise<void> {
-    let lastError: unknown;
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        await withTimeout(this.mail.send(message), 1_500);
-        return;
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    this.logger.error({
-      event: 'notification.failed',
-      template,
-      resourceId,
-      recipientHash: createHash('sha256').update(message.to).digest('hex'),
-      errorCategory: lastError instanceof Error ? lastError.name : 'UnknownError',
-    });
+    await this.delivery.deliver({ template, resourceId, message });
   }
 }
 
@@ -184,20 +163,4 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
-}
-
-async function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => {
-          reject(new Error('MailTimeout'));
-        }, milliseconds);
-      }),
-    ]);
-  } finally {
-    if (timeout !== undefined) clearTimeout(timeout);
-  }
 }

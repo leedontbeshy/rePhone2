@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MailMessage, MailProvider } from '../../common/providers/mail-provider.js';
 import type { AppConfig } from '../../config/app-config.js';
 import type { OrderDetailDto } from '../orders/order-response.dto.js';
+import { NotificationDeliveryService } from './notification-delivery.service.js';
 import { OrderNotificationService } from './order-notification.service.js';
 
 class RecordingMailProvider implements MailProvider {
@@ -16,7 +17,7 @@ class RecordingMailProvider implements MailProvider {
 describe('OrderNotificationService', () => {
   it('renders a guest link with token in the fragment and keeps it out of the subject', async () => {
     const mail = new RecordingMailProvider();
-    const service = new OrderNotificationService(mail, config());
+    const service = new OrderNotificationService(new NotificationDeliveryService(mail), config());
     const token = 'A'.repeat(43);
     await service.sendPlaced(orderFixture(), token);
     expect(mail.messages).toHaveLength(1);
@@ -27,7 +28,7 @@ describe('OrderNotificationService', () => {
 
   it('includes a pending refund amount in cancellation mail', async () => {
     const mail = new RecordingMailProvider();
-    const service = new OrderNotificationService(mail, config());
+    const service = new OrderNotificationService(new NotificationDeliveryService(mail), config());
     const order = orderFixture();
     order.status = 'CANCELLED';
     order.cancelReason = 'Khách thay đổi nhu cầu';
@@ -52,7 +53,7 @@ describe('OrderNotificationService', () => {
 
   it('renders pickup ready instructions with the store and strict hold deadline', async () => {
     const mail = new RecordingMailProvider();
-    const service = new OrderNotificationService(mail, config());
+    const service = new OrderNotificationService(new NotificationDeliveryService(mail), config());
     await service.sendPickupReady({
       id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
       orderNumber: 'RPH-20260821-23456789',
@@ -71,7 +72,7 @@ describe('OrderNotificationService', () => {
 
   it('renders the authoritative paid totals and issued warranty codes on completion', async () => {
     const mail = new RecordingMailProvider();
-    const service = new OrderNotificationService(mail, config());
+    const service = new OrderNotificationService(new NotificationDeliveryService(mail), config());
     await service.sendCompleted({
       id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
       orderNumber: 'RPH-20260821-23456789',
@@ -86,7 +87,7 @@ describe('OrderNotificationService', () => {
 
   it('falls back to the order portal when tracking contains authority credentials', async () => {
     const mail = new RecordingMailProvider();
-    const service = new OrderNotificationService(mail, config());
+    const service = new OrderNotificationService(new NotificationDeliveryService(mail), config());
 
     await service.sendShipmentHandedOver({
       id: '0198e4f0-7d16-7c1a-a2bd-39bc2a0f6998',
