@@ -1,6 +1,9 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { Writable } from 'node:stream';
+import pino from 'pino';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../config/app-config.js';
-import { createLoggerParams } from './logger.config.js';
+import { createLoggerParams, httpLogFields, REDACTED_LOG_PATHS } from './logger.config.js';
 
 function loggerTestConfig() {
   return loadConfig({
@@ -40,22 +43,66 @@ describe('createLoggerParams', () => {
       expect.arrayContaining([
         'req.headers.authorization',
         'req.headers.cookie',
-        'req.headers.idempotency-key',
-        'req.headers.x-guest-order-token',
-        '*.password',
-        '*.refreshToken',
-        '*.accessToken',
-        '*.guestAccessToken',
+        "req.headers['idempotency-key']",
+        "req.headers['x-guest-order-token']",
+        'password',
+        '*.*.refreshTokenHash',
         '*.guestAccessTokenHash',
-        '*.imei',
+        '*.imei1Hmac',
         '*.signedUrl',
-        '*.evidenceUrl',
-        '*.evidenceBucket',
-        '*.evidenceObjectPath',
+        '*.evidenceSha256',
+        '*.objectPath',
         '*.bankAccountNumber',
         '*.shippingAddressSnapshot',
-        '*.contact',
+        '*.recipient',
       ]),
     );
+  });
+
+  it('actually removes sensitive headers and nested payload values', () => {
+    let output = '';
+    const destination = new Writable({
+      write(chunk: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void) {
+        output += Buffer.isBuffer(chunk) ? chunk.toString() : String(chunk);
+        callback();
+      },
+    });
+    const logger = pino({ redact: { paths: REDACTED_LOG_PATHS, remove: true } }, destination);
+
+    logger.info({
+      req: {
+        headers: {
+          authorization: 'Bearer secret',
+          cookie: 'session=secret',
+          'x-guest-order-token': 'guest-secret',
+        },
+      },
+      payload: { password: 'password-secret', refreshTokenHash: 'hash-secret' },
+      metadata: { evidenceObjectPath: 'refunds/private/file.pdf' },
+      requestId: 'safe-request-id',
+    });
+
+    const entry = JSON.parse(output.trim()) as Record<string, unknown>;
+    expect(JSON.stringify(entry)).not.toContain('secret');
+    expect(entry.requestId).toBe('safe-request-id');
+  });
+
+  it('adds a route template and never copies the raw URL to the HTTP summary', () => {
+    const request = {
+      method: 'GET',
+      url: '/api/v1/orders/private-order?token=secret',
+      baseUrl: '/api/v1',
+      route: { path: '/orders/:orderNumber' },
+    } as unknown as IncomingMessage;
+    const response = { statusCode: 200 } as ServerResponse;
+
+    const summary = httpLogFields(request, response);
+
+    expect(summary).toEqual({
+      method: 'GET',
+      route: '/api/v1/orders/:orderNumber',
+      statusCode: 200,
+    });
+    expect(JSON.stringify(summary)).not.toContain('private-order');
   });
 });

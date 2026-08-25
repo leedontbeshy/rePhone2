@@ -8,6 +8,7 @@ import {
 import type { Request, Response } from 'express';
 import { ApiError, type ApiErrorCode, type ApiErrorDetail } from '../errors/api-error.js';
 import { API_ERROR_REGISTRY } from '../errors/api-error-registry.js';
+import { ensureRequestId } from './request-id.js';
 
 export interface ErrorEnvelope {
   error: {
@@ -32,16 +33,6 @@ const HTTP_STATUS_ERROR_CODES: Readonly<Partial<Record<number, ApiErrorCode>>> =
 export interface SerializedApiError {
   status: number;
   body: ErrorEnvelope;
-}
-
-function resolveRequestId(request: Request, response: Response): string {
-  if (typeof request.id === 'string') {
-    return request.id;
-  }
-  if (typeof request.id === 'number') {
-    return request.id.toString();
-  }
-  return response.getHeader('X-Request-Id')?.toString() ?? 'unknown';
 }
 
 function isMalformedJson(exception: unknown): boolean {
@@ -87,7 +78,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const request = context.getRequest<Request>();
     const response = context.getResponse<Response>();
-    const requestId = resolveRequestId(request, response);
+    const requestId = ensureRequestId(request, response);
 
     if (request.path.startsWith('/health/')) {
       const status =

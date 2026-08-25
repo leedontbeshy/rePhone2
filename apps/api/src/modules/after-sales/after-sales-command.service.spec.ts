@@ -32,7 +32,9 @@ describe('AfterSalesCommandService', () => {
       expect.any(Object),
       expect.objectContaining({ action: 'after_sales.created' }),
     );
-    expect(fixture.notifications.sendUpdated).toHaveBeenCalledOnce();
+    expect(fixture.notifications.sendUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({ requestId: 'request-1' }),
+    );
   });
 
   it('maps the open-case unique race without consuming request-number collision retries', async () => {

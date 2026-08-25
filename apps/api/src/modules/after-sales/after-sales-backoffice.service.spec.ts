@@ -19,7 +19,7 @@ describe('AfterSalesBackofficeService', () => {
     ).resolves.toBe(detail);
     expect(sendUpdated).toHaveBeenCalledOnce();
     expect(sendUpdated).toHaveBeenCalledWith({
-      requestId: 'case-1',
+      requestId: 'request-slice11-backoffice',
       requestNumber: 'RPH-AS-20260825-234567',
       orderNumber: 'RPH-20260825-ABCDEFGH',
       customerEmail: 'customer@example.com',
