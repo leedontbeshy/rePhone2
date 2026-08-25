@@ -56,6 +56,9 @@ export default function LoginPage() {
         <p className="form-footer">
           Chưa có tài khoản? <Link href="/register">Đăng ký</Link>
         </p>
+        <p className="form-footer">
+          <Link href="/forgot-password">Quên mật khẩu?</Link>
+        </p>
       </form>
     </main>
   );
