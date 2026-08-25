@@ -19,7 +19,8 @@
     ]
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "pnpm --parallel --filter @rephone/api --filter @rephone/web dev",
+    "dev:turbo": "turbo run dev",
     "build": "cross-env NODE_ENV=production turbo run build",
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
