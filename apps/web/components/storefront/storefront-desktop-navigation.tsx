@@ -15,7 +15,8 @@ export function StorefrontDesktopNavigation() {
 }
 
 function isCurrentPath(href: string, pathname: string): boolean {
-  const targetPath = href.split('?')[0];
+  const queryIndex = href.indexOf('?');
+  const targetPath = queryIndex === -1 ? href : href.slice(0, queryIndex);
   if (targetPath === '/') return pathname === '/';
   if (targetPath === '/products') return false;
   return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
