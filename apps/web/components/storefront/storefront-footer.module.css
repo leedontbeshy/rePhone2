@@ -180,11 +180,30 @@
 }
 
 @media (min-width: 60rem) {
+  .footerInner {
+    padding-block: var(--space-8) var(--space-5);
+  }
+
   .footerGrid {
     grid-template-columns:
-      minmax(16rem, 1.35fr) minmax(12rem, 1fr) minmax(9rem, 0.7fr)
-      minmax(16rem, 1.25fr);
-    gap: var(--space-12);
+      minmax(12rem, 1.35fr) minmax(9.5rem, 1fr) minmax(7rem, 0.7fr)
+      minmax(13rem, 1.25fr);
+    gap: clamp(var(--space-6), 3vw, var(--space-12));
+  }
+
+  .footerInner .generationList a,
+  .footerInner .linkList a,
+  .footerInner .contactList a {
+    min-height: var(--control-height);
+  }
+
+  .footerInner .contactList a {
+    padding-block: var(--space-1);
+  }
+
+  .bottomBar {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
   }
 }
 

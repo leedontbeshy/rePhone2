@@ -171,11 +171,17 @@
 
 @media (min-width: 60rem) {
   .specSection {
-    padding: var(--space-8);
+    gap: var(--space-3);
+    padding: var(--space-6);
   }
 
   .rows {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 0;
+  }
+
+  .rows > div {
+    padding-block: var(--space-2);
   }
 }
 

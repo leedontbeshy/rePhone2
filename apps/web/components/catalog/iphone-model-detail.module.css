@@ -152,7 +152,7 @@
 
 @media (min-width: 60rem) {
   .page {
-    gap: var(--space-16);
+    gap: var(--space-8);
   }
 
   .hero {
