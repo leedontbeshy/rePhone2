@@ -55,6 +55,8 @@
     "demo:refund-processing": "pnpm --filter @rephone/api demo:refund-processing",
     "demo:after-sales-inspecting": "pnpm --filter @rephone/api demo:after-sales-inspecting",
     "demo:scenarios": "pnpm --filter @rephone/api demo:scenarios",
+    "assets:fetch:rich-models": "pnpm --filter @rephone/api assets:fetch:rich-models",
+    "demo:catalog:rich": "pnpm --filter @rephone/api demo:catalog:rich",
     "db:studio": "pnpm --filter @rephone/api db:studio",
     "db:reset": "pnpm --filter @rephone/api db:reset",
     "test:db:up": "docker compose --profile test up -d postgres-test",

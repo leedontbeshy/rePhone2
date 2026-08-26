@@ -370,12 +370,17 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
     variants.set(definition.sku, variant);
   }
 
-  const iphoneProductsWithDemoVariants = new Set<string>(
-    IPHONE_VARIANTS.map((definition) => definition.productSlug),
-  );
   for (const definition of IPHONE_CATALOG_PRODUCTS) {
-    if (iphoneProductsWithDemoVariants.has(definition.slug)) continue;
     const product = requiredMapValue(products, definition.slug);
+    const realSerializedVariant = await prisma.productVariant.findFirst({
+      where: {
+        productId: product.id,
+        inventoryMode: 'SERIALIZED',
+        NOT: { sku: { startsWith: 'CATALOG-' } },
+      },
+      select: { id: true },
+    });
+    if (realSerializedVariant !== null) continue;
     await prisma.productVariant.upsert({
       where: { sku: catalogVariantSku(definition.slug) },
       update: {},
