@@ -198,6 +198,27 @@ test.describe('FE-1 storefront discovery', () => {
     expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
   });
 
+  test('exposes generation and store contact links in the shared footer', async ({ page }) => {
+    await page.goto('/');
+    const footer = page.locator('footer');
+
+    for (const generation of ['X', '11', '12', '13', '14', '15', '16', '17']) {
+      const label = `iPhone ${generation}`;
+      await expect(footer.getByRole('link', { name: label, exact: true })).toHaveAttribute(
+        'href',
+        `/products?productType=IPHONE&q=${label.replace(' ', '+')}`,
+      );
+    }
+
+    await expect(footer.getByRole('link', { name: '0900000000', exact: true })).toHaveAttribute(
+      'href',
+      'tel:0900000000',
+    );
+    await expect(
+      footer.getByText('123 Đường Demo, TP. Hồ Chí Minh', { exact: true }),
+    ).toBeVisible();
+  });
+
   test('keeps skip navigation keyboard-operable on the canonical dossier', async ({ page }) => {
     await page.goto(EXACT_UNIT_PATH);
     await page.keyboard.press('Tab');
