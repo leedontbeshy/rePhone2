@@ -18,10 +18,13 @@ const PUBLIC_ROUTES = [
 const FORBIDDEN_PUBLIC_FIELDS =
   /acquisitionCost|additionalCost|serialEncrypted|serialHmac|objectPath|locationId|inspectorId|internalNote|bankAccountNumber|bankQr|updatedBy/i;
 const FORBIDDEN_UNVERIFIED_CLAIMS = [
+  /20 bước/i,
   /36 bước/i,
   /bao gồm VAT/i,
   /7 ngày đổi trả/i,
+  /15 ngày đổi trả/i,
   /\d+ chi nhánh/i,
+  /giao hàng toàn quốc/i,
   /giao hàng 1[–-]2 ngày/i,
   /miễn phí đơn từ/i,
 ] as const;
@@ -232,12 +235,26 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.locator('main')).toBeFocused();
   });
 
-  test('captures the canonical exact-unit dossier at desktop and mobile', async ({ page }) => {
+  test('captures the canonical model and exact-unit details at desktop and mobile', async ({
+    page,
+  }) => {
     for (const viewport of [
       { name: 'desktop-1440', width: 1440, height: 900 },
       { name: 'mobile-390', width: 390, height: 844 },
     ] as const) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
+
+      await page.goto(MODEL_PATH);
+      await expect(page.getByRole('heading', { level: 1, name: 'iPhone 14 Pro' })).toBeVisible();
+      await expect(page.getByText('Ảnh minh họa model', { exact: true })).toBeVisible();
+      await expect(page.locator(`main a[href="${EXACT_UNIT_PATH}"]`).first()).toBeVisible();
+      await stabilizeVisualPage(page);
+      await expect(page).toHaveScreenshot(`fe1-model-detail-${viewport.name}.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: true,
+      });
+
       await page.goto(EXACT_UNIT_PATH);
       await expectExactUnitContract(page);
       await stabilizeVisualPage(page);
@@ -272,12 +289,11 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('Ảnh thật · Mã máy IP14P-128-001', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'iPhone 14 Pro' })).toBeVisible();
   const purchaseRail = page.getByLabel('Tóm tắt mua hàng');
-  await expect(
-    page.getByText('128 GB Space Black', { exact: true }).filter({ visible: true }),
-  ).toBeVisible();
+  await expect(page.getByText('128 GB · 6 GB RAM', { exact: true })).toBeVisible();
+  await expect(purchaseRail.getByText('Space Black', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
   await expect(page.getByText('Grade A', { exact: true }).filter({ visible: true })).toBeVisible();
-  await expect(purchaseRail.getByText('93%', { exact: true })).toBeVisible();
+  await expect(page.getByText('Pin 93%', { exact: true })).toBeVisible();
   await expect(
     page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
   ).toBeVisible();

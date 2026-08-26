@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   catalogLabel,
+  countAcceptableChecks,
   countPassingChecks,
   fulfillmentSummary,
   groupFunctionalChecks,
@@ -25,6 +26,13 @@ describe('catalog presenters', () => {
 
   it('projects check and fulfillment summaries without inventing inventory facts', () => {
     expect(countPassingChecks([{ key: 'DISPLAY', label: 'Màn hình', status: 'PASS' }])).toBe(1);
+    expect(
+      countAcceptableChecks([
+        { key: 'DISPLAY', label: 'Màn hình', status: 'PASS' },
+        { key: 'ESIM', label: 'eSIM', status: 'NOT_APPLICABLE' },
+        { key: 'BATTERY', label: 'Pin', status: 'DEGRADED' },
+      ]),
+    ).toBe(2);
     expect(fulfillmentSummary(true, false)).toBe('Nhận tại cửa hàng');
     expect(fulfillmentSummary(false, false)).toBe('Tạm thời chưa thể đặt mua');
   });
