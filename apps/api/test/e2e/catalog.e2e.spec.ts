@@ -33,15 +33,18 @@ describe('public catalog HTTP contract', () => {
   });
 
   it('lists one card per public product with stable pagination and paired prices', async () => {
-    const response = await request(server).get('/api/v1/products').expect(200);
+    const response = await request(server)
+      .get('/api/v1/products')
+      .query({ pageSize: '100' })
+      .expect(200);
     const data = successArray(response);
     const iphone13 = data.find((item) => property(item, 'slug') === 'iphone-13');
 
-    expect(data).toHaveLength(6);
+    expect(data).toHaveLength(50);
     expect(property(property(response.body as unknown, 'meta'), 'pagination')).toEqual({
       page: 1,
-      pageSize: 20,
-      totalItems: 6,
+      pageSize: 100,
+      totalItems: 50,
       totalPages: 1,
     });
     expect(iphone13).toMatchObject({
@@ -90,7 +93,7 @@ describe('public catalog HTTP contract', () => {
     expect(successArray(emptyPage)).toEqual([]);
     expect(
       property(property(property(emptyPage.body as unknown, 'meta'), 'pagination'), 'totalItems'),
-    ).toBe(6);
+    ).toBe(50);
   });
 
   it('rejects invalid catalog query input without coercing it', async () => {
@@ -171,10 +174,20 @@ describe('public catalog HTTP contract', () => {
         .query({ sortBy: 'fromPrice', sortOrder, pageSize: '100' })
         .expect(200);
       const slugs = successArray(response).map((item) => property(item, 'slug'));
-      expect(slugs.at(-1)).toBe('active-oos-demo');
+      const items = successArray(response);
+      const firstItemWithoutPrice = items.findIndex(
+        (item) => property(property(item, 'price'), 'fromPrice') === undefined,
+      );
+      expect(firstItemWithoutPrice).toBeGreaterThan(0);
+      expect(
+        items
+          .slice(firstItemWithoutPrice)
+          .every((item) => property(property(item, 'price'), 'fromPrice') === undefined),
+      ).toBe(true);
+      expect(slugs).toContain('active-oos-demo');
     }
 
-    await expectSlugs({ inStock: 'false' }, ['active-oos-demo']);
+    await expectSlugs({ q: 'chưa mở bán', inStock: 'false' }, ['active-oos-demo']);
     const detail = await request(server).get('/api/v1/products/active-oos-demo').expect(200);
     expect(property(successObject(detail), 'variants')).toEqual([]);
   });
