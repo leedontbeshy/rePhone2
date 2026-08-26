@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { UnitDossier } from '@/components/dossier/unit-dossier';
-import { CatalogApiError, getPublicUsedIphone } from '@/lib/catalog-api';
+import { CatalogApiError, getPublicProduct, getPublicUsedIphone } from '@/lib/catalog-api';
 
 interface UsedIphonePageProps {
   params: Promise<{ slug: string; inventoryCode: string }>;
@@ -9,8 +9,11 @@ interface UsedIphonePageProps {
 export default async function UsedIphonePage({ params }: UsedIphonePageProps) {
   const { slug, inventoryCode } = await params;
   try {
-    const detail = await getPublicUsedIphone(slug, inventoryCode);
-    return <UnitDossier detail={detail} />;
+    const [detail, product] = await Promise.all([
+      getPublicUsedIphone(slug, inventoryCode),
+      getPublicProduct(slug),
+    ]);
+    return <UnitDossier detail={detail} product={product} />;
   } catch (error) {
     if (error instanceof CatalogApiError && error.status === 404) {
       notFound();

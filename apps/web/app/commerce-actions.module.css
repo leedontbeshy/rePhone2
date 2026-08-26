@@ -1,0 +1,124 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.quantityField {
+  display: grid;
+  max-width: 8rem;
+  gap: var(--space-2);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
+.quantityField input {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.actions > * {
+  width: 100%;
+}
+
+.primaryAction {
+  min-height: 3rem;
+}
+
+.secondaryLink {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-control);
+  color: var(--color-primary-hover);
+  background: var(--color-surface);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.secondaryLink:hover {
+  background: var(--color-brand-soft);
+}
+
+.secondaryLink:focus-visible,
+.quantityField input:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.actorMessage,
+.message {
+  margin: 0;
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.actorMessage {
+  color: var(--color-muted);
+}
+
+.message {
+  min-height: var(--line-height-small);
+  color: var(--color-success);
+}
+
+.errorMessage {
+  color: var(--color-danger);
+}
+
+.compact {
+  margin: 0;
+}
+
+.compact .actions {
+  display: block;
+}
+
+.compact .message {
+  min-height: 0;
+  font-size: var(--font-size-label);
+  text-align: end;
+}
+
+@media (min-width: 40rem) {
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .compact .actions {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .secondaryLink {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .secondaryLink,
+  .quantityField input {
+    border-color: CanvasText;
+  }
+}

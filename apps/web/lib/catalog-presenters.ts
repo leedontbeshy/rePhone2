@@ -64,6 +64,11 @@ export function countPassingChecks(checks: readonly FunctionalCheck[]): number {
   return checks.filter((check) => check.status === 'PASS').length;
 }
 
+export function countAcceptableChecks(checks: readonly FunctionalCheck[]): number {
+  return checks.filter((check) => check.status === 'PASS' || check.status === 'NOT_APPLICABLE')
+    .length;
+}
+
 export function fulfillmentSummary(pickup: boolean, shipping: boolean): string {
   if (pickup && shipping) return 'Nhận tại cửa hàng hoặc giao hàng';
   if (pickup) return 'Nhận tại cửa hàng';

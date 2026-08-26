@@ -1,28 +1,32 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { CommerceActions } from '@/app/commerce-actions';
-import { ExactUnitCard } from '@/components/catalog/exact-unit-card';
+import { IphoneModelDetail } from '@/components/catalog/iphone-model-detail';
+import { ProductBreadcrumbs } from '@/components/catalog/product-detail-components';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Price, StatusChip } from '@/components/ui';
 import { CatalogApiError, getPublicProduct, isIphoneVariant } from '@/lib/catalog-api';
 import { fulfillmentSummary } from '@/lib/catalog-presenters';
+import { toModelUnitOfferSort } from '@/lib/model-unit-offers';
 import styles from './model.module.css';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { slug } = await params;
   try {
     const product = await getPublicProduct(slug);
+    if (product.productType === 'IPHONE') {
+      const query = await searchParams;
+      return <IphoneModelDetail product={product} sort={toModelUnitOfferSort(query['unitSort'])} />;
+    }
+
     return (
       <div className={styles.page}>
-        <nav className={styles.breadcrumbs} aria-label="Đường dẫn">
-          <Link href="/products">Sản phẩm</Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">{product.name}</span>
-        </nav>
+        <ProductBreadcrumbs productName={product.name} />
 
         <section className={styles.hero}>
           <div className={styles.modelMedia}>
@@ -35,35 +39,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
             />
           </div>
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>
-              {product.productType === 'IPHONE' ? 'Khám phá model iPhone' : 'Phụ kiện'}
-            </p>
+            <p className={styles.eyebrow}>Phụ kiện</p>
             <h1>{product.name}</h1>
             {product.description === null || product.description === undefined ? null : (
               <p className={styles.description}>{product.description}</p>
             )}
-            {product.productType === 'IPHONE' ? (
-              <dl className={styles.modelFacts}>
-                <Fact label="Năm ra mắt" value={product.releaseYear} />
-                <Fact label="Chip" value={product.chipset} />
-                <Fact
-                  label="RAM"
-                  value={
-                    product.ramGb === null || product.ramGb === undefined
-                      ? undefined
-                      : `${String(product.ramGb)} GB`
-                  }
-                />
-                <Fact
-                  label="Màn hình"
-                  value={
-                    product.screenSizeInches === null || product.screenSizeInches === undefined
-                      ? undefined
-                      : `${product.screenSizeInches} inch`
-                  }
-                />
-              </dl>
-            ) : null}
           </div>
         </section>
 
@@ -71,15 +51,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <header className={styles.sectionHeader}>
             <div>
               <p className={styles.eyebrow}>Lựa chọn hiện có</p>
-              <h2 id="available-options-title">
-                {product.productType === 'IPHONE'
-                  ? 'Chọn đúng chiếc máy đang bán'
-                  : 'Chọn biến thể phụ kiện'}
-              </h2>
+              <h2 id="available-options-title">Chọn biến thể phụ kiện</h2>
             </div>
-            {product.productType === 'IPHONE' ? (
-              <p>Giá, pin và tình trạng thuộc riêng từng mã máy.</p>
-            ) : null}
           </header>
 
           {product.variants.length === 0 ? (
@@ -90,34 +63,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           ) : (
             <div className={styles.variantList}>
-              {product.variants.map((variant) =>
-                isIphoneVariant(variant) ? (
-                  <article className={styles.iphoneVariant} key={variant.id}>
-                    <header className={styles.variantHeader}>
-                      <div>
-                        <h3>{variant.displayName}</h3>
-                        <p>{variant.sku}</p>
-                      </div>
-                      <StatusChip
-                        label={`${String(variant.warrantySummary.days)} ngày bảo hành`}
-                        tone="neutral"
-                      />
-                    </header>
-                    {variant.availableUnits.length === 0 ? (
-                      <p className={styles.unavailable}>Cấu hình này đang tạm hết máy.</p>
-                    ) : (
-                      <div className={styles.unitGrid}>
-                        {variant.availableUnits.map((unit) => (
-                          <ExactUnitCard
-                            key={unit.inventoryCode}
-                            productSlug={product.slug}
-                            unit={unit}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                ) : (
+              {product.variants.map((variant) => {
+                if (isIphoneVariant(variant)) return null;
+                return (
                   <article className={styles.accessoryVariant} key={variant.id}>
                     <PublicMediaImage
                       className={styles.accessoryImage}
@@ -158,8 +106,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       />
                     </div>
                   </article>
-                ),
-              )}
+                );
+              })}
             </div>
           )}
         </section>
