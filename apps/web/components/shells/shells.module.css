@@ -160,7 +160,12 @@
   scroll-margin-block-start: 8rem;
 }
 
-.storefrontFooter,
+.storefrontFooter {
+  border-block-start: 1px solid var(--color-border, #dce4ea);
+  color: var(--color-border-strong, #c7d2dc);
+  background: var(--color-ink, #0c1728);
+}
+
 .authFooter {
   border-block-start: 1px solid var(--color-border, #dce4ea);
   color: var(--color-muted, #667486);

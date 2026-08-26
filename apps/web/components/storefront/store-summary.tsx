@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { toPhoneHref } from '@/lib/contact-links';
 import type { PublicStore } from '@/lib/public-store-api';
 import styles from './store-summary.module.css';
 
@@ -90,11 +91,6 @@ export function StoreUnavailable() {
       </div>
     </section>
   );
-}
-
-function toPhoneHref(phone: string): string | null {
-  const normalized = phone.trim().replace(/[^+\d]/g, '');
-  return normalized.length === 0 ? null : `tel:${normalized}`;
 }
 
 function formatMinutes(minutes: number): string {
