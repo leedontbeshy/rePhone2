@@ -1,6 +1,6 @@
 # Kế hoạch provision rich catalog trước FE-2
 
-> Trạng thái: APPROVED
+> Trạng thái: COMPLETE
 > Ngày chốt: 2026-08-27
 > Target: Supabase đang được cấu hình trong `.env`
 > Phạm vi: dữ liệu minh họa phục vụ frontend; không mở rộng backend P0
@@ -79,5 +79,31 @@ Rerun không được thay đổi lifecycle, location, giá, identifier, inspect
 5. `feat(demo): provision rich catalog safely`
 6. `test(demo): cover rich catalog invariants`
 7. `docs(demo): record Supabase provisioning evidence`
+
+## 8. Evidence triển khai Supabase
+
+Nghiệm thu ngày 2026-08-27 trên target fingerprint `b5e017eaf09a`:
+
+- Lần apply đầu tạo 85 variant, reuse 5 variant thật có sẵn, tạo 96 unit `AVAILABLE`, reuse 143 object Storage đã upload và hard-delete đúng 44 placeholder an toàn.
+- Lần apply thứ hai tạo 0 variant, 0 unit, 0 object và xóa 0 placeholder; reuse đúng 90 variant, 96 unit và 143 object. Kết quả này xác nhận provisioner idempotent.
+- 47 ảnh model và 96 ảnh unit đều là WebP 1000×1000, có checksum riêng; asset fingerprint là `6ec33106fb271cb0d9fdf2aaada1ebd77dcbb48bdc075aa0f5d0e9f4b72201d5`.
+- Public catalog trả 50 product với pagination `20/20/10`: 47 iPhone và ba accessory.
+- Model `iphone-17` trả bốn unit `AVAILABLE`; exact-unit `RPH-IP17-256-MBL-U01` trả đầy đủ inspection, price và một unit-owned image. Public Storage HEAD trả `200 image/webp`.
+- Web SSR trả `200` và chứa rich-catalog asset tại `/`, `/products/iphone-17` và `/products/iphone-17/units/RPH-IP17-256-MBL-U01`.
+- Preservation guard hoàn tất mà không sửa chín unit và dữ liệu nghiệp vụ tồn tại ngoài manifest.
+
+Run journal local, không commit và không chứa secret:
+
+- `.local/rich-catalog/runs/2026-08-26T18-11-05-370Z.json`
+- `.local/rich-catalog/runs/2026-08-26T18-12-30-405Z.json`
+
+Quality evidence:
+
+- `pnpm format:check`: xanh.
+- ESLint trên năm file TypeScript thuộc rich-catalog: xanh.
+- `pnpm typecheck`: xanh.
+- `pnpm test`: xanh, gồm 103 file/604 test API và 28 file/99 test Web.
+- `pnpm build`: xanh; API và 29 page Web build thành công.
+- Root `pnpm lint` vẫn phát hiện 7.119 lỗi lịch sử trên generated/demo/integration files ngoài concern này; không dùng auto-fix hoặc trộn cleanup diện rộng vào rich-catalog. Các file mới/sửa của rich-catalog không còn lint error.
 
 Nguồn nghiệp vụ: [public catalog endpoints](../api/public-catalog-endpoints.md), [catalog/inventory data model](../data-model/catalog-inventory.md), [inspection checklist](../architecture/iphone-inspection-checklist.md), [seed/demo scenarios](seed-and-demo-scenarios.md), [testing strategy](../quality/testing-strategy.md) và [deployment runbook](../operations/local-development-and-deployment.md).
