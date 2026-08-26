@@ -4,6 +4,8 @@ import { installDeterministicPublicMedia } from './support/deterministic-public-
 
 const MODEL_PATH = '/products/iphone-14-pro';
 const EXACT_UNIT_PATH = `${MODEL_PATH}/units/IP14P-128-001`;
+const SOLD_OUT_MODEL_PATH = '/products/iphone-15-pro';
+const HOME_HEADING = 'Chọn iPhone phù hợp với bạn';
 const PUBLIC_ROUTES = [
   '/',
   '/products',
@@ -34,10 +36,17 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: 'Biết rõ chiếc máy trước khi xuống tiền.',
+        name: HOME_HEADING,
         exact: true,
       }),
     ).toBeVisible();
+    const soldOutModelLink = page
+      .locator(`main a[href="${SOLD_OUT_MODEL_PATH}"]`)
+      .filter({ hasText: 'iPhone 15 Pro' });
+    await expect(soldOutModelLink).toHaveCount(1);
+    await expect(soldOutModelLink).toBeVisible();
+    await expect(soldOutModelLink).toContainText('Tạm hết máy');
+    await expect(soldOutModelLink).toHaveAttribute('href', SOLD_OUT_MODEL_PATH);
 
     await page.goto('/products');
     await expect(page.getByText('iPhone 14 Pro', { exact: true })).toBeVisible();
@@ -162,6 +171,33 @@ test.describe('FE-1 storefront discovery', () => {
     }
   });
 
+  test('keeps generation shelves scrollable without overflowing the mobile document', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.goto('/');
+
+    const shelf = page.getByLabel('Các model thuộc iPhone 15', { exact: true });
+    await expect(shelf).toBeVisible();
+
+    const initialDimensions = await shelf.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(initialDimensions.scrollWidth).toBeGreaterThan(initialDimensions.clientWidth);
+
+    await shelf.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    expect(await shelf.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+
+    const documentDimensions = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
+  });
+
   test('keeps skip navigation keyboard-operable on the canonical dossier', async ({ page }) => {
     await page.goto(EXACT_UNIT_PATH);
     await page.keyboard.press('Tab');
@@ -243,7 +279,7 @@ async function expectPublicRouteMarker(
       await expect(
         page.getByRole('heading', {
           level: 1,
-          name: 'Biết rõ chiếc máy trước khi xuống tiền.',
+          name: HOME_HEADING,
           exact: true,
         }),
       ).toBeVisible();
