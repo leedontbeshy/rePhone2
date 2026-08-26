@@ -724,7 +724,9 @@ async function provisionMasterData(
 }> {
   return prisma.$transaction(
     async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${TRANSACTION_LOCK_NAME}))`;
+      await transaction.$queryRaw<{ locked: string | null }[]>`
+        SELECT pg_advisory_xact_lock(hashtext(${TRANSACTION_LOCK_NAME}))::text AS "locked"
+      `;
       const productSlugs = uniqueSorted(RICH_IPHONE_VARIANTS.map(({ productSlug }) => productSlug));
       const products = await transaction.product.findMany({
         where: { slug: { in: productSlugs } },
@@ -897,7 +899,9 @@ async function provisionAvailableUnits(
   )) {
     const batchResult = await prisma.$transaction(
       async (transaction) => {
-        await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${TRANSACTION_LOCK_NAME}))`;
+        await transaction.$queryRaw<{ locked: string | null }[]>`
+          SELECT pg_advisory_xact_lock(hashtext(${TRANSACTION_LOCK_NAME}))::text AS "locked"
+        `;
         let batchCreated = 0;
         let batchReused = 0;
         for (const definition of batch) {
@@ -1814,6 +1818,30 @@ function writeSafeEvent(value: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
+function safeFailureDiagnostic(error: unknown): Record<string, string> {
+  if (!(error instanceof Error)) return { errorType: 'UnknownError' };
+  const diagnostic: Record<string, string> = { errorType: error.name };
+  if (
+    isRecord(error) &&
+    typeof error['code'] === 'string' &&
+    /^[A-Z0-9_]{2,32}$/.test(error['code'])
+  ) {
+    diagnostic['errorCode'] = error['code'];
+  }
+  const reason = error.message
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .at(-1);
+  if (
+    reason !== undefined &&
+    !/(password|secret|token|credential|postgres(?:ql)?:\/\/)/i.test(reason)
+  ) {
+    diagnostic['reason'] = reason.replaceAll(/https?:\/\/\S+/g, '[url]').slice(0, 240);
+  }
+  return diagnostic;
+}
+
 function isMainModule(): boolean {
   const entrypoint = process.argv[1];
   return entrypoint !== undefined && import.meta.url === pathToFileURL(resolve(entrypoint)).href;
@@ -1827,7 +1855,9 @@ if (isMainModule()) {
       error instanceof RichCatalogProvisionError
         ? error.message
         : 'Rich catalog provisioning failed with an unexpected internal error.';
-    process.stderr.write(`${JSON.stringify({ status: 'failed', message })}\n`);
+    process.stderr.write(
+      `${JSON.stringify({ status: 'failed', message, ...safeFailureDiagnostic(error) })}\n`,
+    );
     process.exitCode = 1;
   }
 }

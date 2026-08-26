@@ -376,6 +376,8 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
       where: {
         productId: product.id,
         inventoryMode: 'SERIALIZED',
+        status: 'ACTIVE',
+        archivedAt: null,
         NOT: { sku: { startsWith: 'CATALOG-' } },
       },
       select: { id: true },
