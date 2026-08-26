@@ -1,4 +1,4 @@
-# rePhone Web Design System & UX Contract v1.1
+# rePhone Web Design System & UX Contract v1.2
 
 > Trạng thái tài liệu: **APPROVED**  
 > Phạm vi: **Post-P0 / P1 frontend refinement**  
@@ -11,6 +11,15 @@
 ![Reference đã duyệt — Retail Catalog Rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png)
 
 > Mockup trên khóa hướng discovery **Retail Catalog Rows**: header gọn, sản phẩm xuất hiện trước, một hàng cho mỗi thế hệ và card model dễ quét. Nó không phải nguồn cho dữ liệu, chính sách hoặc microcopy. Giá, tình trạng máy và model phải đến từ public catalog; các claim minh họa như “36 bước”, “đã gồm VAT”, “2 chi nhánh”, “7 ngày đổi trả”, miễn phí giao hàng hoặc ETA không được đưa vào sản phẩm nếu chưa có contract/settings tương ứng.
+
+Hai mockup sau là canonical presentation reference cho hai route storefront chi tiết:
+
+| Route pattern                            | Reference đã duyệt                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `/products/[slug]`                       | [Model detail canonical reference](docs/assets/ui/rephone-model-detail-canonical-reference.png)           |
+| `/products/[slug]/units/[inventoryCode]` | [Exact-unit detail canonical reference](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) |
+
+Chúng khóa hierarchy, density, layout, typography, surface, gallery, card và action placement; chúng không thay thế backend contract. Text, giá, tình trạng, thông số, chính sách và số lượng kiểm định trong ảnh chỉ được triển khai khi có nguồn authority tương ứng.
 
 ## 1. Mục đích và cách sử dụng
 
@@ -57,7 +66,8 @@ Thứ tự ưu tiên khi có khác biệt:
 3. `design.md` quyết định presentation/interaction khi contract không quy định.
 4. `plan-fe.md` quyết định thứ tự, trạng thái và evidence triển khai.
 5. CSS/component hiện hành là implementation; không tự trở thành contract chỉ vì đã tồn tại.
-6. Mockup và website tham khảo chỉ là inspiration, không phải requirement.
+6. Ba mockup nội bộ đã duyệt trong §25.1 là canonical presentation reference cho đúng surface được ghi; chúng không được override contract ở mục 1–4.
+7. Website bên ngoài, mockup lịch sử và reference chưa được duyệt chỉ là inspiration, không phải requirement.
 
 ### 2.1 Contract-source map
 
@@ -97,12 +107,13 @@ Giao diện phải tạo cảm giác:
 
 Không định vị rePhone như marketplace. Một sản phẩm không có seller card, seller rating hoặc chính sách khác nhau theo người bán.
 
-## 4. Visual direction — Retail Catalog + Technical Evidence
+## 4. Visual direction — Retail Commerce + Technical Evidence
 
-Hướng đã duyệt là **Option 1 — Retail Catalog Rows** cho discovery, kết hợp **Technical Editorial** cho hồ sơ exact unit. Hai ngôn ngữ này dùng chung token nhưng giải quyết hai nhiệm vụ khác nhau:
+Hướng đã duyệt là **Retail Catalog Rows** cho discovery, kết hợp hierarchy mua hàng retail rõ ràng và **Technical Evidence** cho model/exact unit. Ba surface dùng chung token, header, footer, panel, action và nhịp typography nhưng giải quyết các nhiệm vụ khác nhau:
 
 - Home/catalog giúp khách nhận diện và chọn model nhanh như một cửa hàng điện thoại Việt Nam quen thuộc.
-- Exact-unit detail chuyển sang nhịp hồ sơ để khách kiểm tra bằng chứng của đúng chiếc máy sẽ mua.
+- Model detail giúp khách hiểu model rồi quét nhanh các máy vật lý đang bán.
+- Exact-unit detail giữ nhịp mua hàng quen thuộc nhưng đưa bằng chứng của đúng chiếc máy lên trước cross-sell.
 - Customer portal giữ sự rõ ràng của retail; backoffice giữ mật độ vận hành cao.
 
 Đặc trưng chung:
@@ -123,7 +134,15 @@ Hướng đã duyệt là **Option 1 — Retail Catalog Rows** cho discovery, k�
 - Card dùng surface sáng, radius/border nhẹ, ít metadata và không lặp badge trang trí.
 - Chỉ một trust strip ngắn được phép xuất hiện sau catalog; không lặp các khối giải thích `01–04` hoặc slogan ở nhiều section.
 
-### 4.2 Exact unit và customer portal — Technical Editorial
+### 4.2 Model detail và exact-unit — canonical retail evidence
+
+[Model detail mockup](docs/assets/ui/rephone-model-detail-canonical-reference.png) và [exact-unit detail mockup](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) là canonical reference cho hierarchy và visual language của hai route tương ứng.
+
+- Model detail dùng gallery minh họa, model facts và grid các exact unit đang bán. Model image luôn có nhãn phân biệt với ảnh của máy vật lý.
+- Exact-unit detail dùng gallery ảnh thật, purchase rail, product/unit facts, inspection evidence và các máy khác cùng dòng khi public contract cung cấp đủ dữ liệu.
+- Storefront còn lại kế thừa header/footer gọn, canvas sáng, panel trắng, border/shadow nhẹ, teal action, icon outline, giá dễ quét và khoảng cách của hai mockup.
+- Mockup là target về presentation, không phải fixture dữ liệu. Thành phần không có authority phải được bỏ, thay bằng dữ kiện hợp lệ hoặc dùng trạng thái trống phù hợp.
+- Không được giảm full inspection evidence thành vài dòng minh họa. Có thể đặt summary theo mockup ở trước, nhưng toàn bộ checklist public vẫn phải truy cập được.
 
 - Ảnh exact unit là visual chính của trang mua hàng.
 - Layout rộng nhưng có reading width rõ.
@@ -135,6 +154,8 @@ Hướng đã duyệt là **Option 1 — Retail Catalog Rows** cho discovery, k�
 ### 4.3 Backoffice
 
 - Dùng cùng token, typography và status semantics với storefront.
+- Chỉ kế thừa visual token, component primitive, focus/feedback semantics và authoritative action hierarchy từ hai mockup canonical.
+- Không sao chép gallery mua hàng, purchase card, recommendation rail hoặc grid retail sang queue/detail vận hành.
 - Mật độ cao hơn, ưu tiên scan, filter, queue, timeline và action.
 - Desktop dùng sidebar + top bar + content fluid.
 - Table/list không được biến thành hàng chục card trang trí.
@@ -217,6 +238,10 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 - Không dùng review/rating, loyalty hoặc recommendation engine trong scope hiện tại.
 - Không suy diễn số lượng tồn exact unit hoặc location nội bộ.
 - Claim từ `StoreSettings` phải đọc runtime và có fallback an toàn.
+- Không hard-code “kiểm tra kỹ thuật 20 bước”; số hạng mục và kết quả phải lấy từ `functionalChecks` hiện hành.
+- Không dùng claim “đổi trả trong 15 ngày” khi contract/settings chưa cung cấp chính sách đổi trả public tương ứng.
+- Không suy diễn `shipping=true` thành “giao hàng toàn quốc”; chỉ mô tả đúng fulfillment availability public.
+- Không hiển thị camera, chuẩn kháng nước/IP, phiên bản hệ điều hành, kết nối hoặc thông số kỹ thuật khác chỉ vì chúng xuất hiện trong mockup. Mỗi thông số phải có field public hoặc source contract/settings rõ ràng.
 
 ## 6. Information architecture và role navigation
 
@@ -578,13 +603,19 @@ Semantic/responsive contract:
 
 ### 12.3 Model detail
 
+- [Model detail canonical reference](docs/assets/ui/rephone-model-detail-canonical-reference.png) khóa hierarchy desktop, density, gallery, model fact cards và exact-unit card language cho `/products/[slug]`.
 - Model facts tách khỏi danh sách máy vật lý.
+- Các `availableUnits` có thể được flatten từ variants thành một grid; mỗi card phải giữ variant context như storage/color và không được xuất hiện hai lần.
 - `availableUnits` có thể filter/sort local theo dữ liệu response hiện có.
+- Không hiển thị sort “Mới nhất” nếu public DTO không có timestamp/field tạo ra ordering đó.
 - Mỗi exact-unit row/card có CTA `Xem máy này`.
 - Model tạm hết vẫn có detail page và empty state `Tạm hết máy`; không tự redirect hoặc giả thành `404`.
 - Không N+1 gọi unit detail để bù field thiếu trong list.
+- Gallery model dùng `product.media`; không lấy ảnh exact unit làm ảnh minh họa model nếu backend không gắn media đó ở product boundary.
 
 ### 12.4 Exact-unit detail — canonical
+
+[Exact-unit detail canonical reference](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) khóa hierarchy desktop, gallery/purchase rail, fact matrix, inspection summary và related-unit card language cho `/products/[slug]/units/[inventoryCode]`.
 
 Desktop:
 
@@ -593,9 +624,10 @@ Breadcrumb
 ┌─────────────────────────────┬─────────────────────┐
 │ Actual-unit gallery 7/12    │ Purchase rail 5/12  │
 └─────────────────────────────┴─────────────────────┘
-Trust/fulfillment strip
-Inspection dossier full width
-Condition / repair / identifier / warranty
+Authoritative product/unit fact matrix
+Inspection summary + full public dossier
+Condition / repair / masked identifier / warranty
+Other available units of the same model, when contract data exists
 ```
 
 Mobile order:
@@ -610,6 +642,12 @@ Mobile order:
 8. Related available units nếu có contract.
 
 Sticky purchase bar chỉ xuất hiện sau khi CTA gốc rời viewport và không che focus/content.
+
+- Badge `Ảnh thật · Mã máy {inventoryCode}` vẫn bắt buộc dù mockup không thể hiện đầy đủ microcopy contract.
+- Màu của exact unit là thuộc tính read-only của đúng máy đó. Không dựng nhiều swatch có vẻ selectable nếu không có navigation/data hợp lệ sang unit khác.
+- Related section là tập máy khác cùng model dựa trên catalog public, không được trình bày như recommendation cá nhân hóa.
+- Nếu cần bổ sung model facts hoặc related units, page có thể đọc `getPublicProduct(slug)` một lần; không gọi detail cho từng unit.
+- Số kiểm định, warranty, fulfillment, giá, pin, condition và specs đều phải lấy từ public projection; các claim minh họa bị cấm ở §5.4 không được dùng để lấp khoảng trống.
 
 ### 12.5 Store
 
@@ -899,10 +937,21 @@ Không dùng design debt để hợp thức hóa security hoặc contract violat
 | 2026-08-26 | Option 1 — Retail Catalog Rows cho discovery   | Manifesto hero; editorial index; retail quá dày | Sản phẩm xuất hiện trước, quen với người mua Việt Nam nhưng vẫn bình tĩnh |
 | 2026-08-26 | Home group model theo generation động          | Flat grid; hard-code iPhone 5–17                | Phản ánh catalog thật, hỗ trợ model tạm hết và không tạo dữ liệu giả      |
 | 2026-08-26 | Server-first + domain component composition    | Page nguyên khối; generic component nhiều cờ    | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain    |
+| 2026-08-26 | Hai detail mockup là canonical storefront ref  | Giữ layout detail cũ; áp retail card vào BO     | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy |
 
 Decision log này chỉ ghi quyết định presentation/interaction. Không sửa hoặc thay thế ADR nghiệp vụ.
 
-## 25. Visual references — non-authoritative
+## 25. Visual references
+
+### 25.1 Approved internal canonical references
+
+- [Retail catalog rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png): canonical hierarchy cho home/catalog discovery.
+- [Model detail](docs/assets/ui/rephone-model-detail-canonical-reference.png): canonical hierarchy và visual language cho `/products/[slug]`.
+- [Exact-unit detail](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png): canonical hierarchy và visual language cho `/products/[slug]/units/[inventoryCode]`.
+
+Các ảnh này có authority về presentation trong phạm vi route được ghi, sau `docs`, OpenAPI/generated client và quy tắc security. Nội dung minh họa bên trong ảnh không tự trở thành product/API contract. [Technical Editorial reference cũ](docs/assets/ui/rephone-technical-editorial-reference.png) chỉ còn là historical context cho evidence tone, không quyết định layout detail hiện hành.
+
+### 25.2 External references — non-authoritative
 
 - [Thegioididong iPhone](https://www.thegioididong.com/dtdd-apple-iphone): generation/category scan và retail hierarchy quen thuộc.
 - [CellphoneS iPhone](https://cellphones.com.vn/mobile/apple.html): product shelf, giá và navigation trong bối cảnh Việt Nam.
@@ -923,5 +972,6 @@ Không sao chép logo, asset, content hoặc layout nguyên bản từ các ngu�
 
 | Version | Ngày       | Thay đổi                                                                                                   |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `1.2`   | 2026-08-26 | Khóa model/exact-unit mockup canonical, storefront visual language, backoffice boundary và claim guardrail |
 | `1.1`   | 2026-08-26 | Chọn Retail Catalog Rows cho home/catalog; khóa generation shelf, sold-out state và component architecture |
 | `1.0`   | 2026-08-25 | Khóa Technical Editorial, full web scope, tokens, patterns, accessibility, security và governance          |
