@@ -469,6 +469,10 @@ Route page/layout (orchestration, metadata, server fetch)
 - `StorefrontHeader`, `MobileNavSheet`, `BackofficeSidebar`, `TopBar`.
 - `SearchField`, `Breadcrumbs`, `Pagination`, `Tabs`.
 - `HeaderSessionActions` và `CartBadge` là client islands.
+- `StorefrontFooter` là domain component dùng chung cho mọi route storefront, gồm bốn vùng rõ ràng: giới thiệu thương hiệu, dòng iPhone, khám phá và liên hệ; không dồn toàn bộ link thành một hàng hoặc card soup.
+- Nhóm dòng máy chỉ deep-link tới catalog bằng public query contract. Baseline gồm `iPhone X`, `11`, `12`, `13`, `14`, `15`, `16`, `17`; link mở cả family, không giả định một exact unit còn hàng.
+- Tên, số điện thoại và địa chỉ lấy từ public store projection. Provider lỗi không được làm mất navigation footer hoặc khiến route storefront trả lỗi.
+- Email và social profile là public frontend configuration, chỉ render khi hợp lệ. Social URL phải dùng HTTPS, mở tab mới với `noopener noreferrer`; không hard-code credential, private path hoặc URL chưa được xác nhận trong component. Local development được dùng profile demo đã khai báo tập trung; production thiếu config thì ẩn link thay vì dùng demo fallback.
 
 ### 10.4 Product discovery và exact unit
 
