@@ -647,6 +647,85 @@ Sticky purchase bar chỉ xuất hiện sau khi CTA gốc rời viewport và kh�
 - Nếu cần bổ sung model facts hoặc related units, page có thể đọc `getPublicProduct(slug)` một lần; không gọi detail cho từng unit.
 - Số kiểm định, warranty, fulfillment, giá, pin, condition và specs đều phải lấy từ public projection; các claim minh họa bị cấm ở §5.4 không được dùng để lấp khoảng trống.
 
+#### 12.4.1 Exact-unit condition refinement
+
+Mục tiêu đã xác nhận:
+
+- Giữ gallery ảnh thật lớn làm bằng chứng chính; không thu nhỏ ảnh chỉ để cân chiều cao hai cột.
+- Bổ sung panel `Tình trạng của máy` trong purchase rail để giúp khách ra quyết định và giảm khoảng trống có chủ đích.
+- Panel dùng ngôn ngữ bán lẻ dễ hiểu, không đưa checklist hoặc chi tiết nghiệp vụ kiểm định của nhân viên vào purchase rail.
+- Fact matrix được chia thành `Cấu hình` và `Thông tin riêng của máy` thay vì một danh sách phẳng dễ thưa dữ liệu.
+- Compact inspection summary phía dưới vẫn hiển thị tối đa năm kết quả public-safe nhưng không dùng cách viết `5/18`.
+
+Desktop anatomy:
+
+```text
+Purchase rail
+├── Grade, pin, model và configuration
+├── Color navigation
+├── Price, fulfillment và purchase actions
+├── UnitConditionSummary
+│   ├── Ngoại hình
+│   ├── Pin
+│   └── Lịch sử sửa chữa
+└── Price/inventory authority note
+```
+
+`UnitConditionSummary` mapping:
+
+| Dòng             | Nguồn public                                                              | Quy tắc trình bày                                               |
+| ---------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Ngoại hình       | `conditionGrade`, `cosmeticNotes?`                                        | Luôn có Grade; chỉ thêm ghi chú khi có nội dung                 |
+| Pin              | `batteryHealthPercent?`, `batteryCycleCount?`, `batteryReplacementStatus` | Ghép các giá trị hiện hữu; không suy đoán phần trăm hoặc chu kỳ |
+| Lịch sử sửa chữa | `repairHistoryStatus`                                                     | Dùng label tổng quát; `UNKNOWN` phải thành `Chưa đủ thông tin`  |
+
+Không render `functionalChecks`, số hạng mục, `repairNotes`, `replacedParts`, identifier hoặc dữ liệu nhân viên trong panel này. Panel là Server Component/presentational component, không thêm client state hay API call.
+
+Fact matrix gồm hai nhóm:
+
+- `Cấu hình`: năm ra mắt, chip, màn hình, RAM, dung lượng và màu sắc.
+- `Thông tin riêng của máy`: mã máy, mã model, thị trường, cấu hình SIM, khóa mạng, pin/chu kỳ, tình trạng linh kiện pin, Grade, lịch sử sửa chữa và bảo hành.
+
+Field null/blank được bỏ có chủ đích, không hiển thị `—`, placeholder hoặc claim phỏng đoán. `carrierName` chỉ hiện khi có giá trị. `cosmeticNotes` thuộc panel tình trạng và không lặp lại trong matrix. Chip, RAM, màn hình, model number hoặc region còn thiếu phải được bổ sung ở data concern có nguồn; UI không tự dựng.
+
+Copy cho compact inspection summary:
+
+```text
+Eyebrow: KIỂM TRA TRƯỚC KHI BÁN
+Title: Máy đã được kiểm tra kỹ thuật
+Body: Các kết quả tiêu biểu dưới đây được ghi nhận riêng cho máy mã {inventoryCode}.
+```
+
+Năm kết quả public-safe hiện hành được giữ nguyên. Không dùng phân số `5/18`, không mở full checklist và không biến summary thành hồ sơ vận hành.
+
+Component boundary:
+
+```text
+UnitDossier
+├── ActualUnitGallery
+├── PurchaseRail → UnitConditionSummary
+├── UnitSpecificationGroups
+├── PublicInspectionSummary
+└── RelatedUnitOffers
+```
+
+Normalization nằm trong pure presenter (`buildUnitConditionSummary`, `buildUnitSpecificationGroups`) và có unit test; route/page không chứa mapping enum hoặc fallback copy. Desktop dùng ba cột cho fact matrix, tablet hai cột và mobile một cột. Trên mobile, panel nằm sau purchase actions và trước authority note; mobile purchase bar không lặp lại nội dung tình trạng.
+
+Acceptance:
+
+- Không phát sinh request mới, client island mới hoặc N+1; SSR và LCP gallery hiện hành được giữ.
+- Kiểm tra dữ liệu đầy đủ, pin/cosmetic note/cycle bị thiếu và repair history `UNKNOWN`.
+- Visual QA ở 1440px, 390px và 320px; keyboard, zoom 200% và WCAG 2.2 AA.
+- Regression gallery, CTA, cart, wishlist, five-result summary và related units.
+- DOM/log không chứa cost, raw identifier, internal note, repair detail, replaced parts hoặc dữ liệu nhân viên.
+
+Decision log:
+
+- Chọn panel evidence A1 thay vì giảm gallery, metric-card dashboard hoặc disclosure.
+- Panel purchase rail không chứa inspection/checklist; năm kết quả kỹ thuật tiếp tục ở section riêng.
+- Fact matrix chia hai nhóm và chỉ render dữ liệu contract-backed.
+- Không đổi API; enrich product/unit demo metadata là concern dữ liệu riêng.
+
 ### 12.5 Store
 
 - Dùng duy nhất public-safe store projection.
@@ -971,6 +1050,7 @@ Không sao chép logo, asset, content hoặc layout nguyên bản từ các ngu�
 
 | Version | Ngày       | Thay đổi                                                                                                   |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                          |
 | `1.3`   | 2026-08-26 | Rút exact-unit storefront về inspection summary; bỏ full checklist, repair và identifier dossier           |
 | `1.2`   | 2026-08-26 | Khóa model/exact-unit mockup canonical, storefront visual language, backoffice boundary và claim guardrail |
 | `1.1`   | 2026-08-26 | Chọn Retail Catalog Rows cho home/catalog; khóa generation shelf, sold-out state và component architecture |
