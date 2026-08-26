@@ -235,6 +235,33 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.locator('main')).toBeFocused();
   });
 
+  test('recovers an unavailable exact unit back to its model', async ({ page }) => {
+    const response = await page.goto(`${MODEL_PATH}/units/UNKNOWN-UNIT`);
+
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Chiếc máy này hiện không còn bán' }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Xem các máy cùng dòng' })).toHaveAttribute(
+      'href',
+      MODEL_PATH,
+    );
+  });
+
+  test('hides the mobile purchase bar before it can cover the footer', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(EXACT_UNIT_PATH);
+
+    await page.locator('#unit-purchase-actions').scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      window.scrollBy({ top: 900 });
+    });
+    await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toBeVisible();
+
+    await page.locator('footer').scrollIntoViewIfNeeded();
+    await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toHaveCount(0);
+  });
+
   test('captures the canonical model and exact-unit details at desktop and mobile', async ({
     page,
   }) => {
@@ -297,14 +324,11 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(
     page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
   ).toBeVisible();
-  const identifierDisclosure = page.locator('details').filter({
-    has: page.getByText('Định danh đã che', { exact: true }),
-  });
-  if (!(await identifierDisclosure.evaluate((element) => (element as HTMLDetailsElement).open))) {
-    await identifierDisclosure.locator('summary').click();
-  }
-  await expect(page.getByText('•••• 2801', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-inspection-check]')).toHaveCount(18);
+  await expect(page.getByText('Dữ kiện của đúng máy này', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Kết quả đầy đủ', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Xem toàn bộ kết quả kiểm tra', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-inspection-summary-check]')).toHaveCount(5);
+  await expect(page.locator('[data-inspection-check]')).toHaveCount(0);
 }
 
 async function expectPublicRouteMarker(
