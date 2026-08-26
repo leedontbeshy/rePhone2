@@ -119,7 +119,7 @@ export function validateAppleIphoneModelSources(
 ): void {
   if (sources.length !== EXPECTED_MODEL_SOURCE_COUNT) {
     throw new Error(
-      `Expected ${EXPECTED_MODEL_SOURCE_COUNT} Apple iPhone model sources, received ${sources.length}.`,
+      `Expected ${String(EXPECTED_MODEL_SOURCE_COUNT)} Apple iPhone model sources, received ${String(sources.length)}.`,
     );
   }
 
