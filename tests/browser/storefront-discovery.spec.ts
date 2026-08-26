@@ -51,7 +51,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(soldOutModelLink).toContainText('Tạm hết máy');
     await expect(soldOutModelLink).toHaveAttribute('href', SOLD_OUT_MODEL_PATH);
 
-    await page.goto('/products');
+    await page.goto('/products?q=iPhone+14+Pro');
     await expect(page.getByText('iPhone 14 Pro', { exact: true })).toBeVisible();
 
     const modelLink = page.locator(`main a[href="${MODEL_PATH}"]`).first();
@@ -319,7 +319,7 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('128 GB · 6 GB RAM', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('Space Black', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
-  await expect(page.getByText('Grade A', { exact: true }).filter({ visible: true })).toBeVisible();
+  await expect(purchaseRail.getByText('Grade A', { exact: true })).toBeVisible();
   await expect(page.getByText('Pin 93%', { exact: true })).toBeVisible();
   await expect(
     page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
@@ -327,6 +327,31 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('Dữ kiện của đúng máy này', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Kết quả đầy đủ', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Xem toàn bộ kết quả kiểm tra', { exact: true })).toHaveCount(0);
+
+  const conditionSummary = page.getByLabel('Tình trạng của máy');
+  await expect(conditionSummary).toBeVisible();
+  await expect(conditionSummary.locator('[data-condition-key]')).toHaveCount(3);
+  await expect(conditionSummary.getByText('Ngoại hình', { exact: true })).toBeVisible();
+  await expect(conditionSummary.getByText('Lịch sử sửa chữa', { exact: true })).toBeVisible();
+
+  await expect(page.locator('[data-specification-group="configuration"]')).toBeVisible();
+  await expect(page.locator('[data-specification-group="unit"]')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 3, name: 'Cấu hình' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Thông tin riêng của máy' }),
+  ).toBeVisible();
+
+  await expect(page.getByText('Kiểm tra trước khi bán', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Máy đã được kiểm tra kỹ thuật' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Các kết quả tiêu biểu dưới đây được ghi nhận riêng cho máy mã IP14P-128-001.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText(/\b5\/18\b/)).toHaveCount(0);
+  await expect(page.getByText(/18 hạng mục/i)).toHaveCount(0);
   await expect(page.locator('[data-inspection-summary-check]')).toHaveCount(5);
   await expect(page.locator('[data-inspection-check]')).toHaveCount(0);
 }
@@ -346,7 +371,9 @@ async function expectPublicRouteMarker(
       ).toBeVisible();
       return;
     case '/products':
-      await expect(page.locator(`main a[href="${MODEL_PATH}"]`).first()).toBeVisible();
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Tìm iPhone và phụ kiện' }),
+      ).toBeVisible();
       return;
     case MODEL_PATH:
       await expect(page.locator(`main a[href="${EXACT_UNIT_PATH}"]`).first()).toBeVisible();
