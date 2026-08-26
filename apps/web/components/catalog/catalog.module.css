@@ -221,23 +221,6 @@
   background: rgb(255 255 255 / 92%);
 }
 
-.media {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  background: var(--color-surface-subtle);
-}
-
-.mediaFallback {
-  display: grid;
-  place-items: center;
-  padding: var(--space-6);
-  color: var(--color-muted);
-  font-size: var(--font-size-small);
-  text-align: center;
-}
-
 .productCardBody,
 .unitCardBody {
   display: grid;

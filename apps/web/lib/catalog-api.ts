@@ -29,6 +29,22 @@ export async function listPublicProducts(query: CatalogListQuery) {
   return result.data;
 }
 
+export async function listAllPublicProducts(
+  query: Omit<CatalogListQuery, 'page' | 'pageSize'>,
+): Promise<readonly ProductListItem[]> {
+  const pageSize = 100;
+  const firstPage = await listPublicProducts({ ...query, page: 1, pageSize });
+  const totalPages = firstPage.meta.pagination.totalPages;
+  if (totalPages <= 1) return firstPage.data;
+
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, index) =>
+      listPublicProducts({ ...query, page: index + 2, pageSize }),
+    ),
+  );
+  return [firstPage, ...remainingPages].flatMap((page) => page.data);
+}
+
 export async function getPublicProduct(slug: string): Promise<ProductDetail> {
   const result = await catalogClient.GET('/api/v1/products/{slug}', {
     params: { path: { slug } },

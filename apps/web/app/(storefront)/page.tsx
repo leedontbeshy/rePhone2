@@ -1,32 +1,23 @@
 import type { Metadata } from 'next';
 import { Home } from '@/components/storefront/home';
-import { listPublicProducts } from '@/lib/catalog-api';
-import { getPublicStore } from '@/lib/public-store-api';
+import { listAllPublicProducts } from '@/lib/catalog-api';
 
 export const metadata: Metadata = {
-  title: 'rePhone — Biết rõ chiếc máy trước khi xuống tiền',
+  title: 'rePhone — Chọn dòng iPhone',
   description:
-    'Khám phá iPhone cũ theo từng máy với ảnh, pin, ngoại hình và hồ sơ kiểm định công khai.',
+    'Khám phá các dòng iPhone và xem giá thấp nhất từ những chiếc máy đang có sẵn tại rePhone.',
 };
 
 export default async function HomePage() {
-  const [catalogResult, storeResult] = await Promise.allSettled([
-    listPublicProducts({
+  try {
+    const products = await listAllPublicProducts({
       productType: 'IPHONE',
-      inStock: true,
-      page: 1,
-      pageSize: 6,
-      sortBy: 'name',
-      sortOrder: 'asc',
-    }),
-    getPublicStore(),
-  ]);
+      sortBy: 'releaseYear',
+      sortOrder: 'desc',
+    });
 
-  return (
-    <Home
-      products={catalogResult.status === 'fulfilled' ? catalogResult.value.data : []}
-      catalogUnavailable={catalogResult.status === 'rejected'}
-      store={storeResult.status === 'fulfilled' ? storeResult.value : undefined}
-    />
-  );
+    return <Home products={products} catalogUnavailable={false} />;
+  } catch {
+    return <Home products={[]} catalogUnavailable />;
+  }
 }

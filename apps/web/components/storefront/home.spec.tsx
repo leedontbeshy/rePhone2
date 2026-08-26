@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { ProductListItem } from '@/lib/catalog-api';
-import type { PublicStore } from '@/lib/public-store-api';
 import { Home } from './home';
 
 const product = {
@@ -23,42 +22,38 @@ const product = {
   storageOptions: [128, 256],
 } satisfies ProductListItem;
 
-const store = {
-  currency: 'VND',
-  pickup: {
-    address: '123 Nguyễn Văn A, TP.HCM',
-    holdMinutes: 120,
-    locationName: 'rePhone Quận 1',
-  },
-  storeAddress: '123 Nguyễn Văn A, TP.HCM',
-  storeName: 'rePhone',
-  storePhone: '0901 234 567',
-  timezone: 'Asia/Ho_Chi_Minh',
-} satisfies PublicStore;
+const soldOutProduct = {
+  ...product,
+  id: '22222222-2222-4222-8222-222222222222',
+  inStock: false,
+  name: 'iPhone 15 Pro',
+  price: {},
+  releaseYear: 2023,
+  slug: 'iphone-15-pro',
+} satisfies ProductListItem;
 
 describe('FE-1 storefront home', () => {
-  it('separates model discovery from exact-unit evidence', () => {
+  it('renders generation shelves with authoritative price and sold-out states', () => {
     const markup = renderToStaticMarkup(
-      <Home products={[product]} catalogUnavailable={false} store={store} />,
+      <Home products={[product, soldOutProduct]} catalogUnavailable={false} />,
     );
 
-    expect(markup).toContain('<h1 id="home-title">Biết rõ chiếc máy trước khi xuống tiền.</h1>');
-    expect(markup).toContain('Ảnh dòng máy');
+    expect(markup).toContain('<h1>Chọn iPhone phù hợp với bạn</h1>');
+    expect(markup).toContain('<h2 id="iphone-15-heading">iPhone 15</h2>');
+    expect(markup).toContain('<h2 id="iphone-13-heading">iPhone 13</h2>');
     expect(markup).toContain('href="/products/iphone-13"');
+    expect(markup).toContain('href="/products/iphone-15-pro"');
     expect(markup).toContain('12.500.000');
-    expect(markup).toContain('rePhone Quận 1');
+    expect(markup).toContain('Tạm hết máy');
+    expect(markup).toContain('Ảnh thật từng máy');
     expect(markup).not.toContain('36 bước');
     expect(markup).not.toContain('đã bao gồm VAT');
   });
 
-  it('keeps a useful server-rendered state when catalog and store providers fail', () => {
-    const markup = renderToStaticMarkup(
-      <Home products={[]} catalogUnavailable={true} store={undefined} />,
-    );
+  it('keeps a useful server-rendered state when the catalog provider fails', () => {
+    const markup = renderToStaticMarkup(<Home products={[]} catalogUnavailable />);
 
-    expect(markup).toContain('Catalog đang tạm gián đoạn');
-    expect(markup).toContain('Chưa tải được thông tin cửa hàng');
-    expect(markup).toContain('href="/products"');
-    expect(markup).toContain('href="/store"');
+    expect(markup).toContain('Danh mục đang tạm gián đoạn');
+    expect(markup).toContain('href="/"');
   });
 });

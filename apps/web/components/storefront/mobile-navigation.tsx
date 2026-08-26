@@ -4,20 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce } from '@/app/commerce-provider';
+import { STOREFRONT_NAVIGATION } from './storefront-navigation';
 import styles from './mobile-navigation.module.css';
-
-const NAVIGATION_ITEMS = [
-  {
-    href: '/products?productType=IPHONE&inStock=true',
-    label: 'Máy đã kiểm định',
-  },
-  {
-    href: '/products?productType=ACCESSORY&inStock=true',
-    label: 'Phụ kiện',
-  },
-  { href: '/#quy-trinh', label: 'Quy trình' },
-  { href: '/store', label: 'Cửa hàng' },
-] as const;
 
 export function MobileNavigation() {
   const { status, user } = useAuth();
@@ -119,7 +107,7 @@ export function MobileNavigation() {
 
             <nav aria-label="Điều hướng storefront trên di động">
               <ul className={styles.navigationList}>
-                {NAVIGATION_ITEMS.map((item) => (
+                {STOREFRONT_NAVIGATION.map((item) => (
                   <li key={item.href}>
                     <Link href={item.href} onClick={closeNavigation}>
                       {item.label}

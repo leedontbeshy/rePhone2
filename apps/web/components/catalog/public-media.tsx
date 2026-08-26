@@ -1,8 +1,10 @@
 'use client';
 
+import { ImageSquareIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import type { PublicMedia } from '@/lib/catalog-api';
-import styles from './catalog.module.css';
+import { classNames } from '@/components/ui/class-names';
+import styles from './public-media.module.css';
 
 interface PublicMediaProps {
   readonly className?: string | undefined;
@@ -18,19 +20,16 @@ export function PublicMediaImage({
   priority = false,
 }: PublicMediaProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const classNames = [styles.media, className]
-    .filter((value): value is string => value !== undefined)
-    .join(' ');
+  const mediaClassName = classNames(styles.media, className);
 
   if (media === undefined || failedUrl === media.url) {
     return (
       <div
-        className={[classNames, styles.mediaFallback]
-          .filter((value): value is string => value !== undefined)
-          .join(' ')}
+        className={classNames(mediaClassName, styles.mediaFallback)}
         role="img"
         aria-label={fallbackLabel}
       >
+        <ImageSquareIcon aria-hidden="true" size={32} weight="regular" />
         <span>Ảnh đang được cập nhật</span>
       </div>
     );
@@ -39,7 +38,7 @@ export function PublicMediaImage({
   return (
     <img
       alt={media.altText}
-      className={classNames}
+      className={mediaClassName}
       fetchPriority={priority ? 'high' : 'auto'}
       height={media.height ?? 800}
       loading={priority ? 'eager' : 'lazy'}

@@ -8,7 +8,9 @@ import {
 } from '@/lib/catalog-query';
 import { CatalogFilterDialog } from '@/components/catalog/catalog-filter-dialog';
 import { CatalogFilterForm } from '@/components/catalog/catalog-filter-form';
-import { ProductCard } from '@/components/catalog/product-card';
+import { AccessoryProductCard } from '@/components/catalog/accessory-product-card';
+import { IphoneModelCard } from '@/components/catalog/iphone-model-card';
+import { toIphoneModelSummary } from '@/lib/iphone-model-groups';
 import styles from '@/components/catalog/catalog.module.css';
 
 interface ProductsPageProps {
@@ -33,12 +35,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     return (
       <div className={styles.page}>
         <section className={styles.hero}>
-          <p className={styles.eyebrow}>Catalog công khai</p>
-          <h1>Chọn model để khám phá. Chọn đúng máy để quyết định.</h1>
-          <p>
-            Model giúp bạn thu hẹp lựa chọn. Với iPhone đã qua sử dụng, từng máy có ảnh thật, tình
-            trạng pin, kiểm định và bảo hành riêng.
-          </p>
+          <h1>Tìm iPhone và phụ kiện</h1>
+          <p>Lọc theo dòng máy, dung lượng, màu sắc, giá và tình trạng còn hàng.</p>
         </section>
 
         <CatalogFilterDialog>
@@ -74,9 +72,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </section>
         ) : (
           <section className={styles.productGrid} aria-label="Danh sách sản phẩm">
-            {response.data.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {response.data.map((product) =>
+              product.productType === 'IPHONE' ? (
+                <IphoneModelCard
+                  key={product.id}
+                  headingLevel={2}
+                  product={toIphoneModelSummary(product)}
+                />
+              ) : (
+                <AccessoryProductCard key={product.id} product={product} />
+              ),
+            )}
           </section>
         )}
 
