@@ -13,6 +13,8 @@ const WORKSPACE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../.
 const ASSET_ROOT = 'apps/api/prisma/demo-assets/rich-catalog';
 const EXPECTED_PRODUCT_ASSETS = 47;
 const EXPECTED_UNIT_ASSETS = 96;
+const EXPECTED_ASSET_LOCK_SHA256 =
+  '6ec33106fb271cb0d9fdf2aaada1ebd77dcbb48bdc075aa0f5d0e9f4b72201d5';
 
 export type RichCatalogAssetOwner =
   | { readonly type: 'PRODUCT'; readonly productSlug: string }
@@ -105,6 +107,9 @@ export function validateRichCatalogAssets(): string[] {
       `Expected ${EXPECTED_UNIT_ASSETS.toString()} unit assets, received ${unitAssets.length.toString()}`,
     );
   }
+  if (assetLockSha256(RICH_CATALOG_ASSETS) !== EXPECTED_ASSET_LOCK_SHA256) {
+    errors.push('Rich catalog asset bytes do not match the committed lock fingerprint');
+  }
 
   const keys = new Set<string>();
   const paths = new Set<string>();
@@ -135,6 +140,14 @@ export function validateRichCatalogAssets(): string[] {
     if (assets.length !== 1) errors.push(`Unit ${unit.inventoryCode} must own exactly one asset`);
   }
   return errors;
+}
+
+function assetLockSha256(assets: readonly RichCatalogAssetDefinition[]): string {
+  const lock = [...assets]
+    .sort((left, right) => left.key.localeCompare(right.key))
+    .map((asset) => `${asset.key}|${asset.fileSize.toString()}|${asset.sha256}`)
+    .join('\n');
+  return createHash('sha256').update(lock).digest('hex');
 }
 
 function localFileMetadata(filePath: string): { fileSize: number; sha256: string } {

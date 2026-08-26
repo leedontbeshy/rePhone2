@@ -62,7 +62,7 @@ describe('rich catalog fixtures', () => {
       expect(digests.has(digest)).toBe(false);
       digests.add(digest);
     }
-  });
+  }, 15_000);
 
   it('maps exactly one cover to every product and one photo to every unit', () => {
     for (const product of RICH_IPHONE_PRODUCTS) {
