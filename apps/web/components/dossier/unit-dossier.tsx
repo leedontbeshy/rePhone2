@@ -24,17 +24,11 @@ import { CommerceActions } from '@/app/commerce-actions';
 import {
   ProductBreadcrumbs,
   ProductSpecGrid,
-  ProductTrustCallout,
   type ProductSpecItem,
 } from '@/components/catalog/product-detail-components';
-import { Badge, Price, StatusChip, formatVnd } from '@/components/ui';
+import { Badge, Price, formatVnd } from '@/components/ui';
 import type { ProductDetail, UsedIphoneDetail } from '@/lib/catalog-api';
-import {
-  catalogLabel,
-  countAcceptableChecks,
-  fulfillmentSummary,
-  groupFunctionalChecks,
-} from '@/lib/catalog-presenters';
+import { catalogLabel } from '@/lib/catalog-presenters';
 import { ActualUnitGallery } from './actual-unit-gallery';
 import { MobilePurchaseBar } from './mobile-purchase-bar';
 import { RelatedUnitOffers } from './related-unit-offers';
@@ -48,7 +42,6 @@ import {
 import styles from './dossier.module.css';
 
 const PURCHASE_ACTION_ID = 'unit-purchase-actions';
-const INSPECTION_SECTION_ID = 'inspection-dossier';
 
 interface UnitDossierProps {
   readonly detail: UsedIphoneDetail;
@@ -57,8 +50,7 @@ interface UnitDossierProps {
 
 export function UnitDossier({ detail, product }: UnitDossierProps) {
   const { unit, variant } = detail;
-  const acceptableChecks = countAcceptableChecks(unit.functionalChecks);
-  const checkGroups = groupFunctionalChecks(unit.functionalChecks);
+  const inspectionPreviewCount = Math.min(5, unit.functionalChecks.length);
   const canPurchase = unit.fulfillmentAvailability.pickup || unit.fulfillmentAvailability.shipping;
   const discount = discountPercent(unit.price.salePrice, unit.price.compareAtPrice);
   const colors = availableColorOffers(product, variant.id);
@@ -136,7 +128,7 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
             />
           </div>
           <p className={styles.authorityNote}>
-            Tồn kho và giá được kiểm tra lại khi bạn xem giỏ hàng và checkout.
+            Tồn kho và giá được kiểm tra lại khi bạn xem giỏ hàng và xác nhận đơn.
           </p>
         </aside>
       </section>
@@ -154,14 +146,14 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
             Máy đã được kiểm tra kỹ thuật {String(unit.functionalChecks.length)} hạng mục
           </h2>
           <p>
-            Kết quả bên dưới thuộc đúng máy có mã {unit.inventoryCode}, không phải thông tin chung
-            của model.
+            Dưới đây là {String(inspectionPreviewCount)}/{String(unit.functionalChecks.length)} kết
+            quả tiêu biểu của đúng máy có mã {unit.inventoryCode}, không phải thông tin chung của
+            model.
           </p>
-          <a href={`#${INSPECTION_SECTION_ID}`}>Xem toàn bộ kết quả kiểm tra</a>
         </div>
         <ul className={styles.inspectionPreview}>
           {unit.functionalChecks.slice(0, 5).map((check) => (
-            <li data-tone={checkTone(check.status)} key={check.key}>
+            <li data-inspection-summary-check data-tone={checkTone(check.status)} key={check.key}>
               <InspectionStatusIcon status={check.status} />
               <span>
                 <strong>{check.label}</strong>
@@ -172,99 +164,10 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
         </ul>
       </section>
 
-      <section className={styles.unitRecord} aria-labelledby="unit-record-title">
-        <header className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Dữ kiện của đúng máy này</p>
-            <h2 id="unit-record-title">Ngoại hình, sửa chữa và định danh đã che</h2>
-          </div>
-          <StatusChip
-            label={`${String(acceptableChecks)}/${String(unit.functionalChecks.length)} hạng mục đạt hoặc không áp dụng`}
-            tone={acceptableChecks === unit.functionalChecks.length ? 'success' : 'warning'}
-          />
-        </header>
-        <div className={styles.recordGrid}>
-          <Disclosure title="Ngoại hình và sửa chữa" open>
-            <p>{unit.cosmeticNotes ?? 'Không có ghi chú ngoại hình công khai.'}</p>
-            <dl className={styles.detailList}>
-              <Fact label="Lịch sử sửa chữa" value={catalogLabel(unit.repairHistoryStatus)} />
-              <Fact label="Tình trạng pin" value={catalogLabel(unit.batteryReplacementStatus)} />
-              <Fact label="Ghi chú sửa chữa" value={unit.repairNotes} />
-              <Fact
-                label="Chu kỳ pin"
-                value={
-                  unit.batteryCycleCount === null || unit.batteryCycleCount === undefined
-                    ? undefined
-                    : String(unit.batteryCycleCount)
-                }
-              />
-            </dl>
-          </Disclosure>
-          <Disclosure title="Định danh đã che">
-            {unit.maskedIdentifiers.length === 0 ? (
-              <p>Không có định danh công khai.</p>
-            ) : (
-              <dl className={styles.detailList}>
-                {unit.maskedIdentifiers.map((identifier) => (
-                  <Fact
-                    key={identifier.type}
-                    label={catalogLabel(identifier.type)}
-                    value={identifier.maskedValue}
-                  />
-                ))}
-              </dl>
-            )}
-            <p className={styles.disclosureNote}>
-              Định danh đầy đủ không được hiển thị trên storefront.
-            </p>
-          </Disclosure>
-        </div>
-      </section>
-
-      <section
-        className={styles.inspectionSection}
-        id={INSPECTION_SECTION_ID}
-        aria-labelledby="inspection-title"
-      >
-        <header className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Kết quả đầy đủ</p>
-            <h2 id="inspection-title">Từng hạng mục, không chỉ một nhãn tổng quát</h2>
-          </div>
-        </header>
-        <ProductTrustCallout icon={<SealCheckIcon size={26} />}>
-          {fulfillmentSummary(
-            unit.fulfillmentAvailability.pickup,
-            unit.fulfillmentAvailability.shipping,
-          )}
-          . Bảo hành {String(unit.warrantyDays)} ngày theo hồ sơ của máy đang bán.
-        </ProductTrustCallout>
-        <div className={styles.checkGroups}>
-          {checkGroups.map((group, index) => (
-            <details className={styles.checkGroup} key={group.label} open={index === 0}>
-              <summary>
-                <span>{group.label}</span>
-                <span>{String(group.items.length)} mục</span>
-              </summary>
-              <ul>
-                {group.items.map((check) => (
-                  <li data-inspection-check key={check.key}>
-                    <div>
-                      <strong>{check.label}</strong>
-                      {check.note === null || check.note === undefined ? null : <p>{check.note}</p>}
-                    </div>
-                    <StatusChip label={catalogLabel(check.status)} tone={checkTone(check.status)} />
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ))}
-        </div>
-      </section>
-
       <RelatedUnitOffers offers={related} productName={product.name} productSlug={product.slug} />
 
       <MobilePurchaseBar
+        available={canPurchase}
         inventoryCode={unit.inventoryCode}
         price={unit.price.salePrice}
         targetId={PURCHASE_ACTION_ID}
@@ -290,29 +193,6 @@ function PurchaseBenefit({
       </dt>
       <dd>{value}</dd>
     </div>
-  );
-}
-
-function Fact({ label, value }: { label: string; value?: string | null | undefined }) {
-  if (value === null || value === undefined || value.length === 0) return null;
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
-function Disclosure({
-  children,
-  open = false,
-  title,
-}: Readonly<{ children: ReactNode; open?: boolean; title: string }>) {
-  return (
-    <details className={styles.disclosure} open={open}>
-      <summary>{title}</summary>
-      <div>{children}</div>
-    </details>
   );
 }
 

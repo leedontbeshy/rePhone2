@@ -160,7 +160,7 @@
   grid-template-columns: 1.5rem minmax(0, 1fr);
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: 0.7rem;
   line-height: 1.25;
 }
@@ -206,8 +206,7 @@
   text-align: center;
 }
 
-.authorityNote,
-.disclosureNote {
+.authorityNote {
   margin: 0;
   color: var(--color-muted);
   font-size: var(--font-size-label);
@@ -232,7 +231,6 @@
 }
 
 .inspectionIntro h2,
-.sectionHeader h2,
 .relatedHeader h2 {
   margin: 0;
   color: var(--color-ink);
@@ -247,22 +245,6 @@
   color: var(--color-body);
   font-size: var(--font-size-small);
   line-height: 1.65;
-}
-
-.inspectionIntro > a {
-  display: inline-flex;
-  width: fit-content;
-  min-height: var(--control-height);
-  align-items: center;
-  padding: var(--space-2) var(--space-4);
-  border: var(--border-strong);
-  border-color: var(--color-primary);
-  border-radius: var(--radius-control);
-  color: var(--color-primary-hover);
-  background: var(--color-surface);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  text-decoration: none;
 }
 
 .inspectionPreview {
@@ -334,18 +316,11 @@
   text-transform: uppercase;
 }
 
-.unitRecord,
-.inspectionSection,
 .relatedSection {
   display: grid;
   gap: var(--space-5);
 }
 
-.inspectionSection {
-  scroll-margin-top: calc(var(--storefront-header-offset, 8.25rem) + var(--space-6));
-}
-
-.sectionHeader,
 .relatedHeader {
   display: flex;
   flex-wrap: wrap;
@@ -354,119 +329,9 @@
   gap: var(--space-4);
 }
 
-.sectionHeader > div,
 .relatedHeader > div {
   display: grid;
   gap: var(--space-2);
-}
-
-.recordGrid,
-.checkGroups {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.disclosure,
-.checkGroup {
-  overflow: hidden;
-  border: var(--border-default);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
-}
-
-.disclosure > summary,
-.checkGroup > summary {
-  display: flex;
-  min-height: var(--control-height);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  color: var(--color-ink);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
-}
-
-.disclosure > div {
-  display: grid;
-  gap: var(--space-4);
-  padding: 0 var(--space-5) var(--space-5);
-}
-
-.disclosure > div > p {
-  margin: 0;
-  color: var(--color-body);
-  line-height: 1.6;
-}
-
-.detailList {
-  display: grid;
-  gap: 0;
-  margin: 0;
-}
-
-.detailList div {
-  display: grid;
-  grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr);
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: var(--border-default);
-}
-
-.detailList div:last-child {
-  border-bottom: 0;
-}
-
-.detailList dt {
-  color: var(--color-muted);
-  font-size: var(--font-size-small);
-}
-
-.detailList dd {
-  margin: 0;
-  color: var(--color-ink);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
-}
-
-.checkGroup > summary span:last-child {
-  color: var(--color-muted);
-  font-size: var(--font-size-label);
-  font-weight: var(--font-weight-medium);
-}
-
-.checkGroup ul {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  border-top: var(--border-default);
-  list-style: none;
-}
-
-.checkGroup li {
-  display: flex;
-  min-width: 0;
-  align-items: start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border-bottom: var(--border-default);
-}
-
-.checkGroup li:last-child {
-  border-bottom: 0;
-}
-
-.checkGroup li > div {
-  min-width: 0;
-}
-
-.checkGroup li p {
-  margin: var(--space-1) 0 0;
-  color: var(--color-muted);
-  font-size: var(--font-size-small);
 }
 
 .relatedHeader > a {
@@ -657,9 +522,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .inspectionOverview,
-  .recordGrid,
-  .checkGroups {
+  .inspectionOverview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -690,7 +553,11 @@
 
   .inspectionIntro,
   .inspectionPreview {
-    padding: var(--space-8);
+    padding: var(--space-5);
+  }
+
+  .inspectionPreview li {
+    padding-block: var(--space-2);
   }
 
   .relatedRail {
