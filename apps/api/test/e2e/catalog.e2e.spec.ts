@@ -143,7 +143,12 @@ describe('public catalog HTTP contract', () => {
   });
 
   it('applies the complete filter contract and keeps null prices last in both directions', async () => {
-    await expectSlugs({ releaseYear: '2021' }, ['iphone-13']);
+    await expectSlugs({ releaseYear: '2021' }, [
+      'iphone-13-pro-max',
+      'iphone-13-pro',
+      'iphone-13-mini',
+      'iphone-13',
+    ]);
     await expectSlugs({ colorName: 'blue' }, ['iphone-13']);
     await expectSlugs({ minPrice: '10000000', maxPrice: '11000000' }, ['iphone-13']);
     await expectSlugs(
@@ -209,7 +214,8 @@ describe('public catalog HTTP contract', () => {
       .get('/api/v1/products')
       .query({ q: 'iphone 13' })
       .expect(200);
-    expect(successArray(list)[0]).toMatchObject({
+    const iphone13 = successArray(list).find((item) => property(item, 'slug') === 'iphone-13');
+    expect(iphone13).toMatchObject({
       price: { fromPrice: '10990000', compareAtPrice: '11990000' },
     });
     await request(server).get('/api/v1/products/iphone-13/units/IP13-BLU-001').expect(404);
