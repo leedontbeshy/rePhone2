@@ -22,12 +22,13 @@ test('catalog to completed shipping order through customer and staff portals', a
 
   try {
     const customerPage = await customerContext.newPage();
-    await login(customerPage, CUSTOMER);
+    await login(customerPage, CUSTOMER, '/account');
 
-    await customerPage.goto('/products');
+    await customerPage.goto('/products?q=iPhone+13');
     await expect(
       customerPage.getByRole('heading', {
-        name: 'Chọn model để khám phá. Chọn đúng máy để quyết định.',
+        name: 'Tìm iPhone và phụ kiện',
+        exact: true,
       }),
     ).toBeVisible();
     await customerPage.locator('a[href="/products/iphone-13"]').first().click();
@@ -75,7 +76,7 @@ test('catalog to completed shipping order through customer and staff portals', a
     ).toBeVisible();
 
     const staffPage = await staffContext.newPage();
-    await login(staffPage, EMPLOYEE);
+    await login(staffPage, EMPLOYEE, '/backoffice/orders');
     await staffPage.goto('/backoffice/payments');
     const paymentCard = staffPage.locator('a.payment-queue-card', { hasText: orderNumber });
     await expect(paymentCard).toBeVisible();
@@ -131,12 +132,16 @@ test('catalog to completed shipping order through customer and staff portals', a
   }
 });
 
-async function login(page: Page, credentials: { email: string; password: string }): Promise<void> {
+async function login(
+  page: Page,
+  credentials: { email: string; password: string },
+  destination: '/account' | '/backoffice/orders',
+): Promise<void> {
   await page.goto('/login');
-  await page.getByLabel('Email', { exact: true }).fill(credentials.email);
-  await page.getByLabel('Mật khẩu', { exact: true }).fill(credentials.password);
+  await page.getByLabel('Email').fill(credentials.email);
+  await page.getByLabel('Mật khẩu').fill(credentials.password);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await page.waitForURL('/');
+  await page.waitForURL(destination);
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {

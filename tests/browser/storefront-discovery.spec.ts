@@ -397,10 +397,10 @@ async function expectPublicRouteMarker(
 
 async function loginCustomer(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByLabel('Email', { exact: true }).fill('customer@rephone.local');
-  await page.getByLabel('Mật khẩu', { exact: true }).fill('CustomerDemo123');
+  await page.getByLabel('Email').fill('customer@rephone.local');
+  await page.getByLabel('Mật khẩu').fill('CustomerDemo123');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await page.waitForURL('/');
+  await page.waitForURL('/account');
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page, route: string): Promise<void> {
