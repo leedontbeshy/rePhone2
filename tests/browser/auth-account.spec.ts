@@ -139,9 +139,9 @@ test.describe('FE-2 authentication and account', () => {
       '/login?returnTo=%2Faccount%2Faddresses',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Tài khoản', exact: true })).toHaveAttribute(
-      'href',
-      '/account',
+    await expect(page.getByRole('button', { name: 'Tài khoản', exact: true })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
     await expectRefreshCookie(page);
     await expectNoBrowserAuthSecrets(page);
@@ -153,7 +153,7 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
     await expect(page.getByText('Chưa có địa chỉ đã lưu', { exact: true })).toBeVisible();
 
-    await expectCustomerHeaderShortcutsInUnifiedNavigation(page);
+    await expectCustomerAccountPopupAndBalancedNavigation(page);
 
     await page.goto('/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
@@ -463,15 +463,48 @@ async function expectAccountProfileFieldsAligned(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 720 });
 }
 
-async function expectCustomerHeaderShortcutsInUnifiedNavigation(page: Page): Promise<void> {
+async function expectCustomerAccountPopupAndBalancedNavigation(page: Page): Promise<void> {
   const currentHeaderNavigation = page
     .locator("[data-shell='customer'] > header")
     .getByRole('navigation', { name: 'Điều hướng chính' });
   for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
     await expect(
       currentHeaderNavigation.getByRole('link', { name: label, exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
   }
+
+  const accountButton = page.getByRole('button', { name: 'Tài khoản', exact: true });
+  await accountButton.click();
+  const accountMenu = page.getByRole('navigation', { name: 'Tùy chọn tài khoản' });
+  await expect(accountMenu).toBeVisible();
+  await expect(accountMenu.getByRole('link')).toHaveCount(4);
+  for (const [label, href] of [
+    ['Quản lý tài khoản', '/account'],
+    ['Bảo hành', '/warranties'],
+    ['Ưa thích', '/wishlist'],
+    ['Đơn hàng', '/orders'],
+  ] as const) {
+    await expect(accountMenu.getByRole('link', { name: label, exact: true })).toHaveAttribute(
+      'href',
+      href,
+    );
+  }
+
+  await page.keyboard.press('Escape');
+  await expect(accountMenu).toHaveCount(0);
+  await expect(accountButton).toBeFocused();
+
+  await accountButton.press('ArrowDown');
+  await expect(accountMenu).toBeVisible();
+  await expect(
+    accountMenu.getByRole('link', { name: 'Quản lý tài khoản', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await accountButton.click();
+  await expect(accountMenu).toBeVisible();
+  await page.locator('main').click({ position: { x: 1, y: 1 } });
+  await expect(accountMenu).toHaveCount(0);
 
   await page.goto('/store');
 
@@ -479,24 +512,32 @@ async function expectCustomerHeaderShortcutsInUnifiedNavigation(page: Page): Pro
     await page.setViewportSize({ width, height: 900 });
     const header = page.locator("[data-shell='storefront'] > header");
     const navigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
-    const unifiedList = navigation.locator('ul');
+    const publicNavigationList = navigation.locator('ul');
 
-    await expect(unifiedList).toHaveCount(1);
-    await expect(unifiedList.locator('li')).toHaveCount(8);
+    await expect(publicNavigationList).toHaveCount(1);
+    await expect(publicNavigationList.locator('li')).toHaveCount(5);
 
     for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
-      await expect(unifiedList.getByRole('link', { name: label, exact: true })).toBeVisible();
+      await expect(navigation.getByRole('link', { name: label, exact: true })).toHaveCount(0);
     }
+    await expect(navigation.getByRole('link', { name: 'Liên hệ', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
 
-    const [navigationBox, unifiedBox] = await Promise.all([
+    const [navigationBox, publicNavigationBox] = await Promise.all([
       visibleBox(navigation),
-      visibleBox(unifiedList),
+      visibleBox(publicNavigationList),
     ]);
     expect(
-      Math.abs(navigationBox.x + navigationBox.width / 2 - (unifiedBox.x + unifiedBox.width / 2)),
+      Math.abs(
+        navigationBox.x +
+          navigationBox.width / 2 -
+          (publicNavigationBox.x + publicNavigationBox.width / 2),
+      ),
     ).toBeLessThanOrEqual(1);
 
-    const itemGeometry = await unifiedList.locator('li').evaluateAll((items) => ({
+    const itemGeometry = await publicNavigationList.locator('li').evaluateAll((items) => ({
       gaps: items.slice(1).map((item, index) => {
         const previous = items[index]?.getBoundingClientRect();
         const current = item.getBoundingClientRect();
@@ -509,6 +550,7 @@ async function expectCustomerHeaderShortcutsInUnifiedNavigation(page: Page): Pro
   }
 
   await page.setViewportSize({ width: 320, height: 568 });
+  await expectNoHorizontalOverflow(page);
   await page.getByRole('button', { name: 'Mở danh mục', exact: true }).click();
   const mobileDialog = page.getByRole('dialog', { name: 'Danh mục', exact: true });
   const mobileCustomerNavigation = page.getByRole('navigation', {
@@ -527,6 +569,7 @@ async function expectCustomerHeaderShortcutsInUnifiedNavigation(page: Page): Pro
   }));
   expect(scrollState.overflowY).toBe('auto');
   expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+  await expectNoHorizontalOverflow(page);
 
   const cartLink = mobileDialog.getByRole('link', { name: /Giỏ hàng/ });
   await cartLink.scrollIntoViewIfNeeded();

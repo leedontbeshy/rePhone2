@@ -5,13 +5,18 @@ export const STOREFRONT_NAVIGATION = [
   { href: '/products?productType=ACCESSORY&inStock=true', label: 'Phụ kiện' },
   { href: '/products?productType=IPHONE&inStock=true', label: 'Máy đang bán' },
   { href: '/vouchers', label: 'Ưu đãi' },
-  { href: '/store', label: 'Cửa hàng' },
+  { href: '/store', label: 'Liên hệ' },
 ] as const;
 
 export const CUSTOMER_NAVIGATION = [
   { href: '/warranties', label: 'Bảo hành' },
   { href: '/wishlist', label: 'Ưa thích' },
   { href: '/orders', label: 'Đơn hàng' },
+] as const;
+
+export const CUSTOMER_ACCOUNT_MENU = [
+  { href: '/account', label: 'Quản lý tài khoản' },
+  ...CUSTOMER_NAVIGATION,
 ] as const;
 
 export function customerNavigationForSession(

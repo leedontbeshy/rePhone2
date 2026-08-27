@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CUSTOMER_ACCOUNT_MENU,
   CUSTOMER_NAVIGATION,
   customerNavigationForSession,
   isStorefrontNavigationCurrent,
@@ -18,9 +19,15 @@ describe('storefront navigation', () => {
       { href: '/products?productType=ACCESSORY&inStock=true', label: 'Phụ kiện' },
       { href: '/products?productType=IPHONE&inStock=true', label: 'Máy đang bán' },
       { href: '/vouchers', label: 'Ưu đãi' },
-      { href: '/store', label: 'Cửa hàng' },
+      { href: '/store', label: 'Liên hệ' },
     ]);
     expect(CUSTOMER_NAVIGATION).toEqual([
+      { href: '/warranties', label: 'Bảo hành' },
+      { href: '/wishlist', label: 'Ưa thích' },
+      { href: '/orders', label: 'Đơn hàng' },
+    ]);
+    expect(CUSTOMER_ACCOUNT_MENU).toEqual([
+      { href: '/account', label: 'Quản lý tài khoản' },
       { href: '/warranties', label: 'Bảo hành' },
       { href: '/wishlist', label: 'Ưa thích' },
       { href: '/orders', label: 'Đơn hàng' },

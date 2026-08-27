@@ -19,7 +19,7 @@
 .sessionAction,
 .cartAction,
 .sessionLoading {
-  min-height: var(--control-height);
+  min-height: 3rem;
   border: var(--border-strong);
   border-radius: var(--radius-control);
 }
@@ -36,7 +36,7 @@
 
 .search button {
   display: inline-grid;
-  min-width: var(--control-height);
+  min-width: 3rem;
   place-items: center;
   padding: 0;
   border-start-start-radius: 0;
@@ -61,10 +61,16 @@
   justify-content: center;
   padding-inline: var(--space-3);
   color: var(--color-body);
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
   white-space: nowrap;
+}
+
+button.sessionAction {
+  font-family: inherit;
+  background: var(--color-surface);
+  cursor: pointer;
 }
 
 .sessionAction,
@@ -103,6 +109,66 @@
   animation: loading 1.4s ease-in-out infinite;
 }
 
+.accountMenu {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+}
+
+.accountMenuCaret {
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.sessionAction[aria-expanded='true'] .accountMenuCaret {
+  transform: rotate(180deg);
+}
+
+.accountMenuPanel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  inline-size: 15.5rem;
+  padding: var(--space-2);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+}
+
+.accountMenuList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accountMenuLink {
+  display: flex;
+  min-height: var(--control-height);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.accountMenuLink:hover,
+.accountMenuLink:focus-visible,
+.accountMenuLink[aria-current='page'] {
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+}
+
+@media (min-width: 60rem) {
+  .accountMenuPanel {
+    inset-block-start: calc(100% + 5rem);
+  }
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;
@@ -122,6 +188,7 @@
 }
 
 @media (max-width: 39.999rem) {
+  .accountMenu,
   .sessionAction,
   .sessionLoading {
     display: none;
@@ -140,9 +207,22 @@
   }
 }
 
+@media (max-width: 22rem) {
+  .mobileCartLabel {
+    display: none;
+  }
+
+  .cartAction {
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .sessionLoading {
+  .sessionLoading,
+  .accountMenuCaret {
     animation: none;
+    transition: none;
   }
 }
 

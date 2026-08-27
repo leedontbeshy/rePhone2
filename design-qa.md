@@ -12,7 +12,7 @@ Preview: `http://localhost:3000/checkout`
 - Bằng chứng desktop bổ sung:
   - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-1440x1024.png` (1425×1013).
   - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-1440x1024.png` (1425×1013).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\header-unified-1440x900.png` (1425×891).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\header-account-popup-1440x900.jpg` (1425×891).
 - Bằng chứng responsive:
   - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320x800.png` (320×764).
   - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320-summary.png` (320×764).
@@ -49,7 +49,7 @@ Preview: `http://localhost:3000/checkout`
 
 ## Responsive, accessibility và runtime
 
-- 320 px: cart, wishlist và checkout đều có `scrollWidth === clientWidth`; tổng tiền xếp dọc an toàn, không cắt chữ hoặc CTA.
+- 320 px: cart, wishlist và checkout đều có `scrollWidth === clientWidth`; header thu gọn nhãn giỏ thành biểu tượng và số lượng để logo, giỏ và nút Danh mục không chồng lấn; tổng tiền xếp dọc an toàn, không cắt chữ hoặc CTA.
 - 768 px: checkout xếp một cột; hai lựa chọn nhận hàng, field grid và summary vẫn đọc đúng thứ tự.
 - 1440 px: cart/checkout dùng rail bên phải; rail không che focus hoặc nội dung. Wishlist giữ card đồng đều và khoảng trống còn lại tự nhiên.
 - Focus ring của trường checkout là teal solid 2 px; semantic heading, label, `required`, `aria-live`, `role="alert"` và focus-after-remove được giữ.
@@ -66,7 +66,8 @@ Preview: `http://localhost:3000/checkout`
 5. P2 — review-required 409, payload pickup/store và số tiền chưa được kiểm tra đủ chặt. Parser và regression tests đã được bổ sung.
 6. P2 — thông báo wishlist, focus sau khi xóa, fulfillment disabled và tổng tiền 320 px chưa hoàn chỉnh. Đã sửa trạng thái, focus recovery và responsive stacking.
 7. P2 — copy “đồng bộ/gộp” và một đoạn giải thích bị lặp chưa phù hợp khách hàng. Đã chuyển sang tiếng Việt tự nhiên và rút gọn.
-8. P2 — `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm ở hàng phụ bên dưới menu chính. Đã gộp cả tám mục vào một danh sách desktop duy nhất; tại 1024 và 1440 px, tâm danh sách trùng tâm header, toàn bộ mục cùng tọa độ dọc, khoảng cách đều và không tràn ngang. Mobile tiếp tục dùng drawer hiện có.
+8. P2 — lần tinh chỉnh trước đặt `Bảo hành`, `Ưa thích`, `Đơn hàng` ngang hàng với menu công khai nên header còn dày thông tin. Theo quyết định cuối, desktop chỉ giữ năm mục công khai được căn giữa và chia đều; bốn mục `Quản lý tài khoản`, `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm trong popup `Tài khoản`. Mobile tiếp tục dùng drawer hiện có.
+9. P2 — sau khi tăng kích thước header, logo, giỏ và nút Danh mục có thể chồng lấn ở vùng nội dung 320 px. Đã giảm khoảng cách riêng tại breakpoint rất nhỏ và chỉ giữ biểu tượng cùng số lượng giỏ; vùng nội dung thật 320 px không còn tràn ngang.
 
 Không còn phát hiện P0, P1 hoặc P2.
 

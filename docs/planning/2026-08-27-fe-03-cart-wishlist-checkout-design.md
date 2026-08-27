@@ -139,7 +139,7 @@ Rollout chỉ thay presentation/component/provider behavior trong phạm vi fron
 | 2026-08-27 | Cảnh báo availability chặn; giá đổi là cảnh báo cần xem | Phản ánh đúng mức độ rủi ro và không tự sửa snapshot |
 | 2026-08-27 | Preview không giữ hàng; create không auto-retry | Giữ nguyên invariant checkout có thẩm quyền |
 | 2026-08-27 | Nội dung khách hàng dùng tiếng Việt tự nhiên | Tuân theo quy ước nội dung đã chốt cho rePhone |
-| 2026-08-27 | Gộp menu công khai và lối tắt khách hàng thành một hàng desktop | Giữ tám mục cùng cấp thị giác, căn giữa và chia khoảng cách đều; mobile vẫn dùng drawer để tránh chật |
+| 2026-08-27 | Chỉ giữ năm mục công khai ở menu desktop; chuyển bốn lối tắt khách hàng vào popup `Tài khoản` | Nhóm đúng ngữ cảnh quản lý tài khoản, giúp menu chính gọn và cân giữa; mobile vẫn dùng drawer để tránh chật |
 
 ## 12. Assumptions và câu hỏi mở
 

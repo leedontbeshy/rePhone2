@@ -1,6 +1,6 @@
 ul.navigation.navigation {
-  inline-size: min(100%, 64rem);
-  max-inline-size: 64rem;
+  inline-size: min(100%, 48rem);
+  max-inline-size: 48rem;
   min-inline-size: 0;
   justify-content: space-between;
   gap: clamp(var(--space-1), 0.75vw, var(--space-3));
