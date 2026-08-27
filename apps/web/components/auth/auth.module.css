@@ -1,0 +1,73 @@
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.copy,
+.footerCopy,
+.securityNote,
+.statusCopy {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.statusCopy {
+  color: var(--color-body);
+}
+
+.formActions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.primaryAction {
+  width: 100%;
+}
+
+.footerCopy {
+  text-align: center;
+}
+
+.footerCopy + .footerCopy {
+  margin-block-start: var(--space-2);
+}
+
+.securityNote {
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-default);
+}
+
+.shellFooter {
+  inline-size: min(100%, 42rem);
+  margin: 0 auto;
+  padding: var(--space-4) var(--page-gutter);
+  text-align: center;
+}
+
+.passwordFields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.policyList {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.loadingBlock {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (max-width: 30rem) {
+  .form {
+    gap: var(--space-4);
+  }
+}

@@ -125,8 +125,8 @@ export function MobileNavigation() {
                   Đăng nhập
                 </Link>
               ) : user?.role === 'CUSTOMER' ? (
-                <Link href="/orders" onClick={closeNavigation}>
-                  Đơn hàng của bạn
+                <Link href="/account" onClick={closeNavigation}>
+                  Tài khoản của bạn
                 </Link>
               ) : (
                 <Link href="/backoffice/orders" onClick={closeNavigation}>

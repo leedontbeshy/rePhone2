@@ -4,7 +4,7 @@ import type { paths } from './schema.js';
 export interface ApiClientOptions {
   baseUrl: string;
   getAccessToken?: () => string | undefined;
-  refreshAccessToken?: () => Promise<string | undefined>;
+  refreshAccessToken?: (expectedAccessToken?: string) => Promise<string | undefined>;
   onUnauthorized?: () => void | Promise<void>;
   fetch?: typeof globalThis.fetch;
 }
@@ -16,18 +16,25 @@ export function createApiClient(options: ApiClientOptions) {
     ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
   });
 
-  const replayRequests = new Map<string, Request>();
-  let refreshPromise: Promise<string | undefined> | undefined;
+  const replayRequests = new Map<string, { accessToken: string | undefined; request: Request }>();
+  let refreshInFlight:
+    { expectedAccessToken: string | undefined; promise: Promise<string | undefined> } | undefined;
+  let lastRefreshTransition: { from: string | undefined; to: string } | undefined;
 
-  const refreshOnce = (): Promise<string | undefined> => {
-    if (refreshPromise === undefined) {
-      refreshPromise = (options.refreshAccessToken?.() ?? Promise.resolve(undefined)).finally(
-        () => {
-          refreshPromise = undefined;
-        },
-      );
+  const refreshOnce = (expectedAccessToken: string | undefined): Promise<string | undefined> => {
+    if (refreshInFlight !== undefined) {
+      return refreshInFlight.expectedAccessToken === expectedAccessToken
+        ? refreshInFlight.promise
+        : Promise.resolve(undefined);
     }
-    return refreshPromise;
+
+    const promise = (
+      options.refreshAccessToken?.(expectedAccessToken) ?? Promise.resolve(undefined)
+    ).finally(() => {
+      if (refreshInFlight?.promise === promise) refreshInFlight = undefined;
+    });
+    refreshInFlight = { expectedAccessToken, promise };
+    return promise;
   };
 
   const authenticationMiddleware: Middleware = {
@@ -36,32 +43,57 @@ export function createApiClient(options: ApiClientOptions) {
       if (accessToken !== undefined) {
         request.headers.set('Authorization', `Bearer ${accessToken}`);
       }
-      replayRequests.set(id, request.clone());
+      replayRequests.set(id, { accessToken, request: request.clone() });
       return request;
     },
     async onResponse({ id, options: requestOptions, response, schemaPath }) {
-      const replayRequest = replayRequests.get(id);
+      const replay = replayRequests.get(id);
       replayRequests.delete(id);
       if (response.status !== 401 || schemaPath.startsWith('/api/v1/auth/')) {
         return response;
       }
-      if (replayRequest === undefined || options.refreshAccessToken === undefined) {
+      if (replay === undefined || options.refreshAccessToken === undefined) {
         await options.onUnauthorized?.();
         return response;
       }
 
-      const accessToken = await refreshOnce();
+      const replayWith = async (accessToken: string): Promise<Response> => {
+        replay.request.headers.set('Authorization', `Bearer ${accessToken}`);
+        const replayResponse = await requestOptions.fetch(replay.request);
+        if (replayResponse.status === 401 && options.getAccessToken?.() === accessToken) {
+          await options.onUnauthorized?.();
+        }
+        return replayResponse;
+      };
+
+      const currentAccessToken = options.getAccessToken?.();
+      if (currentAccessToken !== replay.accessToken) {
+        const transition = lastRefreshTransition;
+        if (
+          transition !== undefined &&
+          transition.from === replay.accessToken &&
+          transition.to === currentAccessToken
+        ) {
+          return replayWith(transition.to);
+        }
+        return response;
+      }
+      if (
+        refreshInFlight !== undefined &&
+        refreshInFlight.expectedAccessToken !== replay.accessToken
+      ) {
+        return response;
+      }
+
+      const accessToken = await refreshOnce(replay.accessToken);
       if (accessToken === undefined) {
-        await options.onUnauthorized?.();
+        if (options.getAccessToken?.() === replay.accessToken) await options.onUnauthorized?.();
         return response;
       }
+      if (options.getAccessToken?.() !== accessToken) return response;
 
-      replayRequest.headers.set('Authorization', `Bearer ${accessToken}`);
-      const replayResponse = await requestOptions.fetch(replayRequest);
-      if (replayResponse.status === 401) {
-        await options.onUnauthorized?.();
-      }
-      return replayResponse;
+      lastRefreshTransition = { from: replay.accessToken, to: accessToken };
+      return replayWith(accessToken);
     },
     onError({ error, id }) {
       replayRequests.delete(id);

@@ -1,123 +1,126 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
-import { apiError } from '../../lib/order-access';
-import { consumeFragmentToken } from '../../lib/one-time-auth';
-import { useAuth } from '../auth-provider';
+import { useState, type SyntheticEvent } from 'react';
+import { authErrorFromResponse, toAuthActionError, useAuth } from '../auth-provider';
+import {
+  AuthForm,
+  AuthFormActions,
+  AuthFormFooter,
+  AuthPage,
+  AuthPending,
+  AuthSecurityNote,
+  PasswordFields,
+  authIssueFromError,
+  authStyles,
+  confirmationError,
+  issueFromFields,
+  passwordPolicyError,
+  useAuthFormIssue,
+  useFragmentAuthToken,
+  type AuthFieldErrors,
+} from '@/components/auth';
+import { Button, ErrorSummary, InlineAlert, Link } from '@/components/ui';
 
 export default function AcceptInvitationPage() {
   const { client } = useAuth();
-  const [token, setToken] = useState<string>();
-  const [loaded, setLoaded] = useState(false);
+  const { loaded, setToken, token } = useFragmentAuthToken();
+  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [error, setError] = useState<string>();
-  const alertRef = useRef<HTMLParagraphElement>(null);
 
-  useEffect(() => {
-    const captured = consumeFragmentToken(window.location.hash, () => {
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-    });
-    setToken(captured);
-    setLoaded(true);
-  }, []);
-
-  async function submit(event: SyntheticEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
     if (submitting || token === undefined) return;
     const form = new FormData(event.currentTarget);
-    const password = form.get('password');
-    const confirmation = form.get('confirmation');
-    if (password !== confirmation) {
-      showError('Mật khẩu xác nhận chưa khớp.');
+    const password = formString(form, 'password');
+    const confirmation = formString(form, 'confirmation');
+    const fields: AuthFieldErrors = {};
+    const invalidPassword = passwordPolicyError(password);
+    const invalidConfirmation = confirmationError(password, confirmation);
+    if (invalidPassword !== undefined) fields.password = invalidPassword;
+    if (invalidConfirmation !== undefined) fields.confirmation = invalidConfirmation;
+    if (Object.keys(fields).length > 0) {
+      showIssue(issueFromFields(fields));
       return;
     }
+
+    clearIssue();
     setSubmitting(true);
-    setError(undefined);
     try {
       const result = await client.POST('/api/v1/auth/accept-employee-invitation', {
-        body: { token, password: typeof password === 'string' ? password : '' },
+        body: { token, password },
       });
       if (result.response.status !== 204) {
-        throw new Error(apiError(result.error, 'Lời mời không hợp lệ hoặc đã hết hạn.'));
+        throw authErrorFromResponse(
+          result.error,
+          result.response.status,
+          'Không thể kích hoạt tài khoản.',
+        );
       }
       setToken(undefined);
       setCompleted(true);
     } catch (caught) {
-      showError(caught instanceof Error ? caught.message : 'Không thể kích hoạt tài khoản.');
+      showIssue(
+        authIssueFromError(
+          toAuthActionError(caught, 'Không thể kết nối để kích hoạt tài khoản.'),
+          'invitation',
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  function showError(message: string) {
-    setError(message);
-    window.requestAnimationFrame(() => alertRef.current?.focus());
-  }
-
   return (
-    <main className="auth-shell">
-      <form className="auth-card" onSubmit={(event) => void submit(event)}>
-        <p className="eyebrow">Nhân viên rePhone</p>
-        <h1>Nhận lời mời</h1>
-        {!loaded ? <p className="status">Đang kiểm tra lời mời…</p> : null}
-        {loaded && token === undefined && !completed ? (
-          <p className="form-error" role="alert">
-            Lời mời không hợp lệ hoặc thiếu token. Hãy nhờ ADMIN gửi lại.
-          </p>
-        ) : null}
-        {token === undefined || completed ? null : (
-          <>
-            <PasswordFields />
-            <button className="button primary" type="submit" disabled={submitting}>
-              {submitting ? 'Đang kích hoạt…' : 'Kích hoạt tài khoản'}
-            </button>
-          </>
-        )}
-        {completed ? (
-          <p className="status" role="status" aria-live="polite">
-            Tài khoản đã được kích hoạt. Bạn có thể đăng nhập ngay.
-          </p>
-        ) : null}
-        {error === undefined ? null : (
-          <p ref={alertRef} tabIndex={-1} className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="form-footer">
-          <Link href="/login">Đi đến đăng nhập</Link>
-        </p>
-      </form>
-    </main>
+    <AuthPage
+      title="Kích hoạt tài khoản nhân viên"
+      description="Tạo mật khẩu để hoàn tất lời mời. Thao tác này không tự đăng nhập."
+    >
+      {!loaded ? <AuthPending>Đang kiểm tra lời mời…</AuthPending> : null}
+      {loaded && token === undefined && !completed ? (
+        <InlineAlert tone="danger" title="Lời mời không dùng được">
+          Lời mời thiếu token, không hợp lệ hoặc đã được mở trước đó. Hãy nhờ ADMIN gửi lại.
+        </InlineAlert>
+      ) : null}
+      {token === undefined || completed ? null : (
+        <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
+          <ErrorSummary ref={summaryRef} errors={issue.errors} />
+          <PasswordFields errors={issue.fields} />
+          <AuthFormActions>
+            <Button
+              className={authStyles.primaryAction}
+              type="submit"
+              loading={submitting}
+              loadingLabel="Đang kích hoạt tài khoản"
+            >
+              Kích hoạt tài khoản
+            </Button>
+            <AuthFormFooter>
+              <Link href="/login">Quay lại đăng nhập</Link>
+            </AuthFormFooter>
+          </AuthFormActions>
+          <AuthSecurityNote>
+            Lời mời chỉ dùng được một lần; token đã được xóa khỏi thanh địa chỉ.
+          </AuthSecurityNote>
+        </AuthForm>
+      )}
+      {completed ? (
+        <div aria-live="polite">
+          <InlineAlert tone="success" title="Tài khoản đã được kích hoạt">
+            Lời mời đã được sử dụng. Hãy đăng nhập riêng bằng mật khẩu vừa tạo.
+          </InlineAlert>
+          <AuthFormActions>
+            <Link href="/login" standalone>
+              Đi đến đăng nhập
+            </Link>
+          </AuthFormActions>
+        </div>
+      ) : null}
+    </AuthPage>
   );
 }
 
-function PasswordFields() {
-  return (
-    <>
-      <label>
-        Mật khẩu mới
-        <input
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          maxLength={128}
-        />
-      </label>
-      <label>
-        Xác nhận mật khẩu
-        <input
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          maxLength={128}
-        />
-      </label>
-    </>
-  );
+function formString(form: FormData, name: string): string {
+  const value = form.get(name);
+  return typeof value === 'string' ? value : '';
 }

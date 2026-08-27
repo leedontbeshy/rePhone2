@@ -1,0 +1,63 @@
+import type { FormHTMLAttributes, ReactNode } from 'react';
+import { AuthShell } from '@/components/shells';
+import { InlineAlert } from '@/components/ui';
+import styles from './auth.module.css';
+
+interface AuthPageProps {
+  children: ReactNode;
+  description?: ReactNode;
+  title: string;
+}
+
+export function AuthPage({ children, description, title }: Readonly<AuthPageProps>) {
+  return (
+    <AuthShell
+      title={title}
+      description={description}
+      footer={
+        <p className={styles.shellFooter}>
+          rePhone không bao giờ yêu cầu bạn gửi mật khẩu hoặc mã trong liên kết qua tin nhắn.
+        </p>
+      }
+    >
+      {children}
+    </AuthShell>
+  );
+}
+
+export function AuthForm({ children, ...props }: FormHTMLAttributes<HTMLFormElement>) {
+  return (
+    <form {...props} className={styles.form} noValidate>
+      {children}
+    </form>
+  );
+}
+
+export function AuthFormActions({ children }: Readonly<{ children: ReactNode }>) {
+  return <div className={styles.formActions}>{children}</div>;
+}
+
+export function AuthFormFooter({ children }: Readonly<{ children: ReactNode }>) {
+  return <p className={styles.footerCopy}>{children}</p>;
+}
+
+export function AuthSecurityNote({ children }: Readonly<{ children: ReactNode }>) {
+  return <p className={styles.securityNote}>{children}</p>;
+}
+
+export function AuthPending({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <div className={styles.loadingBlock}>
+      <InlineAlert role="status" tone="neutral" aria-live="polite">
+        <p className={styles.statusCopy}>{children}</p>
+      </InlineAlert>
+    </div>
+  );
+}
+
+export const authStyles = {
+  copy: styles.copy,
+  passwordFields: styles.passwordFields,
+  policyList: styles.policyList,
+  primaryAction: styles.primaryAction,
+};

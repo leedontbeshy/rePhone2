@@ -1,70 +1,124 @@
 'use client';
 
-import Link from 'next/link';
-import { useRef, useState, type SyntheticEvent } from 'react';
-import { apiError } from '../../lib/order-access';
-import { useAuth } from '../auth-provider';
+import { useState, type SyntheticEvent } from 'react';
+import { authErrorFromResponse, toAuthActionError, useAuth } from '../auth-provider';
+import {
+  AnonymousAuthGate,
+  AuthForm,
+  AuthFormActions,
+  AuthFormFooter,
+  AuthPage,
+  AuthSecurityNote,
+  authIssueFromError,
+  authStyles,
+  emailError,
+  issueFromFields,
+  useAuthFormIssue,
+  type AuthFieldErrors,
+} from '@/components/auth';
+import { Button, ErrorSummary, InlineAlert, Input, Link } from '@/components/ui';
+
+const description = 'Nhập email tài khoản để yêu cầu một liên kết đặt lại mật khẩu.';
 
 export default function ForgotPasswordPage() {
   const { client } = useAuth();
+  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string>();
   const [accepted, setAccepted] = useState(false);
-  const alertRef = useRef<HTMLParagraphElement>(null);
 
-  async function submit(event: SyntheticEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
     if (submitting) return;
     const form = new FormData(event.currentTarget);
-    const email = form.get('email');
+    const email = formString(form, 'email').trim();
+    const fields: AuthFieldErrors = {};
+    const invalidEmail = emailError(email);
+    if (invalidEmail !== undefined) fields.email = invalidEmail;
+    if (Object.keys(fields).length > 0) {
+      showIssue(issueFromFields(fields));
+      return;
+    }
+
+    clearIssue();
     setSubmitting(true);
-    setError(undefined);
     try {
-      const result = await client.POST('/api/v1/auth/forgot-password', {
-        body: { email: typeof email === 'string' ? email.trim() : '' },
-      });
+      const result = await client.POST('/api/v1/auth/forgot-password', { body: { email } });
       if (result.data === undefined) {
-        throw new Error(apiError(result.error, 'Không thể gửi yêu cầu đặt lại mật khẩu.'));
+        throw authErrorFromResponse(result.error, result.response.status, 'Không thể gửi yêu cầu.');
       }
       setAccepted(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể gửi yêu cầu.');
-      window.requestAnimationFrame(() => alertRef.current?.focus());
+      showIssue(
+        authIssueFromError(
+          toAuthActionError(caught, 'Không thể kết nối để gửi yêu cầu.'),
+          'forgot',
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  return (
-    <main className="auth-shell">
-      <form className="auth-card" onSubmit={(event) => void submit(event)}>
-        <p className="eyebrow">Khôi phục tài khoản</p>
-        <h1>Quên mật khẩu</h1>
-        {accepted ? (
-          <p className="status" role="status" aria-live="polite">
-            Nếu email tồn tại, rePhone đã gửi liên kết đặt lại mật khẩu.
+  const content = (
+    <AuthPage title="Quên mật khẩu" description={description}>
+      {accepted ? (
+        <div aria-live="polite">
+          <InlineAlert tone="success" title="Yêu cầu đã được tiếp nhận">
+            Nếu tài khoản phù hợp, rePhone sẽ gửi hướng dẫn qua email. Phản hồi này luôn giống nhau
+            để bảo vệ thông tin tài khoản.
+          </InlineAlert>
+          <AuthFormActions>
+            <Link href="/login" standalone>
+              Quay lại đăng nhập
+            </Link>
+          </AuthFormActions>
+        </div>
+      ) : (
+        <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
+          <ErrorSummary ref={summaryRef} errors={issue.errors} />
+          <p className={authStyles.copy}>
+            Vì lý do riêng tư, rePhone không xác nhận một email có tồn tại hay không.
           </p>
-        ) : (
-          <>
-            <p>Nhập email tài khoản. Phản hồi luôn giống nhau để bảo vệ thông tin người dùng.</p>
-            <label>
-              Email
-              <input name="email" type="email" autoComplete="email" required maxLength={320} />
-            </label>
-            <button className="button primary" type="submit" disabled={submitting}>
-              {submitting ? 'Đang gửi…' : 'Gửi liên kết'}
-            </button>
-          </>
-        )}
-        {error === undefined ? null : (
-          <p ref={alertRef} tabIndex={-1} className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="form-footer">
-          <Link href="/login">Quay lại đăng nhập</Link>
-        </p>
-      </form>
-    </main>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            label="Email"
+            required
+            maxLength={320}
+            error={issue.fields.email}
+          />
+          <AuthFormActions>
+            <Button
+              className={authStyles.primaryAction}
+              type="submit"
+              loading={submitting}
+              loadingLabel="Đang gửi yêu cầu"
+            >
+              Gửi liên kết
+            </Button>
+            <AuthFormFooter>
+              <Link href="/login">Quay lại đăng nhập</Link>
+            </AuthFormFooter>
+          </AuthFormActions>
+          <AuthSecurityNote>
+            Liên kết đặt lại chỉ dùng được một lần và có thời hạn.
+          </AuthSecurityNote>
+        </AuthForm>
+      )}
+    </AuthPage>
   );
+
+  return (
+    <AnonymousAuthGate title="Quên mật khẩu" description={description}>
+      {content}
+    </AnonymousAuthGate>
+  );
+}
+
+function formString(form: FormData, name: string): string {
+  const value = form.get(name);
+  return typeof value === 'string' ? value : '';
 }

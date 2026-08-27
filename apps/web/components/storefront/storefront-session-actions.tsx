@@ -14,7 +14,7 @@ export function StorefrontSessionActions() {
     status === 'anonymous'
       ? { href: '/login', label: 'Tài khoản' }
       : user?.role === 'CUSTOMER'
-        ? { href: '/orders', label: 'Đơn hàng' }
+        ? { href: '/account', label: 'Tài khoản' }
         : { href: '/backoffice/orders', label: 'Backoffice' };
 
   return (

@@ -43,18 +43,134 @@ describe('createApiClient', () => {
     expect(first.response.status).toBe(200);
     expect(second.response.status).toBe(200);
     expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(refreshAccessToken).toHaveBeenCalledWith('expired-token');
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it('does not refresh auth endpoints or replay a protected request more than once', async () => {
-    const fetchMock = vi.fn<typeof globalThis.fetch>(() =>
-      Promise.resolve(jsonResponse({ error: { code: 'SESSION_REVOKED' } }, 401)),
+  it('does not refresh or replay a late 401 after the active identity changes', async () => {
+    let accessToken = 'session-a-token';
+    let releaseResponse: ((response: Response) => void) | undefined;
+    const fetchMock = vi.fn<typeof globalThis.fetch>(
+      () =>
+        new Promise<Response>((resolve) => {
+          releaseResponse = resolve;
+        }),
     );
-    const refreshAccessToken = vi.fn(() => Promise.resolve('still-invalid'));
+    const refreshAccessToken = vi.fn(() => Promise.resolve('refreshed-session-a-token'));
     const onUnauthorized = vi.fn();
     const client = createApiClient({
       baseUrl: 'https://api.example.test',
-      getAccessToken: () => 'expired-token',
+      getAccessToken: () => accessToken,
+      refreshAccessToken,
+      onUnauthorized,
+      fetch: fetchMock,
+    });
+
+    const oldIdentityRequest = client.GET('/api/v1/account');
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+    accessToken = 'session-b-token';
+    releaseResponse?.(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+
+    const result = await oldIdentityRequest;
+    expect(result.response.status).toBe(401);
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('replays a late 401 from the token generation that just refreshed', async () => {
+    let accessToken = 'expired-token';
+    const originalResponses: Array<(response: Response) => void> = [];
+    const fetchMock = vi.fn<typeof globalThis.fetch>((input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      if (request.headers.get('Authorization') === 'Bearer fresh-token') {
+        return Promise.resolve(jsonResponse(accountPayload, 200));
+      }
+      return new Promise<Response>((resolve) => {
+        originalResponses.push(resolve);
+      });
+    });
+    const refreshAccessToken = vi.fn((expectedAccessToken?: string) => {
+      expect(expectedAccessToken).toBe('expired-token');
+      accessToken = 'fresh-token';
+      return Promise.resolve(accessToken);
+    });
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      getAccessToken: () => accessToken,
+      refreshAccessToken,
+      fetch: fetchMock,
+    });
+
+    const first = client.GET('/api/v1/account');
+    const second = client.GET('/api/v1/account');
+    await vi.waitFor(() => {
+      expect(originalResponses).toHaveLength(2);
+    });
+
+    originalResponses[0]?.(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+    await expect(first).resolves.toMatchObject({ response: { status: 200 } });
+    expect(accessToken).toBe('fresh-token');
+
+    originalResponses[1]?.(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+    await expect(second).resolves.toMatchObject({ response: { status: 200 } });
+    expect(refreshAccessToken).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('does not use a prior refresh transition after a subsequent identity change', async () => {
+    let accessToken = 'session-a-expired';
+    const originalResponses: Array<(response: Response) => void> = [];
+    const fetchMock = vi.fn<typeof globalThis.fetch>((input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      if (request.headers.get('Authorization') === 'Bearer session-a-fresh') {
+        return Promise.resolve(jsonResponse(accountPayload, 200));
+      }
+      return new Promise<Response>((resolve) => {
+        originalResponses.push(resolve);
+      });
+    });
+    const refreshAccessToken = vi.fn(() => {
+      accessToken = 'session-a-fresh';
+      return Promise.resolve(accessToken);
+    });
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      getAccessToken: () => accessToken,
+      refreshAccessToken,
+      fetch: fetchMock,
+    });
+
+    const first = client.GET('/api/v1/account');
+    const late = client.GET('/api/v1/account');
+    await vi.waitFor(() => {
+      expect(originalResponses).toHaveLength(2);
+    });
+    originalResponses[0]?.(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+    await expect(first).resolves.toMatchObject({ response: { status: 200 } });
+
+    accessToken = 'session-b-token';
+    originalResponses[1]?.(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+    await expect(late).resolves.toMatchObject({ response: { status: 401 } });
+    expect(refreshAccessToken).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not refresh auth endpoints or replay a protected request more than once', async () => {
+    let accessToken = 'expired-token';
+    const fetchMock = vi.fn<typeof globalThis.fetch>(() =>
+      Promise.resolve(jsonResponse({ error: { code: 'SESSION_REVOKED' } }, 401)),
+    );
+    const refreshAccessToken = vi.fn(() => {
+      accessToken = 'still-invalid';
+      return Promise.resolve(accessToken);
+    });
+    const onUnauthorized = vi.fn();
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      getAccessToken: () => accessToken,
       refreshAccessToken,
       onUnauthorized,
       fetch: fetchMock,

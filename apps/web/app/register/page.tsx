@@ -1,76 +1,145 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState, type SyntheticEvent } from 'react';
 import { useAuth } from '../auth-provider';
+import {
+  AnonymousAuthGate,
+  AuthForm,
+  AuthFormActions,
+  AuthFormFooter,
+  AuthPage,
+  AuthSecurityNote,
+  PasswordFields,
+  authIssueFromError,
+  authStyles,
+  confirmationError,
+  emailError,
+  issueFromFields,
+  passwordPolicyError,
+  registrationProfileErrors,
+  useAuthFormIssue,
+  type AuthFieldErrors,
+} from '@/components/auth';
+import { Button, ErrorSummary, InlineAlert, Input, Link } from '@/components/ui';
+
+const description = 'Tạo tài khoản khách hàng để lưu đơn hàng, bảo hành và địa chỉ nhận máy.';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register } = useAuth();
-  const [error, setError] = useState<string>();
+  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    setSubmitting(true);
-    setError(undefined);
+    if (submitting) return;
+
     const form = new FormData(event.currentTarget);
+    const email = formString(form, 'email').trim();
+    const fullName = formString(form, 'fullName').trim();
     const phone = formString(form, 'phone').trim();
+    const password = formString(form, 'password');
+    const confirmation = formString(form, 'confirmation');
+    const fields: AuthFieldErrors = { ...registrationProfileErrors(fullName, phone) };
+    const invalidEmail = emailError(email);
+    const invalidPassword = passwordPolicyError(password);
+    const invalidConfirmation = confirmationError(password, confirmation);
+    if (invalidEmail !== undefined) fields.email = invalidEmail;
+    if (invalidPassword !== undefined) fields.password = invalidPassword;
+    if (invalidConfirmation !== undefined) fields.confirmation = invalidConfirmation;
+    if (Object.keys(fields).length > 0) {
+      showIssue(issueFromFields(fields));
+      return;
+    }
+
+    clearIssue();
+    setSubmitting(true);
     try {
       await register({
-        email: formString(form, 'email'),
-        password: formString(form, 'password'),
-        fullName: formString(form, 'fullName'),
+        email,
+        fullName,
+        password,
         ...(phone.length === 0 ? {} : { phone }),
       });
-      router.push('/login');
+      setCompleted(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tạo tài khoản.');
+      showIssue(authIssueFromError(caught, 'register'));
     } finally {
       setSubmitting(false);
     }
   }
 
-  return (
-    <main className="auth-shell">
-      <form className="auth-card" onSubmit={(event) => void submit(event)}>
-        <p className="eyebrow">Tài khoản rePhone</p>
-        <h1>Đăng ký</h1>
-        <label>
-          Họ và tên
-          <input name="fullName" autoComplete="name" required maxLength={255} />
-        </label>
-        <label>
-          Email
-          <input name="email" type="email" autoComplete="email" required maxLength={320} />
-        </label>
-        <label>
-          Số điện thoại (không bắt buộc)
-          <input name="phone" type="tel" autoComplete="tel" maxLength={32} />
-        </label>
-        <label>
-          Mật khẩu
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
+  const content = (
+    <AuthPage title="Tạo tài khoản" description={description}>
+      {completed ? (
+        <div aria-live="polite">
+          <InlineAlert tone="success" title="Tài khoản đã được tạo">
+            Đăng ký không tự đăng nhập. Hãy đăng nhập riêng để bắt đầu một phiên bảo mật mới.
+          </InlineAlert>
+          <AuthFormActions>
+            <Link href="/login" standalone>
+              Đi đến đăng nhập
+            </Link>
+          </AuthFormActions>
+        </div>
+      ) : (
+        <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
+          <ErrorSummary ref={summaryRef} errors={issue.errors} />
+          <Input
+            id="fullName"
+            name="fullName"
+            autoComplete="name"
+            autoFocus
+            label="Họ và tên"
             required
-            minLength={8}
-            maxLength={128}
-            pattern="(?=.*[A-Za-z])(?=.*\\d)(?!\\s)(?!.*\\s$).{8,128}"
-            title="Dài 8–128 ký tự, có ít nhất một chữ và một số, không có khoảng trắng ở đầu/cuối."
+            maxLength={255}
+            error={issue.fields.fullName}
           />
-        </label>
-        {error === undefined ? null : <p className="form-error">{error}</p>}
-        <button className="button primary" type="submit" disabled={submitting}>
-          {submitting ? 'Đang tạo…' : 'Tạo tài khoản'}
-        </button>
-        <p className="form-footer">
-          Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
-        </p>
-      </form>
-    </main>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            label="Email"
+            required
+            maxLength={320}
+            error={issue.fields.email}
+          />
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            label="Số điện thoại (không bắt buộc)"
+            maxLength={32}
+            error={issue.fields.phone}
+          />
+          <PasswordFields errors={issue.fields} />
+          <AuthFormActions>
+            <Button
+              className={authStyles.primaryAction}
+              type="submit"
+              loading={submitting}
+              loadingLabel="Đang tạo tài khoản"
+            >
+              Tạo tài khoản
+            </Button>
+            <AuthFormFooter>
+              Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
+            </AuthFormFooter>
+          </AuthFormActions>
+          <AuthSecurityNote>
+            Mật khẩu chỉ được gửi khi bạn xác nhận biểu mẫu và không được hiển thị lại.
+          </AuthSecurityNote>
+        </AuthForm>
+      )}
+    </AuthPage>
+  );
+
+  return (
+    <AnonymousAuthGate title="Tạo tài khoản" description={description}>
+      {content}
+    </AnonymousAuthGate>
   );
 }
 
