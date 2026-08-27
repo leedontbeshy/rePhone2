@@ -6,7 +6,7 @@ export type FrontendCoverageStatus = 'NOT STARTED' | 'IN PROGRESS' | 'DONE';
 export const FRONTEND_PHASE_STATUS = {
   'FE-0': 'DONE',
   'FE-1': 'DONE',
-  'FE-2': 'IN PROGRESS',
+  'FE-2': 'DONE',
   'FE-3': 'NOT STARTED',
   'FE-4': 'NOT STARTED',
   'FE-5': 'NOT STARTED',
@@ -51,7 +51,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateAccount',
@@ -62,7 +62,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateAccount; dirty, validation, pending, conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listAccountAddresses',
@@ -73,7 +73,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createAccountAddress',
@@ -84,7 +84,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createAccountAddress; validation, pending, success, conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'archiveAccountAddress',
@@ -95,7 +95,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action archiveAccountAddress; confirm, pending, success, replay/conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateAccountAddress',
@@ -106,7 +106,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateAccountAddress; dirty, validation, pending, conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'changePassword',
@@ -117,7 +117,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng changePassword; dirty, validation, pending, conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listCustomerAfterSalesRequests',
@@ -194,7 +194,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command acceptEmployeeInvitation; pending, authoritative success, replay/conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'forgotPassword',
@@ -205,7 +205,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command forgotPassword; pending, authoritative success, replay/conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'login',
@@ -216,7 +216,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command login; pending, authoritative success, replay/conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'logout',
@@ -227,7 +227,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đăng xuất; pending, success, provider error',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'refreshSession',
@@ -238,7 +238,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Bootstrap/refresh phiên; loading, success, anonymous fallback',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'registerAccount',
@@ -249,7 +249,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng registerAccount; validation, pending, success, conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resetPassword',
@@ -260,7 +260,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resetPassword; pending, authoritative success, replay/conflict',
     'FE-2',
     'browser:auth-account',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeAfterSalesRequests',

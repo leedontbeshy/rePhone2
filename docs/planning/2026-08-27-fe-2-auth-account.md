@@ -1,10 +1,11 @@
 # FE-2 — Auth & self-service account implementation record
 
-> Trạng thái: **IN PROGRESS**<br>
+> Trạng thái: **DONE**<br>
 > Branch: `feat/fe-2-auth-account`  
 > Start baseline SHA: `6a98db7`  
 > FE-1 closeout SHA: `aae6f12`  
 > Ngày bắt đầu: `2026-08-27`  
+> Ngày hoàn thành: `2026-08-27`
 > Design authority: [design.md](../../design.md)  
 > Delivery plan: [plan-fe.md](../../plan-fe.md)
 
@@ -137,11 +138,12 @@ Khi có drift, thứ tự authority là docs domain/security → OpenAPI/generat
 
 ## 9. Nghiệm thu và evidence
 
-- WP0: implementation record đã tạo; FE-2 chuyển `IN PROGRESS` đồng thời trong `plan-fe.md` và executable manifest; 14 operation vẫn `NOT STARTED` cho đến khi có UI/test evidence.
-- WP0 contract normalization: account profile/security ghi actor authenticated; address list không pagination; archive không reason.
-- Code evidence: chưa có — bổ sung commit/release SHA theo từng work package.
-- Test evidence: chưa có — bổ sung command, exit status, browser trace và accessibility result.
-- Visual evidence: chưa có — bổ sung representative desktop/tablet/mobile snapshots.
-- Rollback rehearsal: chưa chạy — bổ sung sau khi auth/account route-group và shared state ổn định.
+- Lifecycle: FE-2 và đúng 14 operation đã chuyển `DONE` đồng thời trong `plan-fe.md` và executable manifest; ba account route mới chuyển `EXISTING`.
+- Contract normalization: account profile/security dùng authenticated actor; address list không pagination; archive không reason; OpenAPI address path parameter và generated client đã đồng bộ tại `46dda0f`.
+- Code evidence: `c8e1f32..e3a211b`; canonical implementation/test SHA `e3a211b`.
+- Security evidence: access token chỉ ở closure memory; refresh/logout có cookie + `X-Rephone-CSRF: 1`; keyed single-flight/revision guard ngăn refresh hoặc late-401 replay qua identity mới; login response được runtime-validate; reset/invitation fragment được clear trước request và không vào URL query/Web Storage.
+- Test evidence: web unit `135/135`; API unit `606/606`; API client `5/5`; integration `54/54`; API E2E `93/93`; coverage `753/753`; FE-2 Playwright `4/4`; toàn bộ browser `19/19`; `pnpm verify:release` xanh trên closeout tree.
+- Responsive/a11y evidence: auth/account được kiểm tra desktop mặc định và mobile 390 px; axe không có finding serious/critical và không horizontal overflow. Không lưu pixel snapshot chứa dữ liệu account; fixture chỉ dùng identity giả và token đã bị xóa trước assertion.
+- Rollback rehearsal: `git show --format= <sha> | git apply --reverse --check` xanh độc lập cho `46dda0f`, `206e47d`, `49135e1` và `e3a211b`; không có database migration hoặc business state cần khôi phục.
 
-FE-2 chỉ chuyển `DONE` khi 14/14 operation có UI/action và automated evidence, browser flow desktop/mobile xanh, security assertions không lộ token/contact/address, full release gate xanh và rollback rehearsal được ghi lại.
+Checkpoint C2 đã đạt: 14/14 operation có UI/action và automated evidence, role-aware navigation đúng, browser flow desktop/mobile xanh, token hygiene/CSRF assertions xanh, full release gate xanh và FE-3 là bước kế tiếp nhưng vẫn `NOT STARTED`.
