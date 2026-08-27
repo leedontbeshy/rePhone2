@@ -7,7 +7,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-0': 'DONE',
   'FE-1': 'DONE',
   'FE-2': 'DONE',
-  'FE-3': 'NOT STARTED',
+  'FE-3': 'DONE',
   'FE-4': 'NOT STARTED',
   'FE-5': 'NOT STARTED',
   'FE-6': 'NOT STARTED',
@@ -1558,7 +1558,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'addCartItem',
@@ -1569,7 +1569,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng addCartItem; validation, pending, success, conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'removeCartItem',
@@ -1580,7 +1580,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action removeCartItem; confirm/reason, pending, success, replay/conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateCartItem',
@@ -1591,7 +1591,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateCartItem; dirty, validation, pending, conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'mergeCart',
@@ -1602,7 +1602,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command mergeCart; pending, authoritative success, replay/conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createCheckout',
@@ -1613,7 +1613,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createCheckout; validation, pending, success, conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'previewCheckout',
@@ -1624,7 +1624,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command previewCheckout; pending, authoritative success, replay/conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listCustomerOrders',
@@ -1756,7 +1756,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'addWishlistItem',
@@ -1767,7 +1767,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng addWishlistItem; validation, pending, success, conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'removeWishlistItem',
@@ -1778,7 +1778,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action removeWishlistItem; confirm/reason, pending, success, replay/conflict',
     'FE-3',
     'browser:cart-checkout',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getLiveness',
