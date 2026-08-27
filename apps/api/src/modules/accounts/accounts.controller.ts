@@ -20,6 +20,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import type { CookieOptions, Response } from 'express';
@@ -126,6 +127,7 @@ export class AccountsController {
     operationId: 'updateAccountAddress',
     summary: 'Update an owned customer address',
   })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateAddressDto })
   @ApiOkResponse({ type: AddressResponse })
   @ApiErrorResponses(
@@ -148,6 +150,7 @@ export class AccountsController {
     operationId: 'archiveAccountAddress',
     summary: 'Archive an owned customer address',
   })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiNoContentResponse()
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED' },
