@@ -47,6 +47,32 @@ describe('createApiClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
+  it('replays through browser fetch with the global invocation context', async () => {
+    let accessToken = 'expired-token';
+    const fetchMock = vi.fn<typeof globalThis.fetch>(function (this: unknown, input, init) {
+      const request = input instanceof Request ? input : new Request(input, init);
+      if (request.headers.get('Authorization') === 'Bearer fresh-token') {
+        expect(this).toBe(globalThis);
+        return Promise.resolve(jsonResponse(accountPayload, 200));
+      }
+      return Promise.resolve(jsonResponse({ error: { code: 'ACCESS_TOKEN_INVALID' } }, 401));
+    });
+    const client = createApiClient({
+      baseUrl: 'https://api.example.test',
+      getAccessToken: () => accessToken,
+      refreshAccessToken: () => {
+        accessToken = 'fresh-token';
+        return Promise.resolve(accessToken);
+      },
+      fetch: fetchMock,
+    });
+
+    const result = await client.GET('/api/v1/account');
+
+    expect(result.response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not refresh or replay a late 401 after the active identity changes', async () => {
     let accessToken = 'session-a-token';
     let releaseResponse: ((response: Response) => void) | undefined;

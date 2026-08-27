@@ -1,3 +1,5 @@
+import type { AuthRole, AuthStatus } from '@/app/auth-provider';
+
 export const STOREFRONT_NAVIGATION = [
   { href: '/', label: 'iPhone' },
   { href: '/products?productType=ACCESSORY&inStock=true', label: 'Phụ kiện' },
@@ -5,6 +7,19 @@ export const STOREFRONT_NAVIGATION = [
   { href: '/vouchers', label: 'Ưu đãi' },
   { href: '/store', label: 'Cửa hàng' },
 ] as const;
+
+export const CUSTOMER_NAVIGATION = [
+  { href: '/warranties', label: 'Bảo hành' },
+  { href: '/wishlist', label: 'Ưa thích' },
+  { href: '/orders', label: 'Đơn hàng' },
+] as const;
+
+export function customerNavigationForSession(
+  status: AuthStatus,
+  role: AuthRole | null | undefined,
+): typeof CUSTOMER_NAVIGATION | readonly [] {
+  return status === 'authenticated' && role === 'CUSTOMER' ? CUSTOMER_NAVIGATION : [];
+}
 
 export function isStorefrontNavigationCurrent(
   href: string,

@@ -6,6 +6,7 @@ import styles from './shells.module.css';
 
 interface CustomerShellProps extends SharedShellProps {
   readonly storefrontNavigation?: readonly ShellNavigationItem[];
+  readonly primaryNavigation?: ReactNode;
   readonly customerNavigation: readonly ShellNavigationItem[];
   readonly mobileNavigation?: ReactNode;
   readonly headerActions?: ReactNode;
@@ -16,6 +17,7 @@ export function CustomerShell({
   children,
   brand,
   storefrontNavigation = [],
+  primaryNavigation,
   customerNavigation,
   mobileNavigation,
   headerActions,
@@ -44,10 +46,10 @@ export function CustomerShell({
             )}
           </div>
         </div>
-        {storefrontNavigation.length === 0 ? null : (
+        {storefrontNavigation.length === 0 && primaryNavigation === undefined ? null : (
           <div className={styles.categoryRow}>
             <nav className={styles.primaryNavigation} aria-label="Điều hướng chính">
-              <NavigationList items={storefrontNavigation} />
+              {primaryNavigation ?? <NavigationList items={storefrontNavigation} />}
             </nav>
           </div>
         )}

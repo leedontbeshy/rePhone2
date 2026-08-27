@@ -5,8 +5,8 @@ import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { CustomerShell } from '@/components/shells';
 import { MobileNavigation } from '@/components/storefront/mobile-navigation';
+import { StorefrontDesktopNavigation } from '@/components/storefront/storefront-desktop-navigation';
 import { StorefrontHeaderActions } from '@/components/storefront/storefront-header-actions';
-import { STOREFRONT_NAVIGATION } from '@/components/storefront/storefront-navigation';
 import { Button, InlineAlert, Link } from '@/components/ui';
 import styles from './account.module.css';
 
@@ -47,7 +47,7 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <CustomerShell
       customerNavigation={customerNavigation}
-      storefrontNavigation={STOREFRONT_NAVIGATION}
+      primaryNavigation={<StorefrontDesktopNavigation />}
       headerActions={<StorefrontHeaderActions />}
       mobileNavigation={<MobileNavigation />}
     >

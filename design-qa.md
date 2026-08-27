@@ -1,153 +1,76 @@
-# Design QA — Exact-unit Hero Balance & Location Availability
+# Design QA — iPhone facts, accessory cards, typography, and customer navigation
 
-## Findings
+Date: 2026-08-27
 
-Không còn finding P0, P1 hoặc P2 sau vòng kiểm tra cuối.
+Preview: `http://localhost:3000/products/iphone-15-pro`
 
-Sai khác được chấp nhận:
+## Sources and implementation
 
-- Mockup dùng iPhone 15 Pro Max với nhiều ảnh; implementation dùng chiếc iPhone 11 `RPH-IP11-64-BLK-U04` và một ảnh thật từ Supabase. Đây là khác biệt dữ liệu, không phải layout drift.
-- Panel `Tình trạng của máy` là refinement đã duyệt sau mockup. Panel chỉ dùng ba fact public-safe và không đưa checklist vận hành vào purchase rail.
-- Ở đúng breakpoint `1280px`, rail dài hơn gallery khoảng `108px` nhưng không overflow hoặc che control; từ `1440px` trở lên, hai đáy lệch `3px`. Đây là transition responsive chấp nhận được, không dùng chiều cao giả để che sai lệch.
+- User reference — complete iPhone 13 detail: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-d013e1d3-11b7-4da9-8033-56db77dd790b.png` (1079×580).
+- User reference — sparse iPhone 15 Pro detail: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-5d61fa42-6ca4-44d5-920e-44b7348e43b0.png` (1098×603).
+- User reference — uneven accessory cards: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-100a8c46-b054-4fe9-9cbe-a5211bff526c.png` (940×539).
+- Canonical repository reference: `D:\Dev\rePhone2\docs\assets\ui\rephone-model-detail-canonical-reference.png` (1006×1563).
+- Final implementation captures:
+  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-iphone-15-pro.png` (1265×712).
+  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-iphone-15-pro-mid.png` (1265×712).
+  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-accessory-cards.png` (1265×712).
+- Main implementation: `apps/web/components/catalog/iphone-model-detail.tsx`, `apps/web/lib/iphone-model-facts.ts`, `apps/web/components/catalog/catalog.module.css`, and `apps/web/components/storefront/`.
 
-## Source visual truth
+## Viewport and state
 
-- Exact-unit reference: `docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png` — `973 × 1616px`.
-- UX contract: `design.md`, mục `12.4.1` và `12.4.2`.
-- State: storefront anonymous, light theme, exact unit còn bán.
+- In-app Browser production preview, authenticated CUSTOMER session.
+- CSS viewport: 1280×720; document client width: 1265; device pixel ratio: 2.
+- Captured states: model hero, model colors/trust/list heading, accessory card row, account header, store header, and the Wishlist navigation interaction.
+- Anonymous state was checked before authentication; role unit tests also assert that the customer shortcuts are absent for anonymous/loading/EMPLOYEE/ADMIN sessions.
+- The in-app Browser viewport override did not alter the rendered viewport for 390px emulation. Responsive behavior was therefore inspected in source and covered with browser assertions at 320×568, 390×844, 1024×900, and 1440×900. The mobile drawer now has bounded height, its own scrolling, and a dynamic focus trap.
 
-## Rendered implementation evidence
+## Full-view comparison
 
-| Surface                       |  CSS viewport | Screenshot pixels | Density | Evidence                                                  |
-| ----------------------------- | ------------: | ----------------: | ------: | --------------------------------------------------------- |
-| Warehouse unit desktop        | `1440 × 1000` |     `1440 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-1440-final.png`      |
-| Warehouse unit mobile         |   `390 × 844` |       `390 × 844` |     `1` | `.local/design-qa/exact-unit-balance-390-final.png`       |
-| Warehouse unit medium desktop | `1280 × 1000` |     `1280 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-1280-two-column.png` |
-| Warehouse unit wide desktop   | `2322 × 1000` |     `2322 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-2322.png`            |
+- The repository canonical reference and the final page retain the same page hierarchy: shared header, breadcrumbs, two-column model hero, four core facts, trust note, available-unit grid, and footer.
+- The user-requested differences are present: source-backed colors, customer-friendly trust copy, the single heading `Các máy đang có sẵn`, and larger customer typography.
+- The Browser full-page stitch duplicated part of the fourth card and footer, while the live DOM contained exactly four `Xem máy này` actions, one availability heading, and one footer. Full-page stitching was not used as visual evidence; the complete page was instead checked through consecutive focused captures plus DOM geometry.
 
-## Comparison evidence
+## Focused comparisons
 
-- Full-view/focused top-fold comparison: `.local/design-qa/exact-unit-balance-comparison-final.png` — `1946 × 676px`.
-- Bên trái là source crop `973 × 676px`. Bên phải là implementation viewport `1440px` được downsample về `973px` rồi crop cùng chiều cao; density normalization scale là `973 / 1440`.
-- Không cần comparison region thứ hai: comparison này đã crop riêng header, gallery và toàn bộ purchase rail ở kích thước đọc được — đúng vùng thay đổi của concern.
+### Model detail
 
-## Required fidelity surfaces
+- Compared the iPhone 15 Pro source and final hero in the same visual input.
+- The image/summary split, model label, title weight, card radius, borders, and teal accent stay aligned with the existing design language.
+- The sparse one-card state is replaced by four balanced cards: year, chip, RAM, and display. The colors panel and trust note continue the same card treatment.
+- No clipping, horizontal overflow, missing imagery, or Next.js error overlay was present.
 
-- **Fonts và typography:** giữ Inter/system stack, hierarchy title/price và tabular price hiện hành; copy location/condition không cắt hoặc tràn.
-- **Spacing và layout:** gallery 1:1 và rail `7/5` được giữ. Tại `1440` và `2322px`, rail/gallery lệch đáy `-3px`; `320`, `390`, `768`, `1280`, `1440` và `2322px` đều có `scrollWidth === clientWidth`.
-- **Colors và tokens:** surface, border, teal, text hierarchy và focus styles chỉ dùng token hiện hành; không thêm palette hoặc decoration mới.
-- **Image quality:** dùng đúng ảnh public của exact unit, `object-fit: contain`; không crop, stretch, placeholder hoặc asset dựng bằng CSS.
-- **Copy và content:** unit tại `STORE` hiện `Sẵn hàng`; unit tại `WAREHOUSE` hiện `Đang ở kho` cùng link `Liên hệ cửa hàng` để điều chuyển trước khi xem. UI không hard-code pickup và không nói `Chưa hỗ trợ`.
-- **Icons:** giữ Phosphor outline hiện hành; không thêm emoji, SVG tự dựng hoặc CSS art.
-- **Accessibility:** Axe serious/critical bằng `0` tại `320`, `1280` và `1440px`; semantic `dl/dt/dd`, focus và link navigation được giữ.
+### Accessory cards
 
-## Primary interactions and runtime checks
+- Compared the supplied accessory source and final card row in the same visual input.
+- All three card bottoms and CTA bottoms are equal in the live geometry. Optional color text consumes natural body space; no fake placeholder content was added.
+- The test now compares cards within each grid row, so future multi-row catalogs do not produce a false failure.
 
-- Route live Supabase `RPH-IP11-64-BLK-U04` trả `200`, hiển thị đúng một `Đang ở kho`.
-- Link `Liên hệ cửa hàng` điều hướng thành công tới `/store`.
-- Route `RPH-IP11-64-BLK-U01` tại location `STORE` hiển thị đúng một `Sẵn hàng`.
-- Có đúng ba condition row ở mọi viewport; không có page exception.
-- Console chỉ có `401` dự kiến từ optional anonymous-session refresh; public route vẫn hoạt động và không có lỗi runtime.
+### Header and customer states
 
-## Comparison history
+- At 1280px, both the public catalog list and the customer shortcut row had center x = 632.5px; document horizontal overflow was 0.
+- Authenticated CUSTOMER header exposes `Bảo hành`, `Ưa thích`, and `Đơn hàng`. The Wishlist link navigated to `/wishlist` and rendered `Sản phẩm đã lưu`.
+- Account sidebar links resolve to 15px. Auth descriptions and legacy customer mobile navigation use the increased customer typography without changing backoffice sizing.
 
-### Iteration 0 — blocked
+## Mandatory surface review
 
-- Condition rows xếp dọc làm purchase rail dài hơn gallery khoảng `105px` ở `1440px`, và chênh tăng ở viewport hẹp hơn.
-- Copy `Chưa hỗ trợ` khiến người dùng hiểu sai rằng cửa hàng không hỗ trợ pickup.
+- Typography: customer storefront/account/auth text increased slightly; hierarchy remains readable and consistent.
+- Spacing and alignment: header rows centered; model facts use a stable 2×2 grid; accessory cards and actions align per row.
+- Color and contrast: existing navy/teal/neutral token system preserved; no new unverified palette introduced.
+- Images: existing product assets retained with correct aspect ratio and no stretching.
+- Copy and localization: customer copy is natural Vietnamese; no access-token/session/cookie/localStorage/checklist wording appears on the checked customer surface.
+- Icons and controls: existing Phosphor icon family retained; navigation, Wishlist link, sort control, and visible CTAs remain operable.
+- Responsive/accessibility: no desktop overflow; short mobile drawer scrolls independently; focusables are recomputed while session state changes; focus remains trapped in the dialog.
+- Runtime: clean Browser tab reported zero console errors and zero console warnings after model, accessory, account, Wishlist, and store interactions.
 
-### Iteration 1 — blocked
+## Comparison and fix history
 
-- Condition rows đã compact và hai đáy gần khớp ở desktop rộng.
-- Copy `Chỉ giao hàng` đúng về checkout nhưng mâu thuẫn với label `Tại cửa hàng` và không giải thích khả năng điều chuyển.
+1. P1 — account pages initially omitted the new shortcut row. Fixed by letting `CustomerShell` accept the shared primary navigation and wiring it through `AccountShell`; post-fix DOM confirms all three links.
+2. P1 — authenticated mobile drawer could exceed a short viewport while body scrolling was locked. Added `max-height: 100dvh`, `overflow-y: auto`, overscroll containment, and a 320×568 assertion.
+3. P1/P2 — several finish names did not match Apple Vietnamese terminology. Corrected the iPhone 17 family, iPhone 13 Pro family, iPhone 11 Pro family, and iPhone 5 finishes; added regression assertions.
+4. P2 — mobile focusables were captured before asynchronous session changes. The focus trap now recomputes them on every Tab key and recovers focus if the active node disappears.
+5. P2 — the first final preview exposed an illegal browser-fetch replay invocation after session refresh. The API client now invokes replay fetch with the global browser context; a regression test was added. A clean rebuilt preview has no console errors.
+6. P2 — the accessory geometry test compared different future rows globally. It now groups cards by visual row before comparing bottoms.
 
-### Iteration 2 — passed
-
-- Giữ compact row, breakpoint responsive và bổ sung lại padding cuối đúng nhịp.
-- Location copy đổi thành `Sẵn hàng` hoặc `Đang ở kho`; warehouse state có link liên hệ điều chuyển.
-- Post-fix evidence là screenshot/comparison nêu trên, browser measurements, Axe và test/build xanh.
-
-## Follow-up polish
-
-- P3: khi backend bổ sung workflow yêu cầu điều chuyển, link `/store` có thể được nâng thành CTA tạo yêu cầu; hiện tại không dựng hành vi chưa có contract.
-
-final result: passed
-
----
-
-# Design QA — Customer Language, Store, Header & Account Alignment
-
-## Findings
-
-Không còn finding P0, P1 hoặc P2 sau vòng kiểm tra cuối.
-
-## Source visual truth
-
-- Ảnh phản hồi hồ sơ của người dùng: `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-b2183161-cde5-43fa-a1d1-7d1b11084052.png` — `869 × 269px`, `96dpi`.
-- UX contract: `design.md` phiên bản `1.6` và `docs/planning/2026-08-27-customer-language-store-header-polish.md`.
-- Baseline store/header trước chỉnh sửa: `.local/product-design-audit/storefront-header/01-store-desktop.png`, `02-store-mobile.png` và `03-mobile-menu.png`.
-- Trạng thái kiểm tra: giao diện sáng; store ẩn danh; account dùng dữ liệu QA tổng hợp, không dùng mật khẩu hoặc dữ liệu thật.
-
-## Rendered implementation evidence
-
-| Surface                  | CSS viewport | Screenshot pixels | Density | Evidence                                                      |
-| ------------------------ | -----------: | ----------------: | ------: | ------------------------------------------------------------- |
-| Store desktop            | `1440 × 900` |      `1425 × 891` | `96dpi` | `.local/product-design-qa/store-desktop-1440-raw.jpg`         |
-| Store mobile             |  `390 × 844` |       `375 × 812` | `96dpi` | `.local/product-design-qa/store-mobile-390.jpg`               |
-| Store mobile menu        |  `390 × 844` |       `390 × 844` | `96dpi` | `.local/product-design-qa/store-mobile-menu-390.jpg`          |
-| Account desktop viewport | `1280 × 900` |      `1265 × 889` | `96dpi` | `.local/product-design-qa/account-profile-viewport.jpg`       |
-| Account contact panel    | `1280 × 900` |       `962 × 303` | `96dpi` | `.local/product-design-qa/account-profile-implementation.jpg` |
-| Account mobile           |  `390 × 844` |       `375 × 812` | `96dpi` | `.local/product-design-qa/account-mobile-390.jpg`             |
-
-## Comparison evidence
-
-- Focused account comparison: `.local/product-design-qa/account-comparison.jpg` — `1794 × 306px`.
-- Bên trái là ảnh người dùng `869 × 269px`; bên phải là implementation crop `962 × 303px`, được chuẩn hóa về rộng `869px` trước khi ghép.
-- Comparison bao phủ đúng vùng thay đổi: heading, mô tả, hai label, hai input, helper text và CTA.
-- Source có input họ tên thấp hơn input số điện thoại; implementation có hai input cùng `top = 709.59375px`, sai lệch `0px`.
-
-## Required fidelity surfaces
-
-- **Typography:** giữ font stack và hierarchy hiện hành; heading, label, helper text và CTA không bị cắt hoặc tràn.
-- **Spacing và layout:** account desktop cân bằng hai cột; mobile xếp dọc đúng thứ tự. Store desktop dùng header hai hàng `72px + 48px`; navigation rộng `48rem`, nằm giữa và phân bố đều.
-- **Colors và tokens:** giữ surface, border, teal, text hierarchy và focus ring hiện hành; không thêm palette hoặc decoration lạ.
-- **Copy và content:** storefront, auth, account, cart, thanh toán, đơn hàng, hậu mãi và bảo hành dùng ngôn ngữ khách hàng tự nhiên; không đưa thuật ngữ kỹ thuật về phiên xác thực hay lưu trữ trình duyệt ra UI khách hàng.
-- **Icons và assets:** giữ icon library và asset hiện có; không tạo emoji, SVG hoặc CSS art thay thế.
-- **Responsive và accessibility:** store/account đều có `scrollWidth <= clientWidth`; menu có dialog semantics, focus vào nút đóng khi mở, đóng bằng `Escape` và trả focus về trigger.
-
-## Primary interactions and runtime checks
-
-- Menu mobile mở thành công, `aria-expanded=true`, route `Cửa hàng` có current state; `Escape` đóng menu, dialog count về `0` và focus trở lại `Mở danh mục`.
-- CTA store giữ đúng `tel:0900000000`; link bản đồ là URL Google Maps an toàn với địa chỉ đã encode.
-- Account desktop: hai input cao `50px`, cùng top và cùng độ rộng theo grid.
-- Account mobile: họ tên ở `top=916.59375px`, số điện thoại ở `top=1010.59375px`, xác nhận xếp dọc; document width `375px` trong CSS viewport `390px`, không overflow ngang.
-- Console của các tab QA cuối chỉ có React DevTools/HMR info; không có lỗi runtime.
-- `pnpm --filter @rephone/web test`: `38` files, `143` tests passed.
-- `pnpm --filter @rephone/web typecheck`, `lint` và `build`: passed.
-
-## Comparison history
-
-### Iteration 0 — blocked
-
-- Ảnh người dùng cho thấy helper text ở cột số điện thoại làm hai field không cân theo trục dọc.
-- Header nhỏ, navigation lệch trái; `/store` chưa có hierarchy rõ và còn pha thuật ngữ Anh–Việt.
-- Auth/account còn giải thích chi tiết triển khai mà khách hàng không cần biết.
-
-### Iteration 1 — blocked
-
-- Form grid đã được neo đầu hàng và browser geometry test được bổ sung.
-- Copy auth/account được làm sạch nhưng store, header và các customer commerce surfaces chưa đồng bộ hoàn toàn.
-
-### Iteration 2 — passed
-
-- Account desktop đạt sai lệch input top `0px`; mobile stack và overflow đều đạt.
-- Header lớn hơn, navigation desktop căn giữa/phân bố đều; menu mobile hoạt động đầy đủ.
-- Store được thiết kế lại với hierarchy, contact/address/pickup information và CTA rõ ràng bằng tiếng Việt tự nhiên.
-- Customer-facing error/status/copy ở commerce, hậu mãi và bảo hành đã được Việt hóa; raw contracts và backoffice behavior không bị đổi.
-- Post-fix evidence, browser interaction checks và toàn bộ test/typecheck/lint/build đều xanh.
-
-## Follow-up polish
-
-Không có follow-up bắt buộc cho concern hiện tại.
+No P0, P1, or P2 findings remain.
 
 final result: passed

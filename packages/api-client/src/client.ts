@@ -59,7 +59,7 @@ export function createApiClient(options: ApiClientOptions) {
 
       const replayWith = async (accessToken: string): Promise<Response> => {
         replay.request.headers.set('Authorization', `Bearer ${accessToken}`);
-        const replayResponse = await requestOptions.fetch(replay.request);
+        const replayResponse = await requestOptions.fetch.call(globalThis, replay.request);
         if (replayResponse.status === 401 && options.getAccessToken?.() === accessToken) {
           await options.onUnauthorized?.();
         }

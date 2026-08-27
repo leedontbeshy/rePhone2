@@ -153,6 +153,8 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
     await expect(page.getByText('Chưa có địa chỉ đã lưu', { exact: true })).toBeVisible();
 
+    await expectCustomerHeaderShortcutsAndCenteredCatalog(page);
+
     await page.goto('/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
     await expectAccountProfileFieldsAligned(page);
@@ -457,6 +459,77 @@ async function expectAccountProfileFieldsAligned(page: Page): Promise<void> {
   expect(Math.abs(mobileFullNameBox.x - mobilePhoneBox.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(mobileFullNameBox.width - mobilePhoneBox.width)).toBeLessThanOrEqual(1);
   await expectNoHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+}
+
+async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Promise<void> {
+  const currentHeaderNavigation = page
+    .locator("[data-shell='customer'] > header")
+    .getByRole('navigation', { name: 'Điều hướng chính' });
+  for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
+    await expect(
+      currentHeaderNavigation.getByRole('link', { name: label, exact: true }),
+    ).toBeVisible();
+  }
+
+  await page.goto('/store');
+
+  for (const width of [1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const header = page.locator("[data-shell='storefront'] > header");
+    const navigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
+    const catalogList = navigation.locator('ul').first();
+    const customerList = navigation.locator('ul').nth(1);
+
+    for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
+      await expect(customerList.getByRole('link', { name: label, exact: true })).toBeVisible();
+    }
+
+    const [navigationBox, catalogBox, customerBox] = await Promise.all([
+      visibleBox(navigation),
+      visibleBox(catalogList),
+      visibleBox(customerList),
+    ]);
+    expect(
+      Math.abs(navigationBox.x + navigationBox.width / 2 - (catalogBox.x + catalogBox.width / 2)),
+    ).toBeLessThanOrEqual(1);
+    expect(customerBox.y).toBeGreaterThanOrEqual(catalogBox.y + catalogBox.height);
+
+    const itemGaps = await catalogList.locator('li').evaluateAll((items) =>
+      items.slice(1).map((item, index) => {
+        const previous = items[index]?.getBoundingClientRect();
+        const current = item.getBoundingClientRect();
+        return previous === undefined ? 0 : current.left - previous.right;
+      }),
+    );
+    expect(Math.max(...itemGaps) - Math.min(...itemGaps)).toBeLessThanOrEqual(1);
+  }
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.getByRole('button', { name: 'Mở danh mục', exact: true }).click();
+  const mobileDialog = page.getByRole('dialog', { name: 'Danh mục', exact: true });
+  const mobileCustomerNavigation = page.getByRole('navigation', {
+    name: 'Lối tắt tài khoản',
+  });
+  for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
+    await expect(
+      mobileCustomerNavigation.getByRole('link', { name: label, exact: true }),
+    ).toBeVisible();
+  }
+
+  const scrollState = await mobileDialog.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    overflowY: getComputedStyle(element).overflowY,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(scrollState.overflowY).toBe('auto');
+  expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+
+  const cartLink = mobileDialog.getByRole('link', { name: /Giỏ hàng/ });
+  await cartLink.scrollIntoViewIfNeeded();
+  await expect(cartLink).toBeInViewport();
+  await page.getByRole('button', { name: 'Đóng', exact: true }).click();
 
   await page.setViewportSize({ width: 1280, height: 720 });
 }

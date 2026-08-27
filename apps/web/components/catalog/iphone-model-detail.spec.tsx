@@ -9,11 +9,22 @@ describe('iPhone model detail', () => {
 
     expect(markup).toContain('<h1 id="model-title">iPhone 15 Pro Max</h1>');
     expect(markup).toContain('Ảnh minh họa model');
+    expect(markup).toContain(
+      'Khám phá iPhone 15 Pro Max cũ tại rePhone; giá và tình trạng được ghi rõ cho từng máy đang có sẵn.',
+    );
     expect(markup).toContain('Apple A17 Pro');
     expect(markup).toContain('8 GB');
     expect(markup).toContain('6.7 inch');
-    expect(markup).toContain('18 hạng mục');
+    expect(markup).toContain('Titan tự nhiên');
+    expect(markup).toContain(
+      'Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.',
+    );
+    expect(markup.match(/Các máy đang có sẵn/g)).toHaveLength(1);
+    expect(markup).not.toContain('18 hạng mục');
     expect(markup).not.toContain('20 bước');
+    expect(markup).not.toContain('checklist');
+    expect(markup).not.toContain('Lựa chọn hiện có');
+    expect(markup).not.toContain('Chọn đúng chiếc máy đang bán');
     expect(markup).not.toContain('Mới nhất');
     expect(markup).toContain('Ảnh thật · Mã máy UNIT-15PM-001');
     expect(markup).toContain('Titan tự nhiên');
@@ -37,13 +48,40 @@ describe('iPhone model detail', () => {
     expect(markup).toContain('href="/products?productType=IPHONE&amp;inStock=true"');
     expect(markup).toContain('iPhone 15 Pro Max');
   });
+
+  it('uses the source-backed profile to keep a sparse iPhone 15 Pro at four model facts', () => {
+    const source = product();
+    const markup = renderToStaticMarkup(
+      <IphoneModelDetail
+        product={{
+          ...source,
+          chipset: null,
+          id: 'product-15-pro',
+          name: 'iPhone 15 Pro',
+          ramGb: null,
+          releaseYear: 2023,
+          screenSizeInches: null,
+          slug: 'iphone-15-pro',
+          variants: [],
+        }}
+        sort="PRICE_ASC"
+      />,
+    );
+
+    expect(markup).toContain('<h1 id="model-title">iPhone 15 Pro</h1>');
+    expect(markup).toContain('Apple A17 Pro');
+    expect(markup).toContain('8 GB');
+    expect(markup).toContain('6.1 inch');
+    expect(markup).toContain('Titan đen · Titan trắng · Titan xanh · Titan tự nhiên');
+    expect(markup.match(/<dt>/g)).toHaveLength(5);
+  });
 });
 
 function product(): ProductDetail {
   return {
     brand: 'Apple',
     chipset: 'Apple A17 Pro',
-    description: 'iPhone 15 Pro Max cũ đã hoàn tất kiểm định đầu vào.',
+    description: 'iPhone cũ được kiểm định minh bạch theo checklist rePhone.',
     id: 'product-15-pro-max',
     media: [
       {

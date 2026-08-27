@@ -249,6 +249,7 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 - Không dùng claim “đổi trả trong 15 ngày” khi contract/settings chưa cung cấp chính sách đổi trả public tương ứng.
 - Không suy diễn `shipping=true` thành “giao hàng toàn quốc”; chỉ mô tả đúng fulfillment availability public.
 - Không hiển thị camera, chuẩn kháng nước/IP, phiên bản hệ điều hành, kết nối hoặc thông số kỹ thuật khác chỉ vì chúng xuất hiện trong mockup. Mỗi thông số phải có field public hoặc source contract/settings rõ ràng.
+- Các model fact bất biến được phép đến từ một registry frontend có nguồn khi public projection chưa đủ. Registry phải khóa theo slug, ghi URL Apple cho năm/chip/màn hình/màu, URL EveryMac/EveryiPhone cho RAM và ngày kiểm chứng; không gọi mạng khi render và không tự điền fact thiếu nguồn.
 
 ## 6. Information architecture và role navigation
 
@@ -266,7 +267,7 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 
 - Tất cả public surface.
 - Account, address và security.
-- Wishlist, checkout, orders, warranty và after-sales list/detail.
+- Header desktop/mobile hiện `Bảo hành`, `Ưa thích`, `Đơn hàng`; wishlist, checkout, orders, warranty và after-sales list/detail tiếp tục theo authorization backend.
 
 ### 6.3 EMPLOYEE
 
@@ -332,6 +333,8 @@ Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", 
 | Price         | `30/36`   |     700 | `font-variant-numeric: tabular-nums` |
 
 Không dùng heading storefront cỡ cực lớn làm đẩy thông tin mua hàng xuống dưới fold.
+
+Customer-facing `storefront`, `customer` và `auth` surface dùng readability mode: Body `17/26`, Body small `15/22`, Label/meta `13/18`. Backoffice giữ bảng token gốc để bảo toàn mật độ vận hành; không tăng root font-size toàn ứng dụng.
 
 ### 7.3 Spacing, sizing và grid
 
@@ -613,7 +616,8 @@ Semantic/responsive contract:
 ### 12.3 Model detail
 
 - [Model detail canonical reference](docs/assets/ui/rephone-model-detail-canonical-reference.png) khóa hierarchy desktop, density, gallery, model fact cards và exact-unit card language cho `/products/[slug]`.
-- Model facts tách khỏi danh sách máy vật lý.
+- Model facts tách khỏi danh sách máy vật lý. Known model luôn có bốn card theo thứ tự năm ra mắt, chip, RAM, màn hình và một panel full-width cho màu chính thức; registry source-backed ở §5.4 là data authority khi public projection chưa đủ.
+- Trust note dùng câu `Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.`; section inventory chỉ có một heading `Các máy đang có sẵn`.
 - Các `availableUnits` có thể được flatten từ variants thành một grid; mỗi card phải giữ variant context như storage/color và không được xuất hiện hai lần.
 - `availableUnits` có thể filter/sort local theo dữ liệu response hiện có.
 - Không hiển thị sort “Mới nhất” nếu public DTO không có timestamp/field tạo ra ordering đó.
@@ -1047,6 +1051,7 @@ Không dùng design debt để hợp thức hóa security hoặc contract violat
 | 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn      | Full checklist, repair và identifier dossier      | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
 | 2026-08-27 | Compact condition rail và copy theo location   | Ép gallery cao; hard-code pickup availability     | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
 | 2026-08-27 | Customer-first Vietnamese + balanced header    | Vá copy từng trang; header một hàng; redesign lớn | Giữ UI dễ hiểu, cân desktop/mobile và hạn chế regression                   |
+| 2026-08-27 | Source-backed model facts + role-aware links   | Mở rộng API; backfill DB; menu sao chép           | Đồng nhất 47 model không thêm request/migration và tránh navigation drift  |
 
 Decision log này chỉ ghi quyết định presentation/interaction. Không sửa hoặc thay thế ADR nghiệp vụ.
 
@@ -1077,10 +1082,13 @@ Các ảnh này có authority về presentation trong phạm vi route được g
 
 Không sao chép logo, asset, content hoặc layout nguyên bản từ các nguồn trên.
 
+Product facts bất biến không lấy từ các visual reference trên. Chúng dùng [Apple Technical Specifications](https://support.apple.com/kb/index?page=specs) cho thông số Apple công bố và [EveryiPhone specifications](https://everymac.com/systems/apple/iphone/index-iphone-specs.html) chỉ để bổ sung RAM Apple không công bố; URL cụ thể được lưu trên từng record registry.
+
 ## 26. Changelog
 
 | Version | Ngày       | Thay đổi                                                                                                   |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `1.7`   | 2026-08-27 | Khóa source-backed facts cho 47 model, readability mode và customer navigation theo role                   |
 | `1.6`   | 2026-08-27 | Khóa tiếng Việt cho surface khách hàng, store information hierarchy và storefront header cân giữa          |
 | `1.5`   | 2026-08-27 | Khóa hero balance responsive và fulfillment copy cho exact-unit                                            |
 | `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                          |

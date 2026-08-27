@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { customerNavigationForSession } from '@/components/storefront/storefront-navigation';
 import type { PublicMedia } from '../lib/catalog-api';
 import { useAuth } from './auth-provider';
 import { useCommerce } from './commerce-provider';
@@ -9,8 +10,13 @@ import { useCommerce } from './commerce-provider';
 export function CatalogHeader() {
   const { status, user } = useAuth();
   const { totalQuantity } = useCommerce();
+  const customerNavigation = customerNavigationForSession(status, user?.role);
+  const audience =
+    status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN')
+      ? 'backoffice'
+      : 'customer';
   return (
-    <header className="site-header">
+    <header className="site-header" data-audience={audience}>
       <Link className="brand" href="/">
         rePhone
       </Link>
@@ -22,15 +28,11 @@ export function CatalogHeader() {
             Giỏ hàng <span className="cart-badge">{totalQuantity}</span>
           </Link>
         ) : null}
-        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
-          <Link href="/wishlist">Đã lưu</Link>
-        ) : null}
-        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
-          <Link href="/orders">Đơn hàng</Link>
-        ) : null}
-        {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
-          <Link href="/warranties">Bảo hành</Link>
-        ) : null}
+        {customerNavigation.map((item) => (
+          <Link key={item.href} href={item.href}>
+            {item.label}
+          </Link>
+        ))}
         {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
           <Link href="/after-sales">Hậu mãi</Link>
         ) : null}

@@ -187,7 +187,7 @@ describe('account generated-client adapter', () => {
       { code: 'IS_LENGTH', field: 'fullName', message: 'Họ và tên chưa hợp lệ.' },
     ]);
     expect(
-      `${expiredLogin.message} ${rejectedRequest.message} ${unknownFailure.message} ${invalidProfile.details[0]?.message}`,
+      `${expiredLogin.message} ${rejectedRequest.message} ${unknownFailure.message} ${invalidProfile.details[0]?.message ?? ''}`,
     ).not.toMatch(
       /access token|refresh session|cookie|localStorage|fragment|csrf|database|diagnostic|characters|validation/i,
     );

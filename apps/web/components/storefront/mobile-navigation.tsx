@@ -5,13 +5,18 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce } from '@/app/commerce-provider';
-import { isStorefrontNavigationCurrent, STOREFRONT_NAVIGATION } from './storefront-navigation';
+import {
+  customerNavigationForSession,
+  isStorefrontNavigationCurrent,
+  STOREFRONT_NAVIGATION,
+} from './storefront-navigation';
 import styles from './mobile-navigation.module.css';
 
 export function MobileNavigation() {
   const pathname = usePathname();
   const { status, user } = useAuth();
   const { totalQuantity } = useCommerce();
+  const customerNavigation = customerNavigationForSession(status, user?.role);
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -25,10 +30,13 @@ export function MobileNavigation() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const panel = panelRef.current;
-    const focusable = panel?.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled])',
-    );
-    focusable?.[0]?.focus();
+    const getFocusable = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled])',
+        ) ?? [],
+      );
+    getFocusable()[0]?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -36,10 +44,18 @@ export function MobileNavigation() {
         setOpen(false);
         return;
       }
-      if (event.key !== 'Tab' || focusable === undefined || focusable.length === 0) return;
+      if (event.key !== 'Tab') return;
+
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
 
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
+      if (!panel?.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+        return;
+      }
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last?.focus();
@@ -117,6 +133,27 @@ export function MobileNavigation() {
                 <QueryAwareMobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
               </Suspense>
             </nav>
+
+            {customerNavigation.length === 0 ? null : (
+              <nav className={styles.customerNavigation} aria-label="Lối tắt tài khoản">
+                <ul className={styles.navigationList}>
+                  {customerNavigation.map((item) => {
+                    const isCurrent = isStorefrontNavigationCurrent(item.href, pathname);
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          aria-current={isCurrent ? 'page' : undefined}
+                          onClick={closeNavigation}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+            )}
 
             <div className={styles.sessionLinks} role="group" aria-label="Tài khoản và giỏ hàng">
               {status === 'loading' ? (

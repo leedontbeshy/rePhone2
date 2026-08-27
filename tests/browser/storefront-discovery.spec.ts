@@ -93,7 +93,7 @@ test.describe('FE-1 storefront discovery', () => {
     });
 
     await expect(currentStoreLink).toHaveAttribute('aria-current', 'page');
-    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '16px');
+    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '17px');
 
     const [primaryRowBox, navigationBox, navigationListBox] = await Promise.all([
       primaryRow.boundingBox(),
@@ -145,6 +145,51 @@ test.describe('FE-1 storefront discovery', () => {
       mobileNavigation.getByRole('link', { name: 'Cửa hàng', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
     await expect(mobileNavigation.getByRole('link', { name: 'Ưu đãi', exact: true })).toBeVisible();
+  });
+
+  test('keeps accessory cards and their actions aligned when optional details differ', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/products?productType=ACCESSORY&inStock=true');
+
+    const accessoryActions = page.getByRole('link', { name: 'Xem phụ kiện', exact: true });
+    expect(await accessoryActions.count()).toBeGreaterThanOrEqual(3);
+    await expect(accessoryActions.first()).toBeVisible();
+
+    type AccessoryCardPosition = {
+      actionBottom: number;
+      cardBottom: number;
+      cardTop: number;
+    };
+    const positions: AccessoryCardPosition[] = await accessoryActions.evaluateAll((actions) =>
+      actions.map((action) => {
+        const card = action.closest('article');
+        if (card === null) throw new Error('Accessory action is not inside a product card.');
+        return {
+          actionBottom: action.getBoundingClientRect().bottom,
+          cardBottom: card.getBoundingClientRect().bottom,
+          cardTop: card.getBoundingClientRect().top,
+        };
+      }),
+    );
+    const rows: AccessoryCardPosition[][] = [];
+    for (const position of positions) {
+      const matchingRow = rows.find((row) =>
+        row.some(({ cardTop }) => Math.abs(cardTop - position.cardTop) <= 1),
+      );
+      if (matchingRow === undefined) rows.push([position]);
+      else matchingRow.push(position);
+    }
+    expect(rows.some((row) => row.length >= 3)).toBe(true);
+
+    for (const row of rows) {
+      if (row.length < 2) continue;
+      const actionBottoms = row.map(({ actionBottom }) => actionBottom);
+      const cardBottoms = row.map(({ cardBottom }) => cardBottom);
+      expect(Math.max(...actionBottoms) - Math.min(...actionBottoms)).toBeLessThanOrEqual(1);
+      expect(Math.max(...cardBottoms) - Math.min(...cardBottoms)).toBeLessThanOrEqual(1);
+    }
   });
 
   test('keeps URL filters authoritative across pagination and browser history', async ({

@@ -3,6 +3,7 @@ import {
   CpuIcon,
   DeviceMobileIcon,
   MemoryIcon,
+  PaletteIcon,
   ShieldCheckIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import {
   toModelUnitOffers,
   type ModelUnitOfferSort,
 } from '@/lib/model-unit-offers';
+import { resolveIphoneModelFacts } from '@/lib/iphone-model-facts';
 import { ExactUnitCard } from './exact-unit-card';
 import {
   ProductBreadcrumbs,
@@ -29,6 +31,7 @@ interface IphoneModelDetailProps {
 
 export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
   const offers = sortModelUnitOffers(toModelUnitOffers(product), sort);
+  const facts = resolveIphoneModelFacts(product);
 
   return (
     <div className={styles.page}>
@@ -45,9 +48,10 @@ export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Khám phá model iPhone</p>
           <h1 id="model-title">{product.name}</h1>
-          {product.description === null || product.description === undefined ? null : (
-            <p className={styles.description}>{product.description}</p>
-          )}
+          <p className={styles.description}>
+            Khám phá {product.name} cũ tại rePhone; giá và tình trạng được ghi rõ cho từng máy đang
+            có sẵn.
+          </p>
 
           <ProductSpecGrid
             className={styles.modelFacts ?? ''}
@@ -55,44 +59,53 @@ export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
               {
                 icon: <CalendarBlankIcon size={25} weight="regular" />,
                 label: 'Năm ra mắt',
-                value: product.releaseYear,
+                value: facts.releaseYear,
               },
               {
                 icon: <CpuIcon size={25} weight="regular" />,
                 label: 'Chip',
-                value: product.chipset,
+                value: facts.chipset,
               },
               {
                 icon: <MemoryIcon size={25} weight="regular" />,
                 label: 'RAM',
                 value:
-                  product.ramGb === null || product.ramGb === undefined
+                  facts.ramGb === null || facts.ramGb === undefined
                     ? undefined
-                    : `${String(product.ramGb)} GB`,
+                    : `${String(facts.ramGb)} GB`,
               },
               {
                 icon: <DeviceMobileIcon size={25} weight="regular" />,
                 label: 'Màn hình',
                 value:
-                  product.screenSizeInches === null || product.screenSizeInches === undefined
+                  facts.screenSizeInches === null || facts.screenSizeInches === undefined
                     ? undefined
-                    : `${product.screenSizeInches} inch`,
+                    : `${facts.screenSizeInches} inch`,
               },
             ]}
           />
 
+          {facts.colors.length === 0 ? null : (
+            <dl className={styles.colorPanel}>
+              <div>
+                <dt>
+                  <PaletteIcon aria-hidden="true" size={25} weight="regular" />
+                  Màu sắc
+                </dt>
+                <dd>{facts.colors.join(' · ')}</dd>
+              </div>
+            </dl>
+          )}
+
           <ProductTrustCallout icon={<ShieldCheckIcon size={27} weight="regular" />}>
-            Các máy đang hiển thị đã hoàn tất checklist kỹ thuật 18 hạng mục trước khi đưa lên bán.
+            Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.
           </ProductTrustCallout>
         </div>
       </section>
 
       <section className={styles.offers} aria-labelledby="available-options-title">
         <header className={styles.sectionHeader}>
-          <div>
-            <p className={styles.eyebrow}>Lựa chọn hiện có</p>
-            <h2 id="available-options-title">Chọn đúng chiếc máy đang bán</h2>
-          </div>
+          <h2 id="available-options-title">Các máy đang có sẵn</h2>
           <div className={styles.sectionTools}>
             <p>Giá, pin và tình trạng thuộc riêng từng mã máy.</p>
             {offers.length > 1 ? <ModelUnitSortControl value={sort} /> : null}

@@ -2316,6 +2316,11 @@ main > p:not(.eyebrow) {
     font-size: 0.82rem;
   }
 
+  .site-header[data-audience='customer'] nav {
+    font-size: var(--font-size-small);
+    line-height: var(--line-height-small);
+  }
+
   .catalog-shell {
     width: min(100% - 24px, 1180px);
     padding-top: 48px;
