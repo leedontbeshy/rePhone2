@@ -66,7 +66,7 @@ Preview: `http://localhost:3000/checkout`
 5. P2 — review-required 409, payload pickup/store và số tiền chưa được kiểm tra đủ chặt. Parser và regression tests đã được bổ sung.
 6. P2 — thông báo wishlist, focus sau khi xóa, fulfillment disabled và tổng tiền 320 px chưa hoàn chỉnh. Đã sửa trạng thái, focus recovery và responsive stacking.
 7. P2 — copy “đồng bộ/gộp” và một đoạn giải thích bị lặp chưa phù hợp khách hàng. Đã chuyển sang tiếng Việt tự nhiên và rút gọn.
-8. P2 — lần tinh chỉnh trước đặt `Bảo hành`, `Ưa thích`, `Đơn hàng` ngang hàng với menu công khai nên header còn dày thông tin. Theo quyết định cuối, desktop chỉ giữ năm mục công khai được căn giữa và chia đều; bốn mục `Quản lý tài khoản`, `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm trong popup `Tài khoản`. Popup được neo sát nút mở và chủ động phủ lên hàng điều hướng để tổng thể gọn hơn; mobile tiếp tục dùng drawer hiện có.
+8. P2 — lần tinh chỉnh trước đặt `Bảo hành`, `Ưa thích`, `Đơn hàng` ngang hàng với menu công khai nên header còn dày thông tin. Theo quyết định cuối, desktop chỉ giữ năm mục công khai được căn giữa và chia đều; bốn mục `Quản lý tài khoản`, `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm trong popup `Tài khoản`. Popup được cân giữa dưới nút mở và chủ động phủ lên hàng điều hướng để tổng thể gọn hơn; mobile tiếp tục dùng drawer hiện có.
 9. P2 — sau khi tăng kích thước header, logo, giỏ và nút Danh mục có thể chồng lấn ở vùng nội dung 320 px. Đã giảm khoảng cách riêng tại breakpoint rất nhỏ và chỉ giữ biểu tượng cùng số lượng giỏ; vùng nội dung thật 320 px không còn tràn ngang.
 
 Không còn phát hiện P0, P1 hoặc P2.

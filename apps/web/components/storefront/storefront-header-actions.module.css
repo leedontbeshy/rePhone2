@@ -126,13 +126,14 @@ button.sessionAction {
 .accountMenuPanel {
   position: absolute;
   inset-block-start: calc(100% + var(--space-2));
-  inset-inline-end: 0;
+  inset-inline-start: 50%;
   inline-size: 15.5rem;
   padding: var(--space-2);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-overlay);
+  transform: translateX(-50%);
 }
 
 .accountMenuList {
