@@ -5,6 +5,7 @@ import {
   discountPercent,
   relatedUnitOffers,
   safeColorHex,
+  storeAvailabilityLabel,
   unitConfigurationLabel,
 } from './unit-dossier-presenters';
 
@@ -26,6 +27,13 @@ describe('unit dossier presenters', () => {
         { ...productFixture, ramGb: null },
       ),
     ).toBe('256 GB Natural Titanium');
+  });
+
+  it('describes pickup availability without implying the service is unsupported', () => {
+    expect(storeAvailabilityLabel(true, true)).toBe('Sẵn hàng');
+    expect(storeAvailabilityLabel(true, false)).toBe('Sẵn hàng');
+    expect(storeAvailabilityLabel(false, true)).toBe('Đang ở kho');
+    expect(storeAvailabilityLabel(false, false)).toBe('Không khả dụng');
   });
 
   it('excludes the current unit and keeps related offers bounded and stable', () => {

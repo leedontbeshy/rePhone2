@@ -1,4 +1,5 @@
 import { ShieldCheckIcon, StorefrontIcon, TruckIcon } from '@phosphor-icons/react/ssr';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { CommerceActions } from '@/app/commerce-actions';
 import { ProductBreadcrumbs } from '@/components/catalog/product-detail-components';
@@ -14,6 +15,7 @@ import {
   availableColorOffers,
   discountPercent,
   relatedUnitOffers,
+  storeAvailabilityLabel,
   unitConfigurationLabel,
 } from './unit-dossier-presenters';
 import { UnitSpecificationGroups } from './unit-specification-groups';
@@ -88,7 +90,10 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
             <PurchaseBenefit
               icon={<StorefrontIcon size={22} />}
               label="Tại cửa hàng"
-              value={unit.fulfillmentAvailability.pickup ? 'Có thể nhận' : 'Chưa hỗ trợ'}
+              value={storeAvailabilityLabel(
+                unit.fulfillmentAvailability.pickup,
+                unit.fulfillmentAvailability.shipping,
+              )}
             />
             <PurchaseBenefit
               icon={<TruckIcon size={22} />}
@@ -105,9 +110,10 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
             />
           </div>
           <UnitConditionSummary unit={unit} />
-          <p className={styles.authorityNote}>
-            Tồn kho và giá được kiểm tra lại khi bạn xem giỏ hàng và xác nhận đơn.
-          </p>
+          <InventoryAuthorityNote
+            pickup={unit.fulfillmentAvailability.pickup}
+            shipping={unit.fulfillmentAvailability.shipping}
+          />
         </aside>
       </section>
 
@@ -124,6 +130,23 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
         targetId={PURCHASE_ACTION_ID}
       />
     </div>
+  );
+}
+
+function InventoryAuthorityNote({ pickup, shipping }: { pickup: boolean; shipping: boolean }) {
+  if (!pickup && shipping) {
+    return (
+      <p className={styles.authorityNote}>
+        <Link href="/store">Liên hệ cửa hàng</Link> để chuyển máy trước khi đến xem. Giá và tồn kho
+        được kiểm tra lại khi xác nhận đơn.
+      </p>
+    );
+  }
+
+  return (
+    <p className={styles.authorityNote}>
+      Tồn kho và giá được kiểm tra lại khi bạn xem giỏ hàng và xác nhận đơn.
+    </p>
   );
 }
 

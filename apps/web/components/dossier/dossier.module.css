@@ -213,6 +213,12 @@
   line-height: 1.5;
 }
 
+.authorityNote a {
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
+  text-underline-offset: 0.16em;
+}
+
 .inspectionOverview {
   display: grid;
   overflow: hidden;
@@ -532,25 +538,6 @@
 }
 
 @media (min-width: 60rem) {
-  .hero {
-    grid-template-areas:
-      'gallery context'
-      'gallery purchase';
-    grid-template-columns: minmax(0, 7fr) minmax(22rem, 5fr);
-    grid-template-rows: auto 1fr;
-    column-gap: var(--space-10);
-    row-gap: var(--space-5);
-  }
-
-  .purchaseRail {
-    position: sticky;
-    top: var(--storefront-header-offset, 8.25rem);
-    padding: var(--space-2) 0 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
   .inspectionIntro,
   .inspectionPreview {
     padding: var(--space-5);
@@ -569,6 +556,27 @@
 
   .mobilePurchaseBar {
     display: none;
+  }
+}
+
+@media (min-width: 80rem) {
+  .hero {
+    grid-template-areas:
+      'gallery context'
+      'gallery purchase';
+    grid-template-columns: minmax(0, 7fr) minmax(22rem, 5fr);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-10);
+    row-gap: var(--space-5);
+  }
+
+  .purchaseRail {
+    position: sticky;
+    top: var(--storefront-header-offset, 8.25rem);
+    padding: var(--space-2) 0 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
 

@@ -688,6 +688,23 @@ Fact matrix gồm hai nhóm:
 
 Field null/blank được bỏ có chủ đích, không hiển thị `—`, placeholder hoặc claim phỏng đoán. `carrierName` chỉ hiện khi có giá trị. `cosmeticNotes` thuộc panel tình trạng và không lặp lại trong matrix. Chip, RAM, màn hình, model number hoặc region còn thiếu phải được bổ sung ở data concern có nguồn; UI không tự dựng.
 
+#### 12.4.2 Exact-unit hero balance và fulfillment copy
+
+Quyết định presentation đã xác nhận cho hero exact-unit:
+
+- Giữ gallery 1:1 và tỷ lệ cột desktop `7/5`; không thu nhỏ ảnh hoặc kéo giãn gallery để che chênh lệch nội dung.
+- Trên desktop rộng, ba dòng của `UnitConditionSummary` dùng nhịp compact theo hàng `icon | nhãn | giá trị/mô tả`. Mobile và tablet tiếp tục xếp nội dung theo chiều dọc để giữ khả năng đọc.
+- Chỉ bật hero hai cột khi viewport đủ rộng cho purchase rail; màn hình trung bình phải trở về một cột trước khi text wrap làm cột phải dài bất thường.
+- Mục tiêu cân bằng là mép dưới gallery và purchase rail gần thẳng hàng bằng mật độ nội dung thật, không dùng `height` cố định hoặc khoảng trắng giả.
+- Exact unit ở location `STORE` trình bày `Sẵn hàng`; unit ở `WAREHOUSE` trình bày `Đang ở kho` và dẫn khách tới `/store` để liên hệ điều chuyển trước khi đến xem. Không dùng `Chưa hỗ trợ` vì pickup vẫn là năng lực của cửa hàng.
+- UI tuyệt đối không hard-code `Có thể nhận`, tự chuyển location hoặc thay đổi checkout allocation. Khả năng pickup/shipping tiếp tục lấy trực tiếp từ public projection.
+
+Acceptance:
+
+- Không overflow/cắt chữ ở 320px, 390px, 768px, 1280px, 1440px và desktop rộng tương đương canonical reference.
+- Giữ semantic `dl/dt/dd`, keyboard/focus behavior và SSR.
+- Không phát sinh client state, API request hoặc dữ liệu public mới.
+
 Copy cho compact inspection summary:
 
 ```text
@@ -1016,6 +1033,7 @@ Không dùng design debt để hợp thức hóa security hoặc contract violat
 | 2026-08-26 | Server-first + domain component composition    | Page nguyên khối; generic component nhiều cờ    | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain     |
 | 2026-08-26 | Hai detail mockup là canonical storefront ref  | Giữ layout detail cũ; áp retail card vào BO     | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy  |
 | 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn      | Full checklist, repair và identifier dossier    | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
+| 2026-08-27 | Compact condition rail và copy theo location   | Ép gallery cao; hard-code pickup availability   | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
 
 Decision log này chỉ ghi quyết định presentation/interaction. Không sửa hoặc thay thế ADR nghiệp vụ.
 
@@ -1050,6 +1068,7 @@ Không sao chép logo, asset, content hoặc layout nguyên bản từ các ngu�
 
 | Version | Ngày       | Thay đổi                                                                                                   |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `1.5`   | 2026-08-27 | Khóa hero balance responsive và fulfillment copy cho exact-unit                                            |
 | `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                          |
 | `1.3`   | 2026-08-26 | Rút exact-unit storefront về inspection summary; bỏ full checklist, repair và identifier dossier           |
 | `1.2`   | 2026-08-26 | Khóa model/exact-unit mockup canonical, storefront visual language, backoffice boundary và claim guardrail |

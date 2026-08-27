@@ -1,76 +1,74 @@
-# Design QA — Exact-unit Condition Refinement
+# Design QA — Exact-unit Hero Balance & Location Availability
 
 ## Findings
 
 Không còn finding P0, P1 hoặc P2 sau vòng kiểm tra cuối.
 
-Các khác biệt được chấp nhận:
+Sai khác được chấp nhận:
 
-- Mockup dùng iPhone 15 Pro Max; implementation snapshot tự động dùng fixture iPhone 14 Pro và QA live dùng iPhone 11 đang `AVAILABLE`. Đây là khác biệt nội dung động, không phải layout drift.
-- Số ảnh và số thông số phụ thuộc public projection. UI giữ gallery và tự ẩn field rỗng, không tạo thumbnail, thông số hoặc claim giả.
-- Panel `Tình trạng của máy` là phần mở rộng đã duyệt sau mockup: panel lấp khoảng trống purchase rail bằng ba fact public-safe, không đưa checklist vận hành vào khu vực mua hàng.
+- Mockup dùng iPhone 15 Pro Max với nhiều ảnh; implementation dùng chiếc iPhone 11 `RPH-IP11-64-BLK-U04` và một ảnh thật từ Supabase. Đây là khác biệt dữ liệu, không phải layout drift.
+- Panel `Tình trạng của máy` là refinement đã duyệt sau mockup. Panel chỉ dùng ba fact public-safe và không đưa checklist vận hành vào purchase rail.
+- Ở đúng breakpoint `1280px`, rail dài hơn gallery khoảng `108px` nhưng không overflow hoặc che control; từ `1440px` trở lên, hai đáy lệch `3px`. Đây là transition responsive chấp nhận được, không dùng chiều cao giả để che sai lệch.
 
 ## Source visual truth
 
-- Exact-unit reference: `docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png` — `973 × 1616` px.
-- UX contract: `design.md`, mục `12.4.1 Exact-unit condition refinement`.
+- Exact-unit reference: `docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png` — `973 × 1616px`.
+- UX contract: `design.md`, mục `12.4.1` và `12.4.2`.
 - State: storefront anonymous, light theme, exact unit còn bán.
 
 ## Rendered implementation evidence
 
-Implementation evidence SHA: `6c26039`.
-
-| Surface                                        | CSS viewport | Screenshot pixels | Density | Evidence                                                                                                      |
-| ---------------------------------------------- | -----------: | ----------------: | ------: | ------------------------------------------------------------------------------------------------------------- |
-| Exact unit desktop, deterministic fixture      | `1440 × 900` |     `1440 × 3128` |     `1` | `tests/browser/storefront-discovery.spec.ts-snapshots/fe1-exact-unit-dossier-desktop-1440-chromium-win32.png` |
-| Exact unit mobile, deterministic fixture       |  `390 × 844` |      `390 × 5579` |     `1` | `tests/browser/storefront-discovery.spec.ts-snapshots/fe1-exact-unit-dossier-mobile-390-chromium-win32.png`   |
-| Exact unit desktop, source-width normalization |  `973 × 900` |      `973 × 3012` |     `1` | `.local/design-qa/exact-unit-reference-width-973.png`                                                         |
-| Exact unit narrow mobile, live Supabase data   |  `320 × 800` |      `320 × 5218` |     `1` | `.local/design-qa/exact-unit-mobile-320.png`                                                                  |
-
-Desktop source và normalized implementation dùng cùng chiều rộng `973px`. Full-page height khác nhau do dữ liệu thật, panel condition mới và related-unit count; không scale density.
+| Surface                       |  CSS viewport | Screenshot pixels | Density | Evidence                                                  |
+| ----------------------------- | ------------: | ----------------: | ------: | --------------------------------------------------------- |
+| Warehouse unit desktop        | `1440 × 1000` |     `1440 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-1440-final.png`      |
+| Warehouse unit mobile         |   `390 × 844` |       `390 × 844` |     `1` | `.local/design-qa/exact-unit-balance-390-final.png`       |
+| Warehouse unit medium desktop | `1280 × 1000` |     `1280 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-1280-two-column.png` |
+| Warehouse unit wide desktop   | `2322 × 1000` |     `2322 × 1000` |     `1` | `.local/design-qa/exact-unit-balance-2322.png`            |
 
 ## Comparison evidence
 
-- Full-view side-by-side: `.local/design-qa/exact-unit-reference-comparison.png` — `1946 × 1616` px. Hai ảnh được đặt chung một canvas, mỗi bên rộng `973px`; implementation được crop theo cùng chiều cao để so hierarchy đầu trang, fact matrix và section rhythm.
-- Focused purchase-rail side-by-side: `.local/design-qa/exact-unit-purchase-rail-comparison.png` — `860 × 840` px. Dùng để kiểm tra title, color, price, benefits, CTA và panel condition mới ở kích thước đọc được.
-- Focused region riêng cho fact matrix không cần thêm: hai nhóm `Cấu hình` và `Thông tin riêng của máy` đọc rõ trong full-view source-width comparison; DOM contract và snapshot suite kiểm tra riêng cấu trúc này.
+- Full-view/focused top-fold comparison: `.local/design-qa/exact-unit-balance-comparison-final.png` — `1946 × 676px`.
+- Bên trái là source crop `973 × 676px`. Bên phải là implementation viewport `1440px` được downsample về `973px` rồi crop cùng chiều cao; density normalization scale là `973 / 1440`.
+- Không cần comparison region thứ hai: comparison này đã crop riêng header, gallery và toàn bộ purchase rail ở kích thước đọc được — đúng vùng thay đổi của concern.
 
 ## Required fidelity surfaces
 
-- **Fonts và typography:** dùng Inter/system stack hiện hành, title/price giữ hierarchy technical-retail, giá dùng tabular numerals; label, fact value và copy dài không bị cắt ở `1440`, `390` hoặc `320px`.
-- **Spacing và layout:** gallery lớn được giữ; purchase rail nay cân chiều cao tốt hơn nhờ condition panel. Fact matrix dùng 3/2/1 cột desktop/tablet/mobile. Đo DOM xác nhận `scrollWidth === clientWidth` tại `1440`, `390` và `320px`.
-- **Colors và tokens:** toàn bộ surface, border, teal, success/warning dùng token hiện hành; panel mới không thêm palette riêng hoặc hiệu ứng trang trí ngoài design system.
-- **Image quality:** dùng ảnh exact unit thật từ public media, giữ `object-fit` và không thay bằng placeholder, CSS art hoặc SVG tự dựng. Số thumbnail phụ thuộc dữ liệu.
-- **Copy và content:** purchase rail chỉ nói tổng quát về ngoại hình, pin và lịch sử sửa chữa. Inspection summary dùng `KIỂM TRA TRƯỚC KHI BÁN`, không còn `5/18` hoặc `18 hạng mục`, vẫn giữ tối đa năm kết quả public-safe.
-- **Icons:** dùng cùng bộ Phosphor outline, cùng stroke language với storefront; không dùng emoji hoặc icon tự dựng.
-- **Accessibility:** Axe serious/critical bằng `0` tại `1440`, `390` và `320px`; skip link nhận focus đầu tiên; section có accessible name và semantic `dl`.
+- **Fonts và typography:** giữ Inter/system stack, hierarchy title/price và tabular price hiện hành; copy location/condition không cắt hoặc tràn.
+- **Spacing và layout:** gallery 1:1 và rail `7/5` được giữ. Tại `1440` và `2322px`, rail/gallery lệch đáy `-3px`; `320`, `390`, `768`, `1280`, `1440` và `2322px` đều có `scrollWidth === clientWidth`.
+- **Colors và tokens:** surface, border, teal, text hierarchy và focus styles chỉ dùng token hiện hành; không thêm palette hoặc decoration mới.
+- **Image quality:** dùng đúng ảnh public của exact unit, `object-fit: contain`; không crop, stretch, placeholder hoặc asset dựng bằng CSS.
+- **Copy và content:** unit tại `STORE` hiện `Sẵn hàng`; unit tại `WAREHOUSE` hiện `Đang ở kho` cùng link `Liên hệ cửa hàng` để điều chuyển trước khi xem. UI không hard-code pickup và không nói `Chưa hỗ trợ`.
+- **Icons:** giữ Phosphor outline hiện hành; không thêm emoji, SVG tự dựng hoặc CSS art.
+- **Accessibility:** Axe serious/critical bằng `0` tại `320`, `1280` và `1440px`; semantic `dl/dt/dd`, focus và link navigation được giữ.
 
 ## Primary interactions and runtime checks
 
-- Route exact unit trả `200` trên full stack local + Supabase.
-- CTA/cart/wishlist hiện hành vẫn render; mobile purchase bar xuất hiện sau CTA và tự ẩn trước footer theo browser regression.
-- Color navigation, gallery, unavailable-unit recovery và SSR-without-JavaScript tiếp tục nằm trong browser suite.
-- Console không có page exception. Có một network `401` dự kiến từ optional anonymous-session refresh; public page vẫn render bình thường.
-- Ba viewport có đúng `3` condition row, `2` specification group và `5` public inspection result; không có horizontal overflow hoặc old operational-count copy.
+- Route live Supabase `RPH-IP11-64-BLK-U04` trả `200`, hiển thị đúng một `Đang ở kho`.
+- Link `Liên hệ cửa hàng` điều hướng thành công tới `/store`.
+- Route `RPH-IP11-64-BLK-U01` tại location `STORE` hiển thị đúng một `Sẵn hàng`.
+- Có đúng ba condition row ở mọi viewport; không có page exception.
+- Console chỉ có `401` dự kiến từ optional anonymous-session refresh; public route vẫn hoạt động và không có lỗi runtime.
 
 ## Comparison history
 
 ### Iteration 0 — blocked
 
-- Purchase rail cũ để khoảng trống lớn dưới CTA.
-- Fact matrix là danh sách phẳng và chỉ hiện ít field khi dữ liệu thưa.
-- Inspection copy dùng cách viết `5/18`, mang sắc thái hồ sơ vận hành.
+- Condition rows xếp dọc làm purchase rail dài hơn gallery khoảng `105px` ở `1440px`, và chênh tăng ở viewport hẹp hơn.
+- Copy `Chưa hỗ trợ` khiến người dùng hiểu sai rằng cửa hàng không hỗ trợ pickup.
 
-### Iteration 1 — passed
+### Iteration 1 — blocked
 
-- Thêm `UnitConditionSummary` gồm ngoại hình, pin và lịch sử sửa chữa; không đọc checklist, repair detail, replaced parts hoặc identifier.
-- Tách fact matrix thành `Cấu hình` và `Thông tin riêng của máy`, tự bỏ field null/blank.
-- Tách `PublicInspectionSummary`, giữ năm kết quả nhưng thay copy theo contract đã duyệt.
-- Post-fix evidence: hai comparison image nêu trên, snapshot desktop/mobile và browser suite `14/14` xanh.
+- Condition rows đã compact và hai đáy gần khớp ở desktop rộng.
+- Copy `Chỉ giao hàng` đúng về checkout nhưng mâu thuẫn với label `Tại cửa hàng` và không giải thích khả năng điều chuyển.
+
+### Iteration 2 — passed
+
+- Giữ compact row, breakpoint responsive và bổ sung lại padding cuối đúng nhịp.
+- Location copy đổi thành `Sẵn hàng` hoặc `Đang ở kho`; warehouse state có link liên hệ điều chuyển.
+- Post-fix evidence là screenshot/comparison nêu trên, browser measurements, Axe và test/build xanh.
 
 ## Follow-up polish
 
-- P3: có thể làm gọn breadcrumb inventory code ở màn `320px`; hiện tại vẫn đọc được, không tràn và không che control.
-- Enrich chip, RAM, màn hình, model number hoặc region là data concern riêng; UI không tự suy đoán.
+- P3: khi backend bổ sung workflow yêu cầu điều chuyển, link `/store` có thể được nâng thành CTA tạo yêu cầu; hiện tại không dựng hành vi chưa có contract.
 
 final result: passed

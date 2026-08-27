@@ -31,6 +31,12 @@ export function unitConfigurationLabel(detail: UsedIphoneDetail, product: Produc
   return values.length > 0 ? values.join(' · ') : detail.variant.displayName;
 }
 
+export function storeAvailabilityLabel(pickup: boolean, shipping: boolean): string {
+  if (pickup) return 'Sẵn hàng';
+  if (shipping) return 'Đang ở kho';
+  return 'Không khả dụng';
+}
+
 export function relatedUnitOffers(
   product: ProductDetail,
   currentInventoryCode: string,
