@@ -403,7 +403,7 @@ Responsive không chỉ là thu nhỏ. Thứ tự nội dung phải thay đổi 
 - Riêng `IphoneGenerationShelf` luôn giữ một hàng: mobile dùng native horizontal scroll + scroll snap; desktop hiển thị khoảng bốn card và chỉ có điều khiển cuộn khi thật sự overflow.
 - Shelf không được giấu card sau hover-only control. Keyboard, touchpad, touch và focus tuần tự đều phải tới được mọi model.
 - Exact-unit storefront xếp fact matrix thành từng dòng dễ quét; inspection chỉ giữ summary tối đa năm kết quả, không chuyển thành dossier/accordion đầy đủ.
-- Checkout summary chuyển từ sticky rail sang phần review trong flow.
+- Checkout summary nằm trong luồng trên mobile/tablet và có thể bám theo cột phải trên desktop khi không che nội dung hoặc focus.
 - Backoffice table chuyển sang stacked row/detail disclosure khi không đủ chiều rộng; không buộc người dùng đọc bảng ngang ở 320px.
 - Sticky element phải có safe-area và `scroll-padding` để không che focus/error.
 

@@ -1,24 +1,12 @@
-.navigationGroups {
-  display: grid;
-  inline-size: 100%;
+ul.navigation.navigation {
+  inline-size: min(100%, 48rem);
+  max-inline-size: 48rem;
   min-inline-size: 0;
+  justify-content: space-between;
+  gap: clamp(var(--space-1), 0.75vw, var(--space-3));
+  margin-inline: auto;
 }
 
-.catalogGroup {
-  min-inline-size: 0;
-}
-
-.navigationGroups > ul.customerNavigation {
-  inline-size: 100%;
-  max-inline-size: none;
-  justify-content: center;
-  gap: var(--space-2);
-  margin-inline: 0;
-  padding-block: var(--space-1);
-  border-block-start: var(--border-default);
-}
-
-.navigationGroups > ul.customerNavigation a {
-  padding-inline: var(--space-3);
-  font-size: var(--font-size-small);
+ul.navigation.navigation a {
+  padding-inline: clamp(var(--space-2), 0.75vw, var(--space-3));
 }

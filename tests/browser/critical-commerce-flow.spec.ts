@@ -46,17 +46,19 @@ test('catalog to completed shipping order through customer and staff portals', a
     await customerPage.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
     await expect(customerPage.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await customerPage.goto('/cart');
-    await expect(customerPage.getByText(INVENTORY_CODE, { exact: true })).toBeVisible();
-    await customerPage.getByRole('link', { name: 'Tiếp tục thanh toán', exact: true }).click();
+    await expect(
+      customerPage.getByText(`Mã máy: ${INVENTORY_CODE}`, { exact: true }),
+    ).toBeVisible();
+    await customerPage.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click();
 
     await fillShippingCheckout(customerPage);
-    await customerPage.getByRole('button', { name: 'Tính lại', exact: true }).click();
-    const depositLine = customerPage.getByText('Cọc cần chuyển', { exact: true }).locator('..');
+    await customerPage.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+    const depositLine = customerPage.getByText('Đặt cọc', { exact: true }).locator('..');
     await expect(depositLine).toBeVisible();
     const expectedDeposit = moneyDigits(await depositLine.locator('strong').innerText());
     expect(Number(expectedDeposit)).toBeGreaterThan(0);
 
-    await customerPage.getByRole('button', { name: 'Xác nhận đặt hàng', exact: true }).click();
+    await customerPage.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
     await customerPage.waitForURL('**/orders/**');
     const orderNumber = orderNumberFrom(customerPage.url());
     await expect(
@@ -147,16 +149,16 @@ async function login(
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {
-  await expect(page.getByRole('heading', { name: 'Thanh toán', exact: true })).toBeVisible();
-  await page.getByLabel('Họ tên', { exact: true }).fill('Khách hàng Browser');
+  await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng', exact: true })).toBeVisible();
+  await page.getByLabel('Họ và tên', { exact: true }).fill('Khách hàng Browser');
   await page.getByLabel('Email', { exact: true }).fill(CUSTOMER.email);
   await page.getByLabel('Điện thoại', { exact: true }).fill('0900000000');
-  await page.getByLabel('Người nhận', { exact: true }).fill('Khách hàng Browser');
-  await page.getByLabel('SĐT người nhận', { exact: true }).fill('0900000000');
+  await page.getByLabel('Tên người nhận', { exact: true }).fill('Khách hàng Browser');
+  await page.getByLabel('Điện thoại người nhận', { exact: true }).fill('0900000000');
   await page.getByLabel('Địa chỉ', { exact: true }).fill('123 Đường Browser');
-  await page.getByLabel('Phường/xã', { exact: true }).fill('Phường Demo');
-  await page.getByLabel('Quận/huyện', { exact: true }).fill('Quận Demo');
-  await page.getByLabel('Tỉnh/thành', { exact: true }).fill('TP. Hồ Chí Minh');
+  await page.getByLabel('Phường / Xã', { exact: true }).fill('Phường Demo');
+  await page.getByLabel('Quận / Huyện', { exact: true }).fill('Quận Demo');
+  await page.getByLabel('Tỉnh / Thành phố', { exact: true }).fill('TP. Hồ Chí Minh');
 }
 
 function moneyDigits(value: string): string {

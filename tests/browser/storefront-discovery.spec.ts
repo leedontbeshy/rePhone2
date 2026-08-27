@@ -88,20 +88,20 @@ test.describe('FE-1 storefront discovery', () => {
     const desktopNavigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
     const navigationList = desktopNavigation.locator('ul');
     const currentStoreLink = desktopNavigation.getByRole('link', {
-      name: 'Cửa hàng',
+      name: 'Liên hệ',
       exact: true,
     });
 
     await expect(currentStoreLink).toHaveAttribute('aria-current', 'page');
-    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '17px');
+    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '18px');
 
     const [primaryRowBox, navigationBox, navigationListBox] = await Promise.all([
       primaryRow.boundingBox(),
       desktopNavigation.boundingBox(),
       navigationList.boundingBox(),
     ]);
-    expect(primaryRowBox?.height).toBeGreaterThanOrEqual(72);
-    expect(navigationBox?.height).toBeGreaterThanOrEqual(48);
+    expect(primaryRowBox?.height).toBeGreaterThanOrEqual(80);
+    expect(navigationBox?.height).toBeGreaterThanOrEqual(56);
     expect(navigationBox).not.toBeNull();
     expect(navigationListBox).not.toBeNull();
     if (navigationBox === null || navigationListBox === null) {
@@ -142,7 +142,7 @@ test.describe('FE-1 storefront discovery', () => {
     const mobileNavigation = page.getByRole('navigation', { name: 'Danh mục sản phẩm' });
     await expect(mobileNavigation).toBeVisible();
     await expect(
-      mobileNavigation.getByRole('link', { name: 'Cửa hàng', exact: true }),
+      mobileNavigation.getByRole('link', { name: 'Liên hệ', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
     await expect(mobileNavigation.getByRole('link', { name: 'Ưu đãi', exact: true })).toBeVisible();
   });

@@ -1,76 +1,74 @@
-# Design QA — iPhone facts, accessory cards, typography, and customer navigation
+# Design QA — FE-03 giỏ hàng, ưa thích và đặt hàng
 
 Date: 2026-08-27
 
-Preview: `http://localhost:3000/products/iphone-15-pro`
+Preview: `http://localhost:3000/checkout`
 
-## Sources and implementation
+## Nguồn hình ảnh và phạm vi triển khai
 
-- User reference — complete iPhone 13 detail: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-d013e1d3-11b7-4da9-8033-56db77dd790b.png` (1079×580).
-- User reference — sparse iPhone 15 Pro detail: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-5d61fa42-6ca4-44d5-920e-44b7348e43b0.png` (1098×603).
-- User reference — uneven accessory cards: `C:\Users\Lee\AppData\Local\Temp\codex-clipboard-100a8c46-b054-4fe9-9cbe-a5211bff526c.png` (940×539).
-- Canonical repository reference: `D:\Dev\rePhone2\docs\assets\ui\rephone-model-detail-canonical-reference.png` (1006×1563).
-- Final implementation captures:
-  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-iphone-15-pro.png` (1265×712).
-  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-iphone-15-pro-mid.png` (1265×712).
-  - `C:\Users\Lee\AppData\Local\Temp\rephone-final-accessory-cards.png` (1265×712).
-- Main implementation: `apps/web/components/catalog/iphone-model-detail.tsx`, `apps/web/lib/iphone-model-facts.ts`, `apps/web/components/catalog/catalog.module.css`, and `apps/web/components/storefront/`.
+- Visual target đã được duyệt — phương án 1, “Biên tập cân bằng”: `C:\Users\Lee\.codex\generated_images\01a0411f-37e0-7011-9f4b-b7c3ee17d7b5\exec-a7c4f307-d556-46be-896a-27851ade70c8.png` (1487×1058).
+- Bản chụp checkout cuối: `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-1440x1024-top.png` (1425×1013).
+- Bản so sánh cùng một khung nhìn: `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-source-vs-implementation.png` (2850×1013).
+- Bằng chứng desktop bổ sung:
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-1440x1024.png` (1425×1013).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-1440x1024.png` (1425×1013).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\header-account-popup-1440x900.jpg` (1425×891).
+- Bằng chứng responsive:
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320x800.png` (320×764).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320-summary.png` (320×764).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-768x900.png` (768×883).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-content-320x800.png` (320×764).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-content-320x800.png` (320×764).
+- Phần triển khai chính: `apps/web/components/commerce/`, `apps/web/app/commerce-provider.tsx`, `apps/web/lib/checkout-api.ts`, `/cart`, `/wishlist` và `/checkout`.
 
-## Viewport and state
+## Viewport, dữ liệu và trạng thái
 
-- In-app Browser production preview, authenticated CUSTOMER session.
-- CSS viewport: 1280×720; document client width: 1265; device pixel ratio: 2.
-- Captured states: model hero, model colors/trust/list heading, accessory card row, account header, store header, and the Wishlist navigation interaction.
-- Anonymous state was checked before authentication; role unit tests also assert that the customer shortcuts are absent for anonymous/loading/EMPLOYEE/ADMIN sessions.
-- The in-app Browser viewport override did not alter the rendered viewport for 390px emulation. Responsive behavior was therefore inspected in source and covered with browser assertions at 320×568, 390×844, 1024×900, and 1440×900. The mobile drawer now has bounded height, its own scrolling, and a dynamic focus trap.
+- Kiểm tra bằng in-app Browser trên local preview, phiên `CUSTOMER` `customer@rephone.local`.
+- Desktop đặt viewport 1440×1024; thanh cuộn cổ điển của browser làm vùng nội dung và ảnh chụp còn 1425×1013. `clientWidth` và `scrollWidth` đều bằng 1425, không có tràn ngang.
+- Mobile dùng vùng nội dung thật 320 px; `clientWidth` và `scrollWidth` đều bằng 320 trên cart, wishlist và checkout. Ảnh chụp cao 764 px vì phần chrome của in-app Browser.
+- Tablet 768 px chuyển checkout về một cột; biểu mẫu và bản xác nhận cùng rộng 735 px, không tràn ngang.
+- Giỏ hàng dùng exact unit `RPH-IPX-64-GRY-U01`; Wishlist dùng `RPH-IP17P-256-DBL-U01`.
+- Checkout đã kiểm tra cả `SHIPPING` và `PICKUP`. Bản xác nhận giao tận nơi trả về tạm tính 3.490.000 ₫, phí giao hàng 30.000 ₫, đặt cọc 500.000 ₫ và tổng thanh toán 3.520.000 ₫. Bản nhận tại cửa hàng trả về phí giao hàng 0 ₫ và đúng cửa hàng Hồ Chí Minh.
+- Không bấm hành động tạo đơn trong phiên kiểm tra thủ công; browser specs dùng phản hồi tạo đơn được kiểm soát để xác minh redirect mà không tiêu thụ máy seed.
 
-## Full-view comparison
+## So sánh visual target và implementation
 
-- The repository canonical reference and the final page retain the same page hierarchy: shared header, breadcrumbs, two-column model hero, four core facts, trust note, available-unit grid, and footer.
-- The user-requested differences are present: source-backed colors, customer-friendly trust copy, the single heading `Các máy đang có sẵn`, and larger customer typography.
-- The Browser full-page stitch duplicated part of the fourth card and footer, while the live DOM contained exactly four `Xem máy này` actions, one availability heading, and one footer. Full-page stitching was not used as visual evidence; the complete page was instead checked through consecutive focused captures plus DOM geometry.
+- Bản so sánh ghép nguồn bên trái và implementation bên phải trong cùng một ảnh, cùng kích thước 1425×1013.
+- Giữ đúng cấu trúc đã duyệt: header storefront, tỷ lệ hai cột gần 62/38, biểu mẫu biên tập liên tục, hai lựa chọn nhận hàng, summary rail, teal/navy, ảnh sản phẩm và một CTA chính.
+- Khác biệt dữ liệu là chủ ý: visual target dùng hai sản phẩm minh họa và ít trường hơn; implementation dùng exact unit thật cùng các trường người nhận/quận-huyện bắt buộc bởi backend.
+- Breadcrumb được đưa vào cột biểu mẫu để mép trên của summary cân với phần nội dung chính.
+- Không còn CTA chữ teal trên nền teal, giá hiện tại bị gạch ngang, ảnh méo, card lệch, clipping hoặc khoảng trắng bất thường.
 
-## Focused comparisons
+## Kiểm tra chức năng chính
 
-### Model detail
+- Cart: exact-unit identity, giá hiện tại, số lượng cố định cho iPhone, xóa theo dòng, warning gate, summary và CTA checkout hoạt động; CTA desktop cao 52 px.
+- Wishlist: trạng thái còn hàng, ảnh đúng máy, thêm vào giỏ và xóa độc lập; trạng thái tải ổn định thành card thật, CTA mobile cao 52 px.
+- Checkout: sao chép địa chỉ đã lưu, chuyển Shipping/Pickup, preview có thẩm quyền, voucher invalidation, summary, review-required và khóa double-submit đều có test.
+- Browser specs bổ sung guest create + token handoff, CUSTOMER pickup create, merge retry và 409 buộc xác nhận lại; create response được mock để không thay đổi inventory seed.
+- Sau thao tác preview, nút `Đặt hàng` cao 56 px và chỉ mở khi preview hợp lệ. Không có hành động tài chính nào được thực hiện trong QA thủ công.
 
-- Compared the iPhone 15 Pro source and final hero in the same visual input.
-- The image/summary split, model label, title weight, card radius, borders, and teal accent stay aligned with the existing design language.
-- The sparse one-card state is replaced by four balanced cards: year, chip, RAM, and display. The colors panel and trust note continue the same card treatment.
-- No clipping, horizontal overflow, missing imagery, or Next.js error overlay was present.
+## Responsive, accessibility và runtime
 
-### Accessory cards
+- 320 px: cart, wishlist và checkout đều có `scrollWidth === clientWidth`; header thu gọn nhãn giỏ thành biểu tượng và số lượng để logo, giỏ và nút Danh mục không chồng lấn; tổng tiền xếp dọc an toàn, không cắt chữ hoặc CTA.
+- 768 px: checkout xếp một cột; hai lựa chọn nhận hàng, field grid và summary vẫn đọc đúng thứ tự.
+- 1440 px: cart/checkout dùng rail bên phải; rail không che focus hoặc nội dung. Wishlist giữ card đồng đều và khoảng trống còn lại tự nhiên.
+- Focus ring của trường checkout là teal solid 2 px; semantic heading, label, `required`, `aria-live`, `role="alert"` và focus-after-remove được giữ.
+- Các hành động chính đo được 52–56 px, đạt vùng bấm tối thiểu 44 px.
+- Nhật ký Browser không có console error. Chỉ có cảnh báo Fast Refresh do chỉnh file trong lúc dev; cảnh báo này không xuất hiện trong production build.
+- Toàn bộ nội dung khách hàng dùng tiếng Việt tự nhiên; không hiển thị thuật ngữ access token, refresh session, cookie hoặc localStorage.
 
-- Compared the supplied accessory source and final card row in the same visual input.
-- All three card bottoms and CTA bottoms are equal in the live geometry. Optional color text consumes natural body space; no fake placeholder content was added.
-- The test now compares cards within each grid row, so future multi-row catalogs do not produce a false failure.
+## Lịch sử phát hiện và chỉnh sửa
 
-### Header and customer states
+1. P1 — CTA chính bị kế thừa màu link teal trên nền teal. Đã khóa màu chữ trắng cho cart và checkout.
+2. P1 — giá hiện tại của cart bị selector gạch ngang. Đã tách class `oldPrice`, chỉ giá cũ mới có gạch.
+3. P1 — checkout có thể giữ dữ liệu người dùng cũ trong một khung hình khi đổi phiên. Đã remount session theo danh tính auth; Wishlist áp dụng cùng nguyên tắc.
+4. P1 — lỗi mạng khi tạo đơn có thể khiến người dùng gửi lại một đơn chưa rõ kết quả. Đã khóa create ở trạng thái chờ xác nhận và không auto-retry.
+5. P2 — review-required 409, payload pickup/store và số tiền chưa được kiểm tra đủ chặt. Parser và regression tests đã được bổ sung.
+6. P2 — thông báo wishlist, focus sau khi xóa, fulfillment disabled và tổng tiền 320 px chưa hoàn chỉnh. Đã sửa trạng thái, focus recovery và responsive stacking.
+7. P2 — copy “đồng bộ/gộp” và một đoạn giải thích bị lặp chưa phù hợp khách hàng. Đã chuyển sang tiếng Việt tự nhiên và rút gọn.
+8. P2 — lần tinh chỉnh trước đặt `Bảo hành`, `Ưa thích`, `Đơn hàng` ngang hàng với menu công khai nên header còn dày thông tin. Theo quyết định cuối, desktop chỉ giữ năm mục công khai được căn giữa và chia đều; bốn mục `Quản lý tài khoản`, `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm trong popup `Tài khoản`. Popup được cân giữa dưới nút mở và chủ động phủ lên hàng điều hướng để tổng thể gọn hơn; mobile tiếp tục dùng drawer hiện có.
+9. P2 — sau khi tăng kích thước header, logo, giỏ và nút Danh mục có thể chồng lấn ở vùng nội dung 320 px. Đã giảm khoảng cách riêng tại breakpoint rất nhỏ và chỉ giữ biểu tượng cùng số lượng giỏ; vùng nội dung thật 320 px không còn tràn ngang.
 
-- At 1280px, both the public catalog list and the customer shortcut row had center x = 632.5px; document horizontal overflow was 0.
-- Authenticated CUSTOMER header exposes `Bảo hành`, `Ưa thích`, and `Đơn hàng`. The Wishlist link navigated to `/wishlist` and rendered `Sản phẩm đã lưu`.
-- Account sidebar links resolve to 15px. Auth descriptions and legacy customer mobile navigation use the increased customer typography without changing backoffice sizing.
-
-## Mandatory surface review
-
-- Typography: customer storefront/account/auth text increased slightly; hierarchy remains readable and consistent.
-- Spacing and alignment: header rows centered; model facts use a stable 2×2 grid; accessory cards and actions align per row.
-- Color and contrast: existing navy/teal/neutral token system preserved; no new unverified palette introduced.
-- Images: existing product assets retained with correct aspect ratio and no stretching.
-- Copy and localization: customer copy is natural Vietnamese; no access-token/session/cookie/localStorage/checklist wording appears on the checked customer surface.
-- Icons and controls: existing Phosphor icon family retained; navigation, Wishlist link, sort control, and visible CTAs remain operable.
-- Responsive/accessibility: no desktop overflow; short mobile drawer scrolls independently; focusables are recomputed while session state changes; focus remains trapped in the dialog.
-- Runtime: clean Browser tab reported zero console errors and zero console warnings after model, accessory, account, Wishlist, and store interactions.
-
-## Comparison and fix history
-
-1. P1 — account pages initially omitted the new shortcut row. Fixed by letting `CustomerShell` accept the shared primary navigation and wiring it through `AccountShell`; post-fix DOM confirms all three links.
-2. P1 — authenticated mobile drawer could exceed a short viewport while body scrolling was locked. Added `max-height: 100dvh`, `overflow-y: auto`, overscroll containment, and a 320×568 assertion.
-3. P1/P2 — several finish names did not match Apple Vietnamese terminology. Corrected the iPhone 17 family, iPhone 13 Pro family, iPhone 11 Pro family, and iPhone 5 finishes; added regression assertions.
-4. P2 — mobile focusables were captured before asynchronous session changes. The focus trap now recomputes them on every Tab key and recovers focus if the active node disappears.
-5. P2 — the first final preview exposed an illegal browser-fetch replay invocation after session refresh. The API client now invokes replay fetch with the global browser context; a regression test was added. A clean rebuilt preview has no console errors.
-6. P2 — the accessory geometry test compared different future rows globally. It now groups cards by visual row before comparing bottoms.
-
-No P0, P1, or P2 findings remain.
+Không còn phát hiện P0, P1 hoặc P2.
 
 final result: passed

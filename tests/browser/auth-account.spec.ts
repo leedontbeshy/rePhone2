@@ -139,9 +139,9 @@ test.describe('FE-2 authentication and account', () => {
       '/login?returnTo=%2Faccount%2Faddresses',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Tài khoản', exact: true })).toHaveAttribute(
-      'href',
-      '/account',
+    await expect(page.getByRole('button', { name: 'Tài khoản', exact: true })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
     await expectRefreshCookie(page);
     await expectNoBrowserAuthSecrets(page);
@@ -153,7 +153,7 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
     await expect(page.getByText('Chưa có địa chỉ đã lưu', { exact: true })).toBeVisible();
 
-    await expectCustomerHeaderShortcutsAndCenteredCatalog(page);
+    await expectCustomerAccountPopupAndBalancedNavigation(page);
 
     await page.goto('/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
@@ -169,8 +169,8 @@ test.describe('FE-2 authentication and account', () => {
     await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
     await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await page.goto('/checkout');
-    await expect(page.getByRole('heading', { level: 1, name: 'Thanh toán' })).toBeVisible();
-    await expect(page.getByLabel('Họ tên', { exact: true })).toHaveValue(
+    await expect(page.getByRole('heading', { level: 1, name: 'Hoàn tất đơn hàng' })).toBeVisible();
+    await expect(page.getByLabel('Họ và tên', { exact: true })).toHaveValue(
       BROWSER_CUSTOMER.updatedFullName,
     );
     await expect(page.getByLabel('Điện thoại', { exact: true })).toHaveValue('0900000222');
@@ -463,15 +463,48 @@ async function expectAccountProfileFieldsAligned(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 720 });
 }
 
-async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Promise<void> {
+async function expectCustomerAccountPopupAndBalancedNavigation(page: Page): Promise<void> {
   const currentHeaderNavigation = page
     .locator("[data-shell='customer'] > header")
     .getByRole('navigation', { name: 'Điều hướng chính' });
   for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
     await expect(
       currentHeaderNavigation.getByRole('link', { name: label, exact: true }),
-    ).toBeVisible();
+    ).toHaveCount(0);
   }
+
+  const accountButton = page.getByRole('button', { name: 'Tài khoản', exact: true });
+  await accountButton.click();
+  const accountMenu = page.getByRole('navigation', { name: 'Tùy chọn tài khoản' });
+  await expect(accountMenu).toBeVisible();
+  await expect(accountMenu.getByRole('link')).toHaveCount(4);
+  for (const [label, href] of [
+    ['Quản lý tài khoản', '/account'],
+    ['Bảo hành', '/warranties'],
+    ['Ưa thích', '/wishlist'],
+    ['Đơn hàng', '/orders'],
+  ] as const) {
+    await expect(accountMenu.getByRole('link', { name: label, exact: true })).toHaveAttribute(
+      'href',
+      href,
+    );
+  }
+
+  await page.keyboard.press('Escape');
+  await expect(accountMenu).toHaveCount(0);
+  await expect(accountButton).toBeFocused();
+
+  await accountButton.press('ArrowDown');
+  await expect(accountMenu).toBeVisible();
+  await expect(
+    accountMenu.getByRole('link', { name: 'Quản lý tài khoản', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await accountButton.click();
+  await expect(accountMenu).toBeVisible();
+  await page.locator('main').click({ position: { x: 1, y: 1 } });
+  await expect(accountMenu).toHaveCount(0);
 
   await page.goto('/store');
 
@@ -479,34 +512,45 @@ async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Prom
     await page.setViewportSize({ width, height: 900 });
     const header = page.locator("[data-shell='storefront'] > header");
     const navigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
-    const catalogList = navigation.locator('ul').first();
-    const customerList = navigation.locator('ul').nth(1);
+    const publicNavigationList = navigation.locator('ul');
+
+    await expect(publicNavigationList).toHaveCount(1);
+    await expect(publicNavigationList.locator('li')).toHaveCount(5);
 
     for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
-      await expect(customerList.getByRole('link', { name: label, exact: true })).toBeVisible();
+      await expect(navigation.getByRole('link', { name: label, exact: true })).toHaveCount(0);
     }
+    await expect(navigation.getByRole('link', { name: 'Liên hệ', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
 
-    const [navigationBox, catalogBox, customerBox] = await Promise.all([
+    const [navigationBox, publicNavigationBox] = await Promise.all([
       visibleBox(navigation),
-      visibleBox(catalogList),
-      visibleBox(customerList),
+      visibleBox(publicNavigationList),
     ]);
     expect(
-      Math.abs(navigationBox.x + navigationBox.width / 2 - (catalogBox.x + catalogBox.width / 2)),
+      Math.abs(
+        navigationBox.x +
+          navigationBox.width / 2 -
+          (publicNavigationBox.x + publicNavigationBox.width / 2),
+      ),
     ).toBeLessThanOrEqual(1);
-    expect(customerBox.y).toBeGreaterThanOrEqual(catalogBox.y + catalogBox.height);
 
-    const itemGaps = await catalogList.locator('li').evaluateAll((items) =>
-      items.slice(1).map((item, index) => {
+    const itemGeometry = await publicNavigationList.locator('li').evaluateAll((items) => ({
+      gaps: items.slice(1).map((item, index) => {
         const previous = items[index]?.getBoundingClientRect();
         const current = item.getBoundingClientRect();
         return previous === undefined ? 0 : current.left - previous.right;
       }),
-    );
-    expect(Math.max(...itemGaps) - Math.min(...itemGaps)).toBeLessThanOrEqual(1);
+      tops: items.map((item) => item.getBoundingClientRect().top),
+    }));
+    expect(Math.max(...itemGeometry.gaps) - Math.min(...itemGeometry.gaps)).toBeLessThanOrEqual(1);
+    expect(Math.max(...itemGeometry.tops) - Math.min(...itemGeometry.tops)).toBeLessThanOrEqual(1);
   }
 
   await page.setViewportSize({ width: 320, height: 568 });
+  await expectNoHorizontalOverflow(page);
   await page.getByRole('button', { name: 'Mở danh mục', exact: true }).click();
   const mobileDialog = page.getByRole('dialog', { name: 'Danh mục', exact: true });
   const mobileCustomerNavigation = page.getByRole('navigation', {
@@ -525,6 +569,7 @@ async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Prom
   }));
   expect(scrollState.overflowY).toBe('auto');
   expect(scrollState.scrollHeight).toBeGreaterThan(scrollState.clientHeight);
+  await expectNoHorizontalOverflow(page);
 
   const cartLink = mobileDialog.getByRole('link', { name: /Giỏ hàng/ });
   await cartLink.scrollIntoViewIfNeeded();
