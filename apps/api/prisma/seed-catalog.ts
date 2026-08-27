@@ -23,56 +23,122 @@ const PASSED_CHECK_KEYS = [
   'CONNECTORS_OTHER',
 ] as const;
 
-const PRODUCTS = [
-  {
-    slug: 'iphone-13',
-    type: 'IPHONE' as const,
-    name: 'iPhone 13',
-    description: 'iPhone cũ được kiểm định minh bạch theo checklist rePhone.',
-    releaseYear: 2021,
-    chipset: 'Apple A15 Bionic',
-    ramGb: 4,
-    screenSizeInches: '6.10',
-  },
-  {
-    slug: 'iphone-14-pro',
-    type: 'IPHONE' as const,
-    name: 'iPhone 14 Pro',
-    description: 'iPhone 14 Pro cũ, ảnh thật từng máy và bảo hành rõ ràng.',
-    releaseYear: 2022,
-    chipset: 'Apple A16 Bionic',
-    ramGb: 6,
-    screenSizeInches: '6.10',
-  },
-  {
-    slug: 'iphone-15-pro-max',
-    type: 'IPHONE' as const,
-    name: 'iPhone 15 Pro Max',
+interface IphoneProductDefinition {
+  slug: string;
+  type: 'IPHONE';
+  name: string;
+  description: string;
+  releaseYear: number;
+  chipset?: string;
+  ramGb?: number;
+  screenSizeInches?: string;
+}
+
+interface AccessoryProductDefinition {
+  slug: string;
+  type: 'ACCESSORY';
+  name: string;
+  description: string;
+}
+
+type ProductDefinition = IphoneProductDefinition | AccessoryProductDefinition;
+
+const IPHONE_CATALOG_PRODUCTS: readonly IphoneProductDefinition[] = [
+  iphoneProduct('iphone-17', 'iPhone 17', 2025),
+  iphoneProduct('iphone-17e', 'iPhone 17e', 2026),
+  iphoneProduct('iphone-air', 'iPhone Air', 2025),
+  iphoneProduct('iphone-17-pro', 'iPhone 17 Pro', 2025),
+  iphoneProduct('iphone-17-pro-max', 'iPhone 17 Pro Max', 2025),
+  iphoneProduct('iphone-16', 'iPhone 16', 2024),
+  iphoneProduct('iphone-16e', 'iPhone 16e', 2025),
+  iphoneProduct('iphone-16-plus', 'iPhone 16 Plus', 2024),
+  iphoneProduct('iphone-16-pro', 'iPhone 16 Pro', 2024),
+  iphoneProduct('iphone-16-pro-max', 'iPhone 16 Pro Max', 2024),
+  iphoneProduct('iphone-15', 'iPhone 15', 2023),
+  iphoneProduct('iphone-15-plus', 'iPhone 15 Plus', 2023),
+  iphoneProduct('iphone-15-pro', 'iPhone 15 Pro', 2023),
+  iphoneProduct('iphone-15-pro-max', 'iPhone 15 Pro Max', 2023, {
     description: 'iPhone 15 Pro Max cũ đã hoàn tất kiểm định đầu vào.',
-    releaseYear: 2023,
     chipset: 'Apple A17 Pro',
     ramGb: 8,
     screenSizeInches: '6.70',
-  },
+  }),
+  iphoneProduct('iphone-14', 'iPhone 14', 2022),
+  iphoneProduct('iphone-14-plus', 'iPhone 14 Plus', 2022),
+  iphoneProduct('iphone-14-pro', 'iPhone 14 Pro', 2022, {
+    description: 'iPhone 14 Pro cũ, ảnh thật từng máy và bảo hành rõ ràng.',
+    chipset: 'Apple A16 Bionic',
+    ramGb: 6,
+    screenSizeInches: '6.10',
+  }),
+  iphoneProduct('iphone-14-pro-max', 'iPhone 14 Pro Max', 2022),
+  iphoneProduct('iphone-13', 'iPhone 13', 2021, {
+    description: 'iPhone cũ được kiểm định minh bạch theo checklist rePhone.',
+    chipset: 'Apple A15 Bionic',
+    ramGb: 4,
+    screenSizeInches: '6.10',
+  }),
+  iphoneProduct('iphone-13-mini', 'iPhone 13 mini', 2021),
+  iphoneProduct('iphone-13-pro', 'iPhone 13 Pro', 2021),
+  iphoneProduct('iphone-13-pro-max', 'iPhone 13 Pro Max', 2021),
+  iphoneProduct('iphone-12', 'iPhone 12', 2020),
+  iphoneProduct('iphone-12-mini', 'iPhone 12 mini', 2020),
+  iphoneProduct('iphone-12-pro', 'iPhone 12 Pro', 2020),
+  iphoneProduct('iphone-12-pro-max', 'iPhone 12 Pro Max', 2020),
+  iphoneProduct('iphone-11', 'iPhone 11', 2019),
+  iphoneProduct('iphone-11-pro', 'iPhone 11 Pro', 2019),
+  iphoneProduct('iphone-11-pro-max', 'iPhone 11 Pro Max', 2019),
+  iphoneProduct('iphone-x', 'iPhone X', 2017),
+  iphoneProduct('iphone-xr', 'iPhone XR', 2018),
+  iphoneProduct('iphone-xs', 'iPhone XS', 2018),
+  iphoneProduct('iphone-xs-max', 'iPhone XS Max', 2018),
+  iphoneProduct('iphone-8', 'iPhone 8', 2017),
+  iphoneProduct('iphone-8-plus', 'iPhone 8 Plus', 2017),
+  iphoneProduct('iphone-7', 'iPhone 7', 2016),
+  iphoneProduct('iphone-7-plus', 'iPhone 7 Plus', 2016),
+  iphoneProduct('iphone-6', 'iPhone 6', 2014),
+  iphoneProduct('iphone-6-plus', 'iPhone 6 Plus', 2014),
+  iphoneProduct('iphone-6s', 'iPhone 6s', 2015),
+  iphoneProduct('iphone-6s-plus', 'iPhone 6s Plus', 2015),
+  iphoneProduct('iphone-5', 'iPhone 5', 2012),
+  iphoneProduct('iphone-5c', 'iPhone 5c', 2013),
+  iphoneProduct('iphone-5s', 'iPhone 5s', 2013),
+  iphoneProduct('iphone-se-1st-generation', 'iPhone SE (thế hệ 1)', 2016),
+  iphoneProduct('iphone-se-2nd-generation', 'iPhone SE (thế hệ 2)', 2020),
+  iphoneProduct('iphone-se-3rd-generation', 'iPhone SE (thế hệ 3)', 2022),
+];
+
+const ACCESSORY_PRODUCTS: readonly AccessoryProductDefinition[] = [
   {
     slug: 'cap-usb-c-to-lightning',
-    type: 'ACCESSORY' as const,
+    type: 'ACCESSORY',
     name: 'Cáp USB-C to Lightning',
     description: 'Cáp sạc USB-C to Lightning cho iPhone.',
   },
   {
     slug: 'op-lung-magsafe',
-    type: 'ACCESSORY' as const,
+    type: 'ACCESSORY',
     name: 'Ốp lưng MagSafe',
     description: 'Ốp lưng tương thích MagSafe.',
   },
   {
     slug: 'cu-sac-usb-c-20w',
-    type: 'ACCESSORY' as const,
+    type: 'ACCESSORY',
     name: 'Củ sạc USB-C 20W',
     description: 'Củ sạc USB-C công suất 20W.',
   },
-] as const;
+];
+
+const PRODUCTS: readonly ProductDefinition[] = [...IPHONE_CATALOG_PRODUCTS, ...ACCESSORY_PRODUCTS];
+
+const PRODUCT_MEDIA_ASSET_KEYS: Readonly<Record<string, DemoCatalogAssetKey>> = {
+  'iphone-13': 'iphone-13',
+  'iphone-14-pro': 'iphone-14-pro',
+  'iphone-15-pro-max': 'iphone-15-pro-max',
+  'cap-usb-c-to-lightning': 'cap-usb-c-to-lightning',
+  'op-lung-magsafe': 'op-lung-magsafe',
+  'cu-sac-usb-c-20w': 'cu-sac-usb-c-20w',
+};
 
 const IPHONE_VARIANTS = [
   {
@@ -262,21 +328,25 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
         name: definition.name,
         description: definition.description,
         status: 'ACTIVE',
-        releaseYear: 'releaseYear' in definition ? definition.releaseYear : null,
-        chipset: 'chipset' in definition ? definition.chipset : null,
-        ramGb: 'ramGb' in definition ? definition.ramGb : null,
-        screenSizeInches: 'screenSizeInches' in definition ? definition.screenSizeInches : null,
+        releaseYear: definition.type === 'IPHONE' ? definition.releaseYear : null,
+        chipset: definition.type === 'IPHONE' ? (definition.chipset ?? null) : null,
+        ramGb: definition.type === 'IPHONE' ? (definition.ramGb ?? null) : null,
+        screenSizeInches:
+          definition.type === 'IPHONE' ? (definition.screenSizeInches ?? null) : null,
         warrantyPolicyId: isIphone ? iphonePolicy.id : accessoryPolicy.id,
       },
     });
     products.set(definition.slug, product);
-    await upsertMedia(prisma, {
-      publicBucket,
-      productId: product.id,
-      objectPath: `demo/catalog/products/${definition.slug}.png`,
-      assetKey: definition.slug,
-      altText: definition.name,
-    });
+    const assetKey = PRODUCT_MEDIA_ASSET_KEYS[definition.slug];
+    if (assetKey !== undefined) {
+      await upsertMedia(prisma, {
+        publicBucket,
+        productId: product.id,
+        objectPath: `demo/catalog/products/${definition.slug}.png`,
+        assetKey,
+        altText: definition.name,
+      });
+    }
   }
 
   const variants = new Map<string, { id: string; displayName: string }>();
@@ -298,6 +368,33 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
       },
     });
     variants.set(definition.sku, variant);
+  }
+
+  for (const definition of IPHONE_CATALOG_PRODUCTS) {
+    const product = requiredMapValue(products, definition.slug);
+    const realSerializedVariant = await prisma.productVariant.findFirst({
+      where: {
+        productId: product.id,
+        inventoryMode: 'SERIALIZED',
+        status: 'ACTIVE',
+        archivedAt: null,
+        NOT: { sku: { startsWith: 'CATALOG-' } },
+      },
+      select: { id: true },
+    });
+    if (realSerializedVariant !== null) continue;
+    await prisma.productVariant.upsert({
+      where: { sku: catalogVariantSku(definition.slug) },
+      update: {},
+      create: {
+        productId: product.id,
+        sku: catalogVariantSku(definition.slug),
+        displayName: definition.name,
+        inventoryMode: 'SERIALIZED',
+        warrantyPolicyId: iphonePolicy.id,
+        status: 'ACTIVE',
+      },
+    });
   }
 
   for (const definition of ACCESSORY_VARIANTS) {
@@ -583,4 +680,26 @@ function requiredEnvironment(name: string): string {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function iphoneProduct(
+  slug: string,
+  name: string,
+  releaseYear: number,
+  overrides: Partial<
+    Pick<IphoneProductDefinition, 'description' | 'chipset' | 'ramGb' | 'screenSizeInches'>
+  > = {},
+): IphoneProductDefinition {
+  return {
+    slug,
+    type: 'IPHONE',
+    name,
+    description: `Danh mục ${name} cũ tại rePhone; giá và tình trạng được hiển thị theo từng máy khi có hàng.`,
+    releaseYear,
+    ...overrides,
+  };
+}
+
+function catalogVariantSku(productSlug: string): string {
+  return `CATALOG-${productSlug.toUpperCase()}`;
 }

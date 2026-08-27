@@ -90,6 +90,7 @@
   --page-gutter: 1rem;
   --control-height: 2.75rem;
   --header-height: 4rem;
+  --storefront-header-offset: 4.5rem;
   --backoffice-sidebar-width: 15rem;
 
   /* Layering */
@@ -112,5 +113,6 @@
 @media (min-width: 60rem) {
   :root {
     --page-gutter: 2.5rem;
+    --storefront-header-offset: 8.25rem;
   }
 }

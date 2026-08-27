@@ -1,0 +1,255 @@
+.gallery {
+  position: relative;
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: calc(var(--radius-card) + 0.125rem);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-hover);
+}
+
+.galleryLabel {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-block-start: var(--space-4);
+  inset-inline-start: var(--space-4);
+  max-width: calc(100% - var(--space-8));
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-small);
+  color: var(--color-on-primary);
+  background: var(--color-primary-hover);
+  box-shadow: var(--shadow-raised);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-label);
+  text-transform: uppercase;
+}
+
+.galleryFrame {
+  display: grid;
+  min-width: 0;
+  grid-template-areas:
+    'stage'
+    'thumbnails';
+  gap: var(--space-3);
+}
+
+.stage {
+  position: relative;
+  grid-area: stage;
+  min-width: 0;
+}
+
+.mainMediaButton,
+.thumbnailButton {
+  display: block;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-default);
+  background: var(--color-surface);
+}
+
+.mainMediaButton {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-card);
+  cursor: zoom-in;
+}
+
+.mainMediaButton:disabled {
+  cursor: default;
+}
+
+.mainMedia {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: var(--color-surface);
+}
+
+.thumbnailList {
+  grid-area: thumbnails;
+  display: grid;
+  grid-auto-columns: 5rem;
+  grid-auto-flow: column;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  overflow-x: auto;
+  scroll-snap-type: inline mandatory;
+}
+
+.thumbnailButton {
+  width: 5rem;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.thumbnailButton[aria-current='true'] {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.thumbnailMedia {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.galleryArrow,
+.dialogClose {
+  display: inline-grid;
+  width: var(--control-height);
+  height: var(--control-height);
+  place-items: center;
+  padding: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: var(--shadow-hover);
+  cursor: pointer;
+}
+
+.galleryArrow {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+}
+
+.previousArrow {
+  inset-inline-start: var(--space-2);
+}
+
+.nextArrow {
+  inset-inline-end: var(--space-2);
+}
+
+.paginationDots {
+  position: absolute;
+  z-index: var(--z-raised);
+  inset-inline: 0;
+  inset-block-end: var(--space-3);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.paginationDots span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-strong);
+}
+
+.paginationDots .activeDot {
+  width: 1.25rem;
+  background: var(--color-primary);
+}
+
+.galleryDialog {
+  width: min(100% - var(--space-4), 62rem);
+  max-height: calc(100dvh - var(--space-4));
+  margin: auto;
+  padding: var(--space-4);
+  overflow: auto;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+}
+
+.galleryDialog::backdrop {
+  background: var(--color-overlay);
+}
+
+.dialogToolbar,
+.dialogNavigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dialogToolbar {
+  margin-bottom: var(--space-3);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dialogNavigation {
+  margin-top: var(--space-3);
+}
+
+.dialogNavigation button {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.dialogMedia {
+  width: 100%;
+  max-height: 72dvh;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: var(--color-surface-subtle);
+}
+
+@media (min-width: 60rem) {
+  .gallery {
+    padding: var(--space-5);
+  }
+
+  .galleryFrame {
+    grid-template-areas: 'thumbnails stage';
+    grid-template-columns: 5.5rem minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .singleImage {
+    grid-template-areas: 'stage';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .thumbnailList {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    max-height: 30rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: block mandatory;
+  }
+
+  .thumbnailButton {
+    width: 100%;
+  }
+
+  .previousArrow {
+    inset-inline-start: var(--space-4);
+  }
+
+  .nextArrow {
+    inset-inline-end: var(--space-4);
+  }
+}
+
+@media (forced-colors: active) {
+  .galleryLabel,
+  .galleryArrow,
+  .dialogClose {
+    border: 1px solid CanvasText;
+    color: CanvasText;
+    background: Canvas;
+  }
+}

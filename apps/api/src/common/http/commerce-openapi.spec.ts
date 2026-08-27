@@ -12,6 +12,11 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+interface OpenApiSchema {
+  $ref?: string;
+  properties?: Record<string, OpenApiSchema>;
+}
+
 const EXPECTED_OPERATION_IDS = [
   'getCart',
   'addCartItem',
@@ -37,7 +42,10 @@ describe('Slice 05 OpenAPI contract', () => {
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
   ) as {
     paths: Record<string, Record<string, Operation>>;
-    components?: { securitySchemes?: Record<string, unknown> };
+    components?: {
+      schemas?: Record<string, OpenApiSchema>;
+      securitySchemes?: Record<string, unknown>;
+    };
   };
   const operations = Object.values(document.paths)
     .flatMap((pathItem) => Object.values(pathItem))
@@ -101,5 +109,21 @@ describe('Slice 05 OpenAPI contract', () => {
     ] as const) {
       expect(byId.get(operationId)?.parameters?.map(({ name }) => name)).toContain(parameter);
     }
+  });
+
+  it('models every voucher collection with the runtime meta.pagination envelope', () => {
+    const schemas = document.components?.schemas;
+    for (const responseSchema of [
+      'PublicVoucherListResponse',
+      'BackofficeVoucherListResponse',
+      'VoucherUsageListResponse',
+    ]) {
+      expect(schemas?.[responseSchema]?.properties?.['meta']?.$ref).toBe(
+        '#/components/schemas/VoucherListMetaDto',
+      );
+    }
+    expect(schemas?.['VoucherListMetaDto']?.properties?.['pagination']?.$ref).toBe(
+      '#/components/schemas/PaginationDto',
+    );
   });
 });

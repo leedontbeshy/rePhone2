@@ -1,0 +1,117 @@
+.card {
+  min-width: 0;
+  height: 100%;
+}
+
+.cardLink {
+  display: grid;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  color: var(--color-body);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard);
+}
+
+.cardLink:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-body);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.mediaStage {
+  display: grid;
+  min-height: 13rem;
+  aspect-ratio: 4 / 3;
+  place-items: center;
+  overflow: hidden;
+  padding: var(--space-6) var(--space-6) var(--space-3);
+  background: var(--color-surface);
+}
+
+.mediaStage > img,
+.mediaStage > [role='img'] {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: contain;
+  background: transparent;
+}
+
+.body {
+  display: grid;
+  align-content: end;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
+}
+
+.priceRow {
+  display: flex;
+  min-height: var(--control-height);
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.price {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.price > span:first-child {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-label);
+}
+
+.price > span:last-child {
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-section-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-section-title);
+}
+
+.soldOut {
+  align-self: center;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
+.priceRow > svg {
+  flex: 0 0 auto;
+  margin-block-end: var(--space-2);
+  color: var(--color-primary);
+}
+
+@media (max-width: 39.999rem) {
+  .mediaStage {
+    min-height: 11.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardLink {
+    transition: none;
+  }
+
+  .cardLink:hover {
+    transform: none;
+  }
+}

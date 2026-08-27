@@ -23,9 +23,13 @@ export class PublicVoucherDto {
   @ApiProperty({ type: String }) public scopeSummary!: string;
 }
 
+export class VoucherListMetaDto {
+  @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
+}
+
 export class PublicVoucherListResponse {
   @ApiProperty({ type: () => [PublicVoucherDto] }) public data!: PublicVoucherDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => VoucherListMetaDto }) public meta!: VoucherListMetaDto;
 }
 
 export class VoucherUsageCountsDto {
@@ -66,7 +70,7 @@ export class BackofficeVoucherResponse {
 
 export class BackofficeVoucherListResponse {
   @ApiProperty({ type: () => [BackofficeVoucherDto] }) public data!: BackofficeVoucherDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => VoucherListMetaDto }) public meta!: VoucherListMetaDto;
 }
 
 export class VoucherUsageDto {
@@ -85,5 +89,5 @@ export class VoucherUsageDto {
 
 export class VoucherUsageListResponse {
   @ApiProperty({ type: () => [VoucherUsageDto] }) public data!: VoucherUsageDto[];
-  @ApiProperty({ type: () => PaginationDto }) public meta!: { pagination: PaginationDto };
+  @ApiProperty({ type: () => VoucherListMetaDto }) public meta!: VoucherListMetaDto;
 }

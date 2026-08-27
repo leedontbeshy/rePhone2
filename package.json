@@ -19,7 +19,8 @@
     ]
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "pnpm --parallel --filter @rephone/api --filter @rephone/web dev",
+    "dev:turbo": "turbo run dev",
     "build": "cross-env NODE_ENV=production turbo run build",
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
@@ -54,6 +55,8 @@
     "demo:refund-processing": "pnpm --filter @rephone/api demo:refund-processing",
     "demo:after-sales-inspecting": "pnpm --filter @rephone/api demo:after-sales-inspecting",
     "demo:scenarios": "pnpm --filter @rephone/api demo:scenarios",
+    "assets:fetch:rich-models": "pnpm --filter @rephone/api assets:fetch:rich-models",
+    "demo:catalog:rich": "pnpm --filter @rephone/api demo:catalog:rich",
     "db:studio": "pnpm --filter @rephone/api db:studio",
     "db:reset": "pnpm --filter @rephone/api db:reset",
     "test:db:up": "docker compose --profile test up -d postgres-test",
@@ -67,6 +70,7 @@
     "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "1.62.1",
     "@rephone/eslint-config": "workspace:*",

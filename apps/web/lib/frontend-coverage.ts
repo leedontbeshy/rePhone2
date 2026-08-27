@@ -3,6 +3,19 @@ export type FrontendPhase =
 
 export type FrontendCoverageStatus = 'NOT STARTED' | 'IN PROGRESS' | 'DONE';
 
+export const FRONTEND_PHASE_STATUS = {
+  'FE-0': 'DONE',
+  'FE-1': 'DONE',
+  'FE-2': 'NOT STARTED',
+  'FE-3': 'NOT STARTED',
+  'FE-4': 'NOT STARTED',
+  'FE-5': 'NOT STARTED',
+  'FE-6': 'NOT STARTED',
+  'FE-7': 'NOT STARTED',
+  'FE-8': 'NOT STARTED',
+  'FE-9': 'NOT STARTED',
+} as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
+
 export type FrontendOperationCoverage = readonly [
   operationId: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -24,9 +37,9 @@ export type FrontendRouteCoverage = readonly [
 /**
  * Executable counterpart of the approved 160-row ledger in plan-fe.md.
  *
- * FE-0 deliberately starts every business operation at NOT STARTED: the
- * manifest proves ownership and prevents Swagger-only coverage from being
- * mistaken for implemented UI.
+ * Operation status progresses with its owning phase. Ownership alone never
+ * counts as implemented UI and the plan ledger must move atomically with this
+ * executable manifest.
  */
 export const FRONTEND_OPERATION_COVERAGE = [
   [
@@ -1666,7 +1679,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-1',
     'browser:storefront-discovery',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getProductBySlug',
@@ -1677,7 +1690,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getUsedIphoneByInventoryCode',
@@ -1688,7 +1701,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getPublicStore',
@@ -1699,7 +1712,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-1',
     'browser:storefront-discovery',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listPublicVouchers',
@@ -1710,7 +1723,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-1',
     'browser:storefront-discovery',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listCustomerWarranties',
@@ -1830,7 +1843,7 @@ export const FRONTEND_ROUTE_COVERAGE = [
   ['/backoffice/settings', 'EXISTING', 'FE-8'],
   ['/backoffice/audit-logs', 'EXISTING', 'FE-8'],
   ['/backoffice/audit-logs/[id]', 'EXISTING', 'FE-8'],
-  ['/store', 'PLANNED', 'FE-1'],
+  ['/store', 'EXISTING', 'FE-1'],
   ['/account', 'PLANNED', 'FE-2'],
   ['/account/addresses', 'PLANNED', 'FE-2'],
   ['/account/security', 'PLANNED', 'FE-2'],

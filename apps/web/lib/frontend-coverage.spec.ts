@@ -3,11 +3,17 @@ import { join, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   FRONTEND_OPERATION_COVERAGE,
+  FRONTEND_PHASE_STATUS,
   FRONTEND_REQUIRED_STATES,
   FRONTEND_ROUTE_COVERAGE,
 } from './frontend-coverage';
 
 const repositoryRoot = resolve(import.meta.dirname, '../../..');
+const allowedOperationStatuses = {
+  DONE: ['DONE'],
+  'IN PROGRESS': ['NOT STARTED', 'IN PROGRESS'],
+  'NOT STARTED': ['NOT STARTED'],
+} as const;
 
 describe('FE-0 frontend coverage contract', () => {
   it('assigns every OpenAPI operation to exactly one route, phase and automated test', () => {
@@ -48,8 +54,17 @@ describe('FE-0 frontend coverage contract', () => {
       expect(actionState.length).toBeGreaterThan(0);
       expect(phase).toMatch(/^FE-[1-8]$/);
       expect(automatedTest.startsWith('browser:')).toBe(true);
-      expect(status).toBe('NOT STARTED');
+      const owningPhaseStatus = FRONTEND_PHASE_STATUS[phase];
+      expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
     }
+
+    const phaseStatuses: ReadonlyArray<readonly [string, string]> =
+      Object.entries(FRONTEND_PHASE_STATUS);
+    const inProgressPhases = phaseStatuses
+      .filter(([, status]) => status === 'IN PROGRESS')
+      .map(([phase]) => phase);
+    expect(inProgressPhases).toHaveLength(0);
+    expect(readPlanPhaseStatuses()).toEqual(FRONTEND_PHASE_STATUS);
   });
 
   it('keeps the executable manifest aligned with the approved plan-fe.md ledger', () => {
@@ -80,7 +95,7 @@ describe('FE-0 frontend coverage contract', () => {
     );
   });
 
-  it('assigns all 37 current routes and 18 approved routes exactly once', () => {
+  it('assigns every current and approved route exactly once', () => {
     const currentRoutes = readCurrentNextRoutes();
     const manifestRoutes = FRONTEND_ROUTE_COVERAGE.map(([route]) => route);
     const existingRoutes = FRONTEND_ROUTE_COVERAGE.filter(([, kind]) => kind === 'EXISTING').map(
@@ -90,11 +105,11 @@ describe('FE-0 frontend coverage contract', () => {
       ([route]) => route,
     );
 
-    expect(currentRoutes).toHaveLength(37);
-    expect(existingRoutes).toHaveLength(37);
-    expect(plannedRoutes).toHaveLength(18);
+    expect(currentRoutes).toHaveLength(existingRoutes.length);
     expect(new Set(manifestRoutes).size).toBe(55);
+    expect(existingRoutes.length + plannedRoutes.length).toBe(55);
     expect([...existingRoutes].sort()).toEqual([...currentRoutes].sort());
+    expect(plannedRoutes.filter((route) => currentRoutes.includes(route))).toEqual([]);
     expect(plannedRoutes).not.toContain('/backoffice/catalog/products/[id]/variants/[variantId]');
     expect(readPlanRouteCoverage()).toEqual(
       FRONTEND_ROUTE_COVERAGE.map(([route, kind, phase]) => ({ route, kind, phase })),
@@ -188,7 +203,7 @@ function readPlanOperationCoverage(): Array<{
 function readPlanRouteCoverage(): Array<{ route: string; kind: string; phase: string }> {
   const plan = readFileSync(join(repositoryRoot, 'plan-fe.md'), 'utf8');
   const section = plan
-    .split('### 5.1. Route ownership ledger — 37 hiện có + 18 mới')[1]
+    .split(/^### 5\.1\. Route ownership ledger[^\n]*$/m)[1]
     ?.split('## 6. Dependency graph')[0];
   if (section === undefined) throw new Error('Route ownership ledger is missing from plan-fe.md');
 
@@ -203,6 +218,17 @@ function readPlanRouteCoverage(): Array<{ route: string; kind: string; phase: st
         phase: cells[4] ?? '',
       };
     });
+}
+
+function readPlanPhaseStatuses(): Record<string, string> {
+  const plan = readFileSync(join(repositoryRoot, 'plan-fe.md'), 'utf8');
+  return Object.fromEntries(
+    [
+      ...plan.matchAll(
+        /^### (FE-\d) —[^\n]*\n\n[\s\S]*?^\| Trạng thái\s+\| \*\*(NOT STARTED|IN PROGRESS|DONE)\*\*/gm,
+      ),
+    ].map(([, phase, status]) => [phase, status]),
+  ) as Record<string, string>;
 }
 
 function readCurrentNextRoutes(): string[] {

@@ -3206,7 +3206,7 @@ export interface components {
         };
         BackofficeVoucherListResponse: {
             data: components["schemas"]["BackofficeVoucherDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["VoucherListMetaDto"];
         };
         BackofficeVoucherResponse: {
             data: components["schemas"]["BackofficeVoucherDto"];
@@ -4344,7 +4344,7 @@ export interface components {
         };
         PublicVoucherListResponse: {
             data: components["schemas"]["PublicVoucherDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["VoucherListMetaDto"];
         };
         ReceiveAfterSalesRequestDto: {
             note?: string;
@@ -4866,6 +4866,9 @@ export interface components {
             note?: string;
             receivedAmount: string;
         };
+        VoucherListMetaDto: {
+            pagination: components["schemas"]["PaginationDto"];
+        };
         VoucherReasonDto: {
             reason: string;
         };
@@ -4892,7 +4895,7 @@ export interface components {
         };
         VoucherUsageListResponse: {
             data: components["schemas"]["VoucherUsageDto"][];
-            meta: components["schemas"]["PaginationDto"];
+            meta: components["schemas"]["VoucherListMetaDto"];
         };
         WarrantyActorSummaryDto: {
             fullName: string;

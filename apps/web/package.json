@@ -13,6 +13,7 @@
     "test:a11y-contract": "vitest run components/ui/foundation.spec.ts components/ui/foundation-render.spec.tsx components/shells/shell-utils.spec.ts components/shells/shell-foundation.spec.tsx"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@rephone/api-client": "workspace:*",
     "next": "16.2.11",
     "react": "19.2.8",

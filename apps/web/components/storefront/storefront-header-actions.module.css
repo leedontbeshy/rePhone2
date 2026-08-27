@@ -1,0 +1,153 @@
+.actions {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.search {
+  display: grid;
+  width: min(100%, 54rem);
+  grid-template-columns: minmax(12rem, 1fr) auto;
+  margin-inline-end: auto;
+}
+
+.search input,
+.search button,
+.sessionAction,
+.cartAction,
+.sessionLoading {
+  min-height: var(--control-height);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+}
+
+.search input {
+  min-width: 0;
+  padding: var(--space-2) var(--space-4);
+  border-inline-end: 0;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  color: var(--color-body);
+  background: var(--color-surface);
+}
+
+.search button {
+  display: inline-grid;
+  min-width: var(--control-height);
+  place-items: center;
+  padding: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  color: var(--color-primary-hover);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.search button:hover,
+.sessionAction:hover,
+.cartAction:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+}
+
+.sessionAction,
+.cartAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--space-3);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sessionAction,
+.cartAction {
+  gap: var(--space-2);
+}
+
+.mobileCartLabel {
+  display: none;
+}
+
+.cartBadge {
+  display: inline-grid;
+  min-width: 1.4rem;
+  min-height: 1.4rem;
+  place-items: center;
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  font-size: var(--font-size-label);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sessionLoading {
+  width: 5.5rem;
+  border-color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-subtle) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-subtle) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.4s ease-in-out infinite;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 59.999rem) {
+  .search {
+    display: none;
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .sessionAction,
+  .sessionLoading {
+    display: none;
+  }
+
+  .desktopCartLabel {
+    display: none;
+  }
+
+  .mobileCartLabel {
+    display: inline;
+  }
+
+  .cartAction {
+    padding-inline: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sessionLoading {
+    animation: none;
+  }
+}
+
+@keyframes loading {
+  to {
+    background-position: -200% 0;
+  }
+}

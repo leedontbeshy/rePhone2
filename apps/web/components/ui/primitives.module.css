@@ -260,6 +260,14 @@
   margin: 0;
 }
 
+.neutral,
+.info,
+.success,
+.warning,
+.danger {
+  color: var(--color-ink);
+}
+
 .neutral {
   border-color: var(--color-border-strong);
   background: var(--color-surface-subtle);
