@@ -74,12 +74,12 @@ export default function ResetPasswordPage() {
   return (
     <AuthPage
       title="Đặt mật khẩu mới"
-      description="Liên kết được lấy khỏi fragment và xóa khỏi thanh địa chỉ trước khi sử dụng."
+      description="Hãy tạo mật khẩu mới để tiếp tục sử dụng tài khoản."
     >
       {!loaded ? <AuthPending>Đang kiểm tra liên kết…</AuthPending> : null}
       {loaded && token === undefined && !completed ? (
         <InlineAlert tone="danger" title="Liên kết không dùng được">
-          Liên kết thiếu token, không hợp lệ hoặc đã được mở trước đó.{' '}
+          Liên kết này bị thiếu thông tin, đã hết hạn hoặc đã được sử dụng.{' '}
           <Link href="/forgot-password">Yêu cầu liên kết mới</Link>.
         </InlineAlert>
       ) : null}
@@ -101,14 +101,14 @@ export default function ResetPasswordPage() {
             </AuthFormFooter>
           </AuthFormActions>
           <AuthSecurityNote>
-            Đổi mật khẩu thành công sẽ thu hồi toàn bộ phiên đăng nhập cũ.
+            Sau khi đổi mật khẩu, bạn sẽ cần đăng nhập lại trên tất cả thiết bị.
           </AuthSecurityNote>
         </AuthForm>
       )}
       {completed ? (
         <div aria-live="polite">
           <InlineAlert tone="success" title="Mật khẩu đã được cập nhật">
-            Các phiên cũ đã bị thu hồi. Hãy đăng nhập lại bằng mật khẩu mới.
+            Mọi thiết bị đã được đăng xuất. Hãy đăng nhập lại bằng mật khẩu mới.
           </InlineAlert>
           <AuthFormActions>
             <Link href="/login" standalone>

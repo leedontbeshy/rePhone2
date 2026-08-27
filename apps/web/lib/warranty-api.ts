@@ -1,5 +1,5 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { apiError } from './order-access';
+import { apiError, customerApiError } from './order-access';
 
 export type WarrantyApiClient = ReturnType<typeof createApiClient>;
 export type WarrantyListItem = components['schemas']['WarrantyListItemDto'];
@@ -46,7 +46,7 @@ export async function listCustomerWarranties(
 ): Promise<WarrantyPage<WarrantyListItem>> {
   const result = await client.GET('/api/v1/warranties', { params: { query } });
   if (result.data === undefined)
-    throw new Error(warrantyError(result.error, 'Không thể tải bảo hành.'));
+    throw new Error(customerWarrantyError(result.error, 'Không thể tải bảo hành.'));
   return pageFrom(result.data.data, result.data.meta, query);
 }
 
@@ -62,7 +62,7 @@ export async function getCustomerWarranty(
     },
   });
   if (result.data === undefined) {
-    throw new Error(warrantyError(result.error, 'Không thể mở bảo hành này.'));
+    throw new Error(customerWarrantyError(result.error, 'Không thể mở bảo hành này.'));
   }
   return result.data.data;
 }
@@ -192,15 +192,27 @@ export async function voidWarranty(
 }
 
 export function warrantyError(value: unknown, fallback: string): string {
+  return mappedWarrantyError(value, fallback, apiError);
+}
+
+export function customerWarrantyError(value: unknown, fallback: string): string {
+  return mappedWarrantyError(value, fallback, customerApiError);
+}
+
+function mappedWarrantyError(
+  value: unknown,
+  fallback: string,
+  defaultError: (value: unknown, fallback: string) => string,
+): string {
   const code = errorCode(value);
   if (code === 'RESOURCE_NOT_FOUND') return 'Không tìm thấy bảo hành hoặc bạn không có quyền xem.';
   if (code === 'DUPLICATE_RESOURCE') return 'Mã chính sách đã tồn tại.';
   if (code === 'INVALID_STATE_TRANSITION') {
     return 'Dữ liệu đã đổi trạng thái hoặc còn liên kết đang hoạt động. Hãy tải lại.';
   }
-  if (code === 'CONCURRENT_MODIFICATION') return 'Dữ liệu vừa được cập nhật ở phiên khác.';
+  if (code === 'CONCURRENT_MODIFICATION') return 'Dữ liệu vừa được cập nhật. Hãy tải lại trang.';
   if (code === 'RATE_LIMITED') return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau.';
-  return apiError(value, fallback);
+  return defaultError(value, fallback);
 }
 
 async function runPolicyCommand(

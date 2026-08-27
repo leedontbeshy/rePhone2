@@ -52,6 +52,12 @@ describe('account self-service components', () => {
 
     expect(loading).toContain('aria-busy="true"');
     expect(anonymous).toContain('returnTo=%2Faccount%2Fsecurity');
+    expect(anonymous).toContain(
+      'Đăng nhập giúp rePhone bảo vệ hồ sơ, mật khẩu và địa chỉ của bạn.',
+    );
+    expect(anonymous).not.toMatch(
+      /access token|refresh session|cookie|localStorage|fragment|ADMIN|phiên đăng nhập/i,
+    );
     expect(permission).toContain('Khu vực dành cho khách hàng');
     expect(summary).toContain('EMP-001');
     expect(summary).not.toContain('password');

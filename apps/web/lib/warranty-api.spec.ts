@@ -3,6 +3,7 @@ import {
   activateWarrantyPolicy,
   archiveWarrantyPolicy,
   createWarrantyPolicy,
+  customerWarrantyError,
   getCustomerWarranty,
   listBackofficeWarranties,
   listCustomerWarranties,
@@ -186,6 +187,24 @@ describe('warranty typed-client adapter', () => {
         'fallback',
       ),
     ).toContain('Hãy tải lại');
+    expect(
+      warrantyError(
+        { error: { code: 'CONCURRENT_MODIFICATION', message: 'private row detail' } },
+        'fallback',
+      ),
+    ).toBe('Dữ liệu vừa được cập nhật. Hãy tải lại trang.');
+    expect(
+      customerWarrantyError(
+        { error: { code: 'INTERNAL_ERROR', message: 'private server detail' } },
+        'fallback',
+      ),
+    ).toBe('Hệ thống chưa thể xử lý yêu cầu. Vui lòng thử lại.');
+    expect(
+      warrantyError(
+        { error: { code: 'BACKOFFICE_DIAGNOSTIC', message: 'Chi tiết phục vụ vận hành.' } },
+        'fallback',
+      ),
+    ).toBe('Chi tiết phục vụ vận hành.');
   });
 });
 

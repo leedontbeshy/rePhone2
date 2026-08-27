@@ -1,4 +1,4 @@
-# rePhone Web Design System & UX Contract v1.3
+# rePhone Web Design System & UX Contract v1.6
 
 > Trạng thái tài liệu: **APPROVED**  
 > Phạm vi: **Post-P0 / P1 frontend refinement**  
@@ -6,7 +6,7 @@
 > Backend contract: [docs/readme.md](docs/readme.md)  
 > Frontend implementation plan: [plan-fe.md](plan-fe.md)  
 > Frontend baseline SHA: `801ad26`  
-> Ngày cập nhật: `2026-08-26`
+> Ngày cập nhật: `2026-08-27`
 
 ![Reference đã duyệt — Retail Catalog Rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png)
 
@@ -174,6 +174,9 @@ Hướng đã duyệt là **Retail Catalog Rows** cho discovery, kết hợp hie
 - Không lặp uppercase eyebrow trên mọi section; chỉ dùng label nhỏ khi nó bổ sung ngữ cảnh thật.
 - Không dùng số thứ tự `01`, `02`, `03` để trang trí. Chỉ đánh số khi người dùng thực sự phải làm theo một quy trình tuần tự.
 - Không viết headline để giải thích điều đã rõ từ tên model, giá và trạng thái card.
+- Storefront, auth và account dành cho khách phải dùng tiếng Việt tự nhiên, nhất quán. Giữ tên riêng hoặc từ đã phổ biến như `rePhone`, `iPhone`, `email`; không trộn thuật ngữ triển khai tiếng Anh vào câu tiếng Việt.
+- Không giải thích transport hoặc chi tiết code cho khách bằng các từ như `access token`, `refresh session`, `cookie`, `localStorage`, `fragment`, `Bearer`, `CSRF`, tên API hay enum. Chuyển thành kết quả và hành động mà khách cần biết.
+- Không hiển thị nguyên văn lỗi kỹ thuật từ provider/server trên surface khách hàng; ánh xạ theo mã lỗi hoặc dùng fallback an toàn, dễ hiểu.
 - Backoffice dùng động từ nghiệp vụ chính xác, không dùng câu “thành công mỹ mãn” hoặc lời khen không cần thiết.
 
 Ví dụ storefront:
@@ -213,6 +216,10 @@ Săn deal cực sốc ngay hôm nay!
 | Masked identifiers   | `IMEI/Serial đã che`                       |
 | Model chưa có máy    | `Tạm hết máy`                              |
 | Exact unit khả dụng  | `Còn hàng`, `Không còn khả dụng`           |
+| Voucher              | `Ưu đãi`, `Mã ưu đãi`                      |
+| Pickup               | `Nhận tại cửa hàng`                        |
+| Checkout             | `Thanh toán`, `Xác nhận đơn`               |
+| Catalog              | `Danh mục sản phẩm`                        |
 | Backoffice operation | Dùng đúng named command của API            |
 
 Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUSTOMER`, `EMPLOYEE`, `ADMIN`, `AVAILABLE`, `InventoryUnit` trong backtick khi cần nói về contract.
@@ -492,6 +499,8 @@ Route page/layout (orchestration, metadata, server fetch)
 ### 10.3 Navigation
 
 - `StorefrontHeader`, `MobileNavSheet`, `BackofficeSidebar`, `TopBar`.
+- Storefront desktop dùng header hai tầng: hàng thương hiệu/tìm kiếm/hành động cao tối thiểu `72px`, hàng danh mục cao tối thiểu `48px`; navigation chính dùng chữ `16px`, hit target tối thiểu `44px`, căn giữa và phân bố cân bằng thay vì bám trái container.
+- Mobile giữ header gọn và chuyển navigation phụ vào sheet; nhãn và accessible name dùng tiếng Việt, route hiện tại có `aria-current`.
 - `SearchField`, `Breadcrumbs`, `Pagination`, `Tabs`.
 - `HeaderSessionActions` và `CartBadge` là client islands.
 - `StorefrontFooter` là domain component dùng chung cho mọi route storefront, gồm bốn vùng rõ ràng: giới thiệu thương hiệu, dòng iPhone, khám phá và liên hệ; không dồn toàn bộ link thành một hàng hoặc card soup.
@@ -746,7 +755,10 @@ Decision log:
 ### 12.5 Store
 
 - Dùng duy nhất public-safe store projection.
-- Hiển thị tên, phone, address và pickup information.
+- Hiển thị rõ tên cửa hàng, điện thoại, địa chỉ và thông tin nhận máy bằng tiếng Việt tự nhiên; không lặp copy “hiện hành” hoặc dùng `pickup`, `checkout`, `catalog` trước khách.
+- CTA chính là gọi cửa hàng; CTA phụ có thể mở bản đồ từ địa chỉ public đã có. Cả hai phải đủ tương phản và có trạng thái focus/hover rõ.
+- Desktop nhóm thông tin liên hệ và nhận máy thành hai vùng cân bằng; mobile xếp một cột, CTA full-width và không tràn ngang.
+- Không tự thêm giờ mở cửa, trạng thái đang mở hoặc dữ liệu location chưa có trong public contract.
 - Thiếu store trả service-unavailable state; không tự chọn location nội bộ khác.
 
 ## 13. Page patterns — auth, account và commerce
@@ -1017,23 +1029,24 @@ Không dùng design debt để hợp thức hóa security hoặc contract violat
 
 ## 24. Decision log
 
-| Ngày       | Quyết định                                     | Phương án đã loại                               | Lý do                                                                      |
-| ---------- | ---------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------- |
-| 2026-08-25 | Technical Editorial cho exact-unit evidence    | Premium tối giản; terminal/sci-fi               | Làm rõ lợi thế exact-unit inspection và vẫn gần gũi                        |
-| 2026-08-25 | Copy gọi khách là “bạn”                        | `anh/chị`; không xưng hô                        | Tự nhiên, hiện đại, ít cảm giác máy móc                                    |
-| 2026-08-25 | Wordmark chữ `rePhone`                         | Thiết kế logo mới trong phase đầu               | Tập trung nguồn lực vào UX mua hàng                                        |
-| 2026-08-25 | CSS variables + CSS Modules                    | Tailwind/Radix; tiếp tục global CSS             | Migrate dần, ít dependency, hợp một web app                                |
-| 2026-08-25 | Giữ nguyên backend trong redesign              | Mở rộng unit discovery API ngay                 | Hạn chế regression và dùng contract P0 đã ổn định                          |
-| 2026-08-25 | Full 160-operation frontend coverage           | Chỉ redesign 37 route hiện có                   | Loại bỏ các nghiệp vụ còn phụ thuộc Swagger                                |
-| 2026-08-25 | Exact-unit là canonical page                   | Home hoặc generic product card làm chuẩn        | Đây là khác biệt sản phẩm mạnh nhất                                        |
-| 2026-08-25 | Storefront và backoffice dùng hai density mode | Một layout/card language cho mọi surface        | Nhiệm vụ mua hàng và vận hành có mật độ khác nhau                          |
-| 2026-08-25 | Không dark mode/complex animation ở P1         | Làm đầy đủ theme/motion system                  | Không phục vụ critical journey hiện tại                                    |
-| 2026-08-26 | Option 1 — Retail Catalog Rows cho discovery   | Manifesto hero; editorial index; retail quá dày | Sản phẩm xuất hiện trước, quen với người mua Việt Nam nhưng vẫn bình tĩnh  |
-| 2026-08-26 | Home group model theo generation động          | Flat grid; hard-code iPhone 5–17                | Phản ánh catalog thật, hỗ trợ model tạm hết và không tạo dữ liệu giả       |
-| 2026-08-26 | Server-first + domain component composition    | Page nguyên khối; generic component nhiều cờ    | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain     |
-| 2026-08-26 | Hai detail mockup là canonical storefront ref  | Giữ layout detail cũ; áp retail card vào BO     | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy  |
-| 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn      | Full checklist, repair và identifier dossier    | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
-| 2026-08-27 | Compact condition rail và copy theo location   | Ép gallery cao; hard-code pickup availability   | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
+| Ngày       | Quyết định                                     | Phương án đã loại                                 | Lý do                                                                      |
+| ---------- | ---------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------- |
+| 2026-08-25 | Technical Editorial cho exact-unit evidence    | Premium tối giản; terminal/sci-fi                 | Làm rõ lợi thế exact-unit inspection và vẫn gần gũi                        |
+| 2026-08-25 | Copy gọi khách là “bạn”                        | `anh/chị`; không xưng hô                          | Tự nhiên, hiện đại, ít cảm giác máy móc                                    |
+| 2026-08-25 | Wordmark chữ `rePhone`                         | Thiết kế logo mới trong phase đầu                 | Tập trung nguồn lực vào UX mua hàng                                        |
+| 2026-08-25 | CSS variables + CSS Modules                    | Tailwind/Radix; tiếp tục global CSS               | Migrate dần, ít dependency, hợp một web app                                |
+| 2026-08-25 | Giữ nguyên backend trong redesign              | Mở rộng unit discovery API ngay                   | Hạn chế regression và dùng contract P0 đã ổn định                          |
+| 2026-08-25 | Full 160-operation frontend coverage           | Chỉ redesign 37 route hiện có                     | Loại bỏ các nghiệp vụ còn phụ thuộc Swagger                                |
+| 2026-08-25 | Exact-unit là canonical page                   | Home hoặc generic product card làm chuẩn          | Đây là khác biệt sản phẩm mạnh nhất                                        |
+| 2026-08-25 | Storefront và backoffice dùng hai density mode | Một layout/card language cho mọi surface          | Nhiệm vụ mua hàng và vận hành có mật độ khác nhau                          |
+| 2026-08-25 | Không dark mode/complex animation ở P1         | Làm đầy đủ theme/motion system                    | Không phục vụ critical journey hiện tại                                    |
+| 2026-08-26 | Option 1 — Retail Catalog Rows cho discovery   | Manifesto hero; editorial index; retail quá dày   | Sản phẩm xuất hiện trước, quen với người mua Việt Nam nhưng vẫn bình tĩnh  |
+| 2026-08-26 | Home group model theo generation động          | Flat grid; hard-code iPhone 5–17                  | Phản ánh catalog thật, hỗ trợ model tạm hết và không tạo dữ liệu giả       |
+| 2026-08-26 | Server-first + domain component composition    | Page nguyên khối; generic component nhiều cờ      | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain     |
+| 2026-08-26 | Hai detail mockup là canonical storefront ref  | Giữ layout detail cũ; áp retail card vào BO       | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy  |
+| 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn      | Full checklist, repair và identifier dossier      | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
+| 2026-08-27 | Compact condition rail và copy theo location   | Ép gallery cao; hard-code pickup availability     | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
+| 2026-08-27 | Customer-first Vietnamese + balanced header    | Vá copy từng trang; header một hàng; redesign lớn | Giữ UI dễ hiểu, cân desktop/mobile và hạn chế regression                   |
 
 Decision log này chỉ ghi quyết định presentation/interaction. Không sửa hoặc thay thế ADR nghiệp vụ.
 
@@ -1068,6 +1081,7 @@ Không sao chép logo, asset, content hoặc layout nguyên bản từ các ngu�
 
 | Version | Ngày       | Thay đổi                                                                                                   |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| `1.6`   | 2026-08-27 | Khóa tiếng Việt cho surface khách hàng, store information hierarchy và storefront header cân giữa          |
 | `1.5`   | 2026-08-27 | Khóa hero balance responsive và fulfillment copy cho exact-unit                                            |
 | `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                          |
 | `1.3`   | 2026-08-26 | Rút exact-unit storefront về inspection summary; bỏ full checklist, repair và identifier dossier           |

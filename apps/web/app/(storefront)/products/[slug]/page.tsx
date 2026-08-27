@@ -58,8 +58,8 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           {product.variants.length === 0 ? (
             <div className={styles.emptyState}>
               <h3>Chưa có lựa chọn công khai</h3>
-              <p>Hãy quay lại catalog để xem các sản phẩm khác đang khả dụng.</p>
-              <Link href="/products">Trở lại catalog</Link>
+              <p>Hãy quay lại danh mục để xem các sản phẩm khác đang có sẵn.</p>
+              <Link href="/products">Trở lại danh mục</Link>
             </div>
           ) : (
             <div className={styles.variantList}>

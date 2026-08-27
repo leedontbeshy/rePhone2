@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   captureGuestOrderToken,
   checkoutChangedPreview,
+  customerApiError,
   orderTokenStorageKey,
 } from './order-access.js';
 
@@ -28,5 +29,26 @@ describe('guest order access', () => {
         },
       }),
     ).toEqual(current);
+  });
+
+  it('maps service errors to customer copy without exposing backend messages', () => {
+    expect(
+      customerApiError(
+        {
+          error: {
+            code: 'ACCESS_TOKEN_INVALID',
+            message: 'Access token invalid; refresh session was revoked.',
+          },
+        },
+        'Không thể mở đơn hàng.',
+      ),
+    ).toBe('Liên kết này không còn dùng được. Hãy đăng nhập để tiếp tục.');
+
+    expect(
+      customerApiError(
+        { error: { code: 'UNKNOWN_ERROR', message: 'Unexpected provider payload.' } },
+        'Không thể mở đơn hàng.',
+      ),
+    ).toBe('Không thể mở đơn hàng.');
   });
 });

@@ -81,8 +81,8 @@ export default function CustomerWarrantyDetailPage() {
         ) : null}
         {guestMissingCredential ? (
           <section className="empty-state">
-            <h1>Thiếu quyền truy cập guest</h1>
-            <p>Hãy mở lại đơn hàng guest trên đúng trình duyệt đã đặt đơn.</p>
+            <h1>Không thể xác minh đơn hàng</h1>
+            <p>Hãy mở bảo hành từ chi tiết đơn hàng hoặc đăng nhập để tiếp tục.</p>
             {orderNumber === null ? (
               <Link className="button primary" href="/login">
                 Đăng nhập khách hàng
@@ -124,9 +124,9 @@ export default function CustomerWarrantyDetailPage() {
             </header>
             <code className="warranty-code">{detail.warrantyCode}</code>
             <dl className="warranty-detail-specs">
-              <Spec label="SKU" value={detail.sku} />
+              <Spec label="Mã sản phẩm" value={detail.sku} />
               <Spec label="Thiết bị" value={detail.inventoryCode ?? 'Theo đơn hàng'} />
-              <Spec label="Định danh" value={maskedSuffix(detail.maskedIdentifierSuffix)} />
+              <Spec label="Mã nhận diện" value={maskedSuffix(detail.maskedIdentifierSuffix)} />
               <Spec label="Thời hạn" value={`${String(detail.daysSnapshot)} ngày`} />
               <Spec label="Bắt đầu" value={dateTime(detail.startAt)} />
               <Spec label="Kết thúc" value={dateTime(detail.endAt)} />

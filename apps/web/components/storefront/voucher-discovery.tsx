@@ -47,16 +47,16 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
     <div className={styles.page}>
       <header className={styles.hero}>
         <p>Ưu đãi hiện hành</p>
-        <h1>Voucher rõ điều kiện, kiểm tra lại khi checkout.</h1>
+        <h1>Mã ưu đãi rõ điều kiện, dễ kiểm tra.</h1>
         <span>
-          Khám phá mã đang hoạt động. Khả năng áp dụng cuối cùng phụ thuộc giỏ hàng và điều kiện tại
-          thời điểm checkout.
+          Khám phá các mã đang hoạt động. Khả năng áp dụng cuối cùng phụ thuộc vào giỏ hàng khi bạn
+          xác nhận đơn.
         </span>
       </header>
 
       {isCustomer ? (
         <aside className={styles.accountNote}>
-          Bạn đang thấy cả voucher công khai và voucher dành cho tài khoản.
+          Bạn đang thấy cả ưu đãi công khai và ưu đãi dành cho tài khoản.
         </aside>
       ) : status === 'anonymous' ? (
         <aside className={styles.accountNote}>
@@ -67,14 +67,14 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
 
       {loading && response === null ? (
         <section className={styles.state} role="status">
-          <h2>Đang tải voucher</h2>
+          <h2>Đang tải ưu đãi</h2>
           <p>Danh sách ưu đãi sẽ xuất hiện trong giây lát.</p>
         </section>
       ) : null}
 
       {error ? (
         <section className={styles.state} role="alert">
-          <h2>Chưa tải được voucher</h2>
+          <h2>Chưa tải được ưu đãi</h2>
           <p>Bạn có thể thử lại mà không ảnh hưởng đến giỏ hàng.</p>
           <button
             type="button"
@@ -90,14 +90,14 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
 
       {!loading && !error && vouchers.length === 0 ? (
         <section className={styles.state}>
-          <h2>Chưa có voucher phù hợp</h2>
+          <h2>Chưa có ưu đãi phù hợp</h2>
           <p>Hãy quay lại sau hoặc tiếp tục xem các máy đang bán.</p>
-          <Link href="/products">Xem catalog</Link>
+          <Link href="/products">Xem danh mục sản phẩm</Link>
         </section>
       ) : null}
 
       {vouchers.length > 0 ? (
-        <section className={styles.grid} aria-label="Voucher hiện hành" aria-busy={loading}>
+        <section className={styles.grid} aria-label="Ưu đãi hiện hành" aria-busy={loading}>
           {vouchers.map((voucher) => (
             <VoucherCard key={voucher.code} voucher={voucher} />
           ))}
@@ -105,7 +105,7 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
       ) : null}
 
       {pagination !== undefined && pagination.totalPages > 1 ? (
-        <nav className={styles.pagination} aria-label="Phân trang voucher">
+        <nav className={styles.pagination} aria-label="Phân trang ưu đãi">
           {pagination.page > 1 ? (
             <Link href={`/vouchers?page=${String(pagination.page - 1)}`}>Trang trước</Link>
           ) : (

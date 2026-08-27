@@ -16,14 +16,14 @@ export function CatalogHeader() {
       </Link>
       <nav aria-label="Điều hướng chính">
         <Link href="/products">Sản phẩm</Link>
-        <Link href="/vouchers">Voucher</Link>
+        <Link href="/vouchers">Ưu đãi</Link>
         {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
           <Link href="/cart">
             Giỏ hàng <span className="cart-badge">{totalQuantity}</span>
           </Link>
         ) : null}
         {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
-          <Link href="/wishlist">Wishlist</Link>
+          <Link href="/wishlist">Đã lưu</Link>
         ) : null}
         {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
           <Link href="/orders">Đơn hàng</Link>
@@ -37,7 +37,7 @@ export function CatalogHeader() {
         {status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN') ? (
           <>
             <Link href="/backoffice/orders">Đơn hàng</Link>
-            <Link href="/backoffice/payments">Review cọc</Link>
+            <Link href="/backoffice/payments">Duyệt cọc</Link>
             <Link href="/backoffice/refunds">Hoàn tiền</Link>
             <Link href="/backoffice/after-sales">Hậu mãi</Link>
             <Link href="/backoffice/customers">Khách hàng</Link>
@@ -47,7 +47,7 @@ export function CatalogHeader() {
           <>
             <Link href="/backoffice/employees">Nhân viên</Link>
             <Link href="/backoffice/settings">Cấu hình</Link>
-            <Link href="/backoffice/audit-logs">Audit</Link>
+            <Link href="/backoffice/audit-logs">Nhật ký</Link>
           </>
         ) : null}
         {status === 'anonymous' ? <Link href="/login">Đăng nhập</Link> : null}

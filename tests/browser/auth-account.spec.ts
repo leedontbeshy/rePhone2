@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type Request } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
 import {
   BROWSER_INVITATION_ACCOUNT,
   BROWSER_RESET_ACCOUNT,
@@ -155,6 +155,7 @@ test.describe('FE-2 authentication and account', () => {
 
     await page.goto('/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
+    await expectAccountProfileFieldsAligned(page);
     await page.locator('#account-fullName').fill(BROWSER_CUSTOMER.updatedFullName);
     await page.locator('#account-phone').fill('0900000222');
     await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
@@ -166,7 +167,7 @@ test.describe('FE-2 authentication and account', () => {
     await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
     await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await page.goto('/checkout');
-    await expect(page.getByRole('heading', { level: 1, name: 'Checkout' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Thanh toán' })).toBeVisible();
     await expect(page.getByLabel('Họ tên', { exact: true })).toHaveValue(
       BROWSER_CUSTOMER.updatedFullName,
     );
@@ -429,6 +430,44 @@ function isSuccessfulAddressReload(response: {
 
 function apiPath(url: string): string {
   return new URL(url).pathname;
+}
+
+async function expectAccountProfileFieldsAligned(page: Page): Promise<void> {
+  const fullNameLabel = page.locator('label[for="account-fullName"]');
+  const phoneLabel = page.locator('label[for="account-phone"]');
+  const fullNameInput = page.locator('#account-fullName');
+  const phoneInput = page.locator('#account-phone');
+
+  const [fullNameLabelBox, phoneLabelBox, fullNameInputBox, phoneInputBox] = await Promise.all([
+    visibleBox(fullNameLabel),
+    visibleBox(phoneLabel),
+    visibleBox(fullNameInput),
+    visibleBox(phoneInput),
+  ]);
+  expect(Math.abs(fullNameLabelBox.y - phoneLabelBox.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(fullNameInputBox.y - phoneInputBox.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(fullNameInputBox.height - phoneInputBox.height)).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const [mobileFullNameBox, mobilePhoneBox] = await Promise.all([
+    visibleBox(fullNameInput),
+    visibleBox(phoneInput),
+  ]);
+  expect(mobilePhoneBox.y).toBeGreaterThan(mobileFullNameBox.y + mobileFullNameBox.height);
+  expect(Math.abs(mobileFullNameBox.x - mobilePhoneBox.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(mobileFullNameBox.width - mobilePhoneBox.width)).toBeLessThanOrEqual(1);
+  await expectNoHorizontalOverflow(page);
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+}
+
+async function visibleBox(
+  locator: Locator,
+): Promise<NonNullable<Awaited<ReturnType<Locator['boundingBox']>>>> {
+  const box = await locator.boundingBox();
+  if (box === null)
+    throw new Error(`Expected ${locator.toString()} to have a visible bounding box`);
+  return box;
 }
 
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {

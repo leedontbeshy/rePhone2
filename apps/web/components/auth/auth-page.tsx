@@ -16,7 +16,7 @@ export function AuthPage({ children, description, title }: Readonly<AuthPageProp
       description={description}
       footer={
         <p className={styles.shellFooter}>
-          rePhone không bao giờ yêu cầu bạn gửi mật khẩu hoặc mã trong liên kết qua tin nhắn.
+          rePhone không bao giờ yêu cầu bạn gửi mật khẩu qua tin nhắn.
         </p>
       }
     >

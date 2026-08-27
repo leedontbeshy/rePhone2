@@ -47,7 +47,7 @@ test('catalog to completed shipping order through customer and staff portals', a
     await expect(customerPage.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await customerPage.goto('/cart');
     await expect(customerPage.getByText(INVENTORY_CODE, { exact: true })).toBeVisible();
-    await customerPage.getByRole('link', { name: 'Tiến hành checkout', exact: true }).click();
+    await customerPage.getByRole('link', { name: 'Tiếp tục thanh toán', exact: true }).click();
 
     await fillShippingCheckout(customerPage);
     await customerPage.getByRole('button', { name: 'Tính lại', exact: true }).click();
@@ -119,13 +119,15 @@ test('catalog to completed shipping order through customer and staff portals', a
       customerPage.getByRole('heading', { name: orderNumber, exact: true }),
     ).toBeVisible();
     await expect(
-      customerPage.locator('.order-status').getByText('COMPLETED', { exact: true }),
+      customerPage.locator('.order-status').getByText('Đã hoàn tất', { exact: true }),
     ).toBeVisible();
     await expect(
-      customerPage.getByRole('heading', { name: 'Thanh toán COD', exact: true }),
+      customerPage.getByRole('heading', { name: 'Thanh toán khi nhận hàng', exact: true }),
     ).toBeVisible();
     await expect(customerPage.getByText('Thu hộ khi giao hàng', { exact: true })).toBeVisible();
-    await expect(customerPage.locator('.order-warranty-summary strong')).toContainText('ACTIVE');
+    await expect(customerPage.locator('.order-warranty-summary strong')).toContainText(
+      'Còn hiệu lực',
+    );
   } finally {
     await staffContext.close();
     await customerContext.close();
@@ -145,7 +147,7 @@ async function login(
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {
-  await expect(page.getByRole('heading', { name: 'Checkout', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Thanh toán', exact: true })).toBeVisible();
   await page.getByLabel('Họ tên', { exact: true }).fill('Khách hàng Browser');
   await page.getByLabel('Email', { exact: true }).fill(CUSTOMER.email);
   await page.getByLabel('Điện thoại', { exact: true }).fill('0900000000');

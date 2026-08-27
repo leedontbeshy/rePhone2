@@ -23,7 +23,7 @@ export default function WishlistPage() {
     setLoading(true);
     const result = await client.GET('/api/v1/wishlist');
     if (result.data === undefined) {
-      setError('Không thể tải wishlist. Vui lòng thử lại.');
+      setError('Không thể tải danh sách đã lưu. Vui lòng thử lại.');
       setLoading(false);
       return;
     }
@@ -43,7 +43,7 @@ export default function WishlistPage() {
       params: { path: { itemId } },
     });
     if (result.response.status !== 204) {
-      setError('Không thể xóa sản phẩm khỏi wishlist.');
+      setError('Không thể xóa sản phẩm khỏi danh sách đã lưu.');
       setRemovingId(null);
       return;
     }
@@ -57,15 +57,15 @@ export default function WishlistPage() {
       <main className="catalog-shell commerce-shell">
         <div className="commerce-heading">
           <p className="eyebrow">Danh sách đã lưu</p>
-          <h1>Wishlist</h1>
+          <h1>Sản phẩm đã lưu</h1>
           <p>Sản phẩm hết hàng hoặc ngừng bán vẫn được giữ lại để bạn nhận biết trạng thái.</p>
         </div>
         {status === 'loading' || loading ? (
-          <div className="empty-state">Đang tải wishlist…</div>
+          <div className="empty-state">Đang tải sản phẩm đã lưu…</div>
         ) : null}
         {status === 'anonymous' ? (
           <section className="empty-state">
-            <h2>Đăng nhập để xem wishlist</h2>
+            <h2>Đăng nhập để xem sản phẩm đã lưu</h2>
             <Link className="button primary" href="/login">
               Đăng nhập
             </Link>
@@ -73,9 +73,9 @@ export default function WishlistPage() {
         ) : null}
         {status === 'authenticated' && user?.role !== 'CUSTOMER' ? (
           <section className="empty-state">
-            <h2>Wishlist chỉ dành cho khách hàng</h2>
+            <h2>Danh sách đã lưu chỉ dành cho khách hàng</h2>
             <Link className="button" href="/products">
-              Về catalog
+              Xem danh mục sản phẩm
             </Link>
           </section>
         ) : null}
@@ -129,7 +129,7 @@ export default function WishlistPage() {
                       disabled={removingId === item.id}
                       onClick={() => void remove(item.id)}
                     >
-                      {removingId === item.id ? 'Đang xóa…' : 'Xóa khỏi wishlist'}
+                      {removingId === item.id ? 'Đang xóa…' : 'Xóa khỏi danh sách'}
                     </button>
                   </div>
                 </article>

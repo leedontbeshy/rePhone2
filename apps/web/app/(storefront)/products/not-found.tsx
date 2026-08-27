@@ -23,7 +23,7 @@ export default function ProductNotFound() {
           : 'Sản phẩm có thể đã ngừng bán hoặc đường dẫn không còn hợp lệ.'}
       </p>
       <Link className={styles.cardAction} href={isExactUnit ? `/products/${slug}` : '/products'}>
-        {isExactUnit ? 'Xem các máy cùng dòng' : 'Quay lại catalog'}
+        {isExactUnit ? 'Xem các máy cùng dòng' : 'Quay lại danh mục'}
       </Link>
     </section>
   );

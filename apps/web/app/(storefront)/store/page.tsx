@@ -15,15 +15,15 @@ export default async function StorePage() {
       <div className={styles.page}>
         <header className={styles.heading}>
           <p>Cửa hàng</p>
-          <h1>Thông tin liên hệ và pickup</h1>
-          <span>Tên, số điện thoại, địa chỉ và thông tin điểm nhận hàng hiện hành.</span>
+          <h1>Thông tin cửa hàng</h1>
+          <span>Liên hệ, xem địa chỉ và thông tin nhận máy tại rePhone.</span>
         </header>
         <StoreSummary store={store} />
-        <aside className={styles.note} aria-labelledby="pickup-note-title">
-          <h2 id="pickup-note-title">Trước khi đến nhận máy</h2>
+        <aside className={styles.note} aria-labelledby="store-visit-note-title">
+          <h2 id="store-visit-note-title">Trước khi đến nhận máy</h2>
           <p>
-            Khả năng pickup của từng máy được hiển thị trong trang chi tiết máy và được kiểm tra lại
-            khi checkout.
+            Tình trạng nhận tại cửa hàng của từng máy được hiển thị trên trang chi tiết và xác nhận
+            lại khi đặt hàng.
           </p>
         </aside>
       </div>
@@ -33,7 +33,7 @@ export default async function StorePage() {
       <div className={styles.page}>
         <header className={styles.heading}>
           <p>Cửa hàng</p>
-          <h1>Thông tin liên hệ và pickup</h1>
+          <h1>Thông tin cửa hàng</h1>
         </header>
         <StoreUnavailable />
       </div>

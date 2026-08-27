@@ -45,7 +45,7 @@ export function AccountAnonymousState({ returnTo = '/account' }: Readonly<{ retu
   return (
     <section className={styles.emptyState}>
       <h2>Đăng nhập để quản lý tài khoản</h2>
-      <p>Phiên đăng nhập giúp rePhone bảo vệ hồ sơ, mật khẩu và địa chỉ của bạn.</p>
+      <p>Đăng nhập giúp rePhone bảo vệ hồ sơ, mật khẩu và địa chỉ của bạn.</p>
       <div className={styles.stateActions}>
         <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} standalone>
           Đăng nhập

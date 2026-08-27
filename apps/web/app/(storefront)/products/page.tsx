@@ -67,7 +67,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <h2>Chưa tìm thấy sản phẩm phù hợp</h2>
             <p>Hãy thử bỏ bớt bộ lọc hoặc tìm bằng tên khác.</p>
             <Link className={styles.clearFilter} href="/products">
-              Xem toàn bộ catalog
+              Xem toàn bộ danh mục
             </Link>
           </section>
         ) : (
@@ -87,7 +87,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         )}
 
         {pagination.totalPages > 1 ? (
-          <nav className={styles.pagination} aria-label="Phân trang catalog">
+          <nav className={styles.pagination} aria-label="Phân trang danh mục sản phẩm">
             {pagination.page > 1 ? (
               <Link
                 className={styles.paginationLink}
@@ -113,7 +113,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   } catch (error) {
     return (
       <section className={styles.errorState}>
-        <h1>Không thể tải catalog</h1>
+        <h1>Không thể tải danh mục sản phẩm</h1>
         <p>
           {error instanceof CatalogApiError
             ? error.message

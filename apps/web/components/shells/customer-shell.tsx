@@ -27,22 +27,30 @@ export function CustomerShell({
     <div className={joinClassNames('rp-surface', styles.customerShell)} data-shell="customer">
       <SkipLink targetId={mainId} />
       <header className={styles.storefrontHeader}>
-        <div className={styles.headerInner}>
-          <Wordmark brand={brand} />
-          {storefrontNavigation.length === 0 ? null : (
+        <div className={styles.headerPrimaryRow}>
+          <div className={styles.headerInner}>
+            <Wordmark brand={brand} />
+            {headerActions === undefined ? null : (
+              <div
+                className={styles.headerActions}
+                role="group"
+                aria-label="Tìm kiếm, tài khoản và giỏ hàng"
+              >
+                {headerActions}
+              </div>
+            )}
+            {mobileNavigation === undefined ? null : (
+              <div className={styles.mobileNavigation}>{mobileNavigation}</div>
+            )}
+          </div>
+        </div>
+        {storefrontNavigation.length === 0 ? null : (
+          <div className={styles.categoryRow}>
             <nav className={styles.primaryNavigation} aria-label="Điều hướng chính">
               <NavigationList items={storefrontNavigation} />
             </nav>
-          )}
-          {headerActions === undefined ? null : (
-            <div className={styles.headerActions} role="group" aria-label="Tài khoản và giỏ hàng">
-              {headerActions}
-            </div>
-          )}
-          {mobileNavigation === undefined ? null : (
-            <div className={styles.mobileNavigation}>{mobileNavigation}</div>
-          )}
-        </div>
+          </div>
+        )}
       </header>
       <div className={styles.customerLayout}>
         <aside className={styles.customerSidebar}>

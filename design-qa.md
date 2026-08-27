@@ -72,3 +72,82 @@ Sai khác được chấp nhận:
 - P3: khi backend bổ sung workflow yêu cầu điều chuyển, link `/store` có thể được nâng thành CTA tạo yêu cầu; hiện tại không dựng hành vi chưa có contract.
 
 final result: passed
+
+---
+
+# Design QA — Customer Language, Store, Header & Account Alignment
+
+## Findings
+
+Không còn finding P0, P1 hoặc P2 sau vòng kiểm tra cuối.
+
+## Source visual truth
+
+- Ảnh phản hồi hồ sơ của người dùng: `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-b2183161-cde5-43fa-a1d1-7d1b11084052.png` — `869 × 269px`, `96dpi`.
+- UX contract: `design.md` phiên bản `1.6` và `docs/planning/2026-08-27-customer-language-store-header-polish.md`.
+- Baseline store/header trước chỉnh sửa: `.local/product-design-audit/storefront-header/01-store-desktop.png`, `02-store-mobile.png` và `03-mobile-menu.png`.
+- Trạng thái kiểm tra: giao diện sáng; store ẩn danh; account dùng dữ liệu QA tổng hợp, không dùng mật khẩu hoặc dữ liệu thật.
+
+## Rendered implementation evidence
+
+| Surface                  | CSS viewport | Screenshot pixels | Density | Evidence                                                      |
+| ------------------------ | -----------: | ----------------: | ------: | ------------------------------------------------------------- |
+| Store desktop            | `1440 × 900` |      `1425 × 891` | `96dpi` | `.local/product-design-qa/store-desktop-1440-raw.jpg`         |
+| Store mobile             |  `390 × 844` |       `375 × 812` | `96dpi` | `.local/product-design-qa/store-mobile-390.jpg`               |
+| Store mobile menu        |  `390 × 844` |       `390 × 844` | `96dpi` | `.local/product-design-qa/store-mobile-menu-390.jpg`          |
+| Account desktop viewport | `1280 × 900` |      `1265 × 889` | `96dpi` | `.local/product-design-qa/account-profile-viewport.jpg`       |
+| Account contact panel    | `1280 × 900` |       `962 × 303` | `96dpi` | `.local/product-design-qa/account-profile-implementation.jpg` |
+| Account mobile           |  `390 × 844` |       `375 × 812` | `96dpi` | `.local/product-design-qa/account-mobile-390.jpg`             |
+
+## Comparison evidence
+
+- Focused account comparison: `.local/product-design-qa/account-comparison.jpg` — `1794 × 306px`.
+- Bên trái là ảnh người dùng `869 × 269px`; bên phải là implementation crop `962 × 303px`, được chuẩn hóa về rộng `869px` trước khi ghép.
+- Comparison bao phủ đúng vùng thay đổi: heading, mô tả, hai label, hai input, helper text và CTA.
+- Source có input họ tên thấp hơn input số điện thoại; implementation có hai input cùng `top = 709.59375px`, sai lệch `0px`.
+
+## Required fidelity surfaces
+
+- **Typography:** giữ font stack và hierarchy hiện hành; heading, label, helper text và CTA không bị cắt hoặc tràn.
+- **Spacing và layout:** account desktop cân bằng hai cột; mobile xếp dọc đúng thứ tự. Store desktop dùng header hai hàng `72px + 48px`; navigation rộng `48rem`, nằm giữa và phân bố đều.
+- **Colors và tokens:** giữ surface, border, teal, text hierarchy và focus ring hiện hành; không thêm palette hoặc decoration lạ.
+- **Copy và content:** storefront, auth, account, cart, thanh toán, đơn hàng, hậu mãi và bảo hành dùng ngôn ngữ khách hàng tự nhiên; không đưa thuật ngữ kỹ thuật về phiên xác thực hay lưu trữ trình duyệt ra UI khách hàng.
+- **Icons và assets:** giữ icon library và asset hiện có; không tạo emoji, SVG hoặc CSS art thay thế.
+- **Responsive và accessibility:** store/account đều có `scrollWidth <= clientWidth`; menu có dialog semantics, focus vào nút đóng khi mở, đóng bằng `Escape` và trả focus về trigger.
+
+## Primary interactions and runtime checks
+
+- Menu mobile mở thành công, `aria-expanded=true`, route `Cửa hàng` có current state; `Escape` đóng menu, dialog count về `0` và focus trở lại `Mở danh mục`.
+- CTA store giữ đúng `tel:0900000000`; link bản đồ là URL Google Maps an toàn với địa chỉ đã encode.
+- Account desktop: hai input cao `50px`, cùng top và cùng độ rộng theo grid.
+- Account mobile: họ tên ở `top=916.59375px`, số điện thoại ở `top=1010.59375px`, xác nhận xếp dọc; document width `375px` trong CSS viewport `390px`, không overflow ngang.
+- Console của các tab QA cuối chỉ có React DevTools/HMR info; không có lỗi runtime.
+- `pnpm --filter @rephone/web test`: `38` files, `143` tests passed.
+- `pnpm --filter @rephone/web typecheck`, `lint` và `build`: passed.
+
+## Comparison history
+
+### Iteration 0 — blocked
+
+- Ảnh người dùng cho thấy helper text ở cột số điện thoại làm hai field không cân theo trục dọc.
+- Header nhỏ, navigation lệch trái; `/store` chưa có hierarchy rõ và còn pha thuật ngữ Anh–Việt.
+- Auth/account còn giải thích chi tiết triển khai mà khách hàng không cần biết.
+
+### Iteration 1 — blocked
+
+- Form grid đã được neo đầu hàng và browser geometry test được bổ sung.
+- Copy auth/account được làm sạch nhưng store, header và các customer commerce surfaces chưa đồng bộ hoàn toàn.
+
+### Iteration 2 — passed
+
+- Account desktop đạt sai lệch input top `0px`; mobile stack và overflow đều đạt.
+- Header lớn hơn, navigation desktop căn giữa/phân bố đều; menu mobile hoạt động đầy đủ.
+- Store được thiết kế lại với hierarchy, contact/address/pickup information và CTA rõ ràng bằng tiếng Việt tự nhiên.
+- Customer-facing error/status/copy ở commerce, hậu mãi và bảo hành đã được Việt hóa; raw contracts và backoffice behavior không bị đổi.
+- Post-fix evidence, browser interaction checks và toàn bộ test/typecheck/lint/build đều xanh.
+
+## Follow-up polish
+
+Không có follow-up bắt buộc cho concern hiện tại.
+
+final result: passed

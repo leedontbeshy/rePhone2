@@ -32,9 +32,9 @@ export function AnonymousAuthGate({
     <AuthPage title={title} description={description}>
       <AuthPending>
         {logoutPending
-          ? 'Đang kết thúc phiên đăng nhập…'
+          ? 'Đang đăng xuất…'
           : status === 'loading'
-            ? 'Đang kiểm tra phiên đăng nhập…'
+            ? 'Đang kiểm tra bạn đã đăng nhập chưa…'
             : 'Đang mở tài khoản của bạn…'}
       </AuthPending>
     </AuthPage>

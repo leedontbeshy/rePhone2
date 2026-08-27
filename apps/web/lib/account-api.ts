@@ -133,13 +133,95 @@ export function accountRequestError(
 
   const body = value['error'];
   const code = isApiErrorCode(body['code']) ? body['code'] : undefined;
-  const message =
-    typeof body['message'] === 'string' && body['message'].trim() !== ''
-      ? body['message']
-      : fallback;
-  const details = Array.isArray(body['details']) ? body['details'].filter(isApiErrorDetail) : [];
+  const details = Array.isArray(body['details'])
+    ? body['details'].filter(isApiErrorDetail).map(customerAccountErrorDetail)
+    : [];
 
-  return new AccountRequestError(message, code, status, details);
+  return new AccountRequestError(
+    customerAccountErrorMessage(code, status, fallback),
+    code,
+    status,
+    details,
+  );
+}
+
+function customerAccountErrorDetail(detail: ApiErrorDetail): ApiErrorDetail {
+  const messageByField: Readonly<Record<string, string>> = {
+    fullName: 'Họ và tên chưa hợp lệ.',
+    phone: 'Số điện thoại chưa hợp lệ.',
+    label: 'Tên gợi nhớ chưa hợp lệ.',
+    receiverName: 'Tên người nhận chưa hợp lệ.',
+    addressLine: 'Địa chỉ chưa hợp lệ.',
+    ward: 'Phường hoặc xã chưa hợp lệ.',
+    district: 'Quận hoặc huyện chưa hợp lệ.',
+    province: 'Tỉnh hoặc thành phố chưa hợp lệ.',
+    postalCode: 'Mã bưu chính chưa hợp lệ.',
+    isDefault: 'Lựa chọn địa chỉ mặc định chưa hợp lệ.',
+    currentPassword: 'Mật khẩu hiện tại chưa hợp lệ.',
+    newPassword: 'Mật khẩu mới chưa đáp ứng yêu cầu.',
+  };
+  const message =
+    detail.code === 'NOT_UNIQUE' && detail.field === 'label'
+      ? 'Tên gợi nhớ này đã được dùng.'
+      : detail.field === undefined
+        ? 'Thông tin chưa hợp lệ.'
+        : (messageByField[detail.field] ?? 'Thông tin chưa hợp lệ.');
+  return { ...detail, message };
+}
+
+function customerAccountErrorMessage(
+  code: ApiErrorBody['code'] | undefined,
+  status: number | undefined,
+  fallback: string,
+): string {
+  if (
+    status === 401 ||
+    code === 'AUTH_REQUIRED' ||
+    code === 'ACCESS_TOKEN_INVALID' ||
+    code === 'SESSION_REVOKED'
+  ) {
+    return 'Bạn đã đăng xuất hoặc thời gian đăng nhập đã hết. Hãy đăng nhập lại.';
+  }
+  if (code === 'CSRF_VALIDATION_FAILED') {
+    return 'Không thể xác nhận yêu cầu. Hãy tải lại trang rồi thử lại.';
+  }
+  if (code === 'MALFORMED_JSON') {
+    return 'Thông tin gửi đi chưa hợp lệ. Hãy tải lại trang rồi thử lại.';
+  }
+  if (code === 'VALIDATION_FAILED') {
+    return 'Thông tin chưa hợp lệ. Hãy kiểm tra lại các mục đã nhập.';
+  }
+  if (code === 'CURRENT_PASSWORD_INCORRECT') {
+    return 'Mật khẩu hiện tại chưa đúng.';
+  }
+  if (code === 'DUPLICATE_RESOURCE') {
+    return 'Thông tin này đã tồn tại. Hãy kiểm tra lại.';
+  }
+  if (code === 'CONCURRENT_MODIFICATION' || code === 'SETTINGS_VERSION_CONFLICT') {
+    return 'Thông tin vừa thay đổi. Hãy tải lại trang rồi thử lại.';
+  }
+  if (code === 'INVALID_STATE_TRANSITION') {
+    return 'Thao tác này không còn phù hợp với trạng thái hiện tại.';
+  }
+  if (code === 'FORBIDDEN') {
+    return 'Bạn không có quyền thực hiện thao tác này.';
+  }
+  if (code === 'RESOURCE_NOT_FOUND') {
+    return 'Không tìm thấy thông tin bạn đang cần.';
+  }
+  if (code === 'ACCOUNT_UNAVAILABLE') {
+    return 'Tài khoản hiện không thể thực hiện thao tác này.';
+  }
+  if (code === 'RATE_LIMITED') {
+    return 'Bạn đã thao tác quá nhiều lần. Vui lòng thử lại sau.';
+  }
+  if (code === 'SERVICE_UNAVAILABLE' || code === 'STORAGE_UNAVAILABLE') {
+    return 'Dịch vụ đang tạm gián đoạn. Vui lòng thử lại sau.';
+  }
+  if (code === 'INTERNAL_ERROR') {
+    return 'Hệ thống chưa thể xử lý yêu cầu. Vui lòng thử lại.';
+  }
+  return fallback;
 }
 
 function isApiErrorCode(value: unknown): value is ApiErrorBody['code'] {

@@ -64,8 +64,8 @@ export default function ForgotPasswordPage() {
       {accepted ? (
         <div aria-live="polite">
           <InlineAlert tone="success" title="Yêu cầu đã được tiếp nhận">
-            Nếu tài khoản phù hợp, rePhone sẽ gửi hướng dẫn qua email. Phản hồi này luôn giống nhau
-            để bảo vệ thông tin tài khoản.
+            Nếu tài khoản phù hợp với email đã nhập, rePhone sẽ gửi hướng dẫn. Vì lý do riêng tư,
+            chúng tôi không xác nhận tài khoản có tồn tại hay không.
           </InlineAlert>
           <AuthFormActions>
             <Link href="/login" standalone>

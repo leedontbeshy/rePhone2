@@ -106,12 +106,12 @@ export default function CreateAfterSalesPage() {
           <div>
             <p className="eyebrow">Chăm sóc sau mua</p>
             <h1>Tạo yêu cầu hậu mãi</h1>
-            <p>Thông tin sản phẩm và quyền sở hữu được xác minh lại ở backend.</p>
+            <p>Chúng tôi sẽ kiểm tra sản phẩm và đơn hàng trước khi tiếp nhận yêu cầu.</p>
           </div>
         </header>
 
         {status === 'loading' || !context.ready ? (
-          <div className="status">Đang kiểm tra quyền truy cập…</div>
+          <div className="status">Đang kiểm tra thông tin đơn hàng…</div>
         ) : null}
         {isStaff ? (
           <div className="commerce-alert error" role="alert">
@@ -129,8 +129,8 @@ export default function CreateAfterSalesPage() {
         ) : null}
         {guestMissingCredential ? (
           <section className="empty-state">
-            <h2>Thiếu quyền truy cập guest</h2>
-            <p>Hãy mở lại đơn hàng guest trên đúng trình duyệt đã đặt đơn.</p>
+            <h2>Không thể xác minh đơn hàng</h2>
+            <p>Hãy mở trang này từ chi tiết đơn hàng hoặc đăng nhập để tiếp tục.</p>
             <Link className="button primary" href={orderHref}>
               Mở đơn hàng
             </Link>

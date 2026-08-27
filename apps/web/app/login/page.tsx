@@ -21,7 +21,7 @@ import {
 } from '@/components/auth';
 import { Button, ErrorSummary, Input, Link } from '@/components/ui';
 
-const description = 'Tiếp tục vào tài khoản mua hàng hoặc không gian vận hành của bạn.';
+const description = 'Đăng nhập để quản lý tài khoản mua hàng hoặc công việc tại rePhone.';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -102,7 +102,7 @@ export default function LoginPage() {
           </AuthFormFooter>
         </AuthFormActions>
         <AuthSecurityNote>
-          Phiên đăng nhập dùng cookie bảo mật; access token không được lưu vào localStorage.
+          Giữ kín mật khẩu và chỉ đăng nhập trên thiết bị bạn tin cậy.
         </AuthSecurityNote>
       </AuthForm>
     </AuthPage>

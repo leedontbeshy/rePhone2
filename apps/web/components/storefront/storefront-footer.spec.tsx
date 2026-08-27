@@ -49,6 +49,8 @@ describe('storefront footer', () => {
 
     expect(markup).toContain('Dòng iPhone');
     expect(markup).toContain('Máy đang bán');
+    expect(markup).toContain('Ưu đãi');
+    expect(markup).not.toContain('Voucher');
     expect(markup).toContain('href="/store"');
     expect(markup).toContain('Xem địa chỉ cửa hàng');
     expect(markup).not.toContain('mailto:');

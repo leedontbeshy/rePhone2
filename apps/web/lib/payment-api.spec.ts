@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  customerPaymentError,
   getBackofficePayment,
   getPaymentEvidenceUrl,
   listBackofficePayments,
@@ -124,5 +125,23 @@ describe('payment api adapter', () => {
         'fallback',
       ),
     ).toBe('Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.');
+    expect(
+      customerPaymentError(
+        { error: { code: 'CSRF_VALIDATION_FAILED', message: 'private transport detail' } },
+        'Không thể nộp minh chứng thanh toán.',
+      ),
+    ).toBe('Không thể xác nhận yêu cầu. Hãy tải lại trang rồi thử lại.');
+    expect(
+      customerPaymentError(
+        { error: { code: 'UNKNOWN_PAYMENT_ERROR', message: 'private server detail' } },
+        'Không thể nộp minh chứng thanh toán.',
+      ),
+    ).toBe('Không thể nộp minh chứng thanh toán.');
+    expect(
+      paymentError(
+        { error: { code: 'BACKOFFICE_DIAGNOSTIC', message: 'Chi tiết phục vụ vận hành.' } },
+        'fallback',
+      ),
+    ).toBe('Chi tiết phục vụ vận hành.');
   });
 });

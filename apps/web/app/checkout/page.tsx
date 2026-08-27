@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth-provider';
 import { CatalogHeader, formatMoney } from '../catalog-ui';
 import { useCommerce } from '../commerce-provider';
-import { apiError, checkoutChangedPreview } from '../../lib/order-access';
+import { checkoutChangedPreview, customerApiError as apiError } from '../../lib/order-access';
 
 type Preview = components['schemas']['CheckoutPreviewDto'];
 type Address = components['schemas']['AddressDto'];
@@ -68,12 +68,12 @@ export default function CheckoutPage() {
         },
       });
       if (result.data === undefined) {
-        throw new Error(apiError(result.error, 'Không thể tính lại checkout.'));
+        throw new Error(apiError(result.error, 'Không thể kiểm tra lại đơn hàng.'));
       }
       setPreview(result.data.data);
       setReviewRequired(false);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Không thể tính lại checkout.');
+      setError(caught instanceof Error ? caught.message : 'Không thể kiểm tra lại đơn hàng.');
     } finally {
       setPending(false);
     }
@@ -161,8 +161,8 @@ export default function CheckoutPage() {
       <main className="catalog-shell commerce-shell">
         <div className="commerce-heading">
           <p className="eyebrow">Xác nhận giá và tồn</p>
-          <h1>Checkout</h1>
-          <p>Preview không giữ hàng. Đơn và reservation chỉ được tạo sau lần xác nhận cuối.</p>
+          <h1>Thanh toán</h1>
+          <p>Giỏ hàng chưa được giữ. Đơn chỉ được tạo sau khi bạn xác nhận lần cuối.</p>
         </div>
         {noCart ? (
           <section className="empty-state">
@@ -173,7 +173,7 @@ export default function CheckoutPage() {
           </section>
         ) : (
           <div className="checkout-layout">
-            <section className="checkout-form" aria-label="Thông tin checkout">
+            <section className="checkout-form" aria-label="Thông tin thanh toán">
               <fieldset>
                 <legend>Phương thức nhận hàng</legend>
                 <label>
@@ -243,7 +243,7 @@ export default function CheckoutPage() {
                         }}
                       >
                         <option value="" disabled>
-                          Chọn để sao chép vào form
+                          Chọn để điền vào biểu mẫu
                         </option>
                         {addresses.map((address) => (
                           <option key={address.id} value={address.id}>
@@ -320,7 +320,7 @@ export default function CheckoutPage() {
               ) : null}
               <div className="checkout-fields">
                 <label>
-                  Voucher
+                  Mã ưu đãi
                   <input
                     value={voucherCode}
                     onChange={(event) => {
@@ -353,7 +353,7 @@ export default function CheckoutPage() {
                 </p>
               )}
               {preview === null ? (
-                <p>Nhấn “Tính lại” để kiểm tra một location có thể cấp toàn bộ giỏ.</p>
+                <p>Nhấn “Tính lại” để kiểm tra nơi có thể chuẩn bị toàn bộ giỏ hàng.</p>
               ) : (
                 <PreviewSummary preview={preview} />
               )}
@@ -397,7 +397,7 @@ function PreviewSummary({ preview }: { preview: Preview }) {
         <strong>{formatMoney(preview.pricing.subtotal)} ₫</strong>
       </div>
       <div>
-        <span>Voucher</span>
+        <span>Mã ưu đãi</span>
         <strong>−{formatMoney(preview.pricing.voucherDiscountAmount)} ₫</strong>
       </div>
       <div>

@@ -54,13 +54,13 @@ export function CommerceActions(props: CommerceActionProps) {
       setNotice({
         text:
           props.itemType === 'IPHONE'
-            ? 'Đã lưu máy vào wishlist.'
-            : 'Đã lưu phụ kiện vào wishlist.',
+            ? 'Đã lưu máy vào danh sách.'
+            : 'Đã lưu phụ kiện vào danh sách.',
         tone: 'success',
       });
     } catch (error) {
       setNotice({
-        text: error instanceof Error ? error.message : 'Không thể lưu vào wishlist.',
+        text: error instanceof Error ? error.message : 'Không thể lưu sản phẩm.',
         tone: 'error',
       });
     } finally {

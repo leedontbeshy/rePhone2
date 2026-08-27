@@ -63,14 +63,14 @@ export default function CustomerWarrantiesPage() {
           <div>
             <p className="eyebrow">Tài khoản</p>
             <h1>Bảo hành của tôi</h1>
-            <p>Tra cứu thời hạn và điều khoản đã được snapshot khi nhận hàng.</p>
+            <p>Tra cứu thời hạn và điều khoản được ghi nhận tại thời điểm nhận hàng.</p>
           </div>
           <Link className="button" href="/orders">
             Đơn hàng
           </Link>
         </header>
 
-        {status === 'loading' ? <div className="status">Đang kiểm tra phiên đăng nhập…</div> : null}
+        {status === 'loading' ? <div className="status">Đang kiểm tra tài khoản…</div> : null}
         {status === 'anonymous' ? (
           <section className="empty-state">
             <h2>Cần đăng nhập khách hàng</h2>

@@ -4,7 +4,11 @@ import type { components } from '@rephone/api-client';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiError, captureGuestOrderToken } from '../../../lib/order-access';
+import { captureGuestOrderToken, customerApiError as apiError } from '../../../lib/order-access';
+import {
+  fulfillmentStatusLabel,
+  warrantyStatusLabel,
+} from '../../../lib/customer-order-presenters';
 import { submitPaymentProof } from '../../../lib/payment-api';
 import { safeHttpsUrl } from '../../../lib/safe-https-url';
 import { useAuth } from '../../auth-provider';
@@ -146,7 +150,7 @@ export default function OrderDetailPage() {
       return;
     }
     if (proofFile.size > 10 * 1024 * 1024) {
-      setError('Tệp vượt quá giới hạn 10 MiB.');
+      setError('Tệp vượt quá giới hạn 10 MB.');
       return;
     }
     setUploadingPaymentId(paymentId);
@@ -187,7 +191,7 @@ export default function OrderDetailPage() {
         {!loading && order === null ? (
           <section className="empty-state">
             <h1>Không mở được đơn hàng</h1>
-            <p>Hãy dùng đúng liên kết guest hoặc đăng nhập tài khoản đã đặt đơn.</p>
+            <p>Hãy dùng đúng liên kết đã nhận hoặc đăng nhập tài khoản đã đặt đơn.</p>
             <Link className="button" href="/">
               Về trang chủ
             </Link>
@@ -202,9 +206,10 @@ export default function OrderDetailPage() {
                 <p>Đặt lúc {formatDateTime(order.placedAt)}</p>
               </div>
               <div className="order-status">
-                <strong>{order.status}</strong>
+                <strong>{orderStatusLabel(order.status)}</strong>
                 <span>
-                  {order.fulfillmentStatus} · {order.paymentStatus}
+                  {fulfillmentStatusLabel(order.fulfillmentStatus)} ·{' '}
+                  {paymentSummaryLabel(order.paymentStatus)}
                 </span>
               </div>
             </header>
@@ -226,7 +231,7 @@ export default function OrderDetailPage() {
                           {warranty === null ? null : (
                             <div className="order-warranty-summary">
                               <strong>
-                                {warranty.warrantyCode} · {warranty.status}
+                                {warranty.warrantyCode} · {warrantyStatusLabel(warranty)}
                               </strong>
                               <span>
                                 Hiệu lực {formatDateTime(warranty.startAt)} –{' '}
@@ -334,7 +339,7 @@ export default function OrderDetailPage() {
                       ) : null}
                       <div>
                         <dt>Trạng thái</dt>
-                        <dd>{payment.status}</dd>
+                        <dd>{paymentStatusLabel(payment.status)}</dd>
                       </div>
                       {payment.expiresAt === null || payment.expiresAt === undefined ? null : (
                         <div>
@@ -351,10 +356,10 @@ export default function OrderDetailPage() {
                       {payment.reviewSlaDueAt === null ||
                       payment.reviewSlaDueAt === undefined ? null : (
                         <div>
-                          <dt>SLA review</dt>
+                          <dt>Hạn kiểm tra</dt>
                           <dd>
                             {formatDateTime(payment.reviewSlaDueAt)}
-                            {payment.reviewOverdue ? ' · Đã quá SLA' : ''}
+                            {payment.reviewOverdue ? ' · Đã quá hạn' : ''}
                           </dd>
                         </div>
                       )}
@@ -406,7 +411,7 @@ export default function OrderDetailPage() {
                             }}
                           />
                         </label>
-                        <p>JPEG, PNG, WebP hoặc PDF · tối đa 10 MiB.</p>
+                        <p>JPEG, PNG, WebP hoặc PDF · tối đa 10 MB.</p>
                         <button
                           className="button primary"
                           type="submit"
@@ -476,7 +481,7 @@ export default function OrderDetailPage() {
                     <strong>{formatMoney(order.pricing.subtotal)} ₫</strong>
                   </div>
                   <div>
-                    <span>Voucher</span>
+                    <span>Mã ưu đãi</span>
                     <strong>−{formatMoney(order.pricing.voucherDiscountAmount)} ₫</strong>
                   </div>
                   <div>
@@ -600,7 +605,7 @@ function ShippingTimeline({ order }: { order: Order }) {
           </div>
           <div>
             <dt>Trạng thái</dt>
-            <dd>{shipment.status}</dd>
+            <dd>{shipmentStatusLabel(shipment.status)}</dd>
           </div>
         </dl>
       )}
@@ -637,13 +642,47 @@ function itemWarranty(item: OrderItem): PublicOrderWarranty | null {
   return item.warranty ?? null;
 }
 
+function orderStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    PLACED: 'Đã đặt',
+    CONFIRMED: 'Đã xác nhận',
+    PROCESSING: 'Đang xử lý',
+    COMPLETED: 'Đã hoàn tất',
+    CANCELLED: 'Đã hủy',
+  };
+  return labels[status] ?? 'Đang cập nhật';
+}
+
+function paymentSummaryLabel(status: string): string {
+  const labels: Record<string, string> = {
+    UNPAID: 'Chưa thanh toán',
+    PARTIALLY_PAID: 'Đã thanh toán một phần',
+    PAID: 'Đã thanh toán',
+    PARTIALLY_REFUNDED: 'Đã hoàn một phần',
+    REFUNDED: 'Đã hoàn tiền',
+  };
+  return labels[status] ?? 'Đang cập nhật thanh toán';
+}
+
+function shipmentStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    CREATED: 'Đã tạo vận đơn',
+    HANDED_TO_CARRIER: 'Đã bàn giao vận chuyển',
+    DELIVERED: 'Đã giao hàng',
+    FAILED: 'Giao không thành công',
+    RETURNED: 'Đã hoàn về',
+    CANCELLED: 'Đã hủy vận chuyển',
+  };
+  return labels[status] ?? 'Đang cập nhật vận chuyển';
+}
+
 function pickupStatusMessage(status: string): string {
   if (status === 'PENDING') return 'Cửa hàng sẽ xác nhận và chuẩn bị đơn của bạn.';
   if (status === 'PREPARING') return 'Cửa hàng đang chuẩn bị sản phẩm.';
   if (status === 'READY') return 'Đơn đã sẵn sàng. Hãy mang mã đơn khi đến nhận hàng.';
   if (status === 'COMPLETED') return 'Bạn đã nhận hàng thành công.';
-  if (status === 'CANCELLED') return 'Đơn pickup đã được hủy.';
-  return `Trạng thái hiện tại: ${status}.`;
+  if (status === 'CANCELLED') return 'Đơn nhận tại cửa hàng đã được hủy.';
+  return 'Trạng thái nhận hàng đang được cập nhật.';
 }
 
 function shippingStatusMessage(fulfillmentStatus: string, shipmentStatus?: string): string {
@@ -655,13 +694,13 @@ function shippingStatusMessage(fulfillmentStatus: string, shipmentStatus?: strin
   if (fulfillmentStatus === 'RETURNED') return 'Kiện hàng đã được hoàn về rePhone.';
   if (fulfillmentStatus === 'CANCELLED') return 'Đơn giao hàng đã được hủy.';
   return shipmentStatus === undefined
-    ? `Trạng thái hiện tại: ${fulfillmentStatus}.`
-    : `Trạng thái vận đơn: ${shipmentStatus}.`;
+    ? 'Trạng thái giao hàng đang được cập nhật.'
+    : `Trạng thái vận đơn: ${shipmentStatusLabel(shipmentStatus)}.`;
 }
 
 function paymentTitle(payment: OrderPayment): string {
   if (payment.method === 'CASH') return 'Thanh toán tiền mặt';
-  if (payment.method === 'COD') return 'Thanh toán COD';
+  if (payment.method === 'COD') return 'Thanh toán khi nhận hàng';
   if (payment.purpose === 'FULL_PAYMENT') return 'Thanh toán toàn bộ';
   if (payment.purpose === 'BALANCE') return 'Thanh toán số dư';
   return 'Thanh toán cọc';
@@ -671,7 +710,7 @@ function paymentMethodLabel(method: string): string {
   if (method === 'BANK_TRANSFER') return 'Chuyển khoản ngân hàng';
   if (method === 'CASH') return 'Tiền mặt tại cửa hàng';
   if (method === 'COD') return 'Thu hộ khi giao hàng';
-  return method;
+  return 'Phương thức khác';
 }
 
 function refundMethodLabel(method: string | undefined): string {
@@ -686,7 +725,7 @@ function refundStatusLabel(status: string): string {
   if (status === 'COMPLETED') return 'Đã hoàn tất';
   if (status === 'REJECTED') return 'Bị từ chối';
   if (status === 'CANCELLED') return 'Đã hủy';
-  return status;
+  return 'Đang cập nhật';
 }
 
 function PaymentStatusBadge({ status }: { status: string }) {
@@ -699,12 +738,12 @@ function PaymentStatusBadge({ status }: { status: string }) {
 
 function paymentStatusLabel(status: string): string {
   if (status === 'AWAITING_PROOF') return 'Chờ minh chứng';
-  if (status === 'UNDER_REVIEW') return 'Đang review';
+  if (status === 'UNDER_REVIEW') return 'Đang kiểm tra';
   if (status === 'VERIFIED') return 'Đã xác minh';
   if (status === 'REJECTED') return 'Bị từ chối';
   if (status === 'EXPIRED') return 'Đã hết hạn';
   if (status === 'CANCELLED') return 'Đã hủy';
-  return status;
+  return 'Đang cập nhật';
 }
 
 function formatDateTime(value: string): string {

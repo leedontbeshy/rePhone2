@@ -1,5 +1,5 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { apiError, orderTokenStorageKey } from './order-access';
+import { customerApiError, orderTokenStorageKey } from './order-access';
 
 export type AfterSalesApiClient = ReturnType<typeof createApiClient>;
 export type AfterSalesType = components['schemas']['AfterSalesDetailDto']['type'];
@@ -134,7 +134,7 @@ export async function getAfterSalesAttachmentUrl(
     throw new Error(afterSalesError(result.error, 'Không thể mở tệp đính kèm.'));
   }
   if (!isSafeSignedUrl(result.data.data.url)) {
-    throw new Error('Phản hồi signed URL không hợp lệ.');
+    throw new Error('Không thể mở liên kết tệp đính kèm.');
   }
   return result.data.data;
 }
@@ -171,7 +171,7 @@ export function resolveGuestOrderToken(
 
 export function validateAfterSalesAttachment(file: File): string | null {
   if (file.size === 0) return 'Tệp đính kèm đang trống.';
-  if (file.size > MAX_ATTACHMENT_SIZE) return 'Tệp vượt quá giới hạn 10 MiB.';
+  if (file.size > MAX_ATTACHMENT_SIZE) return 'Tệp vượt quá giới hạn 10 MB.';
   if (!ALLOWED_ATTACHMENT_TYPES.has(file.type)) {
     return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF.';
   }
@@ -187,25 +187,25 @@ export function afterSalesError(value: unknown, fallback: string): string {
     return 'Bảo hành không còn hiệu lực tại thời điểm tạo yêu cầu.';
   }
   if (code === 'INVALID_STATE_TRANSITION') {
-    return 'Yêu cầu đã đổi trạng thái ở phiên khác. Hãy tải lại.';
+    return 'Yêu cầu vừa được cập nhật. Hãy tải lại trang.';
   }
   if (code === 'CONCURRENT_MODIFICATION') {
-    return 'Dữ liệu vừa được cập nhật ở phiên khác. Hãy tải lại.';
+    return 'Dữ liệu vừa được cập nhật. Hãy tải lại trang.';
   }
   if (code === 'EVIDENCE_REQUIRED' || code === 'EVIDENCE_INVALID') {
     return 'Tệp đính kèm không hợp lệ hoặc đã hỏng.';
   }
-  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MiB.';
+  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MB.';
   if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.';
-  if (code === 'STORAGE_UNAVAILABLE') return 'Kho tệp tạm thời không sẵn sàng.';
+  if (code === 'STORAGE_UNAVAILABLE') return 'Hiện chưa thể lưu tệp. Vui lòng thử lại sau.';
   if (code === 'RESOURCE_NOT_FOUND' || code === 'ORDER_NOT_FOUND') {
     return 'Không tìm thấy yêu cầu hoặc bạn không có quyền truy cập.';
   }
   if (code === 'CSRF_VALIDATION_FAILED') {
-    return 'Phiên guest không hợp lệ. Hãy mở lại đơn hàng rồi thử lại.';
+    return 'Không thể xác minh thao tác này. Hãy mở lại đơn hàng rồi thử lại.';
   }
   if (code === 'RATE_LIMITED') return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau.';
-  return apiError(value, fallback);
+  return customerApiError(value, fallback);
 }
 
 function credentialHeader(guestOrderToken?: string): { 'X-Guest-Order-Token'?: string } {

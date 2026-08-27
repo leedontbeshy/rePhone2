@@ -16,7 +16,7 @@ export type PublicMedia = components['schemas']['PublicMediaDto'];
 
 export class CatalogApiError extends Error {
   public constructor(public readonly status: number) {
-    super(status === 404 ? 'Không tìm thấy sản phẩm.' : 'Không thể tải catalog lúc này.');
+    super(status === 404 ? 'Không tìm thấy sản phẩm.' : 'Không thể tải danh mục lúc này.');
     this.name = 'CatalogApiError';
   }
 }

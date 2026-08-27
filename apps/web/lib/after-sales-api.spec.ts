@@ -132,7 +132,7 @@ describe('after-sales typed-client adapter', () => {
     });
     await expect(
       getAfterSalesAttachmentUrl(mockClient({ GET: unsafeGet }), REQUEST_NUMBER, ITEM_ID),
-    ).rejects.toThrow('signed URL');
+    ).rejects.toThrow('Không thể mở liên kết tệp đính kèm.');
   });
 
   it('uploads one multipart file while keeping the guest credential in headers', async () => {
@@ -153,6 +153,12 @@ describe('after-sales typed-client adapter', () => {
     expect(bodySerializer().get('file')).toBe(file);
     expect(JSON.stringify(options['body'])).not.toContain(TOKEN);
     expect(validateAfterSalesAttachment(file)).toBeNull();
+    expect(
+      validateAfterSalesAttachment({
+        size: 10 * 1024 * 1024 + 1,
+        type: 'image/webp',
+      } as File),
+    ).toBe('Tệp vượt quá giới hạn 10 MB.');
   });
 
   it('maps lifecycle errors without reflecting private server detail', () => {
@@ -162,6 +168,18 @@ describe('after-sales typed-client adapter', () => {
         'fallback',
       ),
     ).toContain('đang mở');
+    expect(
+      afterSalesError(
+        { error: { code: 'CSRF_VALIDATION_FAILED', message: 'private token detail' } },
+        'fallback',
+      ),
+    ).toBe('Không thể xác minh thao tác này. Hãy mở lại đơn hàng rồi thử lại.');
+    expect(
+      afterSalesError(
+        { error: { code: 'STORAGE_UNAVAILABLE', message: 'private storage detail' } },
+        'fallback',
+      ),
+    ).toBe('Hiện chưa thể lưu tệp. Vui lòng thử lại sau.');
   });
 });
 

@@ -6,7 +6,7 @@ import { StoreSummary, StoreUnavailable } from './store-summary';
 const store = {
   currency: 'VND',
   pickup: {
-    address: 'Kho pickup, TP.HCM',
+    address: 'Kho nhận máy, TP. Hồ Chí Minh',
     holdMinutes: 90,
     locationName: 'Điểm nhận Quận 1',
   },
@@ -17,13 +17,19 @@ const store = {
 } satisfies PublicStore;
 
 describe('public store summary', () => {
-  it('renders only the public contact and pickup projection', () => {
+  it('renders the public contact and store-pickup projection in customer language', () => {
     const markup = renderToStaticMarkup(<StoreSummary store={store} />);
 
     expect(markup).toContain('<h2>rePhone</h2>');
     expect(markup).toContain('href="tel:02812345678"');
+    expect(markup).toContain('Điện thoại');
     expect(markup).toContain('Điểm nhận Quận 1');
     expect(markup).toContain('90 phút');
+    expect(markup).toContain('Mở bản đồ');
+    expect(markup).toContain('query=123+Nguy%E1%BB%85n+V%C4%83n+A%2C+TP.HCM');
+    expect(markup).toContain('target="_blank"');
+    expect(markup).toContain('rel="noopener noreferrer"');
+    expect(markup).not.toMatch(/\b(?:pickup|checkout|catalog)\b/i);
     expect(markup).not.toContain('bank');
     expect(markup).not.toContain('version');
   });
@@ -36,8 +42,10 @@ describe('public store summary', () => {
 
   it('provides recovery actions without leaking provider details', () => {
     const markup = renderToStaticMarkup(<StoreUnavailable />);
-    expect(markup).toContain('Cửa hàng đang tạm không khả dụng');
+    expect(markup).toContain('Chưa tải được thông tin cửa hàng');
     expect(markup).toContain('href="/store"');
     expect(markup).toContain('href="/products"');
+    expect(markup).toContain('Xem danh mục sản phẩm');
+    expect(markup).not.toMatch(/\b(?:pickup|checkout|catalog)\b/i);
   });
 });

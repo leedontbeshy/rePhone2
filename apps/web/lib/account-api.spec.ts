@@ -121,9 +121,76 @@ describe('account generated-client adapter', () => {
     );
     expect(error).toBeInstanceOf(AccountRequestError);
     expect(error.isConflict).toBe(true);
+    expect(error.message).toBe('Thông tin này đã tồn tại. Hãy kiểm tra lại.');
     expect(error.details).toEqual([
-      { code: 'NOT_UNIQUE', field: 'label', message: 'Nhãn đã tồn tại.' },
+      { code: 'NOT_UNIQUE', field: 'label', message: 'Tên gợi nhớ này đã được dùng.' },
     ]);
+  });
+
+  it('replaces transport error details with customer-safe account messages', () => {
+    const expiredLogin = accountRequestError(
+      {
+        error: {
+          code: 'ACCESS_TOKEN_INVALID',
+          message: 'Access token không hợp lệ hoặc đã hết hạn.',
+        },
+      },
+      'Không thể tải thông tin tài khoản.',
+      401,
+    );
+    const rejectedRequest = accountRequestError(
+      {
+        error: {
+          code: 'CSRF_VALIDATION_FAILED',
+          message: 'Yêu cầu không vượt qua kiểm tra CSRF.',
+        },
+      },
+      'Không thể cập nhật thông tin tài khoản.',
+      403,
+    );
+    const unknownFailure = accountRequestError(
+      {
+        error: {
+          code: 'UNKNOWN_ACCOUNT_ERROR',
+          message: 'Private database diagnostic detail.',
+        },
+      },
+      'Không thể cập nhật thông tin tài khoản.',
+      500,
+    );
+    const invalidProfile = accountRequestError(
+      {
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Validation failed',
+          details: [
+            {
+              code: 'IS_LENGTH',
+              field: 'fullName',
+              message: 'fullName must be longer than or equal to 1 characters',
+            },
+          ],
+        },
+      },
+      'Không thể cập nhật thông tin tài khoản.',
+      400,
+    );
+
+    expect(expiredLogin.message).toBe(
+      'Bạn đã đăng xuất hoặc thời gian đăng nhập đã hết. Hãy đăng nhập lại.',
+    );
+    expect(rejectedRequest.message).toBe(
+      'Không thể xác nhận yêu cầu. Hãy tải lại trang rồi thử lại.',
+    );
+    expect(unknownFailure.message).toBe('Không thể cập nhật thông tin tài khoản.');
+    expect(invalidProfile.details).toEqual([
+      { code: 'IS_LENGTH', field: 'fullName', message: 'Họ và tên chưa hợp lệ.' },
+    ]);
+    expect(
+      `${expiredLogin.message} ${rejectedRequest.message} ${unknownFailure.message} ${invalidProfile.details[0]?.message}`,
+    ).not.toMatch(
+      /access token|refresh session|cookie|localStorage|fragment|csrf|database|diagnostic|characters|validation/i,
+    );
   });
 });
 

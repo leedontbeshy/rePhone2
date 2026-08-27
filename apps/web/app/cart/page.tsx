@@ -67,9 +67,9 @@ export default function CartPage() {
             <aside className="cart-summary">
               <span>Tạm tính hợp lệ</span>
               <strong>{formatMoney(cart.estimatedSubtotal)} ₫</strong>
-              <p>Chưa gồm voucher, phí giao hàng hoặc tiền cọc.</p>
+              <p>Chưa gồm mã ưu đãi, phí giao hàng hoặc tiền cọc.</p>
               <Link className="button primary" href="/checkout">
-                Tiến hành checkout
+                Tiếp tục thanh toán
               </Link>
             </aside>
           </div>

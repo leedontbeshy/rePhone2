@@ -1,4 +1,4 @@
-import { apiError } from './order-access';
+import { apiError, customerApiError } from './order-access';
 
 export type PaymentStatus =
   'AWAITING_PROOF' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
@@ -128,7 +128,7 @@ export async function submitPaymentProof(
     body: { file: file.name },
     bodySerializer: () => formData,
   });
-  return paymentFromResult(result, 'Không thể nộp minh chứng thanh toán.');
+  return paymentFromResult(result, 'Không thể nộp minh chứng thanh toán.', customerPaymentError);
 }
 
 export async function listBackofficePayments(
@@ -205,33 +205,59 @@ export async function rejectPayment(
 }
 
 export function paymentError(value: unknown, fallback: string): string {
+  return mappedPaymentError(value, fallback, apiError);
+}
+
+export function customerPaymentError(value: unknown, fallback: string): string {
+  return mappedPaymentError(value, fallback, customerApiError);
+}
+
+function mappedPaymentError(
+  value: unknown,
+  fallback: string,
+  defaultError: (value: unknown, fallback: string) => string,
+): string {
   const code = errorCode(value);
   if (code === 'PAYMENT_PROOF_DEADLINE_PASSED') return 'Đã quá hạn nộp minh chứng thanh toán.';
-  if (code === 'PAYMENT_ALREADY_REVIEWED') return 'Thanh toán đã được xử lý ở phiên khác.';
+  if (code === 'PAYMENT_ALREADY_REVIEWED') return 'Thanh toán đã được xử lý. Hãy tải lại trang.';
   if (code === 'DEPOSIT_AMOUNT_INSUFFICIENT') return 'Số tiền nhận được chưa đủ mức cọc.';
   if (code === 'EVIDENCE_REQUIRED') return 'Thanh toán chưa có minh chứng hợp lệ.';
   if (code === 'EVIDENCE_INVALID') return 'Minh chứng không hợp lệ hoặc đã hỏng.';
-  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MiB.';
+  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MB.';
   if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.';
-  if (code === 'STORAGE_UNAVAILABLE') return 'Kho minh chứng tạm thời không sẵn sàng.';
-  if (code === 'CONCURRENT_MODIFICATION') return 'Dữ liệu vừa thay đổi ở phiên khác. Hãy tải lại.';
+  if (code === 'STORAGE_UNAVAILABLE') return 'Hiện chưa thể lưu tệp. Vui lòng thử lại sau.';
+  if (code === 'CONCURRENT_MODIFICATION') return 'Dữ liệu vừa được cập nhật. Hãy tải lại trang.';
   if (code === 'ORDER_NOT_FOUND')
     return 'Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.';
-  return apiError(value, fallback);
+  return defaultError(value, fallback);
 }
 
-function paymentFromResult(result: RuntimeApiResult, fallback: string): PaymentPublic {
-  return parsePayment(responseData(result, fallback));
+type PaymentErrorMapper = (value: unknown, fallback: string) => string;
+
+function paymentFromResult(
+  result: RuntimeApiResult,
+  fallback: string,
+  errorMapper: PaymentErrorMapper = paymentError,
+): PaymentPublic {
+  return parsePayment(responseData(result, fallback, errorMapper));
 }
 
-function responseData(result: RuntimeApiResult, fallback: string): unknown {
-  const envelope = responseEnvelope(result, fallback);
+function responseData(
+  result: RuntimeApiResult,
+  fallback: string,
+  errorMapper: PaymentErrorMapper = paymentError,
+): unknown {
+  const envelope = responseEnvelope(result, fallback, errorMapper);
   if (!('data' in envelope)) throw new Error(fallback);
   return envelope['data'];
 }
 
-function responseEnvelope(result: RuntimeApiResult, fallback: string): Record<string, unknown> {
-  if (result.data === undefined) throw new Error(paymentError(result.error, fallback));
+function responseEnvelope(
+  result: RuntimeApiResult,
+  fallback: string,
+  errorMapper: PaymentErrorMapper = paymentError,
+): Record<string, unknown> {
+  if (result.data === undefined) throw new Error(errorMapper(result.error, fallback));
   return recordOrThrow(result.data, fallback);
 }
 

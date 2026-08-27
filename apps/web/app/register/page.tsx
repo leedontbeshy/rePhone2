@@ -74,7 +74,7 @@ export default function RegisterPage() {
       {completed ? (
         <div aria-live="polite">
           <InlineAlert tone="success" title="Tài khoản đã được tạo">
-            Đăng ký không tự đăng nhập. Hãy đăng nhập riêng để bắt đầu một phiên bảo mật mới.
+            Tài khoản đã được tạo nhưng bạn chưa đăng nhập. Hãy đăng nhập để tiếp tục.
           </InlineAlert>
           <AuthFormActions>
             <Link href="/login" standalone>
@@ -129,7 +129,7 @@ export default function RegisterPage() {
             </AuthFormFooter>
           </AuthFormActions>
           <AuthSecurityNote>
-            Mật khẩu chỉ được gửi khi bạn xác nhận biểu mẫu và không được hiển thị lại.
+            Dùng mật khẩu riêng cho rePhone và không chia sẻ với người khác.
           </AuthSecurityNote>
         </AuthForm>
       )}

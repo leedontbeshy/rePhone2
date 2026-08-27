@@ -81,16 +81,19 @@ export default function CustomerAfterSalesPage() {
           </Link>
         </header>
 
-        {status === 'loading' ? <div className="status">Đang kiểm tra quyền truy cập…</div> : null}
+        {status === 'loading' ? <div className="status">Đang kiểm tra tài khoản…</div> : null}
         {isStaff ? (
           <div className="commerce-alert error" role="alert">
-            Tài khoản nhân viên sử dụng cổng hậu mãi backoffice.
+            Tài khoản nhân viên vui lòng sử dụng trang quản lý hậu mãi.
           </div>
         ) : null}
         {status === 'anonymous' ? (
           <section className="empty-state">
             <h2>Danh sách chỉ dành cho khách hàng đã đăng nhập</h2>
-            <p>Khách mua không cần tài khoản vẫn có thể mở từng case từ liên kết guest đã nhận.</p>
+            <p>
+              Nếu mua hàng không cần tài khoản, bạn vẫn có thể mở từng yêu cầu từ liên kết dành
+              riêng đã nhận.
+            </p>
             <Link className="button primary" href="/login">
               Đăng nhập khách hàng
             </Link>

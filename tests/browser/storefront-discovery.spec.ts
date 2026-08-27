@@ -76,6 +76,77 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.getByText('DEMO-PAUSED', { exact: true })).toHaveCount(0);
   });
 
+  test('keeps the shared header balanced and store actions clear across viewports', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/store');
+    await expectPublicRouteMarker(page, '/store');
+
+    const header = page.locator("[data-shell='storefront'] > header");
+    const primaryRow = header.locator(':scope > div').first();
+    const desktopNavigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
+    const navigationList = desktopNavigation.locator('ul');
+    const currentStoreLink = desktopNavigation.getByRole('link', {
+      name: 'Cửa hàng',
+      exact: true,
+    });
+
+    await expect(currentStoreLink).toHaveAttribute('aria-current', 'page');
+    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '16px');
+
+    const [primaryRowBox, navigationBox, navigationListBox] = await Promise.all([
+      primaryRow.boundingBox(),
+      desktopNavigation.boundingBox(),
+      navigationList.boundingBox(),
+    ]);
+    expect(primaryRowBox?.height).toBeGreaterThanOrEqual(72);
+    expect(navigationBox?.height).toBeGreaterThanOrEqual(48);
+    expect(navigationBox).not.toBeNull();
+    expect(navigationListBox).not.toBeNull();
+    if (navigationBox === null || navigationListBox === null) {
+      throw new Error('Desktop storefront navigation was not measurable.');
+    }
+    expect(
+      Math.abs(
+        navigationBox.x +
+          navigationBox.width / 2 -
+          (navigationListBox.x + navigationListBox.width / 2),
+      ),
+    ).toBeLessThanOrEqual(1);
+
+    const itemGaps = await navigationList.locator('li').evaluateAll((items) =>
+      items.slice(1).map((item, index) => {
+        const previous = items[index]?.getBoundingClientRect();
+        const current = item.getBoundingClientRect();
+        return previous === undefined ? 0 : current.left - previous.right;
+      }),
+    );
+    expect(Math.max(...itemGaps) - Math.min(...itemGaps)).toBeLessThanOrEqual(1);
+
+    const callAction = page.getByRole('link', { name: 'Gọi cửa hàng', exact: true });
+    const mapAction = page.getByRole('link', { name: 'Mở bản đồ', exact: true });
+    await expect(callAction).toHaveAttribute('href', 'tel:0900000000');
+    await expect(callAction).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(callAction).toHaveCSS('background-color', 'rgb(0, 124, 159)');
+    await expect(mapAction).toHaveAttribute('href', /google\.com\/maps\/search/);
+    await expect(mapAction).toHaveAttribute('target', '_blank');
+    await expect(mapAction).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(page.locator('main')).not.toContainText(/\b(?:pickup|checkout|catalog)\b/i);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileMenuTrigger = page.getByRole('button', { name: 'Mở danh mục', exact: true });
+    await expect(mobileMenuTrigger).toBeVisible();
+    await mobileMenuTrigger.click();
+
+    const mobileNavigation = page.getByRole('navigation', { name: 'Danh mục sản phẩm' });
+    await expect(mobileNavigation).toBeVisible();
+    await expect(
+      mobileNavigation.getByRole('link', { name: 'Cửa hàng', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+    await expect(mobileNavigation.getByRole('link', { name: 'Ưu đãi', exact: true })).toBeVisible();
+  });
+
   test('keeps URL filters authoritative across pagination and browser history', async ({
     page,
   }) => {
@@ -88,7 +159,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(filterForm.locator('select[name="productType"]')).toHaveValue('IPHONE');
     await expect(filterForm.locator('select[name="storageCapacityGb"]')).toHaveValue('128');
 
-    const nextPage = page.locator('nav[aria-label="Phân trang catalog"] a').filter({
+    const nextPage = page.locator('nav[aria-label="Phân trang danh mục sản phẩm"] a').filter({
       has: page.getByText('Trang sau', { exact: true }),
     });
     await expect(nextPage).toHaveCount(1);

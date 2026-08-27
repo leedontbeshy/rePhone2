@@ -61,8 +61,8 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
                 role="alert"
                 title="Chưa xác nhận được đăng xuất"
               >
-                Phiên trên thiết bị này đã được xóa, nhưng máy chủ chưa phản hồi. Hãy thử lại khi
-                kết nối ổn định.
+                Bạn đã được đăng xuất trên thiết bị này, nhưng rePhone chưa xác nhận được. Hãy thử
+                lại khi kết nối ổn định.
                 <div className={styles.sessionErrorActions}>
                   <AccountLogoutAction pending={logoutPending} onLogout={signOut} retry />
                   <Link href="/login" standalone>

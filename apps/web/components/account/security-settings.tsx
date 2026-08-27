@@ -26,13 +26,13 @@ export function SecuritySettings() {
       <AccountPageHeader
         eyebrow="Tài khoản"
         title="Bảo mật"
-        description="Đổi mật khẩu sẽ thu hồi mọi phiên đăng nhập để bảo vệ tài khoản của bạn."
+        description="Đổi mật khẩu sẽ đăng xuất bạn khỏi mọi thiết bị để bảo vệ tài khoản."
       />
       {complete ? (
         <section className={styles.panel}>
           <div className={styles.successState}>
             <InlineAlert tone="success" role="status" title="Đã đổi mật khẩu">
-              Tất cả phiên đăng nhập đã bị thu hồi. Hãy đăng nhập lại bằng mật khẩu mới.
+              Bạn đã được đăng xuất khỏi tất cả thiết bị. Hãy đăng nhập lại bằng mật khẩu mới.
             </InlineAlert>
             <div className={styles.stateActions}>
               <Link href="/login" standalone>
@@ -42,7 +42,7 @@ export function SecuritySettings() {
           </div>
         </section>
       ) : status === 'loading' ? (
-        <AccountLoadingState label="Đang kiểm tra phiên đăng nhập" />
+        <AccountLoadingState label="Đang kiểm tra trạng thái đăng nhập" />
       ) : status === 'anonymous' ? (
         <AccountAnonymousState returnTo="/account/security" />
       ) : (
@@ -157,8 +157,8 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
           }}
         />
         <ul className={styles.passwordGuidance} aria-label="Điều gì xảy ra sau khi đổi mật khẩu">
-          <li>Mọi access token và refresh session hiện tại sẽ không còn hiệu lực.</li>
-          <li>rePhone không giữ mật khẩu trong trình duyệt.</li>
+          <li>Bạn sẽ được đăng xuất khỏi tất cả thiết bị đang dùng tài khoản này.</li>
+          <li>Sau khi đổi, hãy dùng mật khẩu mới cho lần đăng nhập tiếp theo.</li>
         </ul>
         <div className={styles.formActions}>
           <Button type="submit" loading={pending} loadingLabel="Đang đổi mật khẩu">

@@ -3,7 +3,7 @@
 import type { components } from '@rephone/api-client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { apiError } from '../../lib/order-access';
+import { customerApiError as apiError } from '../../lib/order-access';
 import { useAuth } from '../auth-provider';
 import { CatalogHeader, formatMoney } from '../catalog-ui';
 
@@ -52,12 +52,14 @@ export default function OrdersPage() {
         <div className="commerce-heading">
           <p className="eyebrow">Lịch sử mua hàng</p>
           <h1>Đơn hàng của tôi</h1>
-          <p>Mọi giá, địa chỉ, bảo hành và hướng dẫn thanh toán đều dùng snapshot lúc đặt.</p>
+          <p>
+            Mọi giá, địa chỉ, bảo hành và hướng dẫn thanh toán được giữ theo thời điểm đặt hàng.
+          </p>
         </div>
         {status === 'anonymous' ? (
           <section className="empty-state">
             <h2>Đăng nhập để xem danh sách đơn</h2>
-            <p>Đơn guest được mở trực tiếp bằng liên kết access token đã cấp.</p>
+            <p>Đơn đặt không cần tài khoản được mở trực tiếp bằng liên kết bạn đã nhận.</p>
             <Link className="button primary" href="/login">
               Đăng nhập
             </Link>
@@ -102,14 +104,14 @@ export default function OrdersPage() {
                 {order.fulfillmentType === 'SHIPPING' && order.shipment ? (
                   <small>
                     {order.shipment.carrierName} · {order.shipment.trackingCode} ·{' '}
-                    {order.shipment.status}
+                    {shipmentStatusLabel(order.shipment.status)}
                   </small>
                 ) : null}
               </div>
               <div>
                 <strong>{formatMoney(order.grandTotal)} ₫</strong>
                 <span>
-                  {order.status} · {order.paymentStatus}
+                  {orderStatusLabel(order.status)} · {paymentSummaryLabel(order.paymentStatus)}
                 </span>
                 <time>{new Date(order.placedAt).toLocaleString('vi-VN')}</time>
               </div>
@@ -119,4 +121,38 @@ export default function OrdersPage() {
       </main>
     </>
   );
+}
+
+function orderStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    PLACED: 'Đã đặt',
+    CONFIRMED: 'Đã xác nhận',
+    PROCESSING: 'Đang xử lý',
+    COMPLETED: 'Đã hoàn tất',
+    CANCELLED: 'Đã hủy',
+  };
+  return labels[status] ?? 'Đang cập nhật';
+}
+
+function paymentSummaryLabel(status: string): string {
+  const labels: Record<string, string> = {
+    UNPAID: 'Chưa thanh toán',
+    PARTIALLY_PAID: 'Đã thanh toán một phần',
+    PAID: 'Đã thanh toán',
+    PARTIALLY_REFUNDED: 'Đã hoàn một phần',
+    REFUNDED: 'Đã hoàn tiền',
+  };
+  return labels[status] ?? 'Đang cập nhật thanh toán';
+}
+
+function shipmentStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    CREATED: 'Đã tạo vận đơn',
+    HANDED_TO_CARRIER: 'Đã bàn giao vận chuyển',
+    DELIVERED: 'Đã giao hàng',
+    FAILED: 'Giao không thành công',
+    RETURNED: 'Đã hoàn về',
+    CANCELLED: 'Đã hủy vận chuyển',
+  };
+  return labels[status] ?? 'Đang cập nhật vận chuyển';
 }

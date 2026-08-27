@@ -90,7 +90,7 @@ export default function CustomerAfterSalesDetailPage() {
       setFile(null);
       if (fileRef.current !== null) fileRef.current.value = '';
       await loadDetail();
-      setNotice('Đã tải tệp đính kèm lên kho riêng tư.');
+      setNotice('Đã tải tệp đính kèm lên an toàn.');
     } catch (caught) {
       setError(errorMessage(caught, 'Không thể tải tệp đính kèm lên.'));
     } finally {
@@ -101,7 +101,7 @@ export default function CustomerAfterSalesDetailPage() {
   const openAttachment = async (attachment: AfterSalesAttachment) => {
     const attachmentWindow = window.open('about:blank', '_blank');
     if (attachmentWindow === null) {
-      setError('Trình duyệt đã chặn tab tệp. Hãy cho phép popup rồi thử lại.');
+      setError('Trình duyệt đang chặn cửa sổ mở tệp. Hãy cho phép mở cửa sổ mới rồi thử lại.');
       return;
     }
     attachmentWindow.opener = null;
@@ -172,13 +172,13 @@ export default function CustomerAfterSalesDetailPage() {
         ) : null}
         {isStaff ? (
           <div className="commerce-alert error" role="alert">
-            Tài khoản nhân viên sử dụng chi tiết hậu mãi backoffice.
+            Tài khoản nhân viên vui lòng sử dụng trang quản lý hậu mãi.
           </div>
         ) : null}
         {guestMissingCredential ? (
           <section className="empty-state">
-            <h1>Thiếu quyền truy cập guest</h1>
-            <p>Hãy mở lại đơn hàng guest trên đúng trình duyệt đã đặt đơn.</p>
+            <h1>Không thể xác minh đơn hàng</h1>
+            <p>Hãy mở yêu cầu từ chi tiết đơn hàng hoặc đăng nhập để tiếp tục.</p>
             {orderNumber === null ? null : (
               <Link className="button primary" href={`/orders/${encodeURIComponent(orderNumber)}`}>
                 Mở đơn hàng
@@ -287,8 +287,8 @@ export default function CustomerAfterSalesDetailPage() {
             </section>
 
             <section className="detail-panel" aria-labelledby="attachments-title">
-              <h2 id="attachments-title">Tệp đính kèm riêng tư</h2>
-              <p>Tệp chỉ được mở bằng signed URL ngắn hạn sau mỗi lần xác thực quyền sở hữu.</p>
+              <h2 id="attachments-title">Tệp đính kèm</h2>
+              <p>Mỗi tệp được bảo vệ và chỉ mở sau khi xác minh quyền sở hữu đơn hàng.</p>
               {detail.attachments.length === 0 ? <p>Chưa có tệp đính kèm.</p> : null}
               <div className="warranty-policy-list">
                 {detail.attachments.map((attachment, index) => (
@@ -334,7 +334,10 @@ export default function CustomerAfterSalesDetailPage() {
                       }}
                     />
                   </label>
-                  <p>JPEG, PNG, WebP hoặc PDF · tối đa 10 MiB · tối đa 5 tệp/case.</p>
+                  <p>
+                    Định dạng JPEG, PNG, WebP hoặc PDF; mỗi tệp tối đa 10 MB; mỗi yêu cầu tối đa 5
+                    tệp.
+                  </p>
                   <button className="button primary" type="submit" disabled={busy !== null}>
                     {busy === 'UPLOAD_ATTACHMENT' ? 'Đang tải lên…' : 'Tải tệp lên'}
                   </button>
@@ -425,8 +428,8 @@ function resolutionLabel(value: NonNullable<AfterSalesDetail['resolutionType']>)
 
 function formatFileSize(value: number): string {
   if (value < 1024) return `${String(value)} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
-  return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function dateTime(value: string): string {

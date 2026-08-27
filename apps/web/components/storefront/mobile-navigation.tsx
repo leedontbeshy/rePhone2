@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce } from '@/app/commerce-provider';
-import { STOREFRONT_NAVIGATION } from './storefront-navigation';
+import { isStorefrontNavigationCurrent, STOREFRONT_NAVIGATION } from './storefront-navigation';
 import styles from './mobile-navigation.module.css';
 
 export function MobileNavigation() {
+  const pathname = usePathname();
   const { status, user } = useAuth();
   const { totalQuantity } = useCommerce();
   const [open, setOpen] = useState(false);
@@ -63,11 +65,12 @@ export function MobileNavigation() {
         type="button"
         aria-controls="storefront-mobile-navigation"
         aria-expanded={open}
+        aria-label="Mở danh mục"
         onClick={() => {
           setOpen(true);
         }}
       >
-        Menu
+        Danh mục
       </button>
       {open ? (
         <div
@@ -85,7 +88,7 @@ export function MobileNavigation() {
             aria-labelledby="storefront-mobile-navigation-title"
           >
             <div className={styles.panelHeader}>
-              <strong id="storefront-mobile-navigation-title">Điều hướng</strong>
+              <strong id="storefront-mobile-navigation-title">Danh mục</strong>
               <button className={styles.closeButton} type="button" onClick={closeNavigation}>
                 Đóng
               </button>
@@ -105,21 +108,19 @@ export function MobileNavigation() {
               </div>
             </form>
 
-            <nav aria-label="Điều hướng storefront trên di động">
-              <ul className={styles.navigationList}>
-                {STOREFRONT_NAVIGATION.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} onClick={closeNavigation}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <nav aria-label="Danh mục sản phẩm">
+              <Suspense
+                fallback={
+                  <MobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
+                }
+              >
+                <QueryAwareMobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
+              </Suspense>
             </nav>
 
             <div className={styles.sessionLinks} role="group" aria-label="Tài khoản và giỏ hàng">
               {status === 'loading' ? (
-                <span role="status">Đang tải phiên đăng nhập…</span>
+                <span role="status">Đang tải tài khoản…</span>
               ) : status === 'anonymous' ? (
                 <Link href="/login" onClick={closeNavigation}>
                   Đăng nhập
@@ -130,7 +131,7 @@ export function MobileNavigation() {
                 </Link>
               ) : (
                 <Link href="/backoffice/orders" onClick={closeNavigation}>
-                  Mở backoffice
+                  Mở trang quản trị
                 </Link>
               )}
               {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
@@ -143,5 +144,44 @@ export function MobileNavigation() {
         </div>
       ) : null}
     </>
+  );
+}
+
+function QueryAwareMobileNavigationLinks({
+  pathname,
+  onNavigate,
+}: Readonly<{ pathname: string; onNavigate: () => void }>) {
+  const searchParams = useSearchParams();
+  return (
+    <MobileNavigationLinks
+      pathname={pathname}
+      currentSearch={searchParams.toString()}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+function MobileNavigationLinks({
+  pathname,
+  currentSearch = '',
+  onNavigate,
+}: Readonly<{ pathname: string; currentSearch?: string; onNavigate: () => void }>) {
+  return (
+    <ul className={styles.navigationList}>
+      {STOREFRONT_NAVIGATION.map((item) => {
+        const isCurrent = isStorefrontNavigationCurrent(item.href, pathname, currentSearch);
+        return (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              aria-current={isCurrent ? 'page' : undefined}
+              onClick={onNavigate}
+            >
+              {item.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

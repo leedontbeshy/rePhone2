@@ -11,6 +11,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { customerApiError } from '../lib/order-access';
 import { useAuth } from './auth-provider';
 
 export type Cart = components['schemas']['CartDto'];
@@ -182,7 +183,7 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
         body: { itemType: 'IPHONE', inventoryCode },
       });
       if (result.data === undefined) {
-        throw new Error(errorMessage(result.error, 'Không thể lưu vào wishlist.'));
+        throw new Error(errorMessage(result.error, 'Không thể lưu sản phẩm.'));
       }
       return result.data.data;
     },
@@ -195,7 +196,7 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
         body: { itemType: 'ACCESSORY', variantId },
       });
       if (result.data === undefined) {
-        throw new Error(errorMessage(result.error, 'Không thể lưu vào wishlist.'));
+        throw new Error(errorMessage(result.error, 'Không thể lưu sản phẩm.'));
       }
       return result.data.data;
     },
@@ -249,16 +250,5 @@ export function useCommerce(): CommerceContextValue {
 }
 
 function errorMessage(value: unknown, fallback: string): string {
-  if (
-    isRecord(value) &&
-    isRecord(value['error']) &&
-    typeof value['error']['message'] === 'string'
-  ) {
-    return value['error']['message'];
-  }
-  return fallback;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return customerApiError(value, fallback);
 }

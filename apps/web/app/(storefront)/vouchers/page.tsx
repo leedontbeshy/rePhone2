@@ -3,8 +3,8 @@ import { VoucherDiscovery } from '@/components/storefront/voucher-discovery';
 import { listPublicVouchers } from '@/lib/public-voucher-api';
 
 export const metadata: Metadata = {
-  title: 'Voucher hiện hành | rePhone',
-  description: 'Khám phá voucher công khai và ưu đãi dành cho tài khoản rePhone.',
+  title: 'Ưu đãi hiện hành | rePhone',
+  description: 'Khám phá mã ưu đãi công khai và ưu đãi dành cho tài khoản rePhone.',
 };
 
 interface VouchersPageProps {

@@ -1,23 +1,33 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { NavigationList } from '@/components/shells';
-import { STOREFRONT_NAVIGATION } from './storefront-navigation';
+import { isStorefrontNavigationCurrent, STOREFRONT_NAVIGATION } from './storefront-navigation';
 
 export function StorefrontDesktopNavigation() {
   const pathname = usePathname();
+
+  return (
+    <Suspense fallback={<DesktopNavigationList pathname={pathname} />}>
+      <QueryAwareDesktopNavigation pathname={pathname} />
+    </Suspense>
+  );
+}
+
+function QueryAwareDesktopNavigation({ pathname }: Readonly<{ pathname: string }>) {
+  const searchParams = useSearchParams();
+  return <DesktopNavigationList pathname={pathname} currentSearch={searchParams.toString()} />;
+}
+
+function DesktopNavigationList({
+  pathname,
+  currentSearch = '',
+}: Readonly<{ pathname: string; currentSearch?: string }>) {
   const items = STOREFRONT_NAVIGATION.map((item) => ({
     ...item,
-    isCurrent: isCurrentPath(item.href, pathname),
+    isCurrent: isStorefrontNavigationCurrent(item.href, pathname, currentSearch),
   }));
 
   return <NavigationList items={items} />;
-}
-
-function isCurrentPath(href: string, pathname: string): boolean {
-  const queryIndex = href.indexOf('?');
-  const targetPath = queryIndex === -1 ? href : href.slice(0, queryIndex);
-  if (targetPath === '/') return pathname === '/';
-  if (targetPath === '/products') return false;
-  return pathname === targetPath || pathname.startsWith(`${targetPath}/`);
 }

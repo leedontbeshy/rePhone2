@@ -15,12 +15,12 @@ export function StorefrontSessionActions() {
       ? { href: '/login', label: 'Tài khoản' }
       : user?.role === 'CUSTOMER'
         ? { href: '/account', label: 'Tài khoản' }
-        : { href: '/backoffice/orders', label: 'Backoffice' };
+        : { href: '/backoffice/orders', label: 'Quản trị' };
 
   return (
     <>
       {status === 'loading' ? (
-        <span className={styles.sessionLoading} aria-label="Đang tải phiên đăng nhập" />
+        <span className={styles.sessionLoading} aria-label="Đang tải tài khoản" />
       ) : (
         <Link className={styles.sessionAction} href={sessionAction.href}>
           <UserCircleIcon aria-hidden="true" size={22} weight="regular" />

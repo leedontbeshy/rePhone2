@@ -102,6 +102,11 @@
   background: var(--color-brand-soft);
 }
 
+.navigationList a[aria-current='page'] {
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+}
+
 .sessionLinks {
   display: grid;
   gap: var(--space-2);

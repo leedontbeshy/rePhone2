@@ -79,7 +79,8 @@ export default function AcceptInvitationPage() {
       {!loaded ? <AuthPending>Đang kiểm tra lời mời…</AuthPending> : null}
       {loaded && token === undefined && !completed ? (
         <InlineAlert tone="danger" title="Lời mời không dùng được">
-          Lời mời thiếu token, không hợp lệ hoặc đã được mở trước đó. Hãy nhờ ADMIN gửi lại.
+          Lời mời này bị thiếu thông tin, đã hết hạn hoặc đã được sử dụng. Hãy nhờ quản trị viên gửi
+          lại.
         </InlineAlert>
       ) : null}
       {token === undefined || completed ? null : (
@@ -99,9 +100,7 @@ export default function AcceptInvitationPage() {
               <Link href="/login">Quay lại đăng nhập</Link>
             </AuthFormFooter>
           </AuthFormActions>
-          <AuthSecurityNote>
-            Lời mời chỉ dùng được một lần; token đã được xóa khỏi thanh địa chỉ.
-          </AuthSecurityNote>
+          <AuthSecurityNote>Lời mời chỉ dùng được một lần và có thời hạn.</AuthSecurityNote>
         </AuthForm>
       )}
       {completed ? (
