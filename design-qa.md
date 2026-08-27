@@ -12,6 +12,7 @@ Preview: `http://localhost:3000/checkout`
 - Bằng chứng desktop bổ sung:
   - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-1440x1024.png` (1425×1013).
   - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-1440x1024.png` (1425×1013).
+  - `D:\Dev\rePhone2\.local\fe3-design-qa\header-unified-1440x900.png` (1425×891).
 - Bằng chứng responsive:
   - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320x800.png` (320×764).
   - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320-summary.png` (320×764).
@@ -65,6 +66,7 @@ Preview: `http://localhost:3000/checkout`
 5. P2 — review-required 409, payload pickup/store và số tiền chưa được kiểm tra đủ chặt. Parser và regression tests đã được bổ sung.
 6. P2 — thông báo wishlist, focus sau khi xóa, fulfillment disabled và tổng tiền 320 px chưa hoàn chỉnh. Đã sửa trạng thái, focus recovery và responsive stacking.
 7. P2 — copy “đồng bộ/gộp” và một đoạn giải thích bị lặp chưa phù hợp khách hàng. Đã chuyển sang tiếng Việt tự nhiên và rút gọn.
+8. P2 — `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm ở hàng phụ bên dưới menu chính. Đã gộp cả tám mục vào một danh sách desktop duy nhất; tại 1024 và 1440 px, tâm danh sách trùng tâm header, toàn bộ mục cùng tọa độ dọc, khoảng cách đều và không tràn ngang. Mobile tiếp tục dùng drawer hiện có.
 
 Không còn phát hiện P0, P1 hoặc P2.
 

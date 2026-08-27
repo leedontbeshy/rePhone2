@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { NavigationList } from '@/components/shells';
+import { NavigationList, type ShellNavigationItem } from '@/components/shells';
 import {
   customerNavigationForSession,
   isStorefrontNavigationCurrent,
@@ -20,32 +20,41 @@ export function StorefrontDesktopNavigation() {
   }));
 
   return (
-    <div className={styles.navigationGroups}>
-      <div className={styles.catalogGroup}>
-        <Suspense fallback={<DesktopNavigationList pathname={pathname} />}>
-          <QueryAwareDesktopNavigation pathname={pathname} />
-        </Suspense>
-      </div>
-      {customerItems.length === 0 ? null : (
-        <NavigationList className={styles.customerNavigation} items={customerItems} />
-      )}
-    </div>
+    <Suspense
+      fallback={<DesktopNavigationList pathname={pathname} customerItems={customerItems} />}
+    >
+      <QueryAwareDesktopNavigation pathname={pathname} customerItems={customerItems} />
+    </Suspense>
   );
 }
 
-function QueryAwareDesktopNavigation({ pathname }: Readonly<{ pathname: string }>) {
+function QueryAwareDesktopNavigation({
+  pathname,
+  customerItems,
+}: Readonly<{ pathname: string; customerItems: readonly ShellNavigationItem[] }>) {
   const searchParams = useSearchParams();
-  return <DesktopNavigationList pathname={pathname} currentSearch={searchParams.toString()} />;
+  return (
+    <DesktopNavigationList
+      pathname={pathname}
+      currentSearch={searchParams.toString()}
+      customerItems={customerItems}
+    />
+  );
 }
 
 function DesktopNavigationList({
   pathname,
   currentSearch = '',
-}: Readonly<{ pathname: string; currentSearch?: string }>) {
+  customerItems,
+}: Readonly<{
+  pathname: string;
+  currentSearch?: string;
+  customerItems: readonly ShellNavigationItem[];
+}>) {
   const items = STOREFRONT_NAVIGATION.map((item) => ({
     ...item,
     isCurrent: isStorefrontNavigationCurrent(item.href, pathname, currentSearch),
   }));
 
-  return <NavigationList items={items} />;
+  return <NavigationList className={styles.navigation} items={[...items, ...customerItems]} />;
 }

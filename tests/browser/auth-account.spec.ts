@@ -153,7 +153,7 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
     await expect(page.getByText('Chưa có địa chỉ đã lưu', { exact: true })).toBeVisible();
 
-    await expectCustomerHeaderShortcutsAndCenteredCatalog(page);
+    await expectCustomerHeaderShortcutsInUnifiedNavigation(page);
 
     await page.goto('/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
@@ -463,7 +463,7 @@ async function expectAccountProfileFieldsAligned(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 720 });
 }
 
-async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Promise<void> {
+async function expectCustomerHeaderShortcutsInUnifiedNavigation(page: Page): Promise<void> {
   const currentHeaderNavigation = page
     .locator("[data-shell='customer'] > header")
     .getByRole('navigation', { name: 'Điều hướng chính' });
@@ -479,31 +479,33 @@ async function expectCustomerHeaderShortcutsAndCenteredCatalog(page: Page): Prom
     await page.setViewportSize({ width, height: 900 });
     const header = page.locator("[data-shell='storefront'] > header");
     const navigation = header.getByRole('navigation', { name: 'Điều hướng chính' });
-    const catalogList = navigation.locator('ul').first();
-    const customerList = navigation.locator('ul').nth(1);
+    const unifiedList = navigation.locator('ul');
+
+    await expect(unifiedList).toHaveCount(1);
+    await expect(unifiedList.locator('li')).toHaveCount(8);
 
     for (const label of ['Bảo hành', 'Ưa thích', 'Đơn hàng']) {
-      await expect(customerList.getByRole('link', { name: label, exact: true })).toBeVisible();
+      await expect(unifiedList.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
 
-    const [navigationBox, catalogBox, customerBox] = await Promise.all([
+    const [navigationBox, unifiedBox] = await Promise.all([
       visibleBox(navigation),
-      visibleBox(catalogList),
-      visibleBox(customerList),
+      visibleBox(unifiedList),
     ]);
     expect(
-      Math.abs(navigationBox.x + navigationBox.width / 2 - (catalogBox.x + catalogBox.width / 2)),
+      Math.abs(navigationBox.x + navigationBox.width / 2 - (unifiedBox.x + unifiedBox.width / 2)),
     ).toBeLessThanOrEqual(1);
-    expect(customerBox.y).toBeGreaterThanOrEqual(catalogBox.y + catalogBox.height);
 
-    const itemGaps = await catalogList.locator('li').evaluateAll((items) =>
-      items.slice(1).map((item, index) => {
+    const itemGeometry = await unifiedList.locator('li').evaluateAll((items) => ({
+      gaps: items.slice(1).map((item, index) => {
         const previous = items[index]?.getBoundingClientRect();
         const current = item.getBoundingClientRect();
         return previous === undefined ? 0 : current.left - previous.right;
       }),
-    );
-    expect(Math.max(...itemGaps) - Math.min(...itemGaps)).toBeLessThanOrEqual(1);
+      tops: items.map((item) => item.getBoundingClientRect().top),
+    }));
+    expect(Math.max(...itemGeometry.gaps) - Math.min(...itemGeometry.gaps)).toBeLessThanOrEqual(1);
+    expect(Math.max(...itemGeometry.tops) - Math.min(...itemGeometry.tops)).toBeLessThanOrEqual(1);
   }
 
   await page.setViewportSize({ width: 320, height: 568 });
