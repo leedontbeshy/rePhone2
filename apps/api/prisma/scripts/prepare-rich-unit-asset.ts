@@ -25,7 +25,7 @@ const outputDirectory = fileURLToPath(
 const outputPath = resolve(outputDirectory, fileName);
 const source = await readFile(resolvedSource);
 const sourceMetadata = await sharp(source).metadata();
-if (sourceMetadata.width === undefined || sourceMetadata.height === undefined) {
+if (!Number.isInteger(sourceMetadata.width) || !Number.isInteger(sourceMetadata.height)) {
   throw new Error('Generated unit asset has no raster dimensions.');
 }
 

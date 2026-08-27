@@ -79,7 +79,7 @@ async function prepareAsset(
   if (metadata.width !== source.expectedWidth || metadata.height !== source.expectedHeight) {
     throw new Error(`Unexpected source dimensions for ${source.productSlug}.`);
   }
-  if (`image/${metadata.format ?? ''}` !== source.expectedMimeType) {
+  if (`image/${metadata.format}` !== source.expectedMimeType) {
     throw new Error(`Unexpected source MIME for ${source.productSlug}.`);
   }
 
