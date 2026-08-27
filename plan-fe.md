@@ -182,9 +182,9 @@ Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc
 |  36 | `/backoffice/audit-logs`                 | Hiện có | FE-8        |
 |  37 | `/backoffice/audit-logs/[id]`            | Hiện có | FE-8        |
 |  38 | `/store`                                 | Hiện có | FE-1        |
-|  39 | `/account`                               | Mới     | FE-2        |
-|  40 | `/account/addresses`                     | Mới     | FE-2        |
-|  41 | `/account/security`                      | Mới     | FE-2        |
+|  39 | `/account`                               | Hiện có | FE-2        |
+|  40 | `/account/addresses`                     | Hiện có | FE-2        |
+|  41 | `/account/security`                      | Hiện có | FE-2        |
 |  42 | `/backoffice/catalog/products`           | Mới     | FE-5        |
 |  43 | `/backoffice/catalog/products/new`       | Mới     | FE-5        |
 |  44 | `/backoffice/catalog/products/[id]`      | Mới     | FE-5        |
