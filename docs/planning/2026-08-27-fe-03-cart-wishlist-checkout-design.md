@@ -140,6 +140,7 @@ Rollout chỉ thay presentation/component/provider behavior trong phạm vi fron
 | 2026-08-27 | Preview không giữ hàng; create không auto-retry | Giữ nguyên invariant checkout có thẩm quyền |
 | 2026-08-27 | Nội dung khách hàng dùng tiếng Việt tự nhiên | Tuân theo quy ước nội dung đã chốt cho rePhone |
 | 2026-08-27 | Chỉ giữ năm mục công khai ở menu desktop; chuyển bốn lối tắt khách hàng vào popup `Tài khoản` | Nhóm đúng ngữ cảnh quản lý tài khoản, giúp menu chính gọn và cân giữa; mobile vẫn dùng drawer để tránh chật |
+| 2026-08-27 | Đặt popup sát nút `Tài khoản` và cho phép phủ lên hàng điều hướng | Giữ liên kết thị giác rõ với nút mở, tránh khoảng cách dọc khiến popup trông rời rạc |
 
 ## 12. Assumptions và câu hỏi mở
 

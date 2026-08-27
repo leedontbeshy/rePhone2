@@ -163,12 +163,6 @@ button.sessionAction {
   background: var(--color-brand-soft);
 }
 
-@media (min-width: 60rem) {
-  .accountMenuPanel {
-    inset-block-start: calc(100% + 5rem);
-  }
-}
-
 .visuallyHidden {
   position: absolute;
   width: 1px;
