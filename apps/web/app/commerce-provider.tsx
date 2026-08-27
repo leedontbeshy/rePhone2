@@ -37,14 +37,112 @@ interface CommerceContextValue {
 const CommerceContext = createContext<CommerceContextValue | null>(null);
 const CSRF_HEADER = { 'X-Rephone-CSRF': '1' } as const;
 
+export interface SerializedTaskQueue {
+  enqueue: <T>(work: () => Promise<T>) => Promise<T>;
+}
+
+export function createSerializedTaskQueue(): SerializedTaskQueue {
+  let tail: Promise<void> = Promise.resolve();
+  return {
+    enqueue<T>(work: () => Promise<T>): Promise<T> {
+      const pending = tail.then(work, work);
+      tail = pending.then(
+        () => undefined,
+        () => undefined,
+      );
+      return pending;
+    },
+  };
+}
+
+export interface SessionRevisionTracker {
+  capture: () => number;
+  isCurrent: (revision: number) => boolean;
+  sync: (identity: string) => boolean;
+}
+
+export function createSessionRevisionTracker(initialIdentity: string): SessionRevisionTracker {
+  let identity = initialIdentity;
+  let revision = 0;
+  return {
+    capture: () => revision,
+    isCurrent: (expectedRevision) => revision === expectedRevision,
+    sync(nextIdentity) {
+      if (nextIdentity === identity) return false;
+      identity = nextIdentity;
+      revision += 1;
+      return true;
+    },
+  };
+}
+
+export function currentSessionValue<T>(
+  value: T,
+  ownerRevision: number,
+  tracker: SessionRevisionTracker,
+): T | null {
+  return tracker.isCurrent(ownerRevision) ? value : null;
+}
+
+export interface KeyedSingleFlight<TKey> {
+  clear: () => void;
+  run: <T>(key: TKey, work: () => Promise<T>) => Promise<T>;
+}
+
+export function createKeyedSingleFlight<TKey>(): KeyedSingleFlight<TKey> {
+  let current: { key: TKey; promise: Promise<unknown> } | undefined;
+  return {
+    clear() {
+      current = undefined;
+    },
+    run<T>(key: TKey, work: () => Promise<T>): Promise<T> {
+      if (current !== undefined && Object.is(current.key, key)) {
+        return current.promise as Promise<T>;
+      }
+      const promise = work().finally(() => {
+        if (current?.promise === promise) current = undefined;
+      });
+      current = { key, promise };
+      return promise;
+    },
+  };
+}
+
 export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, status, user } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState<string | null>(null);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const cartOwnerRevision = useRef(0);
   const mergedCustomer = useRef<string | null>(null);
-  const mutationQueue = useRef<Promise<void>>(Promise.resolve());
+  const sessionIdentity = `${status}:${user?.role ?? 'NONE'}:${user?.id ?? 'NONE'}`;
+  const sessionTracker = useRef<SessionRevisionTracker | null>(null);
+  const mutationQueue = useRef<SerializedTaskQueue | null>(null);
+  const mergeSingleFlight = useRef<KeyedSingleFlight<number> | null>(null);
+  if (sessionTracker.current === null) {
+    sessionTracker.current = createSessionRevisionTracker(sessionIdentity);
+    mutationQueue.current = createSerializedTaskQueue();
+    mergeSingleFlight.current = createKeyedSingleFlight<number>();
+  } else if (sessionTracker.current.sync(sessionIdentity)) {
+    mutationQueue.current = createSerializedTaskQueue();
+    mergeSingleFlight.current?.clear();
+    mergedCustomer.current = null;
+  }
+
+  const enqueueCartTask = useCallback(<T,>(work: (revision: number) => Promise<T>): Promise<T> => {
+    const tracker = sessionTracker.current;
+    const queue = mutationQueue.current;
+    if (tracker === null || queue === null)
+      return Promise.reject(new Error('Commerce unavailable'));
+    const revision = tracker.capture();
+    return queue.enqueue(() => work(revision));
+  }, []);
+
+  const isCurrentSession = useCallback(
+    (revision: number) => sessionTracker.current?.isCurrent(revision) === true,
+    [],
+  );
 
   const refreshCart = useCallback(async () => {
     if (status === 'loading') return;
@@ -54,43 +152,78 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
       return;
     }
     setCartLoading(true);
-    const result = await client.GET('/api/v1/cart');
-    if (result.data === undefined) {
-      setCartError(errorMessage(result.error, 'Không thể tải giỏ hàng.'));
-      setCartLoading(false);
-      return;
-    }
-    setCart(result.data.data);
-    setCartError(null);
-    setCartLoading(false);
-  }, [client, status, user?.role]);
+    await enqueueCartTask(async (revision) => {
+      try {
+        const result = await client.GET('/api/v1/cart');
+        if (!isCurrentSession(revision)) return;
+        if (result.data === undefined) {
+          setCartError(errorMessage(result.error, 'Không thể tải giỏ hàng.'));
+          return;
+        }
+        cartOwnerRevision.current = revision;
+        setCart(result.data.data);
+        setCartError(null);
+      } catch {
+        if (isCurrentSession(revision)) {
+          setCartError('Không thể kết nối để tải giỏ hàng. Vui lòng thử lại.');
+        }
+      } finally {
+        if (isCurrentSession(revision)) setCartLoading(false);
+      }
+    });
+  }, [client, enqueueCartTask, isCurrentSession, status, user?.role]);
 
   const merge = useCallback(async () => {
-    const result = await client.POST('/api/v1/cart/merge', {});
-    if (result.data === undefined) {
-      const message = errorMessage(result.error, 'Không thể gộp giỏ hàng khách vào tài khoản.');
-      setMergeError(message);
-      throw new Error(message);
-    }
-    setCart(result.data.data);
-    setCartError(null);
-    setMergeError(null);
-  }, [client]);
+    if (status !== 'authenticated' || user?.role !== 'CUSTOMER') return;
+    const customerId = user.id;
+    const tracker = sessionTracker.current;
+    const singleFlight = mergeSingleFlight.current;
+    if (tracker === null || singleFlight === null) return;
+    const revision = tracker.capture();
+    return singleFlight.run(revision, () =>
+      enqueueCartTask(async (queuedRevision) => {
+        let result;
+        try {
+          result = await client.POST('/api/v1/cart/merge', {});
+        } catch {
+          const message = 'Không thể cập nhật giỏ hàng. Vui lòng thử lại.';
+          if (isCurrentSession(queuedRevision)) setMergeError(message);
+          throw new Error(message);
+        }
+        if (!isCurrentSession(queuedRevision)) return;
+        if (result.data === undefined) {
+          const message = errorMessage(
+            result.error,
+            'Không thể cập nhật giỏ hàng sau khi đăng nhập.',
+          );
+          setMergeError(message);
+          throw new Error(message);
+        }
+        cartOwnerRevision.current = queuedRevision;
+        setCart(result.data.data);
+        setCartError(null);
+        setMergeError(null);
+        mergedCustomer.current = customerId;
+      }),
+    );
+  }, [client, enqueueCartTask, isCurrentSession, status, user?.id, user?.role]);
 
   useEffect(() => {
+    setCart(null);
+    setCartError(null);
+    setMergeError(null);
     if (status === 'anonymous') {
-      mergedCustomer.current = null;
       void refreshCart();
       return;
     }
     if (status === 'authenticated' && user?.role === 'CUSTOMER') {
       if (mergedCustomer.current === user.id) return;
-      mergedCustomer.current = user.id;
+      const revision = sessionTracker.current?.capture();
       setCartLoading(true);
       void merge()
         .catch(() => undefined)
         .finally(() => {
-          setCartLoading(false);
+          if (revision !== undefined && isCurrentSession(revision)) setCartLoading(false);
         });
       return;
     }
@@ -98,20 +231,11 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
       setCart(null);
       setCartLoading(false);
     }
-  }, [merge, refreshCart, status, user]);
-
-  const enqueueCartMutation = useCallback(<T,>(work: () => Promise<T>): Promise<T> => {
-    const pending = mutationQueue.current.then(work, work);
-    mutationQueue.current = pending.then(
-      () => undefined,
-      () => undefined,
-    );
-    return pending;
-  }, []);
+  }, [isCurrentSession, merge, refreshCart, sessionIdentity, status, user?.id, user?.role]);
 
   const addIphone = useCallback(
     (inventoryCode: string) =>
-      enqueueCartMutation(async () => {
+      enqueueCartTask(async (revision) => {
         const result = await client.POST('/api/v1/cart/items', {
           params: { header: CSRF_HEADER },
           body: { itemType: 'IPHONE', inventoryCode },
@@ -119,15 +243,17 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
         if (result.data === undefined) {
           throw new Error(errorMessage(result.error, 'Không thể thêm iPhone vào giỏ hàng.'));
         }
+        if (!isCurrentSession(revision)) return;
+        cartOwnerRevision.current = revision;
         setCart(result.data.data);
         setCartError(null);
       }),
-    [client, enqueueCartMutation],
+    [client, enqueueCartTask, isCurrentSession],
   );
 
   const addAccessory = useCallback(
     (variantId: string, quantity: number) =>
-      enqueueCartMutation(async () => {
+      enqueueCartTask(async (revision) => {
         const result = await client.POST('/api/v1/cart/items', {
           params: { header: CSRF_HEADER },
           body: { itemType: 'ACCESSORY', variantId, quantity },
@@ -135,46 +261,52 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
         if (result.data === undefined) {
           throw new Error(errorMessage(result.error, 'Không thể thêm phụ kiện vào giỏ hàng.'));
         }
+        if (!isCurrentSession(revision)) return;
+        cartOwnerRevision.current = revision;
         setCart(result.data.data);
         setCartError(null);
       }),
-    [client, enqueueCartMutation],
+    [client, enqueueCartTask, isCurrentSession],
   );
 
   const updateQuantity = useCallback(
-    async (itemId: string, quantity: number) => {
-      const result = await client.PATCH('/api/v1/cart/items/{itemId}', {
-        params: { path: { itemId }, header: CSRF_HEADER },
-        body: { quantity },
-      });
-      if (result.data === undefined) {
-        throw new Error(errorMessage(result.error, 'Không thể cập nhật số lượng.'));
-      }
-      setCart(result.data.data);
-      setCartError(null);
-    },
-    [client],
+    (itemId: string, quantity: number) =>
+      enqueueCartTask(async (revision) => {
+        const result = await client.PATCH('/api/v1/cart/items/{itemId}', {
+          params: { path: { itemId }, header: CSRF_HEADER },
+          body: { quantity },
+        });
+        if (result.data === undefined) {
+          throw new Error(errorMessage(result.error, 'Không thể cập nhật số lượng.'));
+        }
+        if (!isCurrentSession(revision)) return;
+        cartOwnerRevision.current = revision;
+        setCart(result.data.data);
+        setCartError(null);
+      }),
+    [client, enqueueCartTask, isCurrentSession],
   );
 
   const removeItem = useCallback(
-    async (itemId: string) => {
-      const result = await client.DELETE('/api/v1/cart/items/{itemId}', {
-        params: { path: { itemId }, header: CSRF_HEADER },
-      });
-      if (result.response.status !== 204) {
-        throw new Error(errorMessage(result.error, 'Không thể xóa sản phẩm khỏi giỏ hàng.'));
-      }
-      setCart((current) =>
-        current === null
-          ? null
-          : {
-              ...current,
-              items: current.items.filter((item) => item.id !== itemId),
-            },
-      );
-      await refreshCart();
-    },
-    [client, refreshCart],
+    (itemId: string) =>
+      enqueueCartTask(async (revision) => {
+        const result = await client.DELETE('/api/v1/cart/items/{itemId}', {
+          params: { path: { itemId }, header: CSRF_HEADER },
+        });
+        if (result.response.status !== 204) {
+          throw new Error(errorMessage(result.error, 'Không thể xóa sản phẩm khỏi giỏ hàng.'));
+        }
+        const refreshed = await client.GET('/api/v1/cart');
+        if (!isCurrentSession(revision)) return;
+        if (refreshed.data === undefined) {
+          setCartError(errorMessage(refreshed.error, 'Không thể tải lại giỏ hàng.'));
+          return;
+        }
+        cartOwnerRevision.current = revision;
+        setCart(refreshed.data.data);
+        setCartError(null);
+      }),
+    [client, enqueueCartTask, isCurrentSession],
   );
 
   const addWishlistIphone = useCallback(
@@ -203,13 +335,14 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
     [client],
   );
 
+  const visibleCart = currentSessionValue(cart, cartOwnerRevision.current, sessionTracker.current);
   const totalQuantity = useMemo(
-    () => cart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0,
-    [cart],
+    () => visibleCart?.items.reduce((total, item) => total + item.quantity, 0) ?? 0,
+    [visibleCart],
   );
   const value = useMemo<CommerceContextValue>(
     () => ({
-      cart,
+      cart: visibleCart,
       cartLoading,
       cartError,
       mergeError,
@@ -228,7 +361,7 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
       addIphone,
       addWishlistAccessory,
       addWishlistIphone,
-      cart,
+      visibleCart,
       cartError,
       cartLoading,
       merge,
