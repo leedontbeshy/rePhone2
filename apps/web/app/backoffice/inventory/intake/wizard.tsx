@@ -37,11 +37,7 @@ const EMPTY_INTAKE = {
   carrierName: '',
   simLockStatus: 'UNLOCKED' as 'UNLOCKED' | 'CARRIER_LOCKED' | 'UNKNOWN',
   simConfiguration: 'PHYSICAL_AND_ESIM' as
-    | 'SINGLE_PHYSICAL'
-    | 'DUAL_PHYSICAL'
-    | 'PHYSICAL_AND_ESIM'
-    | 'ESIM_ONLY'
-    | 'UNKNOWN',
+    'SINGLE_PHYSICAL' | 'DUAL_PHYSICAL' | 'PHYSICAL_AND_ESIM' | 'ESIM_ONLY' | 'UNKNOWN',
 };
 
 export function InventoryIntakeWizard() {
@@ -232,9 +228,7 @@ export function InventoryIntakeWizard() {
           ...(intake.modelNumber.trim() === '' ? {} : { modelNumber: intake.modelNumber }),
           ...(intake.regionCode.trim() === '' ? {} : { regionCode: intake.regionCode }),
           ...(intake.salePrice.trim() === '' ? {} : { salePrice: intake.salePrice }),
-          ...(intake.compareAtPrice.trim() === ''
-            ? {}
-            : { compareAtPrice: intake.compareAtPrice }),
+          ...(intake.compareAtPrice.trim() === '' ? {} : { compareAtPrice: intake.compareAtPrice }),
           ...(intake.warrantyDaysOverride.trim() === ''
             ? {}
             : { warrantyDaysOverride: Number(intake.warrantyDaysOverride) }),
@@ -245,6 +239,13 @@ export function InventoryIntakeWizard() {
       });
       if (result.data === undefined) throw apiRequestError(result.error);
       setUnit(result.data.data);
+      setIntake((current) => ({
+        ...current,
+        eid: '',
+        imei1: '',
+        imei2: '',
+        serial: '',
+      }));
       replaceQuery(result.data.data.id);
       setNotice(`Đã tiếp nhận máy ${result.data.data.inventoryCode}. Tiến độ đã được lưu.`);
     });
@@ -909,9 +910,9 @@ function apiRequestError(value: unknown): Error {
     const code = typeof payload['code'] === 'string' ? payload['code'] : 'API_ERROR';
     const message =
       typeof payload['message'] === 'string' ? payload['message'] : 'Yêu cầu không thành công.';
-    return new Error(`${code}: ${friendlyCode(code, message)}`);
+    return new Error(friendlyCode(code, message));
   }
-  return new Error('Không thể kết nối API. Hãy thử lại.');
+  return new Error('Không thể kết nối tới hệ thống. Hãy thử lại.');
 }
 
 function friendlyCode(code: string, fallback: string) {
@@ -920,11 +921,11 @@ function friendlyCode(code: string, fallback: string) {
   if (code === 'INVALID_STATE_TRANSITION') return 'Trạng thái máy không cho phép thao tác này.';
   if (code === 'INVENTORY_INSPECTION_REQUIRED') return 'Cần một phiếu kiểm định đạt hiện hành.';
   if (code === 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET')
-    return 'Thiếu giá, ảnh, identifier hoặc catalog/location chưa active.';
-  if (code === 'FILE_TOO_LARGE') return 'Ảnh vượt quá 8 MiB.';
+    return 'Thiếu giá bán, ảnh hoặc thông tin bắt buộc; sản phẩm hay địa điểm chưa sẵn sàng.';
+  if (code === 'FILE_TOO_LARGE') return 'Ảnh vượt quá 8 MB.';
   if (code === 'UNSUPPORTED_FILE_TYPE') return 'Ảnh không phải JPEG, PNG hoặc WebP hợp lệ.';
   if (code === 'STORAGE_UNAVAILABLE')
-    return 'Storage tạm thời không sẵn sàng; có thể retry upload.';
+    return 'Dịch vụ lưu ảnh đang tạm gián đoạn. Hãy thử tải lại sau ít phút.';
   return fallback;
 }
 
