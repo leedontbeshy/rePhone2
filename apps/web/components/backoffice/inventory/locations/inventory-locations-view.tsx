@@ -30,14 +30,16 @@ export function InventoryLocationsView({
         <p>Xem các cửa hàng và kho đang được dùng để nhận, giữ hoặc chuyển hàng.</p>
       </header>
 
-      <section className={styles.summary} aria-label="Tổng quan địa điểm">
-        <BuildingsIcon aria-hidden="true" size={28} weight="duotone" />
-        <div>
-          <strong>{String(activeCount)}</strong>
-          <span>địa điểm đang hoạt động</span>
-        </div>
-        <p>Địa điểm được quản lý tập trung và không chỉnh sửa tại màn hình này.</p>
-      </section>
+      {!loading && error === null ? (
+        <section className={styles.summary} aria-label="Tổng quan địa điểm">
+          <BuildingsIcon aria-hidden="true" size={28} weight="duotone" />
+          <div>
+            <strong>{String(activeCount)}</strong>
+            <span>địa điểm đang hoạt động</span>
+          </div>
+          <p>Địa điểm được quản lý tập trung và không chỉnh sửa tại màn hình này.</p>
+        </section>
+      ) : null}
 
       {error === null ? null : (
         <div className={styles.error} role="alert">
@@ -46,7 +48,7 @@ export function InventoryLocationsView({
       )}
 
       {loading ? <p className={styles.loading}>Đang tải danh sách địa điểm…</p> : null}
-      {!loading && locations.length === 0 ? (
+      {!loading && error === null && locations.length === 0 ? (
         <section className={styles.empty}>
           <h2>Chưa có địa điểm</h2>
           <p>Hãy kiểm tra lại dữ liệu cấu hình kho của hệ thống.</p>

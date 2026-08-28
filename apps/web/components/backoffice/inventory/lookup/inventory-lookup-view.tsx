@@ -15,7 +15,10 @@ export interface InventoryLookupResult {
   readonly lifecycleLabel: string;
   readonly lifecycleTone: 'neutral' | 'info' | 'success' | 'warning' | 'danger';
   readonly locationName: string;
-  readonly maskedIdentifiers: readonly { maskedValue: string; type: InventoryMaskedIdentifierType }[];
+  readonly maskedIdentifiers: readonly {
+    maskedValue: string;
+    type: InventoryMaskedIdentifierType;
+  }[];
   readonly productName: string;
   readonly variantName: string;
 }
@@ -75,7 +78,12 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
       </header>
 
       <div className={styles.layout}>
-        <form className={styles.formCard} onSubmit={submit}>
+        <form
+          className={styles.formCard}
+          onSubmit={(event) => {
+            void submit(event);
+          }}
+        >
           <div className={styles.cardHeading}>
             <IdentificationCardIcon aria-hidden="true" size={24} />
             <div>
@@ -86,6 +94,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
 
           <div className={styles.fieldGrid}>
             <Select
+              disabled={pending}
               id="inventory-identifier-type"
               label="Loại mã"
               value={identifierType}
@@ -101,6 +110,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
             </Select>
             <Input
               autoComplete="off"
+              disabled={pending}
               error={attempted ? validation.identifier : undefined}
               id="inventory-identifier-value"
               inputMode={identifierType === 'SERIAL' ? 'text' : 'numeric'}
@@ -115,6 +125,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
             />
           </div>
           <Textarea
+            disabled={pending}
             error={attempted ? validation.reason : undefined}
             hint="Ghi rõ mục đích phục vụ khách hàng hoặc vận hành kho, từ 5 đến 500 ký tự."
             id="inventory-lookup-reason"
@@ -146,8 +157,8 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
           <ShieldCheckIcon aria-hidden="true" size={30} weight="duotone" />
           <h2>Thông tin được bảo vệ</h2>
           <p>
-            Kết quả chỉ hiển thị mã đã che. Nếu cần xem đầy đủ trong hồ sơ máy, bạn phải nhập
-            một lý do mới.
+            Kết quả chỉ hiển thị mã đã che. Nếu cần xem đầy đủ trong hồ sơ máy, bạn phải nhập một lý
+            do mới.
           </p>
           <ul>
             <li>Không lưu vào lịch sử URL</li>

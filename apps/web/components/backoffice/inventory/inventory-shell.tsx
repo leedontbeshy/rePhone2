@@ -2,7 +2,7 @@
 
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
@@ -31,8 +31,15 @@ export function InventoryShell({
   const router = useRouter();
   const { logout, logoutPending, status, user } = useAuth();
   const [logoutError, setLogoutError] = useState(false);
+  const navigationRef = useRef<HTMLElement>(null);
   const hasAccess = canAccessInventoryWorkspace(user?.role);
   const localNavigation = inventoryNavigationForPath(pathname);
+
+  useEffect(() => {
+    navigationRef.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+  }, [pathname]);
 
   async function signOut() {
     setLogoutError(false);
@@ -89,7 +96,11 @@ export function InventoryShell({
         {status === 'authenticated' && !hasAccess ? <InventoryForbiddenState /> : null}
         {status === 'authenticated' && user !== null && hasAccess ? (
           <>
-            <nav className={styles.workspaceNavigation} aria-label="Các mục quản lý kho">
+            <nav
+              className={styles.workspaceNavigation}
+              aria-label="Các mục quản lý kho"
+              ref={navigationRef}
+            >
               <ul>
                 {localNavigation.map((item) => (
                   <li key={item.href}>
