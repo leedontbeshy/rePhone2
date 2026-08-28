@@ -9,13 +9,7 @@ import {
   ShieldCheckIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type SyntheticEvent,
-} from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import {
   BackofficeActionDialog,
   inspectionResultPresentation,
@@ -98,12 +92,18 @@ const FULL_IDENTIFIER_LABELS: Readonly<Record<keyof EphemeralInventoryIdentifier
 const ACTION_PRESENTATION: Readonly<
   Record<
     InventoryLifecycleCommand,
-    { readonly confirm: string; readonly description: string; readonly label: string; readonly title: string }
+    {
+      readonly confirm: string;
+      readonly description: string;
+      readonly label: string;
+      readonly title: string;
+    }
   >
 > = {
   MAKE_AVAILABLE: {
     confirm: 'Đưa lên bán',
-    description: 'Máy sẽ xuất hiện trong nguồn hàng có thể bán sau khi hệ thống kiểm tra lại điều kiện.',
+    description:
+      'Máy sẽ xuất hiện trong nguồn hàng có thể bán sau khi hệ thống kiểm tra lại điều kiện.',
     label: 'Đưa lên bán',
     title: 'Xác nhận đưa máy lên bán?',
   },
@@ -234,12 +234,8 @@ export function InventoryUnitDetailView({
       )}
 
       <div className={styles.workspace}>
-        <main className={styles.mainColumn}>
-          <MediaSection
-            busy={busyAction === 'upload'}
-            unit={unit}
-            onUpload={onUpload}
-          />
+        <div className={styles.mainColumn}>
+          <MediaSection busy={busyAction === 'upload'} unit={unit} onUpload={onUpload} />
           <UnitInformationForm busy={busyAction === 'update'} unit={unit} onUpdate={onUpdate} />
           <IdentifierSection
             busy={busyAction === 'update'}
@@ -257,7 +253,7 @@ export function InventoryUnitDetailView({
             unit={unit}
             onCreateInspection={onCreateInspection}
           />
-        </main>
+        </div>
 
         <aside className={styles.sideColumn} aria-label="Điều kiện và thao tác máy">
           <ReadinessCard unit={unit} />
@@ -276,7 +272,13 @@ export function InventoryUnitDetailView({
                     data-inventory-action={action}
                     disabled={busyAction !== null}
                     key={action}
-                    variant={action === 'WRITE_OFF' ? 'destructive' : action === 'MAKE_AVAILABLE' ? 'primary' : 'secondary'}
+                    variant={
+                      action === 'WRITE_OFF'
+                        ? 'destructive'
+                        : action === 'MAKE_AVAILABLE'
+                          ? 'primary'
+                          : 'secondary'
+                    }
                     onClick={() => {
                       setCommandReason('');
                       setDialogAction(action);
@@ -417,7 +419,11 @@ function MediaSection({
       <div className={styles.mediaLayout}>
         <div className={styles.mediaStage}>
           {selected === null ? (
-            <div className={styles.mediaPlaceholder} role="img" aria-label="Máy chưa có ảnh thực tế">
+            <div
+              className={styles.mediaPlaceholder}
+              role="img"
+              aria-label="Máy chưa có ảnh thực tế"
+            >
               <ImageSquareIcon aria-hidden="true" size={42} />
               <span>Chưa có ảnh thực tế</span>
             </div>
@@ -449,6 +455,7 @@ function MediaSection({
         <form className={styles.uploadForm} onSubmit={(event) => void submit(event)}>
           <Input
             accept="image/jpeg,image/png,image/webp"
+            disabled={busy}
             id="unit-media-file"
             key={fileInputKey}
             label="Chọn ảnh"
@@ -460,6 +467,7 @@ function MediaSection({
             }}
           />
           <Input
+            disabled={busy}
             id="unit-media-alt"
             label="Mô tả ảnh"
             maxLength={255}
@@ -470,6 +478,7 @@ function MediaSection({
             }}
           />
           <Input
+            disabled={busy}
             id="unit-media-order"
             inputMode="numeric"
             label="Thứ tự"
@@ -538,6 +547,7 @@ function UnitInformationForm({
       </div>
       <form className={styles.formGrid} onSubmit={(event) => void submit(event)}>
         <Input
+          disabled={busy}
           error={errors.modelNumber}
           id="unit-model-number"
           label="Mã kiểu máy"
@@ -549,6 +559,7 @@ function UnitInformationForm({
           }}
         />
         <Input
+          disabled={busy}
           error={errors.regionCode}
           id="unit-region-code"
           label="Mã thị trường"
@@ -560,6 +571,7 @@ function UnitInformationForm({
           }}
         />
         <Select
+          disabled={busy}
           id="unit-sim-lock"
           label="Tình trạng mạng"
           value={draft.simLockStatus}
@@ -572,6 +584,7 @@ function UnitInformationForm({
           <option value="UNKNOWN">Chưa xác định</option>
         </Select>
         <Input
+          disabled={busy}
           error={errors.carrierName}
           id="unit-carrier-name"
           label="Nhà mạng"
@@ -583,6 +596,7 @@ function UnitInformationForm({
           }}
         />
         <Select
+          disabled={busy}
           id="unit-sim-configuration"
           label="Cấu hình SIM"
           value={draft.simConfiguration}
@@ -600,6 +614,7 @@ function UnitInformationForm({
           <option value="UNKNOWN">Chưa xác định</option>
         </Select>
         <Input
+          disabled={busy}
           error={errors.warrantyDaysOverride}
           id="unit-warranty-days"
           inputMode="numeric"
@@ -614,6 +629,7 @@ function UnitInformationForm({
           }}
         />
         <Input
+          disabled={busy}
           error={errors.salePrice}
           id="unit-sale-price"
           inputMode="numeric"
@@ -626,6 +642,7 @@ function UnitInformationForm({
           }}
         />
         <Input
+          disabled={busy}
           error={errors.compareAtPrice}
           id="unit-compare-price"
           inputMode="numeric"
@@ -666,9 +683,9 @@ function IdentifierSection({
   const [draft, setDraft] = useState<InventoryIdentifierCorrectionDraft>(
     emptyIdentifierCorrectionDraft,
   );
-  const [errors, setErrors] = useState<
-    Partial<Record<InventoryIdentifierCorrectionField, string>>
-  >({});
+  const [errors, setErrors] = useState<Partial<Record<InventoryIdentifierCorrectionField, string>>>(
+    {},
+  );
 
   function update<Key extends keyof InventoryIdentifierCorrectionDraft>(
     key: Key,
@@ -700,7 +717,11 @@ function IdentifierSection({
           <h2>Mã định danh</h2>
           <p>Mặc định chỉ hiển thị phần đã che để hạn chế lộ thông tin thiết bị.</p>
         </div>
-        <Button iconLeading={<LockKeyIcon aria-hidden="true" size={18} />} variant="secondary" onClick={onOpenReveal}>
+        <Button
+          iconLeading={<LockKeyIcon aria-hidden="true" size={18} />}
+          variant="secondary"
+          onClick={onOpenReveal}
+        >
           Xem mã đầy đủ
         </Button>
       </div>
@@ -725,9 +746,11 @@ function IdentifierSection({
             <p>Tự động ẩn sau một phút hoặc ngay khi rời trang.</p>
           </div>
           <dl>
-            {(Object.entries(identifiers) as Array<
-              [keyof EphemeralInventoryIdentifiers, string | null]
-            >).map(([key, value]) =>
+            {(
+              Object.entries(identifiers) as Array<
+                [keyof EphemeralInventoryIdentifiers, string | null]
+              >
+            ).map(([key, value]) =>
               value === null ? null : (
                 <div key={key}>
                   <dt>{FULL_IDENTIFIER_LABELS[key]}</dt>
@@ -747,6 +770,7 @@ function IdentifierSection({
         <p>Chỉ nhập mã mới cần thay thế. Hệ thống không điền lại mã đầy đủ hiện tại.</p>
         <form className={styles.formGrid} onSubmit={(event) => void submit(event)}>
           <Input
+            disabled={busy}
             error={errors.imei1}
             id="unit-correct-imei-1"
             label="IMEI chính mới"
@@ -757,6 +781,7 @@ function IdentifierSection({
             }}
           />
           <Input
+            disabled={busy}
             error={errors.imei2}
             id="unit-correct-imei-2"
             label="IMEI phụ mới"
@@ -767,6 +792,7 @@ function IdentifierSection({
             }}
           />
           <Input
+            disabled={busy}
             error={errors.serial}
             id="unit-correct-serial"
             label="Số sê-ri mới"
@@ -777,6 +803,7 @@ function IdentifierSection({
             }}
           />
           <Input
+            disabled={busy}
             error={errors.eid}
             id="unit-correct-eid"
             label="EID mới"
@@ -787,6 +814,7 @@ function IdentifierSection({
             }}
           />
           <Textarea
+            disabled={busy}
             containerClassName={styles.fullSpan ?? ''}
             error={errors.reason}
             hint="Lý do được ghi nhận để đối chiếu sau này."
@@ -843,6 +871,7 @@ function InspectionHistory({
             }}
           >
             <Select
+              disabled={busy}
               id="new-inspection-type"
               label="Loại kiểm định"
               value={inspectionType}
