@@ -158,3 +158,15 @@ Các bổ sung trên chỉ là dữ liệu đọc. DTO command, state machine, t
 - Production build tạo đủ 41 trang; lint, typecheck, OpenAPI và mã API client đều đồng bộ.
 - 12 ảnh đối chiếu desktop/mobile được lưu tại `docs/assets/ui/fe-06/`; không có tràn ngang hoặc lỗi console trong hành trình cuối.
 - PostgreSQL/Docker integration chưa chạy trong lượt đóng phase vì Docker Desktop trên máy đang tắt; bộ trình duyệt được chạy với dữ liệu giả lập ổn định trên chính server web localhost.
+
+## 11. Tinh chỉnh sau nghiệm thu
+
+Ngày 2026-08-28, chủ dự án duyệt thêm bốn điều chỉnh cho thao tác kho hằng ngày:
+
+- Tra cứu IMEI, số sê-ri hoặc EID chỉ trả kết quả đã che nên không còn yêu cầu nhân viên nhập lý do. Hệ thống vẫn tự ghi người thực hiện, thời gian, loại mã và kết quả có/không tìm thấy; tuyệt đối không ghi giá trị mã gốc.
+- Xem đầy đủ hoặc sửa mã định danh vẫn bắt buộc lý do như thiết kế ban đầu.
+- Form tiếp nhận máy hiển thị lỗi tại đúng trường, giữ dữ liệu đã nhập và đưa tiêu điểm tới lỗi đầu tiên; thông báo tổng chỉ đóng vai trò tóm tắt.
+- Danh sách iPhone trong form tiếp nhận xếp theo năm ra mắt mới nhất, sau đó theo cấp sản phẩm; cấu hình xếp theo dung lượng và màu để ổn định giữa các lần tải.
+- Điều hướng con của Kho hàng được căn giữa trên màn hình rộng; màn hình hẹp tiếp tục cuộn ngang và không ép các mục co nhỏ.
+
+Các điều chỉnh không thay đổi state machine, quyền giá vốn, điều kiện đưa máy lên bán, bộ đếm tồn kho hoặc chính sách không lưu mã định danh gốc.
