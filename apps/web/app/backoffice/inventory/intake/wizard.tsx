@@ -12,6 +12,7 @@ import {
   validateInventoryMediaFile,
 } from '../../../../lib/backoffice-inventory-api';
 import {
+  INTAKE_FIELD_ORDER,
   firstInventoryIntakeErrorField,
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
@@ -280,9 +281,12 @@ export function InventoryIntakeWizard() {
   function clearIntakeErrors(...fields: IntakeField[]) {
     setIntakeErrors((current) => {
       if (!fields.some((field) => current[field] !== undefined)) return current;
-      const next = { ...current };
-      for (const field of fields) delete next[field];
-      return next;
+      const fieldsToClear = new Set(fields);
+      return INTAKE_FIELD_ORDER.reduce<IntakeFieldErrors>((next, field) => {
+        const message = current[field];
+        if (!fieldsToClear.has(field) && message !== undefined) next[field] = message;
+        return next;
+      }, {});
     });
   }
 
