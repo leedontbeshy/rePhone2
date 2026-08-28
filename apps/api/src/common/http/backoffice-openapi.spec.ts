@@ -180,5 +180,15 @@ describe('Slice 04 OpenAPI contract', () => {
       nullable: true,
       allOf: [{ $ref: '#/components/schemas/StockActorDto' }],
     });
+
+    const updateInspection = document.components.schemas['UpdateInspectionDto'];
+    expect(updateInspection?.properties?.['cosmeticNotes']).toMatchObject({
+      type: 'string',
+      nullable: true,
+    });
+    expect(updateInspection?.properties?.['repairNotes']).toMatchObject({
+      type: 'string',
+      nullable: true,
+    });
   });
 });

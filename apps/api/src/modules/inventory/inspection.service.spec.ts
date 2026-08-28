@@ -203,6 +203,28 @@ describe('InspectionService', () => {
     );
   });
 
+  it('passes explicit null notes to the repository so a draft note can be cleared', async () => {
+    const fixture = serviceFixture();
+
+    await expect(
+      fixture.service.update(
+        INSPECTION_ID,
+        { cosmeticNotes: null, repairNotes: null },
+        actor,
+        'EMPLOYEE',
+      ),
+    ).resolves.toMatchObject({
+      id: INSPECTION_ID,
+      cosmeticNotes: null,
+      repairNotes: null,
+    });
+    expect(fixture.repository.update).toHaveBeenCalledWith(
+      INSPECTION_ID,
+      { cosmeticNotes: null, repairNotes: null },
+      expect.anything(),
+    );
+  });
+
   it.each([
     {
       name: 'the record is missing',

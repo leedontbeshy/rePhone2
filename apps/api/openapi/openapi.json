@@ -9143,6 +9143,7 @@
           },
           "cosmeticNotes": {
             "maxLength": 2000,
+            "nullable": true,
             "type": "string"
           },
           "repairHistoryStatus": {
@@ -9155,6 +9156,7 @@
           },
           "repairNotes": {
             "maxLength": 2000,
+            "nullable": true,
             "type": "string"
           },
           "replacedParts": {

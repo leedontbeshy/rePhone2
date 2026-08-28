@@ -4738,10 +4738,10 @@ export interface components {
             checks?: Record<string, never>;
             /** @enum {string} */
             conditionGrade?: "A" | "B" | "C";
-            cosmeticNotes?: string;
+            cosmeticNotes?: string | null;
             /** @enum {string} */
             repairHistoryStatus?: "NONE_KNOWN" | "KNOWN" | "UNKNOWN";
-            repairNotes?: string;
+            repairNotes?: string | null;
             replacedParts?: Record<string, never> | null;
         };
         UpdateInventoryCostDto: {
