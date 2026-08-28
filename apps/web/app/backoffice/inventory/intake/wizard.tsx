@@ -13,6 +13,7 @@ import {
   IPHONE_CHECKLIST_V1,
   type ChecklistDraft,
 } from '../../../../lib/inventory-intake';
+import styles from './intake.module.css';
 
 type ProductListItem = components['schemas']['BackofficeProductListItemDto'];
 type ProductDetail = components['schemas']['BackofficeProductDetailDto'];
@@ -25,12 +26,22 @@ const EMPTY_INTAKE = {
   variantId: '',
   locationId: '',
   imei1: '',
+  imei2: '',
+  eid: '',
   serial: '',
   modelNumber: '',
   regionCode: 'VN/A',
   salePrice: '',
-  simLockStatus: 'UNLOCKED' as const,
-  simConfiguration: 'PHYSICAL_AND_ESIM' as const,
+  compareAtPrice: '',
+  warrantyDaysOverride: '',
+  carrierName: '',
+  simLockStatus: 'UNLOCKED' as 'UNLOCKED' | 'CARRIER_LOCKED' | 'UNKNOWN',
+  simConfiguration: 'PHYSICAL_AND_ESIM' as
+    | 'SINGLE_PHYSICAL'
+    | 'DUAL_PHYSICAL'
+    | 'PHYSICAL_AND_ESIM'
+    | 'ESIM_ONLY'
+    | 'UNKNOWN',
 };
 
 export function InventoryIntakeWizard() {
@@ -203,10 +214,10 @@ export function InventoryIntakeWizard() {
     event.preventDefault();
     void runAction('intake', async () => {
       if (intake.variantId === '' || intake.locationId === '') {
-        throw new Error('Hãy chọn variant và địa điểm nhận máy.');
+        throw new Error('Hãy chọn biến thể và địa điểm nhận máy.');
       }
       if (intake.imei1.trim() === '' && intake.serial.trim() === '') {
-        throw new Error('Cần nhập ít nhất IMEI 1 hoặc serial.');
+        throw new Error('Cần nhập ít nhất IMEI chính hoặc số sê-ri.');
       }
       const result = await client.POST('/api/v1/backoffice/inventory-units', {
         body: {
@@ -215,16 +226,27 @@ export function InventoryIntakeWizard() {
           simLockStatus: intake.simLockStatus,
           simConfiguration: intake.simConfiguration,
           ...(intake.imei1.trim() === '' ? {} : { imei1: intake.imei1 }),
+          ...(intake.imei2.trim() === '' ? {} : { imei2: intake.imei2 }),
+          ...(intake.eid.trim() === '' ? {} : { eid: intake.eid }),
           ...(intake.serial.trim() === '' ? {} : { serial: intake.serial }),
           ...(intake.modelNumber.trim() === '' ? {} : { modelNumber: intake.modelNumber }),
           ...(intake.regionCode.trim() === '' ? {} : { regionCode: intake.regionCode }),
           ...(intake.salePrice.trim() === '' ? {} : { salePrice: intake.salePrice }),
+          ...(intake.compareAtPrice.trim() === ''
+            ? {}
+            : { compareAtPrice: intake.compareAtPrice }),
+          ...(intake.warrantyDaysOverride.trim() === ''
+            ? {}
+            : { warrantyDaysOverride: Number(intake.warrantyDaysOverride) }),
+          ...(intake.simLockStatus !== 'CARRIER_LOCKED' || intake.carrierName.trim() === ''
+            ? {}
+            : { carrierName: intake.carrierName.trim() }),
         },
       });
       if (result.data === undefined) throw apiRequestError(result.error);
       setUnit(result.data.data);
       replaceQuery(result.data.data.id);
-      setNotice(`Đã nhận máy ${result.data.data.inventoryCode}. URL đã được lưu để resume.`);
+      setNotice(`Đã tiếp nhận máy ${result.data.data.inventoryCode}. Tiến độ đã được lưu.`);
     });
   }
 
@@ -244,13 +266,13 @@ export function InventoryIntakeWizard() {
       if (result.data === undefined) throw apiRequestError(result.error);
       await refreshUnit(unit.id);
       setFile(null);
-      setNotice('Ảnh unit đã được upload và gắn metadata thành công.');
+      setNotice('Đã tải ảnh thực tế của máy lên thành công.');
     });
   }
 
   async function createInspection() {
     await runAction('inspection-create', async () => {
-      if (unit === null) throw new Error('Chưa có unit để kiểm định.');
+      if (unit === null) throw new Error('Chưa có máy để kiểm định.');
       const result = await client.POST('/api/v1/backoffice/inventory-units/{id}/inspections', {
         params: { path: { id: unit.id } },
         body: { inspectionType: 'INTAKE' },
@@ -266,7 +288,7 @@ export function InventoryIntakeWizard() {
   function saveInspection(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     void runAction('inspection-save', async () => {
-      if (inspection === null) throw new Error('Chưa có bản kiểm định nháp.');
+      if (inspection === null) throw new Error('Chưa có phiếu kiểm định nháp.');
       const result = await client.PATCH('/api/v1/backoffice/inspections/{id}', {
         params: { path: { id: inspection.id } },
         body: {
@@ -286,26 +308,28 @@ export function InventoryIntakeWizard() {
 
   async function completeInspection() {
     await runAction('inspection-complete', async () => {
-      if (inspection === null || unit === null) throw new Error('Chưa có bản kiểm định.');
+      if (inspection === null || unit === null) throw new Error('Chưa có phiếu kiểm định.');
       const result = await client.POST('/api/v1/backoffice/inspections/{id}/complete', {
         params: { path: { id: inspection.id } },
       });
       if (result.data === undefined) throw apiRequestError(result.error);
       acceptInspection(result.data.data);
       await refreshUnit(unit.id);
-      setNotice(`Đã hoàn tất kiểm định với kết quả ${result.data.data.overallResult}.`);
+      setNotice(
+        `Đã hoàn tất kiểm định với kết quả ${inspectionResultLabel(result.data.data.overallResult)}.`,
+      );
     });
   }
 
   async function makeAvailable() {
     await runAction('make-available', async () => {
-      if (unit === null) throw new Error('Chưa có unit.');
+      if (unit === null) throw new Error('Chưa có máy.');
       const result = await client.POST('/api/v1/backoffice/inventory-units/{id}/make-available', {
         params: { path: { id: unit.id } },
       });
       if (result.data === undefined) throw apiRequestError(result.error);
       setUnit(result.data.data);
-      setNotice('Unit đã AVAILABLE và public catalog đọc trực tiếp được ngay.');
+      setNotice('Máy đã sẵn sàng bán và được cập nhật lên cửa hàng.');
     });
   }
 
@@ -330,30 +354,7 @@ export function InventoryIntakeWizard() {
     }
   }
 
-  if (status === 'loading') {
-    return (
-      <main className="backoffice-shell">
-        <div className="status">Đang kiểm tra quyền truy cập…</div>
-      </main>
-    );
-  }
-  if (status === 'anonymous') {
-    return (
-      <AccessCard
-        title="Cần đăng nhập"
-        detail="Đăng nhập bằng tài khoản nhân viên để mở wizard."
-        login
-      />
-    );
-  }
-  if (!isStaff) {
-    return (
-      <AccessCard
-        title="Không có quyền truy cập"
-        detail="Route này chỉ dành cho EMPLOYEE và ADMIN."
-      />
-    );
-  }
+  if (status !== 'authenticated' || !isStaff) return null;
 
   const variants = product === null ? [] : sellableVariants(product);
   const completedPassed =
@@ -362,24 +363,24 @@ export function InventoryIntakeWizard() {
     unit === null ? null : `/products/${unit.product.slug}/units/${unit.inventoryCode}`;
 
   return (
-    <main className="backoffice-shell">
+    <div className={styles.workspace}>
       <header className="wizard-header">
         <div>
-          <p className="eyebrow">Backoffice · Slice 04</p>
-          <h1>Nhập và kiểm định iPhone</h1>
-          <p>RECEIVED → INSPECTING → AVAILABLE, lưu tiến độ bằng URL.</p>
+          <p className="eyebrow">Kho hàng · Máy vật lý</p>
+          <h1>Nhập máy vào kho</h1>
+          <p>Tiếp nhận máy, bổ sung ảnh thực tế, kiểm định và chuẩn bị đưa lên bán.</p>
         </div>
-        <Link className="button" href="/">
-          Về trang chủ
+        <Link className="button" href="/backoffice/inventory/units">
+          Xem danh sách máy
         </Link>
       </header>
 
       <ol className="wizard-progress" aria-label="Tiến độ nhập máy">
-        <Progress label="Intake" done={unit !== null} />
-        <Progress label="Ảnh unit" done={(unit?.mediaCount ?? 0) > 0} />
-        <Progress label="Inspection" done={inspection?.status === 'COMPLETED'} />
-        <Progress label="Available" done={unit?.lifecycleStatus === 'AVAILABLE'} />
-        <Progress label="Public detail" done={unit?.lifecycleStatus === 'AVAILABLE'} />
+        <Progress label="Tiếp nhận" done={unit !== null} />
+        <Progress label="Ảnh thực tế" done={(unit?.mediaCount ?? 0) > 0} />
+        <Progress label="Kiểm định" done={inspection?.status === 'COMPLETED'} />
+        <Progress label="Sẵn sàng bán" done={unit?.lifecycleStatus === 'AVAILABLE'} />
+        <Progress label="Trang sản phẩm" done={unit?.lifecycleStatus === 'AVAILABLE'} />
       </ol>
 
       {error !== null ? (
@@ -395,7 +396,7 @@ export function InventoryIntakeWizard() {
       {loading ? <div className="status">Đang tải dữ liệu wizard…</div> : null}
 
       <section className="wizard-card" aria-labelledby="intake-title">
-        <StepHeading number="1" id="intake-title" title="Intake unit" done={unit !== null} />
+        <StepHeading number="1" id="intake-title" title="Tiếp nhận máy" done={unit !== null} />
         {unit === null ? (
           <form className="wizard-form" onSubmit={submitIntake}>
             <label>
@@ -415,7 +416,7 @@ export function InventoryIntakeWizard() {
               </select>
             </label>
             <label>
-              Variant active
+              Biến thể đang bán
               <select
                 value={intake.variantId}
                 onChange={(event) => {
@@ -458,7 +459,18 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              Serial
+              IMEI 2
+              <input
+                value={intake.imei2}
+                onChange={(event) => {
+                  setIntake({ ...intake, imei2: event.target.value });
+                }}
+                inputMode="numeric"
+                placeholder="Không bắt buộc"
+              />
+            </label>
+            <label>
+              Số sê-ri
               <input
                 value={intake.serial}
                 onChange={(event) => {
@@ -467,6 +479,17 @@ export function InventoryIntakeWizard() {
                 minLength={6}
                 maxLength={32}
                 placeholder="Ít nhất IMEI hoặc serial"
+              />
+            </label>
+            <label>
+              EID
+              <input
+                value={intake.eid}
+                onChange={(event) => {
+                  setIntake({ ...intake, eid: event.target.value });
+                }}
+                inputMode="numeric"
+                placeholder="32 chữ số nếu có"
               />
             </label>
             <label>
@@ -482,7 +505,18 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              Model number
+              Giá niêm yết (VND)
+              <input
+                value={intake.compareAtPrice}
+                onChange={(event) => {
+                  setIntake({ ...intake, compareAtPrice: event.target.value });
+                }}
+                inputMode="numeric"
+                pattern="[0-9]{1,15}"
+              />
+            </label>
+            <label>
+              Mã kiểu máy
               <input
                 value={intake.modelNumber}
                 onChange={(event) => {
@@ -491,7 +525,7 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              Region
+              Mã thị trường
               <input
                 value={intake.regionCode}
                 onChange={(event) => {
@@ -500,7 +534,7 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              SIM lock
+              Tình trạng khóa mạng
               <select
                 value={intake.simLockStatus}
                 onChange={(event) => {
@@ -510,10 +544,23 @@ export function InventoryIntakeWizard() {
                   });
                 }}
               >
-                <option value="UNLOCKED">Unlocked</option>
+                <option value="UNLOCKED">Không khóa mạng</option>
+                <option value="CARRIER_LOCKED">Khóa theo nhà mạng</option>
                 <option value="UNKNOWN">Chưa rõ</option>
               </select>
             </label>
+            {intake.simLockStatus === 'CARRIER_LOCKED' ? (
+              <label>
+                Nhà mạng
+                <input
+                  required
+                  value={intake.carrierName}
+                  onChange={(event) => {
+                    setIntake({ ...intake, carrierName: event.target.value });
+                  }}
+                />
+              </label>
+            ) : null}
             <label>
               Cấu hình SIM
               <select
@@ -525,11 +572,24 @@ export function InventoryIntakeWizard() {
                   });
                 }}
               >
+                <option value="SINGLE_PHYSICAL">Một SIM vật lý</option>
                 <option value="PHYSICAL_AND_ESIM">SIM vật lý + eSIM</option>
                 <option value="DUAL_PHYSICAL">Hai SIM vật lý</option>
                 <option value="ESIM_ONLY">eSIM</option>
                 <option value="UNKNOWN">Chưa rõ</option>
               </select>
+            </label>
+            <label>
+              Bảo hành riêng (ngày)
+              <input
+                min="0"
+                type="number"
+                value={intake.warrantyDaysOverride}
+                onChange={(event) => {
+                  setIntake({ ...intake, warrantyDaysOverride: event.target.value });
+                }}
+                placeholder="Để trống để dùng mặc định"
+              />
             </label>
             <div className="wizard-actions">
               <button
@@ -550,11 +610,11 @@ export function InventoryIntakeWizard() {
         <StepHeading
           number="2"
           id="media-title"
-          title="Upload ảnh unit"
+          title="Ảnh thực tế của máy"
           done={(unit?.mediaCount ?? 0) > 0}
         />
         {unit === null ? (
-          <p>Hoàn tất intake trước.</p>
+          <p>Hoàn tất bước tiếp nhận trước.</p>
         ) : (
           <form className="wizard-inline" onSubmit={submitUpload}>
             <label>
@@ -570,7 +630,7 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <button className="button primary" disabled={busy !== null} type="submit">
-              {busy === 'upload' ? 'Đang upload…' : 'Upload ảnh'}
+              {busy === 'upload' ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
             </button>
             <span>{unit.mediaCount} ảnh đã gắn</span>
           </form>
@@ -591,14 +651,14 @@ export function InventoryIntakeWizard() {
             disabled={busy !== null}
             onClick={() => void createInspection()}
           >
-            {busy === 'inspection-create' ? 'Đang tạo…' : 'Tạo inspection nháp'}
+            {busy === 'inspection-create' ? 'Đang tạo…' : 'Tạo phiếu kiểm định'}
           </button>
         ) : null}
         {inspection?.status === 'DRAFT' ? (
           <form className="inspection-form" onSubmit={saveInspection}>
             <div className="wizard-form compact">
               <label>
-                Battery health (%)
+                Dung lượng pin (%)
                 <input
                   type="number"
                   min="0"
@@ -611,7 +671,7 @@ export function InventoryIntakeWizard() {
                 />
               </label>
               <label>
-                Condition grade
+                Xếp loại ngoại hình
                 <select
                   value={conditionGrade}
                   onChange={(event) => {
@@ -663,7 +723,7 @@ export function InventoryIntakeWizard() {
               ) : null}
             </div>
             <div className="checklist-heading">
-              <h3>Checklist schema v1</h3>
+              <h3>Danh sách kiểm tra kỹ thuật</h3>
               <button
                 className="button"
                 type="button"
@@ -671,7 +731,7 @@ export function InventoryIntakeWizard() {
                   setChecks(allPassChecklist());
                 }}
               >
-                Đánh dấu tất cả PASS
+                Đánh dấu tất cả đạt
               </button>
             </div>
             <div className="checklist-grid">
@@ -694,7 +754,7 @@ export function InventoryIntakeWizard() {
                     >
                       {CHECK_STATUSES.map((value) => (
                         <option value={value} key={value}>
-                          {value}
+                          {checkStatusLabel(value)}
                         </option>
                       ))}
                     </select>
@@ -719,7 +779,7 @@ export function InventoryIntakeWizard() {
             </div>
             <div className="wizard-actions">
               <button className="button primary" disabled={busy !== null} type="submit">
-                {busy === 'inspection-save' ? 'Đang lưu…' : 'Lưu inspection'}
+                {busy === 'inspection-save' ? 'Đang lưu…' : 'Lưu kiểm định'}
               </button>
               <button
                 className="button"
@@ -727,14 +787,14 @@ export function InventoryIntakeWizard() {
                 type="button"
                 onClick={() => void completeInspection()}
               >
-                {busy === 'inspection-complete' ? 'Đang complete…' : 'Complete inspection'}
+                {busy === 'inspection-complete' ? 'Đang hoàn tất…' : 'Hoàn tất kiểm định'}
               </button>
             </div>
           </form>
         ) : null}
         {inspection?.status === 'COMPLETED' ? (
           <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
-            Kết quả: <strong>{inspection.overallResult}</strong>
+            Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
           </p>
         ) : null}
       </section>
@@ -743,7 +803,7 @@ export function InventoryIntakeWizard() {
         <StepHeading
           number="4"
           id="available-title"
-          title="Make available"
+          title="Đưa máy lên bán"
           done={unit?.lifecycleStatus === 'AVAILABLE'}
         />
         {unit !== null && unit.lifecycleStatus !== 'AVAILABLE' ? (
@@ -753,58 +813,28 @@ export function InventoryIntakeWizard() {
             disabled={busy !== null || !completedPassed || unit.mediaCount < 1}
             onClick={() => void makeAvailable()}
           >
-            {busy === 'make-available' ? 'Đang chuyển…' : 'Make available'}
+            {busy === 'make-available' ? 'Đang cập nhật…' : 'Đưa máy lên bán'}
           </button>
         ) : null}
-        {!completedPassed ? <p>Chỉ mở sau khi inspection hoàn tất với kết quả PASSED.</p> : null}
+        {!completedPassed ? <p>Chỉ mở sau khi kiểm định hoàn tất với kết quả đạt.</p> : null}
       </section>
 
       <section className="wizard-card" aria-labelledby="public-title">
         <StepHeading
           number="5"
           id="public-title"
-          title="Public detail"
+          title="Trang sản phẩm"
           done={unit?.lifecycleStatus === 'AVAILABLE'}
         />
         {unit?.lifecycleStatus === 'AVAILABLE' && publicHref !== null ? (
           <Link className="button primary" href={publicHref}>
-            Mở public unit detail
+            Xem trang sản phẩm
           </Link>
         ) : (
-          <p>Unit sẽ xuất hiện trực tiếp từ PostgreSQL sau khi AVAILABLE.</p>
+          <p>Máy sẽ xuất hiện tại cửa hàng sau khi đáp ứng đủ điều kiện bán.</p>
         )}
       </section>
-    </main>
-  );
-}
-
-function AccessCard({
-  title,
-  detail,
-  login = false,
-}: {
-  title: string;
-  detail: string;
-  login?: boolean;
-}) {
-  return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        <p className="eyebrow">Backoffice</p>
-        <h1>{title}</h1>
-        <p>{detail}</p>
-        <div className="actions">
-          {login ? (
-            <Link className="button primary" href="/login?next=/backoffice/inventory/intake">
-              Đăng nhập
-            </Link>
-          ) : null}
-          <Link className="button" href="/">
-            Về trang chủ
-          </Link>
-        </div>
-      </section>
-    </main>
+    </div>
   );
 }
 
@@ -840,15 +870,15 @@ function UnitSummary({ unit }: { unit: Unit }) {
   return (
     <dl className="unit-resume">
       <div>
-        <dt>Inventory code</dt>
+        <dt>Mã máy</dt>
         <dd>{unit.inventoryCode}</dd>
       </div>
       <div>
         <dt>Trạng thái</dt>
-        <dd>{unit.lifecycleStatus}</dd>
+        <dd>{unitLifecycleLabel(unit.lifecycleStatus)}</dd>
       </div>
       <div>
-        <dt>Variant</dt>
+        <dt>Biến thể</dt>
         <dd>{unit.variant.displayName}</dd>
       </div>
       <div>
@@ -856,9 +886,11 @@ function UnitSummary({ unit }: { unit: Unit }) {
         <dd>{unit.location.name}</dd>
       </div>
       <div>
-        <dt>Identifier</dt>
+        <dt>Định danh</dt>
         <dd>
-          {unit.maskedIdentifiers.map((item) => `${item.type}: ${item.maskedValue}`).join(' · ')}
+          {unit.maskedIdentifiers
+            .map((item) => `${identifierLabel(item.type)}: ${item.maskedValue}`)
+            .join(' · ')}
         </dd>
       </div>
     </dl>
@@ -885,8 +917,8 @@ function apiRequestError(value: unknown): Error {
 function friendlyCode(code: string, fallback: string) {
   if (code === 'CONCURRENT_MODIFICATION')
     return 'Dữ liệu vừa được thay đổi ở phiên khác. Hãy tải lại bước này.';
-  if (code === 'INVALID_STATE_TRANSITION') return 'Trạng thái unit không cho phép thao tác này.';
-  if (code === 'INVENTORY_INSPECTION_REQUIRED') return 'Cần một inspection PASSED hiện hành.';
+  if (code === 'INVALID_STATE_TRANSITION') return 'Trạng thái máy không cho phép thao tác này.';
+  if (code === 'INVENTORY_INSPECTION_REQUIRED') return 'Cần một phiếu kiểm định đạt hiện hành.';
   if (code === 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET')
     return 'Thiếu giá, ảnh, identifier hoặc catalog/location chưa active.';
   if (code === 'FILE_TOO_LARGE') return 'Ảnh vượt quá 8 MiB.';
@@ -894,6 +926,40 @@ function friendlyCode(code: string, fallback: string) {
   if (code === 'STORAGE_UNAVAILABLE')
     return 'Storage tạm thời không sẵn sàng; có thể retry upload.';
   return fallback;
+}
+
+function checkStatusLabel(value: (typeof CHECK_STATUSES)[number]): string {
+  if (value === 'PASS') return 'Đạt';
+  if (value === 'FAIL') return 'Không đạt';
+  if (value === 'DEGRADED') return 'Hoạt động chưa tốt';
+  if (value === 'NOT_TESTED') return 'Chưa kiểm tra';
+  if (value === 'NOT_APPLICABLE') return 'Không áp dụng';
+  return 'Chưa xác định';
+}
+
+function inspectionResultLabel(value: Inspection['overallResult']): string {
+  if (value === 'PASSED') return 'Đạt';
+  if (value === 'PARTIAL') return 'Cần xử lý';
+  if (value === 'FAILED') return 'Không đạt';
+  return 'Chưa hoàn tất';
+}
+
+function unitLifecycleLabel(value: Unit['lifecycleStatus']): string {
+  if (value === 'RECEIVED') return 'Đã tiếp nhận';
+  if (value === 'INSPECTING') return 'Đang kiểm định';
+  if (value === 'AVAILABLE') return 'Sẵn sàng bán';
+  if (value === 'IN_TRANSIT') return 'Đang chuyển kho';
+  if (value === 'SOLD') return 'Đã bán';
+  if (value === 'REPAIRING') return 'Đang sửa chữa';
+  if (value === 'QUARANTINED') return 'Đang cách ly';
+  return 'Đã loại khỏi kho';
+}
+
+function identifierLabel(value: Unit['maskedIdentifiers'][number]['type']): string {
+  if (value === 'IMEI_1') return 'IMEI chính';
+  if (value === 'IMEI_2') return 'IMEI phụ';
+  if (value === 'SERIAL') return 'Số sê-ri';
+  return 'EID';
 }
 
 function messageOf(value: unknown): string {

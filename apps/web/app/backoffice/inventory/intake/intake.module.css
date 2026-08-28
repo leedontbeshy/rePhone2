@@ -1,0 +1,120 @@
+.workspace {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.workspace :global(.wizard-header) {
+  margin: 0;
+}
+
+.workspace :global(.wizard-header h1) {
+  color: var(--color-ink);
+  font-size: clamp(1.9rem, 3vw, 2.45rem);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin-block: var(--space-2);
+}
+
+.workspace :global(.wizard-header p:last-child) {
+  color: var(--color-muted);
+  margin: 0;
+  max-width: 46rem;
+}
+
+.workspace :global(.wizard-header .eyebrow) {
+  color: var(--color-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.workspace :global(.wizard-header .button) {
+  background: var(--color-surface);
+  border: var(--border-default);
+  color: var(--color-ink);
+  min-height: var(--control-height);
+  white-space: nowrap;
+}
+
+.workspace :global(.wizard-progress) {
+  margin: 0;
+}
+
+.workspace :global(.wizard-progress li) {
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  color: var(--color-muted);
+  min-height: 4.5rem;
+}
+
+.workspace :global(.wizard-progress li.done) {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.workspace :global(.wizard-alert) {
+  margin: 0;
+}
+
+.workspace :global(.wizard-card) {
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+  margin: 0;
+  padding: clamp(1rem, 2.2vw, 1.5rem);
+}
+
+.workspace :global(.step-heading > span) {
+  background: var(--color-primary);
+}
+
+.workspace :global(.step-heading h2) {
+  color: var(--color-ink);
+  font-size: var(--font-size-section-title);
+}
+
+.workspace :global(.wizard-form input),
+.workspace :global(.wizard-form select),
+.workspace :global(.wizard-form textarea),
+.workspace :global(.wizard-inline input),
+.workspace :global(.checklist-grid input),
+.workspace :global(.checklist-grid select) {
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+}
+
+.workspace :global(.wizard-form input:focus),
+.workspace :global(.wizard-form select:focus),
+.workspace :global(.wizard-form textarea:focus),
+.workspace :global(.wizard-inline input:focus),
+.workspace :global(.checklist-grid input:focus),
+.workspace :global(.checklist-grid select:focus) {
+  border-color: var(--color-primary);
+  outline: var(--focus-ring);
+}
+
+.workspace :global(.unit-resume div) {
+  background: var(--color-surface-subtle);
+}
+
+.workspace :global(.checklist-grid fieldset) {
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+}
+
+@media (max-width: 760px) {
+  .workspace :global(.wizard-progress) {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+  }
+
+  .workspace :global(.wizard-progress li) {
+    flex: 0 0 8rem;
+  }
+}
