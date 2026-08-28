@@ -225,6 +225,12 @@
   gap: clamp(var(--space-4), 4vw, var(--space-10));
   border-block-end: var(--border-default);
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toolbarTabs::-webkit-scrollbar,
+.detailTabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tabLink {
@@ -661,6 +667,7 @@
   gap: var(--space-6);
   border-block-end: var(--border-default);
   overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .detailTab {

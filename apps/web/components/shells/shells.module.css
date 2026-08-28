@@ -517,6 +517,31 @@
 }
 
 @media (max-width: 39.999rem) {
+  .backofficeTopbar {
+    gap: var(--space-2, 8px);
+    padding-block: var(--space-2, 8px);
+  }
+
+  .backofficeBrand,
+  .topbarContext {
+    gap: var(--space-2, 8px);
+  }
+
+  .backofficeLabel,
+  .actorSummary {
+    display: none;
+  }
+
+  .topbarContext {
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  .contextLink {
+    font-size: var(--font-size-label, 13px);
+    white-space: nowrap;
+  }
+
   .headerInner {
     gap: var(--space-3, 12px);
   }
