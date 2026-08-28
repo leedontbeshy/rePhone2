@@ -3,6 +3,8 @@ export type {
   BackofficeActionDialogProps,
   BackofficeActionDialogReason,
 } from './backoffice-action-dialog';
+export { BackofficeAccessGate } from './backoffice-access-gate';
+export type { BackofficeAccessGateProps } from './backoffice-access-gate';
 export {
   BackofficeDataBoard,
   BackofficeFilterToolbar,
