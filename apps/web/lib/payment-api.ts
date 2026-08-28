@@ -99,6 +99,27 @@ export interface PaymentListResult {
   };
 }
 
+export type CustomerPaymentErrorCode = string;
+
+export class CustomerPaymentError extends Error {
+  public constructor(
+    message: string,
+    public readonly code: CustomerPaymentErrorCode | undefined,
+  ) {
+    super(message);
+    this.name = 'CustomerPaymentError';
+  }
+
+  public get requiresOrderRefetch(): boolean {
+    return (
+      this.code === 'PAYMENT_PROOF_DEADLINE_PASSED' ||
+      this.code === 'PAYMENT_ALREADY_REVIEWED' ||
+      this.code === 'INVALID_STATE_TRANSITION' ||
+      this.code === 'CONCURRENT_MODIFICATION'
+    );
+  }
+}
+
 interface RuntimeApiResult {
   data?: unknown;
   error?: unknown;
@@ -128,7 +149,30 @@ export async function submitPaymentProof(
     body: { file: file.name },
     bodySerializer: () => formData,
   });
-  return paymentFromResult(result, 'Không thể nộp minh chứng thanh toán.', customerPaymentError);
+  if (result.data === undefined) {
+    throw new CustomerPaymentError(
+      customerPaymentError(result.error, 'Không thể nộp minh chứng thanh toán.'),
+      errorCode(result.error),
+    );
+  }
+  return parsePayment(responseData(result, 'Không thể nộp minh chứng thanh toán.'));
+}
+
+export const CUSTOMER_PAYMENT_PROOF_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+] as const;
+export const CUSTOMER_PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024;
+
+export function validateCustomerPaymentProof(file: File): string | null {
+  if (file.size === 0) return 'Tệp minh chứng đang trống.';
+  if (file.size > CUSTOMER_PAYMENT_PROOF_MAX_BYTES) return 'Tệp vượt quá giới hạn 10 MB.';
+  if (!(CUSTOMER_PAYMENT_PROOF_TYPES as readonly string[]).includes(file.type)) {
+    return 'Chỉ nhận tệp JPEG, PNG, WebP hoặc PDF.';
+  }
+  return null;
 }
 
 export async function listBackofficePayments(
@@ -233,14 +277,6 @@ function mappedPaymentError(
 }
 
 type PaymentErrorMapper = (value: unknown, fallback: string) => string;
-
-function paymentFromResult(
-  result: RuntimeApiResult,
-  fallback: string,
-  errorMapper: PaymentErrorMapper = paymentError,
-): PaymentPublic {
-  return parsePayment(responseData(result, fallback, errorMapper));
-}
 
 function responseData(
   result: RuntimeApiResult,

@@ -55,6 +55,43 @@ describe('AfterSalesCommandService', () => {
     } satisfies Partial<ApiError>);
     expect(fixture.notifications.sendUpdated).not.toHaveBeenCalled();
   });
+
+  it.each(['CONFIRMED', 'CANCELLED'] as const)(
+    'rejects an order in %s before starting the create transaction',
+    async (status) => {
+      const fixture = setup();
+      fixture.orders.findItemContext.mockResolvedValueOnce({
+        ...fixture.item,
+        order: { ...fixture.item.order, status, completedAt: null },
+      });
+
+      await expect(
+        fixture.service.create(fixture.request, {
+          orderItemId: fixture.item.id,
+          type: 'RETURN',
+          issueDescription: 'Thiết bị có lỗi màn hình cần kiểm tra.',
+        }),
+      ).rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND' } satisfies Partial<ApiError>);
+
+      expect(fixture.transactions.run).not.toHaveBeenCalled();
+      expect(fixture.repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rechecks completion while holding the order item lock', async () => {
+    const fixture = setup();
+    fixture.orders.lockCompletedItem.mockResolvedValueOnce(null);
+
+    await expect(
+      fixture.service.create(fixture.request, {
+        orderItemId: fixture.item.id,
+        type: 'RETURN',
+        issueDescription: 'Thiết bị có lỗi màn hình cần kiểm tra.',
+      }),
+    ).rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND' } satisfies Partial<ApiError>);
+
+    expect(fixture.repository.create).not.toHaveBeenCalled();
+  });
 });
 
 function setup() {
@@ -71,16 +108,18 @@ function setup() {
   };
   const audit = { write: vi.fn().mockResolvedValue(undefined) };
   const notifications = { sendUpdated: vi.fn().mockResolvedValue(undefined) };
+  const transactions = {
+    run: vi.fn(async (_operation, work) =>
+      (work as (tx: unknown) => Promise<unknown>)(transaction),
+    ),
+  };
+  const orders = {
+    findItemContext: vi.fn().mockResolvedValue(item),
+    lockCompletedItem: vi.fn().mockResolvedValue(item),
+  };
   const service = new AfterSalesCommandService(
-    {
-      run: vi.fn(async (_operation, work) =>
-        (work as (tx: unknown) => Promise<unknown>)(transaction),
-      ),
-    } as unknown as SerializableTransactionRunner,
-    {
-      findItemContext: vi.fn().mockResolvedValue(item),
-      lockCompletedItem: vi.fn().mockResolvedValue(item),
-    } as unknown as AfterSalesOrderGateway,
+    transactions as unknown as SerializableTransactionRunner,
+    orders as unknown as AfterSalesOrderGateway,
     repository as unknown as AfterSalesRepository,
     { assertAccess: vi.fn() } as unknown as OrderOwnershipPolicy,
     {
@@ -95,6 +134,8 @@ function setup() {
     repository,
     audit,
     notifications,
+    transactions,
+    orders,
     transaction,
     item,
     request: request(),

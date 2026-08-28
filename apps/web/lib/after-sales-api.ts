@@ -8,6 +8,9 @@ export type AfterSalesListItem = components['schemas']['AfterSalesListItemDto'];
 export type AfterSalesDetail = components['schemas']['AfterSalesDetailDto'];
 export type AfterSalesAttachment = components['schemas']['AfterSalesAttachmentDto'];
 export type CreateAfterSalesInput = components['schemas']['CreateAfterSalesRequestDto'];
+export type AfterSalesOrderItem = components['schemas']['OrderItemDto'];
+export type AfterSalesEligibleOrder = components['schemas']['OrderDetailDto'];
+export type AfterSalesOrderChoice = components['schemas']['OrderListItemDto'];
 
 export interface AfterSalesListQuery {
   type?: AfterSalesType | '';
@@ -31,9 +34,28 @@ export interface AfterSalesAttachmentCollection {
   attachments: AfterSalesAttachment[];
 }
 
+export class AfterSalesCustomerError extends Error {
+  readonly code: string | undefined;
+  readonly notFound: boolean;
+  readonly conflict: boolean;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'AfterSalesCustomerError';
+    this.code = code;
+    this.notFound =
+      code === 'RESOURCE_NOT_FOUND' || code === 'ORDER_NOT_FOUND' || code === 'FORBIDDEN';
+    this.conflict =
+      code === 'INVALID_STATE_TRANSITION' ||
+      code === 'CONCURRENT_MODIFICATION' ||
+      code === 'AFTER_SALES_REQUEST_ALREADY_OPEN';
+  }
+}
+
 const ORDER_NUMBER_PATTERN = /^RPH-\d{8}-[A-Z0-9]{8}$/;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+const MAX_COMPLETED_ORDER_PAGES = 100;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -53,7 +75,7 @@ export async function listCustomerAfterSalesRequests(
   };
   const result = await client.GET('/api/v1/after-sales', { params: { query: params } });
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, 'Không thể tải yêu cầu hậu mãi.'));
+    throw customerError(result.error, 'Không thể tải yêu cầu hỗ trợ.');
   }
   return {
     data: result.data.data,
@@ -71,7 +93,91 @@ export async function createAfterSalesRequest(
     body: input,
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, 'Không thể tạo yêu cầu hậu mãi.'));
+    throw customerError(result.error, 'Không thể tạo yêu cầu hỗ trợ.');
+  }
+  return result.data.data;
+}
+
+export async function getAfterSalesOrderItem(
+  client: AfterSalesApiClient,
+  orderNumber: string,
+  orderItemId: string,
+  guestOrderToken?: string,
+): Promise<AfterSalesOrderItem> {
+  const result = await client.GET('/api/v1/orders/{orderNumber}', {
+    params: {
+      path: { orderNumber },
+      header: credentialHeader(guestOrderToken),
+    },
+  });
+  if (result.data === undefined) {
+    throw customerError(result.error, 'Không thể mở sản phẩm cần hỗ trợ.');
+  }
+  if (result.data.data.status !== 'COMPLETED' || typeof result.data.data.completedAt !== 'string') {
+    throw new AfterSalesCustomerError(
+      'Chỉ có thể gửi yêu cầu hỗ trợ cho đơn hàng đã hoàn tất.',
+      'INVALID_STATE_TRANSITION',
+    );
+  }
+  const item = result.data.data.items.find((candidate) => candidate.id === orderItemId);
+  if (item === undefined) {
+    throw new AfterSalesCustomerError(
+      'Không tìm thấy sản phẩm hoặc bạn không có quyền truy cập.',
+      'RESOURCE_NOT_FOUND',
+    );
+  }
+  return item;
+}
+
+export async function listCompletedAfterSalesOrders(
+  client: AfterSalesApiClient,
+): Promise<AfterSalesOrderChoice[]> {
+  const orders: AfterSalesOrderChoice[] = [];
+  let page = 1;
+  let totalPages = 1;
+  while (page <= totalPages) {
+    if (page > MAX_COMPLETED_ORDER_PAGES) {
+      throw new AfterSalesCustomerError(
+        'Chưa thể tải đầy đủ danh sách đơn hàng. Vui lòng thử lại sau.',
+        'PAGINATION_LIMIT_EXCEEDED',
+      );
+    }
+    const result = await client.GET('/api/v1/orders', {
+      params: {
+        query: {
+          status: 'COMPLETED',
+          page,
+          pageSize: 100,
+          sortBy: 'placedAt',
+          sortOrder: 'desc',
+        },
+      },
+    });
+    if (result.data === undefined) {
+      throw customerError(result.error, 'Không thể tải đơn hàng.');
+    }
+    orders.push(...result.data.data.filter((order) => order.status === 'COMPLETED'));
+    const projectedTotalPages = result.data.meta.pagination.totalPages;
+    totalPages =
+      Number.isInteger(projectedTotalPages) && projectedTotalPages > 0 ? projectedTotalPages : page;
+    page += 1;
+  }
+  return orders;
+}
+
+export async function getCompletedAfterSalesOrder(
+  client: AfterSalesApiClient,
+  orderNumber: string,
+): Promise<AfterSalesEligibleOrder> {
+  const result = await client.GET('/api/v1/orders/{orderNumber}', {
+    params: { path: { orderNumber }, header: {} },
+  });
+  if (result.data === undefined) throw customerError(result.error, 'Không thể mở đơn hàng.');
+  if (result.data.data.status !== 'COMPLETED' || typeof result.data.data.completedAt !== 'string') {
+    throw new AfterSalesCustomerError(
+      'Chỉ có thể gửi yêu cầu hỗ trợ cho đơn hàng đã hoàn tất.',
+      'INVALID_STATE_TRANSITION',
+    );
   }
   return result.data.data;
 }
@@ -88,7 +194,7 @@ export async function getAfterSalesRequest(
     },
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, 'Không thể mở yêu cầu hậu mãi.'));
+    throw customerError(result.error, 'Không thể mở yêu cầu hỗ trợ.');
   }
   return result.data.data;
 }
@@ -131,7 +237,7 @@ export async function getAfterSalesAttachmentUrl(
     },
   );
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, 'Không thể mở tệp đính kèm.'));
+    throw customerError(result.error, 'Không thể mở tệp đính kèm.');
   }
   if (!isSafeSignedUrl(result.data.data.url)) {
     throw new Error('Không thể mở liên kết tệp đính kèm.');
@@ -153,7 +259,7 @@ export async function cancelAfterSalesRequest(
     body: { reason },
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, 'Không thể hủy yêu cầu hậu mãi.'));
+    throw customerError(result.error, 'Không thể hủy yêu cầu hỗ trợ.');
   }
   return result.data.data;
 }
@@ -181,10 +287,10 @@ export function validateAfterSalesAttachment(file: File): string | null {
 export function afterSalesError(value: unknown, fallback: string): string {
   const code = errorCode(value);
   if (code === 'AFTER_SALES_REQUEST_ALREADY_OPEN') {
-    return 'Sản phẩm này đã có một yêu cầu hậu mãi đang mở.';
+    return 'Sản phẩm này đã có một yêu cầu hỗ trợ đang mở.';
   }
   if (code === 'WARRANTY_NOT_ACTIVE') {
-    return 'Bảo hành không còn hiệu lực tại thời điểm tạo yêu cầu.';
+    return 'Bảo hành hiện chưa đủ điều kiện để gửi yêu cầu.';
   }
   if (code === 'INVALID_STATE_TRANSITION') {
     return 'Yêu cầu vừa được cập nhật. Hãy tải lại trang.';
@@ -253,10 +359,15 @@ function runtimeClient(client: unknown): RuntimeApiClient {
 
 function responseData(result: RuntimeApiResult, fallback: string): unknown {
   if (result.data === undefined) {
-    throw new Error(afterSalesError(result.error, fallback));
+    throw customerError(result.error, fallback);
   }
   if (!isRecord(result.data) || !('data' in result.data)) throw new Error(fallback);
   return result.data['data'];
+}
+
+function customerError(value: unknown, fallback: string): AfterSalesCustomerError {
+  const code = errorCode(value);
+  return new AfterSalesCustomerError(afterSalesError(value, fallback), code);
 }
 
 function errorCode(value: unknown): string | undefined {

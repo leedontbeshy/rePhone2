@@ -18,6 +18,35 @@ export function captureGuestOrderToken(
   return stored !== undefined && TOKEN_PATTERN.test(stored) ? stored : undefined;
 }
 
+export function readGuestOrderToken(
+  orderNumber: string,
+  storage: Pick<Storage, 'getItem'>,
+): string | undefined {
+  const stored = storage.getItem(orderTokenStorageKey(orderNumber)) ?? undefined;
+  return stored !== undefined && TOKEN_PATTERN.test(stored) ? stored : undefined;
+}
+
+export function removeGuestOrderToken(
+  orderNumber: string,
+  storage: Pick<Storage, 'removeItem'>,
+): void {
+  storage.removeItem(orderTokenStorageKey(orderNumber));
+}
+
+export function resolveGuestOrderToken(
+  authStatus: 'anonymous' | 'authenticated' | 'loading',
+  orderNumber: string,
+  hash: string,
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+): string | undefined {
+  if (authStatus !== 'anonymous') return undefined;
+  return captureGuestOrderToken(orderNumber, hash, storage);
+}
+
+export function orderUrlWithoutFragment(pathname: string, search: string): string {
+  return `${pathname}${search}`;
+}
+
 export function apiError(value: unknown, fallback: string): string {
   if (
     isRecord(value) &&

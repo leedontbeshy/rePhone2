@@ -1,0 +1,19 @@
+.frame {
+  min-inline-size: 0;
+  margin-block-start: calc(var(--space-8) * -1);
+}
+
+.content {
+  min-inline-size: 0;
+  padding-block-start: var(--space-8);
+}
+
+@media (min-width: 60rem) {
+  .frame {
+    margin-block-start: -1.5rem;
+  }
+
+  .content {
+    padding-block-start: var(--space-10);
+  }
+}

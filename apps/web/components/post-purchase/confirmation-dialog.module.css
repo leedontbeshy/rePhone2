@@ -1,0 +1,87 @@
+.dialog {
+  inline-size: min(calc(100% - 2rem), 34rem);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--color-body);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+}
+
+.dialog::backdrop {
+  background: var(--color-overlay);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.form h2 {
+  margin-block-end: var(--space-2);
+}
+
+.form p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.reasonField {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.reasonField textarea {
+  resize: vertical;
+  min-block-size: 7rem;
+  padding: var(--space-3);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+  background: var(--color-surface);
+  font-weight: var(--font-weight-regular);
+}
+
+.reasonField textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.reasonField small {
+  color: var(--color-muted);
+  font-weight: var(--font-weight-regular);
+  text-align: end;
+}
+
+.error {
+  color: var(--color-danger) !important;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+@media (max-width: 39.999rem) {
+  .form {
+    padding: var(--space-5);
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .actions > * {
+    inline-size: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .dialog {
+    border: 2px solid CanvasText;
+  }
+}

@@ -1,0 +1,166 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+}
+.count {
+  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
+}
+.helpLink {
+  margin: 0;
+  color: var(--color-muted);
+}
+.helpLink a {
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
+}
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--color-muted);
+}
+.breadcrumbs a {
+  color: var(--color-primary-hover);
+}
+.breadcrumbs a:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1.4fr) minmax(10rem, 1fr) minmax(15rem, 1.2fr) auto;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-5) var(--space-6);
+  border-block-end: var(--border-default);
+}
+
+.row:last-child {
+  border-block-end: 0;
+}
+.codeBlock {
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+}
+.codeBlock span,
+.boundaries dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+.codeBlock strong {
+  overflow-wrap: anywhere;
+}
+.codeBlock small {
+  color: var(--color-muted);
+}
+.boundaries,
+.specifications {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+.boundaries {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.boundaries div,
+.specifications div {
+  display: grid;
+  gap: var(--space-1);
+}
+.boundaries dd,
+.specifications dd {
+  margin: 0;
+  font-weight: 650;
+}
+.rowAction {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: end;
+}
+.rowAction a,
+.primaryAction {
+  min-block-size: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-hover);
+  font-weight: 700;
+  text-decoration: none;
+}
+.primaryAction,
+.primaryAction:link,
+.primaryAction:visited,
+.primaryAction:active {
+  padding-inline: var(--space-5);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-control);
+  color: var(--color-on-primary) !important;
+  background: var(--color-primary);
+}
+.primaryAction:hover {
+  border-color: var(--color-primary-hover);
+  color: var(--color-on-primary) !important;
+  background: var(--color-primary-hover);
+}
+.rowAction a:focus-visible,
+.primaryAction:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+.primaryAction:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-on-primary) !important;
+  background: var(--color-primary);
+}
+.specifications {
+  margin-block-start: var(--space-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.specifications dt {
+  color: var(--color-muted);
+}
+.terms {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.supportNote {
+  color: var(--color-muted);
+  max-inline-size: 52rem;
+}
+
+@media (max-width: 63.999rem) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, auto);
+  }
+  .boundaries {
+    grid-column: 1;
+  }
+  .rowAction {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .row {
+    grid-template-columns: 1fr;
+    padding: var(--space-5);
+  }
+  .boundaries,
+  .rowAction {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .rowAction {
+    justify-items: stretch;
+  }
+  .rowAction a {
+    justify-content: flex-start;
+  }
+  .specifications {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,188 @@
+.panel {
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.title {
+  margin-block-end: var(--space-6);
+}
+
+.journey {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+  flex: 1 1 0;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.marker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+  place-items: center;
+  border: 2px solid var(--color-border-strong);
+  border-radius: 50%;
+  color: var(--color-muted);
+  background: var(--color-surface);
+}
+
+.stage[data-state='complete'] .marker {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.stage[data-state='current'] .marker,
+.stage[data-state='terminal'] .marker {
+  border-color: var(--color-surface);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.stage[data-tone='success'][data-state='current'] .marker,
+.stage[data-tone='success'][data-state='terminal'] .marker {
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-success);
+}
+
+.stage[data-tone='warning'][data-state='current'] .marker,
+.stage[data-tone='warning'][data-state='terminal'] .marker {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 2px var(--color-warning);
+}
+
+.stage[data-tone='danger'][data-state='current'] .marker,
+.stage[data-tone='danger'][data-state='terminal'] .marker {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 2px var(--color-danger);
+}
+
+.stageCopy {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+.stageCopy strong {
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.stageCopy span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.connector {
+  position: absolute;
+  inset-block-start: 1.8rem;
+  inset-inline-start: calc(50% + 2.25rem);
+  inline-size: calc(100% - 4.5rem);
+  block-size: 2px;
+  background: var(--color-border-strong);
+}
+
+.stage[data-state='complete'] .connector {
+  background: var(--color-primary);
+}
+
+.mobileSummary,
+.mobileProgress {
+  display: none;
+}
+
+@media (max-width: 47.999rem) {
+  .panel {
+    padding: var(--space-5);
+  }
+
+  .title {
+    margin-block-end: var(--space-5);
+  }
+
+  .mobileSummary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-4);
+    margin-block-end: var(--space-6);
+  }
+
+  .mobileSummary > svg {
+    inline-size: 4rem;
+    block-size: 4rem;
+    padding: var(--space-4);
+    border-radius: 50%;
+    color: var(--color-on-primary);
+    background: var(--color-primary);
+  }
+
+  .mobileSummary strong {
+    display: block;
+    color: var(--color-ink);
+    font-size: var(--font-size-card-title);
+  }
+
+  .mobileSummary p {
+    margin: var(--space-1) 0 0;
+    color: var(--color-muted);
+  }
+
+  .marker {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+
+  .marker svg {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+  }
+
+  .connector {
+    inset-block-start: 1.2rem;
+    inset-inline-start: calc(50% + 1.5rem);
+    inline-size: calc(100% - 3rem);
+  }
+
+  .stageCopy {
+    display: none;
+  }
+
+  .mobileProgress {
+    display: block;
+    margin: var(--space-4) 0 0;
+    color: var(--color-muted);
+    text-align: center;
+  }
+}
+
+@media (forced-colors: active) {
+  .marker,
+  .stage[data-state='current'] .marker,
+  .stage[data-state='terminal'] .marker {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .connector,
+  .stage[data-state='complete'] .connector {
+    background: CanvasText;
+  }
+}

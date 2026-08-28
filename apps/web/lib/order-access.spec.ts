@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   captureGuestOrderToken,
   checkoutChangedPreview,
   customerApiError,
   orderTokenStorageKey,
+  orderUrlWithoutFragment,
+  readGuestOrderToken,
+  removeGuestOrderToken,
+  resolveGuestOrderToken,
 } from './order-access.js';
 
 describe('guest order access', () => {
@@ -17,6 +21,38 @@ describe('guest order access', () => {
     expect(captureGuestOrderToken('RPH-20260821-23456789', `#token=${token}`, storage)).toBe(token);
     expect(values.get(orderTokenStorageKey('RPH-20260821-23456789'))).toBe(token);
     expect(captureGuestOrderToken('RPH-20260821-23456789', '', storage)).toBe(token);
+  });
+
+  it('reads and removes only the credential for the requested order', () => {
+    const values = new Map([
+      [orderTokenStorageKey('RPH-1'), 'A'.repeat(43)],
+      [orderTokenStorageKey('RPH-2'), 'B'.repeat(43)],
+    ]);
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      removeItem: (key: string) => values.delete(key),
+    };
+    expect(readGuestOrderToken('RPH-1', storage)).toBe('A'.repeat(43));
+    removeGuestOrderToken('RPH-1', storage);
+    expect(readGuestOrderToken('RPH-1', storage)).toBeUndefined();
+    expect(readGuestOrderToken('RPH-2', storage)).toBe('B'.repeat(43));
+  });
+
+  it('never reads or forwards a guest credential for an authenticated session', () => {
+    const storage = { getItem: vi.fn(() => 'A'.repeat(43)), setItem: vi.fn() };
+    expect(
+      resolveGuestOrderToken('authenticated', 'RPH-1', '#token=' + 'B'.repeat(43), storage),
+    ).toBeUndefined();
+    expect(storage.getItem).not.toHaveBeenCalled();
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('keeps anonymous cookie access possible without a stored token and strips fragments safely', () => {
+    const storage = { getItem: vi.fn(() => null), setItem: vi.fn() };
+    expect(resolveGuestOrderToken('anonymous', 'RPH-1', '', storage)).toBeUndefined();
+    expect(orderUrlWithoutFragment('/orders/RPH-1', '?from=receipt')).toBe(
+      '/orders/RPH-1?from=receipt',
+    );
   });
 
   it('extracts the authoritative preview from a review-required error', () => {

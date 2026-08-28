@@ -8,7 +8,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-1': 'DONE',
   'FE-2': 'DONE',
   'FE-3': 'DONE',
-  'FE-4': 'NOT STARTED',
+  'FE-4': 'IN PROGRESS',
   'FE-5': 'NOT STARTED',
   'FE-6': 'NOT STARTED',
   'FE-7': 'NOT STARTED',

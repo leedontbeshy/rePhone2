@@ -1,0 +1,269 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/app/auth-provider';
+import {
+  CollectionLoading,
+  CollectionSurface,
+  EmptyState,
+  ErrorState,
+  Pagination,
+  PostPurchasePageHeader,
+  StatusPill,
+} from '@/components/post-purchase';
+import {
+  listCustomerAfterSalesRequests,
+  type AfterSalesListItem,
+  type AfterSalesPage,
+  type AfterSalesStatus,
+  type AfterSalesType,
+} from '@/lib/after-sales-api';
+import {
+  afterSalesStatus,
+  afterSalesTypeLabel,
+  formatCustomerDate,
+} from '@/lib/after-sales-presenter';
+import styles from './after-sales.module.css';
+import { AfterSalesProductSummary } from './product-summary';
+
+const PAGE_SIZE = 10;
+
+export function AfterSalesList() {
+  const { client, status, user } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = positiveInt(searchParams.get('page'));
+  const type = allowedType(searchParams.get('type'));
+  const requestStatus = allowedStatus(searchParams.get('status'));
+  const [result, setResult] = useState<AfterSalesPage | null>(null);
+  const [resultKey, setResultKey] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const listKey = `${status}\u0000${user?.id ?? ''}\u0000${String(page)}\u0000${type}\u0000${requestStatus}\u0000${String(reloadKey)}`;
+  const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+
+  useEffect(() => {
+    setResult(null);
+    setResultKey('');
+    setError(null);
+    if (!isCustomer) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    void listCustomerAfterSalesRequests(client, {
+      page,
+      pageSize: PAGE_SIZE,
+      status: requestStatus,
+      type,
+    })
+      .then((next) => {
+        if (active) {
+          setResult(next);
+          setResultKey(listKey);
+        }
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setError(caught instanceof Error ? caught.message : 'Không thể tải yêu cầu hỗ trợ.');
+          setResultKey(listKey);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [client, isCustomer, listKey, page, reloadKey, requestStatus, type, user?.id]);
+
+  const visibleResult = resultKey === listKey ? result : null;
+  const visibleError = resultKey === listKey ? error : null;
+  const contextLoading = isCustomer && (resultKey !== listKey || loading);
+
+  const updateQuery = (key: 'status' | 'type', value: string) => {
+    const nextType = key === 'type' ? allowedType(value) : type;
+    const nextStatus = key === 'status' ? allowedStatus(value) : requestStatus;
+    router.replace(
+      buildAfterSalesListHref({ type: nextType, status: nextStatus, page: 1 }, pathname),
+    );
+  };
+
+  return (
+    <div className={styles.page}>
+      <PostPurchasePageHeader
+        title="Hỗ trợ sau mua"
+        description="Theo dõi các yêu cầu bảo hành, đổi hoặc trả sản phẩm."
+        action={isCustomer ? <AfterSalesOrderPickerLink /> : undefined}
+      />
+
+      {status === 'loading' ? <CollectionLoading label="Đang kiểm tra tài khoản…" /> : null}
+      {status === 'anonymous' ? (
+        <EmptyState
+          title="Đăng nhập để xem yêu cầu hỗ trợ"
+          description="Các yêu cầu mua không cần tài khoản chỉ mở được từ liên kết của đơn hàng."
+          actionHref="/login"
+          actionLabel="Đăng nhập"
+        />
+      ) : null}
+      {status === 'authenticated' && !isCustomer ? (
+        <ErrorState message="Tài khoản này không sử dụng khu vực hỗ trợ dành cho khách hàng." />
+      ) : null}
+
+      {isCustomer ? (
+        <>
+          <div className={styles.filters} aria-label="Lọc yêu cầu hỗ trợ">
+            <label className={styles.filter}>
+              Loại yêu cầu
+              <select
+                value={type}
+                disabled={loading}
+                onChange={(event) => {
+                  updateQuery('type', event.target.value);
+                }}
+              >
+                <option value="">Tất cả</option>
+                <option value="WARRANTY">Bảo hành</option>
+                <option value="RETURN">Trả sản phẩm</option>
+                <option value="EXCHANGE">Đổi sản phẩm</option>
+              </select>
+            </label>
+            <label className={styles.filter}>
+              Trạng thái
+              <select
+                value={requestStatus}
+                disabled={loading}
+                onChange={(event) => {
+                  updateQuery('status', event.target.value);
+                }}
+              >
+                <option value="">Tất cả</option>
+                <option value="REQUESTED">Đã gửi yêu cầu</option>
+                <option value="RECEIVED">Đã tiếp nhận</option>
+                <option value="INSPECTING">Đang kiểm tra</option>
+                <option value="APPROVED">Đã chấp nhận</option>
+                <option value="REJECTED">Không thể hỗ trợ</option>
+                <option value="RESOLVED">Đã hoàn tất</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+            </label>
+          </div>
+          {visibleError ? (
+            <ErrorState
+              message={visibleError}
+              onRetry={() => {
+                setReloadKey((value) => value + 1);
+              }}
+            />
+          ) : null}
+          {contextLoading ? <CollectionLoading label="Đang tải yêu cầu hỗ trợ…" /> : null}
+          {!contextLoading && !visibleError && visibleResult?.data.length === 0 ? (
+            <EmptyState
+              title="Chưa có yêu cầu hỗ trợ"
+              description="Hãy chọn một sản phẩm từ đơn hàng đã hoàn tất để bắt đầu."
+              actionHref="/after-sales/new"
+              actionLabel="Chọn sản phẩm"
+            />
+          ) : null}
+          {!contextLoading && visibleResult && visibleResult.data.length > 0 ? (
+            <CollectionSurface
+              ariaLabel="Danh sách yêu cầu hỗ trợ"
+              footer={
+                <Pagination
+                  page={visibleResult.pagination.page}
+                  totalPages={visibleResult.pagination.totalPages}
+                  buildHref={(nextPage) =>
+                    buildAfterSalesListHref(
+                      { type, status: requestStatus, page: nextPage },
+                      pathname,
+                    )
+                  }
+                />
+              }
+            >
+              {visibleResult.data.map((item) => (
+                <AfterSalesRow item={item} key={item.requestNumber} />
+              ))}
+            </CollectionSurface>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+export function AfterSalesOrderPickerLink() {
+  return (
+    <Link className={styles.primaryLink} href="/after-sales/new">
+      Chọn sản phẩm từ đơn hàng
+    </Link>
+  );
+}
+
+export function AfterSalesRow({ item }: Readonly<{ item: AfterSalesListItem }>) {
+  const status = afterSalesStatus(item.status);
+  return (
+    <article className={styles.row}>
+      <AfterSalesProductSummary
+        name={item.orderItem.productName}
+        secondary={item.orderItem.variantName}
+      />
+      <div className={styles.requestMeta}>
+        <strong>{afterSalesTypeLabel(item.type)}</strong>
+        <span>{item.requestNumber}</span>
+        <small>Gửi ngày {formatCustomerDate(item.requestedAt)}</small>
+      </div>
+      <div className={styles.update}>
+        <span>Cập nhật {formatCustomerDate(item.updatedAt)}</span>
+        <StatusPill tone={status.tone}>{status.label}</StatusPill>
+      </div>
+      <Link
+        className={styles.rowAction}
+        href={`/after-sales/${encodeURIComponent(item.requestNumber)}?orderNumber=${encodeURIComponent(item.orderItem.orderNumber)}`}
+      >
+        Xem tiến độ
+      </Link>
+    </article>
+  );
+}
+
+function positiveInt(value: string | null): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function allowedType(value: string | null): AfterSalesType | '' {
+  return value === 'WARRANTY' || value === 'RETURN' || value === 'EXCHANGE' ? value : '';
+}
+
+function allowedStatus(value: string | null): AfterSalesStatus | '' {
+  return value === 'REQUESTED' ||
+    value === 'RECEIVED' ||
+    value === 'INSPECTING' ||
+    value === 'APPROVED' ||
+    value === 'REJECTED' ||
+    value === 'RESOLVED' ||
+    value === 'CANCELLED'
+    ? value
+    : '';
+}
+
+export function buildAfterSalesListHref(
+  query: { type?: string; status?: string; page?: number },
+  pathname = '/after-sales',
+): string {
+  const next = new URLSearchParams();
+  const type = allowedType(query.type ?? null);
+  const status = allowedStatus(query.status ?? null);
+  const page = positiveInt(query.page === undefined ? null : String(query.page));
+  if (type) next.set('type', type);
+  if (status) next.set('status', status);
+  if (page <= 1) next.delete('page');
+  else next.set('page', String(page));
+  return `${pathname}${next.size ? `?${next.toString()}` : ''}`;
+}

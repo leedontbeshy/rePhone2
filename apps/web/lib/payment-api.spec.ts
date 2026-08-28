@@ -5,7 +5,10 @@ import {
   getPaymentEvidenceUrl,
   listBackofficePayments,
   paymentError,
+  submitPaymentProof,
+  validateCustomerPaymentProof,
 } from './payment-api';
+import type { CustomerPaymentError } from './payment-api';
 
 const PUBLIC_PAYMENT = {
   id: '5ce2cbde-68b8-44cf-b979-125415f2fb76',
@@ -31,6 +34,35 @@ const PUBLIC_PAYMENT = {
 };
 
 describe('payment api adapter', () => {
+  it('validates proof files and builds a guest multipart request only when supplied', async () => {
+    const client = { POST: vi.fn().mockResolvedValue({ data: { data: PUBLIC_PAYMENT } }) };
+    const file = new File(['proof'], 'proof.png', { type: 'image/png' });
+    expect(validateCustomerPaymentProof(file)).toBeNull();
+    await submitPaymentProof(client, PUBLIC_PAYMENT.id, file);
+    expect(client.POST.mock.calls[0]?.[1]).toMatchObject({
+      params: { path: { paymentId: PUBLIC_PAYMENT.id }, header: { 'X-Rephone-CSRF': '1' } },
+    });
+    expect(
+      validateCustomerPaymentProof(new File(['x'], 'proof.txt', { type: 'text/plain' })),
+    ).toContain('JPEG');
+  });
+
+  it.each([
+    'PAYMENT_PROOF_DEADLINE_PASSED',
+    'PAYMENT_ALREADY_REVIEWED',
+    'INVALID_STATE_TRANSITION',
+    'CONCURRENT_MODIFICATION',
+  ])('returns a typed refetch signal for %s', async (code) => {
+    const client = {
+      POST: vi.fn().mockResolvedValue({ error: { error: { code, message: 'private detail' } } }),
+    };
+    const file = new File(['proof'], 'proof.png', { type: 'image/png' });
+    await expect(submitPaymentProof(client, PUBLIC_PAYMENT.id, file)).rejects.toMatchObject({
+      name: 'CustomerPaymentError',
+      code,
+      requiresOrderRefetch: true,
+    } satisfies Partial<CustomerPaymentError>);
+  });
   it('maps the backoffice queue response without exposing evidence fields', async () => {
     const client = {
       GET: vi.fn().mockResolvedValue({
