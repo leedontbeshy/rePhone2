@@ -27,7 +27,7 @@ describe('FE-05 backoffice navigation', () => {
         isCurrent: true,
       },
       {
-        href: '/backoffice/inventory/intake',
+        href: '/backoffice/inventory/units',
         label: 'Kho hàng',
         icon: 'inventory',
         isCurrent: false,
@@ -68,7 +68,7 @@ describe('FE-05 backoffice navigation', () => {
         isCurrent: false,
       },
       {
-        href: '/backoffice/inventory/intake',
+        href: '/backoffice/inventory/units',
         label: 'Kho hàng',
         icon: 'inventory',
         isCurrent: false,
