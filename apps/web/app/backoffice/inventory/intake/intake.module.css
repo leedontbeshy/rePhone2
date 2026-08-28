@@ -60,6 +60,10 @@
   margin: 0;
 }
 
+.formSummary {
+  grid-column: 1 / -1;
+}
+
 .workspace :global(.wizard-card) {
   border: var(--border-default);
   border-radius: var(--radius-card);

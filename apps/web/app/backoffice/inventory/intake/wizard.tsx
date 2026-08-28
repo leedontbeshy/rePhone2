@@ -1,6 +1,7 @@
 'use client';
 
 import type { components } from '@rephone/api-client';
+import { ErrorSummary, Input, Select } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
@@ -10,6 +11,14 @@ import {
   inventoryErrorRequiresRefetch,
   validateInventoryMediaFile,
 } from '../../../../lib/backoffice-inventory-api';
+import {
+  firstInventoryIntakeErrorField,
+  inventoryIntakeErrorItems,
+  inventoryIntakeServerFieldErrors,
+  validateInventoryIntakeDraft,
+  type IntakeField,
+  type IntakeFieldErrors,
+} from './intake-form-model';
 import styles from './intake.module.css';
 
 type ProductListItem = components['schemas']['BackofficeProductListItemDto'];
@@ -54,6 +63,7 @@ export function InventoryIntakeWizard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [intakeErrors, setIntakeErrors] = useState<IntakeFieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +126,7 @@ export function InventoryIntakeWizard() {
             ? current.variantId
             : variants[0]?.id || '',
         }));
+        clearIntakeErrors('variantId');
       })
       .catch((cause: unknown) => {
         if (active) setError(messageOf(cause));
@@ -196,13 +207,13 @@ export function InventoryIntakeWizard() {
 
   function submitIntake(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    const validationErrors = validateInventoryIntakeDraft(intake);
+    if (firstInventoryIntakeErrorField(validationErrors) !== undefined) {
+      applyIntakeErrors(validationErrors);
+      return;
+    }
+    setIntakeErrors({});
     void runAction('intake', async () => {
-      if (intake.variantId === '' || intake.locationId === '') {
-        throw new Error('Hãy chọn biến thể và địa điểm nhận máy.');
-      }
-      if (intake.imei1.trim() === '' && intake.serial.trim() === '') {
-        throw new Error('Cần nhập ít nhất IMEI chính hoặc số sê-ri.');
-      }
       const result = await client.POST('/api/v1/backoffice/inventory-units', {
         body: {
           variantId: intake.variantId,
@@ -225,8 +236,16 @@ export function InventoryIntakeWizard() {
             : { carrierName: intake.carrierName.trim() }),
         },
       });
-      if (result.data === undefined) throw apiRequestError(result.error);
+      if (result.data === undefined) {
+        const serverErrors = inventoryIntakeServerFieldErrors(result.error, intake);
+        if (firstInventoryIntakeErrorField(serverErrors) !== undefined) {
+          applyIntakeErrors(serverErrors);
+          return;
+        }
+        throw apiRequestError(result.error);
+      }
       setUnit(result.data.data);
+      setIntakeErrors({});
       setIntake((current) => ({
         ...current,
         eid: '',
@@ -236,6 +255,37 @@ export function InventoryIntakeWizard() {
       }));
       replaceQuery(result.data.data.id);
       setNotice(`Đã tiếp nhận máy ${result.data.data.inventoryCode}. Tiến độ đã được lưu.`);
+    });
+  }
+
+  function updateIntakeField<Field extends IntakeField>(
+    field: Field,
+    value: (typeof EMPTY_INTAKE)[Field],
+    ...relatedFields: IntakeField[]
+  ) {
+    setIntake((current) => ({ ...current, [field]: value }));
+    clearIntakeErrors(field, ...relatedFields);
+  }
+
+  function clearIntakeErrors(...fields: IntakeField[]) {
+    setIntakeErrors((current) => {
+      if (!fields.some((field) => current[field] !== undefined)) return current;
+      const next = { ...current };
+      for (const field of fields) delete next[field];
+      return next;
+    });
+  }
+
+  function applyIntakeErrors(next: IntakeFieldErrors) {
+    setIntakeErrors(next);
+    setError(null);
+    setNotice(null);
+    const firstField = firstInventoryIntakeErrorField(next);
+    if (firstField === undefined) return;
+    window.requestAnimationFrame(() => {
+      const control = document.getElementById(`intake-${firstField}`);
+      control?.focus({ preventScroll: true });
+      control?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
 
@@ -376,199 +426,217 @@ export function InventoryIntakeWizard() {
       <section className="wizard-card" aria-labelledby="intake-title">
         <StepHeading number="1" id="intake-title" title="Tiếp nhận máy" done={unit !== null} />
         {unit === null ? (
-          <form className="wizard-form" onSubmit={submitIntake}>
-            <label>
-              Sản phẩm iPhone
-              <select
-                value={intake.productId}
-                onChange={(event) => {
-                  setIntake({ ...intake, productId: event.target.value, variantId: '' });
-                }}
-                required
-              >
-                {products.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Biến thể đang bán
-              <select
-                value={intake.variantId}
-                onChange={(event) => {
-                  setIntake({ ...intake, variantId: event.target.value });
-                }}
-                required
-              >
-                {variants.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.displayName} · {item.sku}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Địa điểm nhận
-              <select
-                value={intake.locationId}
-                onChange={(event) => {
-                  setIntake({ ...intake, locationId: event.target.value });
-                }}
-                required
-              >
-                {locations.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · {item.type === 'STORE' ? 'Cửa hàng' : 'Kho trung tâm'}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              IMEI 1
-              <input
-                value={intake.imei1}
-                onChange={(event) => {
-                  setIntake({ ...intake, imei1: event.target.value });
-                }}
-                inputMode="numeric"
-                placeholder="15 chữ số"
-              />
-            </label>
-            <label>
-              IMEI 2
-              <input
-                value={intake.imei2}
-                onChange={(event) => {
-                  setIntake({ ...intake, imei2: event.target.value });
-                }}
-                inputMode="numeric"
-                placeholder="Không bắt buộc"
-              />
-            </label>
-            <label>
-              Số sê-ri
-              <input
-                value={intake.serial}
-                onChange={(event) => {
-                  setIntake({ ...intake, serial: event.target.value });
-                }}
-                minLength={6}
-                maxLength={32}
-                placeholder="Ít nhất IMEI hoặc số sê-ri"
-              />
-            </label>
-            <label>
-              EID
-              <input
-                value={intake.eid}
-                onChange={(event) => {
-                  setIntake({ ...intake, eid: event.target.value });
-                }}
-                inputMode="numeric"
-                placeholder="32 chữ số nếu có"
-              />
-            </label>
-            <label>
-              Giá bán (đồng)
-              <input
-                value={intake.salePrice}
-                onChange={(event) => {
-                  setIntake({ ...intake, salePrice: event.target.value });
-                }}
-                inputMode="numeric"
-                pattern="[0-9]{1,15}"
-                required
-              />
-            </label>
-            <label>
-              Giá niêm yết (đồng)
-              <input
-                value={intake.compareAtPrice}
-                onChange={(event) => {
-                  setIntake({ ...intake, compareAtPrice: event.target.value });
-                }}
-                inputMode="numeric"
-                pattern="[0-9]{1,15}"
-              />
-            </label>
-            <label>
-              Mã kiểu máy
-              <input
-                value={intake.modelNumber}
-                onChange={(event) => {
-                  setIntake({ ...intake, modelNumber: event.target.value });
-                }}
-              />
-            </label>
-            <label>
-              Mã thị trường
-              <input
-                value={intake.regionCode}
-                onChange={(event) => {
-                  setIntake({ ...intake, regionCode: event.target.value });
-                }}
-              />
-            </label>
-            <label>
-              Tình trạng khóa mạng
-              <select
-                value={intake.simLockStatus}
-                onChange={(event) => {
-                  setIntake({
-                    ...intake,
-                    simLockStatus: event.target.value as typeof intake.simLockStatus,
-                  });
-                }}
-              >
-                <option value="UNLOCKED">Không khóa mạng</option>
-                <option value="CARRIER_LOCKED">Khóa theo nhà mạng</option>
-                <option value="UNKNOWN">Chưa rõ</option>
-              </select>
-            </label>
+          <form className="wizard-form" noValidate onSubmit={submitIntake}>
+            <ErrorSummary
+              className={styles.formSummary}
+              errors={inventoryIntakeErrorItems(intakeErrors)}
+              title="Kiểm tra các mục cần sửa"
+            />
+            <Select
+              error={intakeErrors.productId}
+              id="intake-productId"
+              label="Sản phẩm iPhone"
+              value={intake.productId}
+              onChange={(event) => {
+                setIntake((current) => ({
+                  ...current,
+                  productId: event.target.value,
+                  variantId: '',
+                }));
+                clearIntakeErrors('productId', 'variantId');
+              }}
+              required
+            >
+              {products.length === 0 ? <option value="">Chưa có sản phẩm phù hợp</option> : null}
+              {products.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Select
+              error={intakeErrors.variantId}
+              id="intake-variantId"
+              label="Biến thể đang bán"
+              value={intake.variantId}
+              onChange={(event) => {
+                updateIntakeField('variantId', event.target.value);
+              }}
+              required
+            >
+              {variants.length === 0 ? <option value="">Chưa có cấu hình đang bán</option> : null}
+              {variants.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.displayName} · {item.sku}
+                </option>
+              ))}
+            </Select>
+            <Select
+              error={intakeErrors.locationId}
+              id="intake-locationId"
+              label="Địa điểm nhận"
+              value={intake.locationId}
+              onChange={(event) => {
+                updateIntakeField('locationId', event.target.value);
+              }}
+              required
+            >
+              {locations.length === 0 ? <option value="">Chưa có địa điểm hoạt động</option> : null}
+              {locations.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.type === 'STORE' ? 'Cửa hàng' : 'Kho trung tâm'}
+                </option>
+              ))}
+            </Select>
+            <Input
+              error={intakeErrors.imei1}
+              hint="Bắt buộc nếu không có số sê-ri."
+              id="intake-imei1"
+              inputMode="numeric"
+              label="IMEI 1"
+              placeholder="15 chữ số"
+              value={intake.imei1}
+              onChange={(event) => {
+                updateIntakeField('imei1', event.target.value, 'serial');
+              }}
+            />
+            <Input
+              error={intakeErrors.imei2}
+              id="intake-imei2"
+              inputMode="numeric"
+              label="IMEI 2"
+              placeholder="Không bắt buộc"
+              value={intake.imei2}
+              onChange={(event) => {
+                updateIntakeField('imei2', event.target.value);
+              }}
+            />
+            <Input
+              error={intakeErrors.serial}
+              hint="Có thể dùng thay IMEI chính."
+              id="intake-serial"
+              label="Số sê-ri"
+              maxLength={32}
+              placeholder="6–32 chữ cái hoặc chữ số"
+              value={intake.serial}
+              onChange={(event) => {
+                updateIntakeField('serial', event.target.value, 'imei1');
+              }}
+            />
+            <Input
+              error={intakeErrors.eid}
+              id="intake-eid"
+              inputMode="numeric"
+              label="EID"
+              placeholder="32 chữ số nếu có"
+              value={intake.eid}
+              onChange={(event) => {
+                updateIntakeField('eid', event.target.value);
+              }}
+            />
+            <Input
+              error={intakeErrors.salePrice}
+              id="intake-salePrice"
+              inputMode="numeric"
+              label="Giá bán (đồng)"
+              value={intake.salePrice}
+              onChange={(event) => {
+                updateIntakeField('salePrice', event.target.value, 'compareAtPrice');
+              }}
+              required
+            />
+            <Input
+              error={intakeErrors.compareAtPrice}
+              hint="Nếu nhập, giá này phải từ giá bán trở lên."
+              id="intake-compareAtPrice"
+              inputMode="numeric"
+              label="Giá niêm yết (đồng)"
+              value={intake.compareAtPrice}
+              onChange={(event) => {
+                updateIntakeField('compareAtPrice', event.target.value);
+              }}
+            />
+            <Input
+              error={intakeErrors.modelNumber}
+              id="intake-modelNumber"
+              label="Mã kiểu máy"
+              maxLength={255}
+              value={intake.modelNumber}
+              onChange={(event) => {
+                updateIntakeField('modelNumber', event.target.value);
+              }}
+            />
+            <Input
+              error={intakeErrors.regionCode}
+              id="intake-regionCode"
+              label="Mã thị trường"
+              maxLength={255}
+              value={intake.regionCode}
+              onChange={(event) => {
+                updateIntakeField('regionCode', event.target.value);
+              }}
+            />
+            <Select
+              error={intakeErrors.simLockStatus}
+              id="intake-simLockStatus"
+              label="Tình trạng khóa mạng"
+              value={intake.simLockStatus}
+              onChange={(event) => {
+                updateIntakeField(
+                  'simLockStatus',
+                  event.target.value as typeof intake.simLockStatus,
+                  'carrierName',
+                );
+              }}
+            >
+              <option value="UNLOCKED">Không khóa mạng</option>
+              <option value="CARRIER_LOCKED">Khóa theo nhà mạng</option>
+              <option value="UNKNOWN">Chưa rõ</option>
+            </Select>
             {intake.simLockStatus === 'CARRIER_LOCKED' ? (
-              <label>
-                Nhà mạng
-                <input
-                  required
-                  value={intake.carrierName}
-                  onChange={(event) => {
-                    setIntake({ ...intake, carrierName: event.target.value });
-                  }}
-                />
-              </label>
-            ) : null}
-            <label>
-              Cấu hình SIM
-              <select
-                value={intake.simConfiguration}
+              <Input
+                error={intakeErrors.carrierName}
+                id="intake-carrierName"
+                label="Nhà mạng"
+                maxLength={255}
+                value={intake.carrierName}
                 onChange={(event) => {
-                  setIntake({
-                    ...intake,
-                    simConfiguration: event.target.value as typeof intake.simConfiguration,
-                  });
+                  updateIntakeField('carrierName', event.target.value);
                 }}
-              >
-                <option value="SINGLE_PHYSICAL">Một SIM vật lý</option>
-                <option value="PHYSICAL_AND_ESIM">SIM vật lý + eSIM</option>
-                <option value="DUAL_PHYSICAL">Hai SIM vật lý</option>
-                <option value="ESIM_ONLY">eSIM</option>
-                <option value="UNKNOWN">Chưa rõ</option>
-              </select>
-            </label>
-            <label>
-              Bảo hành riêng (ngày)
-              <input
-                min="0"
-                type="number"
-                value={intake.warrantyDaysOverride}
-                onChange={(event) => {
-                  setIntake({ ...intake, warrantyDaysOverride: event.target.value });
-                }}
-                placeholder="Để trống để dùng mặc định"
+                required
               />
-            </label>
+            ) : null}
+            <Select
+              error={intakeErrors.simConfiguration}
+              id="intake-simConfiguration"
+              label="Cấu hình SIM"
+              value={intake.simConfiguration}
+              onChange={(event) => {
+                updateIntakeField(
+                  'simConfiguration',
+                  event.target.value as typeof intake.simConfiguration,
+                );
+              }}
+            >
+              <option value="SINGLE_PHYSICAL">Một SIM vật lý</option>
+              <option value="PHYSICAL_AND_ESIM">SIM vật lý + eSIM</option>
+              <option value="DUAL_PHYSICAL">Hai SIM vật lý</option>
+              <option value="ESIM_ONLY">eSIM</option>
+              <option value="UNKNOWN">Chưa rõ</option>
+            </Select>
+            <Input
+              error={intakeErrors.warrantyDaysOverride}
+              id="intake-warrantyDaysOverride"
+              label="Bảo hành riêng (ngày)"
+              max="3650"
+              min="0"
+              placeholder="Để trống để dùng mặc định"
+              type="number"
+              value={intake.warrantyDaysOverride}
+              onChange={(event) => {
+                updateIntakeField('warrantyDaysOverride', event.target.value);
+              }}
+            />
             <div className="wizard-actions">
               <button
                 className="button primary"
