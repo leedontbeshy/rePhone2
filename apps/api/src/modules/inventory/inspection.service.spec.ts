@@ -49,6 +49,35 @@ describe('InspectionService', () => {
     } satisfies Partial<ApiError>);
   });
 
+  it('projects inspector identity and all 18 checklist labels in registry order', async () => {
+    const fixture = serviceFixture({
+      find: vi.fn(async () => inspectionRecord({ checks: partialChecklist('FAIL') })),
+    });
+
+    const result = await fixture.service.get(INSPECTION_ID);
+    expect(result.inspector).toEqual({
+      id: INSPECTOR_ID,
+      fullName: 'Kỹ thuật viên Demo',
+      employeeCode: 'NV-001',
+    });
+    expect(result.checklist.schemaVersion).toBe(1);
+    expect(result.checklist.items).toHaveLength(18);
+    expect(result.checklist.items[0]).toEqual({
+      key: 'DISPLAY',
+      label: 'Màn hình hiển thị',
+      order: 1,
+      status: 'FAIL',
+      note: 'Cần xử lý',
+    });
+    expect(result.checklist.items[1]).toEqual({
+      key: 'TOUCHSCREEN',
+      label: 'Cảm ứng',
+      order: 2,
+      status: null,
+      note: null,
+    });
+  });
+
   it('creates a draft, moves the unit to INSPECTING, and audits the transition', async () => {
     const fixture = serviceFixture();
 
@@ -362,6 +391,11 @@ function inspectionRecord(overrides: Record<string, unknown> = {}) {
     overallResult: 'INCOMPLETE' as const,
     isCurrent: false,
     inspectorId: INSPECTOR_ID,
+    inspector: {
+      id: INSPECTOR_ID,
+      fullName: 'Kỹ thuật viên Demo',
+      employeeCode: 'NV-001',
+    },
     inspectedAt: null,
     batteryHealthPercent: 95,
     batteryCycleCount: 100,

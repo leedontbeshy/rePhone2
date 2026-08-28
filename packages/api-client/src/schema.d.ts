@@ -3743,11 +3743,25 @@ export interface components {
             type: "IMEI" | "SERIAL" | "EID";
             value: string;
         };
+        InspectionChecklistItemDto: {
+            key: string;
+            label: string;
+            note?: string | null;
+            order: number;
+            /** @enum {string|null} */
+            status?: "PASS" | "FAIL" | "DEGRADED" | "NOT_TESTED" | "NOT_APPLICABLE" | "UNKNOWN" | null;
+        };
+        InspectionChecklistProjectionDto: {
+            items: components["schemas"]["InspectionChecklistItemDto"][];
+            /** @enum {number} */
+            schemaVersion: 1;
+        };
         InspectionDetailDto: {
             batteryCycleCount?: number | null;
             batteryHealthPercent?: number | null;
             /** @enum {string} */
             batteryReplacementStatus: "ORIGINAL" | "REPLACED" | "UNKNOWN";
+            checklist?: components["schemas"]["InspectionChecklistProjectionDto"];
             checks: Record<string, never>;
             /** @enum {string|null} */
             conditionGrade?: "A" | "B" | "C" | null;
@@ -3760,6 +3774,7 @@ export interface components {
             inspectedAt?: string | null;
             /** @enum {string} */
             inspectionType: "INTAKE" | "RETURN" | "WARRANTY" | "PRE_SALE";
+            inspector?: components["schemas"]["InspectionInspectorDto"];
             /** Format: uuid */
             inspectorId: string;
             /** Format: uuid */
@@ -3775,6 +3790,12 @@ export interface components {
             status: "DRAFT" | "COMPLETED";
             /** Format: date-time */
             updatedAt: string;
+        };
+        InspectionInspectorDto: {
+            employeeCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
         };
         InspectionListResponse: {
             data: components["schemas"]["InspectionSummaryDto"][];
@@ -3792,6 +3813,7 @@ export interface components {
             inspectedAt?: string | null;
             /** @enum {string} */
             inspectionType: "INTAKE" | "RETURN" | "WARRANTY" | "PRE_SALE";
+            inspector?: components["schemas"]["InspectionInspectorDto"];
             /** Format: uuid */
             inspectorId: string;
             isCurrent: boolean;
@@ -3821,6 +3843,10 @@ export interface components {
             /** Format: uuid */
             variantId: string;
             warrantyDaysOverride?: number;
+        };
+        InventoryAvailabilityReadinessDto: {
+            isReady: boolean;
+            reasons: ("STATUS_NOT_INSPECTING" | "INSPECTION_REQUIRED" | "INSPECTION_NOT_PASSED" | "ACTIVE_RESERVATION" | "SALE_PRICE_REQUIRED" | "LOCATION_INACTIVE" | "VARIANT_INACTIVE" | "PRODUCT_INACTIVE" | "IDENTIFIER_REQUIRED" | "MEDIA_REQUIRED")[];
         };
         InventoryCostDto: {
             acquisitionCost?: string | null;
@@ -3856,6 +3882,8 @@ export interface components {
         };
         InventoryUnitDetailDto: {
             activeReservationCount: number;
+            availabilityReadiness?: components["schemas"]["InventoryAvailabilityReadinessDto"];
+            availableActions?: ("CREATE_INSPECTION" | "MAKE_AVAILABLE" | "SEND_TO_REPAIR" | "QUARANTINE" | "WRITE_OFF" | "TRANSFER" | "UPLOAD_MEDIA")[];
             carrierName?: string | null;
             compareAtPrice?: string | null;
             currentInspection?: components["schemas"]["CurrentInspectionSummaryDto"] | null;
@@ -3866,6 +3894,7 @@ export interface components {
             lifecycleStatus: "RECEIVED" | "INSPECTING" | "AVAILABLE" | "IN_TRANSIT" | "SOLD" | "REPAIRING" | "QUARANTINED" | "WRITTEN_OFF";
             location: components["schemas"]["InventoryLocationDto"];
             maskedIdentifiers: components["schemas"]["MaskedBackofficeIdentifierDto"][];
+            media?: components["schemas"]["InventoryUnitMediaDto"][];
             mediaCount: number;
             modelNumber?: string | null;
             product: components["schemas"]["InventoryProductSummaryDto"];
@@ -3913,6 +3942,21 @@ export interface components {
         InventoryUnitListResponse: {
             data: components["schemas"]["InventoryUnitListItemDto"][];
             meta: components["schemas"]["InventoryUnitListMetaDto"];
+        };
+        InventoryUnitMediaDto: {
+            altText?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            fileSize: number;
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            mimeType: "image/jpeg" | "image/png" | "image/webp";
+            sortOrder: number;
+            /** Format: uri */
+            url: string;
+            width: number;
         };
         InventoryUnitResponse: {
             data: components["schemas"]["InventoryUnitDetailDto"];
@@ -4534,6 +4578,12 @@ export interface components {
         StartRefundProcessingDto: {
             note?: string;
         };
+        StockActorDto: {
+            employeeCode?: string | null;
+            fullName: string;
+            /** Format: uuid */
+            id: string;
+        };
         StockCommandResponse: {
             data: components["schemas"]["StockCommandResultDto"];
         };
@@ -4546,6 +4596,7 @@ export interface components {
             id: string;
             location: components["schemas"]["InventoryLocationDto"];
             lowStock: boolean;
+            product?: components["schemas"]["InventoryProductSummaryDto"];
             quantityAvailable: number;
             quantityOnHand: number;
             quantityReserved: number;
@@ -4564,21 +4615,26 @@ export interface components {
         StockMovementDto: {
             /** Format: date-time */
             createdAt: string;
+            createdBy?: components["schemas"]["StockActorDto"] | null;
             /** Format: uuid */
             createdById?: string | null;
+            fromLocation?: components["schemas"]["InventoryLocationDto"] | null;
             /** Format: uuid */
             fromLocationId?: string | null;
             /** Format: uuid */
             id: string;
+            product?: components["schemas"]["InventoryProductSummaryDto"];
             quantity: number;
             reason?: string | null;
             /** Format: uuid */
             referenceId?: string | null;
             referenceType?: string | null;
+            toLocation?: components["schemas"]["InventoryLocationDto"] | null;
             /** Format: uuid */
             toLocationId?: string | null;
             /** @enum {string} */
             type: "RECEIPT" | "SALE" | "RETURN" | "TRANSFER" | "ADJUSTMENT_IN" | "ADJUSTMENT_OUT" | "WRITE_OFF";
+            variant?: components["schemas"]["InventoryVariantSummaryDto"];
             /** Format: uuid */
             variantId: string;
         };

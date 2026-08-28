@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiError } from '../../common/errors/api-error.js';
 import type { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
+import type { AppConfig } from '../../config/app-config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuditActorContext } from '../audit/audit.types.js';
@@ -69,6 +70,92 @@ describe('InventoryService projections and identifiers', () => {
     await expect(missing.service.getUnit(UNIT_ID)).rejects.toMatchObject({
       code: 'RESOURCE_NOT_FOUND',
     } satisfies Partial<ApiError>);
+  });
+
+  it('projects reloadable media, authoritative readiness and role-safe actions without secrets', async () => {
+    const unit = availableCandidate({
+      acquisitionCost: decimal('9000000'),
+      media: [
+        {
+          id: id(20),
+          bucket: 'rephone-public',
+          objectPath: `units/${UNIT_ID}/ảnh máy.webp`,
+          visibility: 'PUBLIC',
+          mimeType: 'image/webp',
+          fileSize: 2048,
+          width: 1200,
+          height: 900,
+          sortOrder: 0,
+          altText: 'Ảnh máy thực tế',
+          createdAt: new Date('2026-08-25T08:00:00.000Z'),
+        },
+      ],
+    });
+    const fixture = serviceFixture({ findUnit: vi.fn(async () => unit) });
+
+    const employeeProjection = await fixture.service.getUnit(UNIT_ID, 'EMPLOYEE');
+    expect(employeeProjection).toMatchObject({
+      media: [
+        {
+          id: id(20),
+          url: `https://storage.test/storage/v1/object/public/rephone-public/units/${UNIT_ID}/%E1%BA%A3nh%20m%C3%A1y.webp`,
+          altText: 'Ảnh máy thực tế',
+        },
+      ],
+      availabilityReadiness: { isReady: true, reasons: [] },
+      availableActions: expect.arrayContaining([
+        'CREATE_INSPECTION',
+        'MAKE_AVAILABLE',
+        'SEND_TO_REPAIR',
+        'QUARANTINE',
+        'TRANSFER',
+        'UPLOAD_MEDIA',
+      ]),
+    });
+    expect(employeeProjection.availableActions).not.toContain('WRITE_OFF');
+    expect((await fixture.service.getUnit(UNIT_ID, 'ADMIN')).availableActions).toContain(
+      'WRITE_OFF',
+    );
+    expect(JSON.stringify(employeeProjection)).not.toMatch(
+      /acquisitionCost|additionalCost|Encrypted|Hmac|identifierKeyVersion/,
+    );
+  });
+
+  it('explains every unmet make-available condition without exposing identifiers', async () => {
+    const fixture = serviceFixture({
+      findUnit: vi.fn(async () =>
+        unitRecord({
+          lifecycleStatus: 'RECEIVED',
+          inspections: [],
+          salePrice: null,
+          imei1Hmac: null,
+          serialHmac: null,
+          location: locationRecord({ status: 'INACTIVE' }),
+          variant: variantRecord({
+            status: 'ARCHIVED',
+            product: productRecord({ status: 'DRAFT' }),
+          }),
+          _count: { media: 0, reservations: 1, inspections: 1 },
+        }),
+      ),
+    });
+
+    await expect(fixture.service.getUnit(UNIT_ID)).resolves.toMatchObject({
+      availabilityReadiness: {
+        isReady: false,
+        reasons: [
+          'STATUS_NOT_INSPECTING',
+          'INSPECTION_REQUIRED',
+          'ACTIVE_RESERVATION',
+          'SALE_PRICE_REQUIRED',
+          'LOCATION_INACTIVE',
+          'VARIANT_INACTIVE',
+          'PRODUCT_INACTIVE',
+          'IDENTIFIER_REQUIRED',
+          'MEDIA_REQUIRED',
+        ],
+      },
+    });
   });
 
   it('looks up an identifier, audits only the reason/type, and returns the safe projection', async () => {
@@ -779,6 +866,7 @@ function serviceFixture(overrides: Record<string, unknown> = {}) {
     listLocations: vi.fn(async () => [locationRecord()]),
     lockIdentifierKeys: vi.fn(async () => undefined),
     findDuplicateIdentifier: vi.fn(async () => null),
+    hasActiveTransferTarget: vi.fn(async () => true),
     ...withoutFixtureOnlyOverrides(overrides),
   } as unknown as InventoryRepository;
   const identifiers = {
@@ -801,7 +889,9 @@ function serviceFixture(overrides: Record<string, unknown> = {}) {
   } as unknown as SerializableTransactionRunner;
   const audit = { write: vi.fn(async () => undefined) } as unknown as AuditWriter;
   return {
-    service: new InventoryService(repository, identifiers, transactions, audit),
+    service: new InventoryService(repository, identifiers, transactions, audit, {
+      storage: { url: 'https://storage.test' },
+    } as AppConfig),
     repository,
     identifiers,
     audit,
@@ -890,7 +980,8 @@ function unitRecord(overrides: Record<string, unknown> = {}): InventoryUnitRecor
     variant: variantRecord(),
     location: locationRecord({ id: LOCATION_ID }),
     inspections: [],
-    _count: { media: 1, reservations: 0 },
+    media: [],
+    _count: { media: 1, reservations: 0, inspections: 0 },
     ...overrides,
   } as unknown as InventoryUnitRecord;
 }

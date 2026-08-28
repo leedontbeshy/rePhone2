@@ -6,11 +6,21 @@ import type { StockLevelListQueryDto, StockMovementListQueryDto } from './stock.
 type DbClient = PrismaService | Prisma.TransactionClient;
 
 const stockLevelInclude = {
-  variant: true,
+  variant: { include: { product: true } },
   location: true,
 } satisfies Prisma.StockLevelInclude;
 
+const stockMovementInclude = {
+  variant: { include: { product: true } },
+  fromLocation: true,
+  toLocation: true,
+  createdBy: { select: { id: true, fullName: true, employeeCode: true } },
+} satisfies Prisma.StockMovementInclude;
+
 export type StockLevelRecord = Prisma.StockLevelGetPayload<{ include: typeof stockLevelInclude }>;
+export type StockMovementRecord = Prisma.StockMovementGetPayload<{
+  include: typeof stockMovementInclude;
+}>;
 
 @Injectable()
 export class StockRepository {
@@ -71,6 +81,7 @@ export class StockRepository {
     const [items, totalItems] = await Promise.all([
       this.prisma.stockMovement.findMany({
         where,
+        include: stockMovementInclude,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -100,7 +111,7 @@ export class StockRepository {
   }
 
   public createMovement(data: Prisma.StockMovementUncheckedCreateInput, client: DbClient) {
-    return client.stockMovement.create({ data });
+    return client.stockMovement.create({ data, include: stockMovementInclude });
   }
 
   public findShipmentReturn(referenceId: string, variantId: string, client: DbClient) {
@@ -111,6 +122,7 @@ export class StockRepository {
         referenceId,
         variantId,
       },
+      include: stockMovementInclude,
       orderBy: { id: 'asc' },
     });
   }
@@ -123,6 +135,7 @@ export class StockRepository {
         referenceId,
         variantId,
       },
+      include: stockMovementInclude,
       orderBy: { id: 'asc' },
     });
   }

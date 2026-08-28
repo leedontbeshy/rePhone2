@@ -13,7 +13,34 @@ import type {
   InspectionType,
   RepairHistoryStatus,
 } from '../../generated/prisma/enums.js';
+import type { FunctionalCheckStatus } from '../../common/domain/iphone-inspection-checklist.js';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
+
+const INVENTORY_UNIT_ACTIONS = [
+  'CREATE_INSPECTION',
+  'MAKE_AVAILABLE',
+  'SEND_TO_REPAIR',
+  'QUARANTINE',
+  'WRITE_OFF',
+  'TRANSFER',
+  'UPLOAD_MEDIA',
+] as const;
+
+const AVAILABILITY_READINESS_REASONS = [
+  'STATUS_NOT_INSPECTING',
+  'INSPECTION_REQUIRED',
+  'INSPECTION_NOT_PASSED',
+  'ACTIVE_RESERVATION',
+  'SALE_PRICE_REQUIRED',
+  'LOCATION_INACTIVE',
+  'VARIANT_INACTIVE',
+  'PRODUCT_INACTIVE',
+  'IDENTIFIER_REQUIRED',
+  'MEDIA_REQUIRED',
+] as const;
+
+export type InventoryUnitAction = (typeof INVENTORY_UNIT_ACTIONS)[number];
+export type AvailabilityReadinessReason = (typeof AVAILABILITY_READINESS_REASONS)[number];
 
 export class InventoryProductSummaryDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
@@ -100,6 +127,30 @@ export class InventoryUnitDetailDto extends InventoryUnitListItemDto {
   public simConfiguration!: SimConfiguration;
   @ApiPropertyOptional({ type: Number, nullable: true }) public warrantyDaysOverride!:
     number | null;
+  @ApiPropertyOptional({ type: () => [InventoryUnitMediaDto] })
+  public media!: InventoryUnitMediaDto[];
+  @ApiPropertyOptional({ enum: INVENTORY_UNIT_ACTIONS, isArray: true })
+  public availableActions!: InventoryUnitAction[];
+  @ApiPropertyOptional({ type: () => InventoryAvailabilityReadinessDto })
+  public availabilityReadiness!: InventoryAvailabilityReadinessDto;
+}
+
+export class InventoryUnitMediaDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ type: String, format: 'uri' }) public url!: string;
+  @ApiProperty({ enum: ['image/jpeg', 'image/png', 'image/webp'] }) public mimeType!: string;
+  @ApiProperty({ type: Number }) public fileSize!: number;
+  @ApiProperty({ type: Number }) public width!: number;
+  @ApiProperty({ type: Number }) public height!: number;
+  @ApiProperty({ type: Number }) public sortOrder!: number;
+  @ApiPropertyOptional({ type: String, nullable: true }) public altText!: string | null;
+  @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
+}
+
+export class InventoryAvailabilityReadinessDto {
+  @ApiProperty({ type: Boolean }) public isReady!: boolean;
+  @ApiProperty({ enum: AVAILABILITY_READINESS_REASONS, isArray: true })
+  public reasons!: AvailabilityReadinessReason[];
 }
 
 export class DecryptedIdentifiersDto {
@@ -147,10 +198,36 @@ export class InspectionSummaryDto {
   public overallResult!: InspectionResult;
   @ApiProperty({ type: Boolean }) public isCurrent!: boolean;
   @ApiProperty({ type: String, format: 'uuid' }) public inspectorId!: string;
+  @ApiPropertyOptional({ type: () => InspectionInspectorDto })
+  public inspector!: InspectionInspectorDto;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   public inspectedAt!: Date | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
+}
+
+export class InspectionInspectorDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ type: String }) public fullName!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public employeeCode!: string | null;
+}
+
+export class InspectionChecklistItemDto {
+  @ApiProperty({ type: String }) public key!: string;
+  @ApiProperty({ type: String }) public label!: string;
+  @ApiProperty({ type: Number, minimum: 1 }) public order!: number;
+  @ApiPropertyOptional({
+    enum: ['PASS', 'FAIL', 'DEGRADED', 'NOT_TESTED', 'NOT_APPLICABLE', 'UNKNOWN'],
+    nullable: true,
+  })
+  public status!: FunctionalCheckStatus | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) public note!: string | null;
+}
+
+export class InspectionChecklistProjectionDto {
+  @ApiProperty({ type: Number, enum: [1] }) public schemaVersion!: 1;
+  @ApiProperty({ type: () => [InspectionChecklistItemDto] })
+  public items!: InspectionChecklistItemDto[];
 }
 
 export class InspectionDetailDto extends InspectionSummaryDto {
@@ -164,6 +241,8 @@ export class InspectionDetailDto extends InspectionSummaryDto {
   public conditionGrade!: ConditionGrade | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public cosmeticNotes!: string | null;
   @ApiProperty({ type: Object }) public checks!: unknown;
+  @ApiPropertyOptional({ type: () => InspectionChecklistProjectionDto })
+  public checklist!: InspectionChecklistProjectionDto;
   @ApiProperty({ enum: ['NONE_KNOWN', 'KNOWN', 'UNKNOWN'] })
   public repairHistoryStatus!: RepairHistoryStatus;
   @ApiPropertyOptional({ type: String, nullable: true }) public repairNotes!: string | null;

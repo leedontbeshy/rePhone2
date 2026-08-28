@@ -14,7 +14,7 @@ interface SchemaProperty {
   $ref?: string;
   allOf?: Array<{ $ref?: string }>;
   default?: unknown;
-  items?: { $ref?: string };
+  items?: { $ref?: string; enum?: unknown[] };
   nullable?: boolean;
   type?: string;
 }
@@ -139,5 +139,46 @@ describe('Slice 04 OpenAPI contract', () => {
     expect(updateProduct?.properties?.['brand']).toBeDefined();
     expect(updateProduct?.properties?.['brand']).not.toHaveProperty('default');
     expect(updateProduct?.required ?? []).not.toContain('brand');
+  });
+
+  it('publishes the FE06 inventory, inspection and stock display projections', () => {
+    const unit = document.components.schemas['InventoryUnitDetailDto'];
+    expect(unit?.properties?.['media']).toMatchObject({
+      type: 'array',
+      items: { $ref: '#/components/schemas/InventoryUnitMediaDto' },
+    });
+    expect(unit?.properties?.['availableActions']?.items?.enum).toContain('MAKE_AVAILABLE');
+    expect(unit?.properties?.['availabilityReadiness']).toMatchObject({
+      $ref: '#/components/schemas/InventoryAvailabilityReadinessDto',
+    });
+    expect(unit?.required ?? []).not.toEqual(
+      expect.arrayContaining(['media', 'availableActions', 'availabilityReadiness']),
+    );
+
+    const inspection = document.components.schemas['InspectionDetailDto'];
+    expect(inspection?.properties?.['inspector']).toMatchObject({
+      $ref: '#/components/schemas/InspectionInspectorDto',
+    });
+    expect(inspection?.properties?.['checklist']).toMatchObject({
+      $ref: '#/components/schemas/InspectionChecklistProjectionDto',
+    });
+
+    const stockLevel = document.components.schemas['StockLevelDto'];
+    expect(stockLevel?.properties?.['product']).toMatchObject({
+      $ref: '#/components/schemas/InventoryProductSummaryDto',
+    });
+
+    const movement = document.components.schemas['StockMovementDto'];
+    expect(movement?.properties?.['variant']).toMatchObject({
+      $ref: '#/components/schemas/InventoryVariantSummaryDto',
+    });
+    expect(movement?.properties?.['fromLocation']).toMatchObject({
+      nullable: true,
+      allOf: [{ $ref: '#/components/schemas/InventoryLocationDto' }],
+    });
+    expect(movement?.properties?.['createdBy']).toMatchObject({
+      nullable: true,
+      allOf: [{ $ref: '#/components/schemas/StockActorDto' }],
+    });
   });
 });

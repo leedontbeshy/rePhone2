@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Prisma, StockMovement } from '../../generated/prisma/client.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
@@ -18,7 +18,11 @@ import type {
   StockLevelDto,
   StockMovementDto,
 } from './stock-response.dto.js';
-import { StockRepository, type StockLevelRecord } from './stock.repository.js';
+import {
+  StockRepository,
+  type StockLevelRecord,
+  type StockMovementRecord,
+} from './stock.repository.js';
 
 @Injectable()
 export class StockService {
@@ -367,7 +371,10 @@ async function assertStockTarget(
   }
 }
 
-function commandResult(movement: StockMovement, levels: StockLevelRecord[]): StockCommandResultDto {
+function commandResult(
+  movement: StockMovementRecord,
+  levels: StockLevelRecord[],
+): StockCommandResultDto {
   return { movement: toMovement(movement), affectedLevels: levels.map(toStockLevel) };
 }
 
@@ -375,6 +382,12 @@ function toStockLevel(level: StockLevelRecord): StockLevelDto {
   const quantityAvailable = level.quantityOnHand - level.quantityReserved;
   return {
     id: level.id,
+    product: {
+      id: level.variant.product.id,
+      name: level.variant.product.name,
+      slug: level.variant.product.slug,
+      status: level.variant.product.status,
+    },
     variant: {
       id: level.variant.id,
       sku: level.variant.sku,
@@ -397,19 +410,51 @@ function toStockLevel(level: StockLevelRecord): StockLevelDto {
   };
 }
 
-function toMovement(movement: StockMovement): StockMovementDto {
+function toMovement(movement: StockMovementRecord): StockMovementDto {
   return {
     id: movement.id,
     variantId: movement.variantId,
+    product: {
+      id: movement.variant.product.id,
+      name: movement.variant.product.name,
+      slug: movement.variant.product.slug,
+      status: movement.variant.product.status,
+    },
+    variant: {
+      id: movement.variant.id,
+      sku: movement.variant.sku,
+      displayName: movement.variant.displayName,
+      status: movement.variant.status,
+    },
     fromLocationId: movement.fromLocationId,
     toLocationId: movement.toLocationId,
+    fromLocation: movement.fromLocation === null ? null : locationSummary(movement.fromLocation),
+    toLocation: movement.toLocation === null ? null : locationSummary(movement.toLocation),
     type: movement.type,
     quantity: movement.quantity,
     referenceType: movement.referenceType,
     referenceId: movement.referenceId,
     reason: movement.reason,
     createdById: movement.createdById,
+    createdBy:
+      movement.createdBy === null
+        ? null
+        : {
+            id: movement.createdBy.id,
+            fullName: movement.createdBy.fullName,
+            employeeCode: movement.createdBy.employeeCode,
+          },
     createdAt: movement.createdAt,
+  };
+}
+
+function locationSummary(location: NonNullable<StockMovementRecord['fromLocation']>) {
+  return {
+    id: location.id,
+    code: location.code,
+    name: location.name,
+    type: location.type,
+    status: location.status,
   };
 }
 
@@ -417,7 +462,7 @@ function auditMovement(
   audit: AuditWriter,
   transaction: Prisma.TransactionClient,
   actor: AuditActorContext,
-  movement: StockMovement,
+  movement: StockMovementRecord,
   levels: StockLevelRecord[],
 ) {
   return audit.write(transaction, actor, {
