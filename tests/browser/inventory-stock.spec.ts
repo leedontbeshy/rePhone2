@@ -65,7 +65,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
   test('keeps the employee unit profile free of cost requests and cost UI', async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
-    await page.goto(`/backoffice/inventory/units/${UNIT_ID}`);
+    await page.goto(`/backoffice/inventory/units/${UNIT_ID}`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: PRODUCT_NAME })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Mã định danh' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Giá vốn nội bộ' })).toHaveCount(0);
@@ -77,7 +77,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
   test('looks up a raw identifier only through an audited POST body', async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
-    await page.goto('/backoffice/inventory/lookup');
+    await page.goto('/backoffice/inventory/lookup', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: 'Tra cứu mã máy' })).toBeVisible();
     await page.getByLabel('IMEI đầy đủ').fill(RAW_IMEI);
     await page.getByLabel('Lý do tra cứu').fill('Đối chiếu khi tiếp nhận khách hàng');
@@ -100,15 +100,20 @@ test.describe('FE-06 inventory and stock workspace', () => {
   }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
-    await page.goto('/backoffice/inventory/units');
+    await page.goto('/backoffice/inventory/units', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: 'Danh sách máy' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Nhập máy', exact: true }).last()).toHaveCSS(
+      'color',
+      'rgb(255, 255, 255)',
+    );
     const marker = await page.evaluate(() => {
       const value = `fe06-${String(Date.now())}`;
       (window as Window & { __fe06NavigationMarker?: string }).__fe06NavigationMarker = value;
       return value;
     });
 
-    await page.getByPlaceholder('Tên máy, mã kho hoặc 4 số cuối định danh').fill('iPhone 15');
+    const search = page.getByRole('textbox', { name: 'Tìm máy' });
+    await search.fill('iPhone 15');
     await expect
       .poll(() => probe.unitListQueries.some((query) => query.includes('q=iPhone+15')))
       .toBe(true);
@@ -118,7 +123,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
       ),
     ).toBe(marker);
 
-    await page.getByPlaceholder('Tên máy, mã kho hoặc 4 số cuối định danh').fill(RAW_IMEI);
+    await search.fill(RAW_IMEI);
     await expect(page.getByText(/IMEI, EID và số sê-ri chỉ được nhập tại/)).toBeVisible();
     await page.waitForTimeout(400);
     expect(decodeURIComponent(page.url())).not.toContain(RAW_IMEI);
@@ -133,12 +138,14 @@ test.describe('FE-06 inventory and stock workspace', () => {
   test('edits all 18 inspection items, saves a draft, then completes it', async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
-    await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}`);
+    await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}`, {
+      waitUntil: 'domcontentloaded',
+    });
     await expect(
       page.getByRole('heading', { level: 1, name: 'Phiếu kiểm định iPhone' }),
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: '18 hạng mục kỹ thuật' })).toBeVisible();
-    const resultFields = await page.getByLabel('Kết quả', { exact: true }).all();
+    const resultFields = await page.getByRole('combobox', { name: /^Kết quả của / }).all();
     expect(resultFields).toHaveLength(18);
     for (const field of resultFields) await field.selectOption('PASS');
     await page.getByLabel('Tình trạng pin (%)').fill('94');
@@ -166,13 +173,15 @@ test.describe('FE-06 inventory and stock workspace', () => {
   }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
-    await page.goto('/backoffice/inventory/stock');
+    await page.goto('/backoffice/inventory/stock', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: 'Tồn phụ kiện' })).toBeVisible();
-    await expect(page.getByText(ACCESSORY_NAME).first()).toBeVisible();
+    await expect(page.getByRole('row', { name: new RegExp(ACCESSORY_NAME) })).toBeVisible();
     const levelsBefore = probe.stockLevelRequests;
     const movementsBefore = probe.stockMovementRequests;
 
-    await page.getByRole('button', { name: 'Nhận hàng', exact: true }).click();
+    const receiveButton = page.getByRole('button', { name: 'Nhận hàng', exact: true });
+    await expect(receiveButton).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await receiveButton.click();
     const dialog = page.getByRole('dialog', { name: 'Nhận hàng' });
     await dialog.getByLabel('Phụ kiện').selectOption(ACCESSORY_VARIANT_ID);
     await dialog.getByLabel('Nhận tại').selectOption(STORE_ID);
@@ -191,7 +200,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.stockQuantity).toBe(13);
     await expect(page.getByText('13', { exact: true }).first()).toBeVisible();
 
-    await page.goto('/backoffice/inventory/stock/movements');
+    await page.goto('/backoffice/inventory/stock/movements', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: 'Lịch sử kho' })).toBeVisible();
     await expect(page.getByText('Lịch sử chỉ được ghi thêm')).toBeVisible();
     await expect(page.getByText('Nhận hàng kiểm thử FE06')).toBeVisible();
@@ -203,33 +212,55 @@ test.describe('FE-06 inventory and stock workspace', () => {
     page,
   }) => {
     test.slow();
+    const browserErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') browserErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => {
+      browserErrors.push(error.message);
+    });
     await installFe06Api(page, 'ADMIN');
     const screens = [
-      { heading: 'Danh sách máy', path: '/backoffice/inventory/units', ready: PRODUCT_NAME },
-      { heading: 'Nhập máy vào kho', path: '/backoffice/inventory/intake' },
-      { heading: 'Tra cứu mã máy', path: '/backoffice/inventory/lookup' },
+      {
+        heading: 'Danh sách máy',
+        path: '/backoffice/inventory/units',
+        ready: PRODUCT_NAME,
+        slug: 'units',
+      },
+      { heading: 'Nhập máy vào kho', path: '/backoffice/inventory/intake', slug: 'intake' },
+      { heading: 'Tra cứu mã máy', path: '/backoffice/inventory/lookup', slug: 'lookup' },
       {
         heading: PRODUCT_NAME,
         path: `/backoffice/inventory/units/${UNIT_ID}`,
         ready: 'Giá vốn nội bộ',
+        slug: 'unit-detail',
       },
       {
         heading: 'Phiếu kiểm định iPhone',
         path: `/backoffice/inventory/inspections/${INSPECTION_ID}`,
         ready: '18 hạng mục kỹ thuật',
+        slug: 'inspection',
       },
       {
         heading: 'Địa điểm vận hành',
         path: '/backoffice/inventory/locations',
         ready: 'Kho trung tâm',
+        slug: 'locations',
       },
-      { heading: 'Tồn phụ kiện', path: '/backoffice/inventory/stock', ready: ACCESSORY_NAME },
+      {
+        heading: 'Tồn phụ kiện',
+        path: '/backoffice/inventory/stock',
+        ready: ACCESSORY_NAME,
+        slug: 'stock',
+      },
       {
         heading: 'Lịch sử kho',
         path: '/backoffice/inventory/stock/movements',
         ready: 'Kiểm đếm đầu ngày',
+        slug: 'movements',
       },
     ] as const;
+    const mobileCaptures = new Set(['units', 'unit-detail', 'inspection', 'stock']);
 
     for (const viewport of [
       { width: 1440, height: 1000 },
@@ -237,16 +268,56 @@ test.describe('FE-06 inventory and stock workspace', () => {
     ]) {
       await page.setViewportSize(viewport);
       for (const screen of screens) {
-        await page.goto(screen.path);
+        await page.goto(screen.path, { waitUntil: 'domcontentloaded' });
         await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
         if (screen.path === '/backoffice/inventory/intake') {
           await expect(page.getByLabel('Biến thể đang bán')).toHaveValue(VARIANT_ID);
         }
-        if ('ready' in screen) await expect(page.getByText(screen.ready).first()).toBeVisible();
+        if ('ready' in screen) {
+          const readyContent =
+            screen.slug === 'stock'
+              ? page.getByRole('row', { name: new RegExp(ACCESSORY_NAME) })
+              : page.locator('main').getByText(screen.ready).last();
+          await expect(readyContent).toBeVisible();
+        }
+        if (screen.slug === 'stock') {
+          const receiveButton = page.getByRole('button', { name: 'Nhận hàng', exact: true });
+          await expect(receiveButton).toBeEnabled();
+          await expect(receiveButton).toHaveCSS('color', 'rgb(255, 255, 255)');
+          await expect(receiveButton).toHaveCSS('opacity', '1');
+        }
         await expectNaturalVietnameseMain(page);
         await expectSingleMainAndNoOverflow(page);
+        if (viewport.width === 360) {
+          const currentNavigationItem = page
+            .getByRole('navigation', { name: 'Các mục quản lý kho' })
+            .locator('a[aria-current="page"]');
+          await expect
+            .poll(() =>
+              currentNavigationItem.evaluate((element) => {
+                const item = element.getBoundingClientRect();
+                const navigation = element.closest('nav')?.getBoundingClientRect();
+                return (
+                  navigation !== undefined &&
+                  item.left >= navigation.left &&
+                  item.right <= navigation.right
+                );
+              }),
+            )
+            .toBe(true);
+        }
+        if (
+          process.env['FE06_CAPTURE_SCREENSHOTS'] === '1' &&
+          (viewport.width === 1440 || mobileCaptures.has(screen.slug))
+        ) {
+          await page.screenshot({
+            animations: 'disabled',
+            path: `docs/assets/ui/fe-06/${screen.slug}-${String(viewport.width)}.png`,
+          });
+        }
       }
     }
+    expect(browserErrors).toEqual([]);
   });
 });
 
@@ -699,7 +770,7 @@ function corsHeaders(route: Route): Record<string, string> {
 async function expectNaturalVietnameseMain(page: Page): Promise<void> {
   const mainText = await page.locator('main').innerText();
   expect(mainText).not.toMatch(
-    /\b(?:DRAFT|ACTIVE|INCOMPLETE|scopeConfig|localStorage)\b|access token|refresh session|[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|\b\d{15}\b|\b\d{32}\b/i,
+    /\b(?:DRAFT|ACTIVE|INCOMPLETE|scopeConfig|localStorage|URL)\b|access token|refresh session|trình duyệt|[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|\b\d{15}\b|\b\d{32}\b/i,
   );
 }
 
