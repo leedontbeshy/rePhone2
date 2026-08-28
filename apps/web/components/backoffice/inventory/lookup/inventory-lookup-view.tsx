@@ -6,7 +6,8 @@ import { useState, type SyntheticEvent } from 'react';
 import { Button, InlineAlert, Input, Select, StatusChip, Textarea } from '@/components/ui';
 import styles from './inventory-lookup.module.css';
 
-export type InventoryIdentifierType = 'IMEI_1' | 'IMEI_2' | 'SERIAL' | 'EID';
+export type InventoryLookupIdentifierType = 'IMEI' | 'SERIAL' | 'EID';
+export type InventoryMaskedIdentifierType = 'IMEI_1' | 'IMEI_2' | 'SERIAL' | 'EID';
 
 export interface InventoryLookupResult {
   readonly id: string;
@@ -14,14 +15,14 @@ export interface InventoryLookupResult {
   readonly lifecycleLabel: string;
   readonly lifecycleTone: 'neutral' | 'info' | 'success' | 'warning' | 'danger';
   readonly locationName: string;
-  readonly maskedIdentifiers: readonly { maskedValue: string; type: InventoryIdentifierType }[];
+  readonly maskedIdentifiers: readonly { maskedValue: string; type: InventoryMaskedIdentifierType }[];
   readonly productName: string;
   readonly variantName: string;
 }
 
 export interface InventoryLookupInput {
   readonly identifier: string;
-  readonly identifierType: InventoryIdentifierType;
+  readonly identifierType: InventoryLookupIdentifierType;
   readonly reason: string;
 }
 
@@ -30,7 +31,7 @@ export interface InventoryLookupViewProps {
 }
 
 export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
-  const [identifierType, setIdentifierType] = useState<InventoryIdentifierType>('IMEI_1');
+  const [identifierType, setIdentifierType] = useState<InventoryLookupIdentifierType>('IMEI');
   const [identifier, setIdentifier] = useState('');
   const [reason, setReason] = useState('');
   const [attempted, setAttempted] = useState(false);
@@ -89,13 +90,12 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               label="Loại mã"
               value={identifierType}
               onChange={(event) => {
-                setIdentifierType(event.target.value as InventoryIdentifierType);
+                setIdentifierType(event.target.value as InventoryLookupIdentifierType);
                 setIdentifier('');
                 setResult(null);
               }}
             >
-              <option value="IMEI_1">IMEI chính</option>
-              <option value="IMEI_2">IMEI phụ</option>
+              <option value="IMEI">IMEI</option>
               <option value="SERIAL">Số sê-ri</option>
               <option value="EID">EID</option>
             </Select>
@@ -206,7 +206,7 @@ export function validateInventoryLookupInput(input: InventoryLookupInput): {
   const identifier = input.identifier.trim();
   let identifierError: string | undefined;
   if (identifier === '') identifierError = 'Hãy nhập mã cần tra cứu.';
-  else if (input.identifierType === 'IMEI_1' || input.identifierType === 'IMEI_2') {
+  else if (input.identifierType === 'IMEI') {
     if (!/^\d{15}$/.test(identifier.replace(/[\s-]/g, '')))
       identifierError = 'IMEI cần có đúng 15 chữ số.';
   } else if (input.identifierType === 'EID') {
@@ -229,18 +229,21 @@ export function validateInventoryLookupInput(input: InventoryLookupInput): {
   };
 }
 
-export function identifierTypeLabel(type: InventoryIdentifierType): string {
+export function identifierTypeLabel(
+  type: InventoryMaskedIdentifierType | InventoryLookupIdentifierType,
+): string {
+  if (type === 'IMEI') return 'IMEI';
   if (type === 'IMEI_1') return 'IMEI chính';
   if (type === 'IMEI_2') return 'IMEI phụ';
   if (type === 'SERIAL') return 'Số sê-ri';
   return 'EID';
 }
 
-function identifierInputLabel(type: InventoryIdentifierType): string {
+function identifierInputLabel(type: InventoryLookupIdentifierType): string {
   return type === 'SERIAL' ? 'Số sê-ri đầy đủ' : `${identifierTypeLabel(type)} đầy đủ`;
 }
 
-function identifierPlaceholder(type: InventoryIdentifierType): string {
+function identifierPlaceholder(type: InventoryLookupIdentifierType): string {
   if (type === 'SERIAL') return 'Ví dụ: F2LX1234ABCD';
   if (type === 'EID') return '32 chữ số';
   return '15 chữ số';

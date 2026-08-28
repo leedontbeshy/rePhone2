@@ -9,7 +9,7 @@ describe('inventory identifier lookup', () => {
     expect(
       validateInventoryLookupInput({
         identifier: '123',
-        identifierType: 'IMEI_1',
+        identifierType: 'IMEI',
         reason: 'Hỗ trợ khách tại cửa hàng',
       }),
     ).toEqual({ identifier: 'IMEI cần có đúng 15 chữ số.' });
@@ -17,7 +17,7 @@ describe('inventory identifier lookup', () => {
     expect(
       validateInventoryLookupInput({
         identifier: '490154203237518',
-        identifierType: 'IMEI_1',
+        identifierType: 'IMEI',
         reason: 'Kiểm tra máy đổi trả',
       }),
     ).toEqual({});
