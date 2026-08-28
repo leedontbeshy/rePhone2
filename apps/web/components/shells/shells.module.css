@@ -423,6 +423,11 @@
   border-block-end: 1px solid var(--color-border, #dce4ea);
   background: var(--color-surface, #fff);
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.backofficeSidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .backofficeSidebar nav {
