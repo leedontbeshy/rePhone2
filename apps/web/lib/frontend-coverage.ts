@@ -10,7 +10,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-3': 'DONE',
   'FE-4': 'DONE',
   'FE-5': 'DONE',
-  'FE-6': 'NOT STARTED',
+  'FE-6': 'DONE',
   'FE-7': 'NOT STARTED',
   'FE-8': 'NOT STARTED',
   'FE-9': 'NOT STARTED',
@@ -568,7 +568,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeInventoryInspection',
@@ -579,7 +579,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeInventoryInspection; dirty, validation, pending, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'completeBackofficeInventoryInspection',
@@ -590,7 +590,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command completeBackofficeInventoryInspection; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeInventoryLocations',
@@ -601,7 +601,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeInventoryUnits',
@@ -612,7 +612,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'intakeBackofficeInventoryUnit',
@@ -623,7 +623,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng intakeBackofficeInventoryUnit; validation, pending, success, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeInventoryUnit',
@@ -634,7 +634,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeInventoryUnit',
@@ -645,7 +645,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeInventoryUnit; dirty, validation, pending, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeInventoryCost',
@@ -656,7 +656,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeInventoryCost',
@@ -667,7 +667,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeInventoryCost; dirty, validation, pending, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeInventoryInspections',
@@ -678,7 +678,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createBackofficeInventoryInspection',
@@ -689,7 +689,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createBackofficeInventoryInspection; validation, pending, success, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'makeBackofficeInventoryUnitAvailable',
@@ -700,7 +700,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command makeBackofficeInventoryUnitAvailable; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'uploadBackofficeInventoryUnitMedia',
@@ -711,7 +711,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Upload; select, validate, progress, success, 413/415/503',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'quarantineBackofficeInventoryUnit',
@@ -722,7 +722,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command quarantineBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'revealBackofficeInventoryIdentifiers',
@@ -733,7 +733,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command revealBackofficeInventoryIdentifiers; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'sendBackofficeInventoryUnitToRepair',
@@ -744,7 +744,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command sendBackofficeInventoryUnitToRepair; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'transferBackofficeInventoryUnit',
@@ -755,7 +755,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command transferBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'writeOffBackofficeInventoryUnit',
@@ -766,7 +766,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command writeOffBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'lookupBackofficeInventoryIdentifier',
@@ -777,7 +777,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command lookupBackofficeInventoryIdentifier; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeOrders',
@@ -1250,7 +1250,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeStockMovements',
@@ -1261,7 +1261,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'adjustBackofficeStock',
@@ -1272,7 +1272,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng adjustBackofficeStock; dirty, validation, pending, conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'receiveBackofficeStock',
@@ -1283,7 +1283,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command receiveBackofficeStock; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'returnBackofficeStock',
@@ -1294,7 +1294,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command returnBackofficeStock; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'transferBackofficeStock',
@@ -1305,7 +1305,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command transferBackofficeStock; pending, authoritative success, replay/conflict',
     'FE-6',
     'browser:inventory-stock',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeVariant',
@@ -1853,13 +1853,13 @@ export const FRONTEND_ROUTE_COVERAGE = [
   ['/backoffice/vouchers', 'EXISTING', 'FE-5'],
   ['/backoffice/vouchers/new', 'EXISTING', 'FE-5'],
   ['/backoffice/vouchers/[id]', 'EXISTING', 'FE-5'],
-  ['/backoffice/inventory/units', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/units/[id]', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/lookup', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/inspections/[id]', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/locations', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/stock', 'PLANNED', 'FE-6'],
-  ['/backoffice/inventory/stock/movements', 'PLANNED', 'FE-6'],
+  ['/backoffice/inventory/units', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/units/[id]', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/lookup', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/inspections/[id]', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/locations', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/stock', 'EXISTING', 'FE-6'],
+  ['/backoffice/inventory/stock/movements', 'EXISTING', 'FE-6'],
   ['/backoffice/system/health', 'PLANNED', 'FE-8'],
 ] as const satisfies readonly FrontendRouteCoverage[];
 

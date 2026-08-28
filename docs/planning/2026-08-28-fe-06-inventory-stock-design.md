@@ -1,7 +1,7 @@
 # FE-06 — Quản trị máy vật lý, kiểm định và tồn kho
 
 > Ngày chốt: 2026-08-28  
-> Trạng thái: Thiết kế đã duyệt  
+> Trạng thái: Triển khai hoàn tất<br>
 > Nhánh triển khai: `feat/fe-6-inventory-stock`
 
 ## 1. Tóm tắt phạm vi đã xác nhận
@@ -148,3 +148,13 @@ Các bổ sung trên chỉ là dữ liệu đọc. DTO command, state machine, t
 | Raw identifier chỉ tồn tại tạm thời | Lưu session/local storage để tiện thao tác | Bảo vệ dữ liệu nhạy cảm và đúng audit contract |
 | Cost compartment chỉ ADMIN mount/request | Fetch rồi ẩn bằng CSS | Không rò dữ liệu và kiểm thử quyền rõ ràng |
 | Chia commit theo lát cắt | Một commit tổng | Dễ review, rollback và truy vết lỗi |
+
+## 10. Bằng chứng hoàn tất
+
+- Code chức năng và kiểm thử đến SHA `0d1bba0` trên nhánh `feat/fe-6-inventory-stock`.
+- 26/26 thao tác FE-06 và 8/8 route được đánh dấu `DONE` trong sổ theo dõi thực thi.
+- Web đạt 76 tệp / 324 bài kiểm tra; API đạt 107 tệp / 625 bài kiểm tra; API client đạt 7/7; hợp đồng accessibility đạt 15/15.
+- Bộ kiểm thử trình duyệt FE-06 đạt 6/6, gồm phân quyền giá vốn, bảo vệ định danh, lọc không tải lại trang, kiểm định 18 hạng mục, đối soát tồn kho và responsive toàn bộ tám route.
+- Production build tạo đủ 41 trang; lint, typecheck, OpenAPI và mã API client đều đồng bộ.
+- 12 ảnh đối chiếu desktop/mobile được lưu tại `docs/assets/ui/fe-06/`; không có tràn ngang hoặc lỗi console trong hành trình cuối.
+- PostgreSQL/Docker integration chưa chạy trong lượt đóng phase vì Docker Desktop trên máy đang tắt; bộ trình duyệt được chạy với dữ liệu giả lập ổn định trên chính server web localhost.
