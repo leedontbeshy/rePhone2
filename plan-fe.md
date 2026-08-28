@@ -7,10 +7,10 @@
 > Design contract: [design.md](design.md)  
 > Frontend baseline SHA: `801ad26`  
 > Ngày cập nhật: `2026-08-28`<br>
-> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE · FE-5 DONE**<br>
+> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE · FE-5 DONE · FE-6 IN PROGRESS**<br>
 > HTTP baseline: `apps/api/openapi/openapi.json` — **160 operations**
 
-Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 đã hoàn thành auth và self-service account; FE-3 đã hoàn thành cart, wishlist và checkout; FE-4 đã hoàn thành customer post-purchase portal; FE-5 đã hoàn thành catalog, media và mã ưu đãi trong backoffice. FE-6 là bước kế tiếp; hiện không có phase nào mang trạng thái `IN PROGRESS`.
+Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 đã hoàn thành auth và self-service account; FE-3 đã hoàn thành cart, wishlist và checkout; FE-4 đã hoàn thành customer post-purchase portal; FE-5 đã hoàn thành catalog, media và mã ưu đãi trong backoffice. FE-6 đang triển khai inventory, inspection, location và accessory stock.
 
 ## 1. Vai trò tài liệu và thứ tự nguồn sự thật
 
@@ -340,7 +340,7 @@ Contract chung cho mọi phase:
 
 | Thuộc tính        | Nội dung                                                                                                                                                                   |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **NOT STARTED**                                                                                                                                                            |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                                            |
 | Mục tiêu          | Biến wizard đơn lẻ thành inventory workspace đầy đủ, phủ unit lifecycle/cost/identifier/inspection và stock ledger/commands.                                               |
 | Non-goal          | Không generic status/counter patch, auto-restock, repair-parts, location editor hoặc raw identifier persistence.                                                           |
 | Dependency        | FE-5; tái dùng dossier vocabulary FE-1.                                                                                                                                    |
@@ -503,6 +503,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-28 | FE-4              | DONE                   | Khóa portal đơn hàng, bảo hành và hỗ trợ sau mua                                                   | Code SHA `8465951`; 12/12 operation; web `221/221`; API `609/609`; FE-4 browser `5/5`; lint/typecheck/build/coverage/a11y và visual comparison `passed`; FE-5 là bước kế tiếp                                                                |
 | 2026-08-28 | FE-5              | IN PROGRESS            | Bắt đầu quản trị catalog, media và mã ưu đãi theo phương án visual catalog board                   | Branch `codex/feat-fe-05-catalog-vouchers`; record `docs/planning/2026-08-28-fe-05-catalog-voucher-administration.md`; 22 operation giữ `NOT STARTED` cho đến khi có evidence theo lát cắt                                                   |
 | 2026-08-28 | FE-5              | DONE                   | Khóa sáu route quản trị catalog, biến thể, media và mã ưu đãi                                      | Code đến SHA `b734ff9`; 22/22 operation `DONE`; web `257/257`, API unit `612/612`; browser QA thủ công bằng in-app browser trên desktop/mobile đạt. Không chạy Playwright CLI; PostgreSQL/Docker integration chưa chạy.                      |
+| 2026-08-28 | FE-6              | IN PROGRESS            | Bắt đầu workspace máy vật lý, kiểm định và tồn phụ kiện                                            | Branch `feat/fe-6-inventory-stock`; record `docs/planning/2026-08-28-fe-06-inventory-stock-design.md`; phương án workspace tám route đã duyệt; 26 operation giữ `NOT STARTED` đến khi có evidence theo lát cắt                                   |
 
 ## 12. Operation coverage ledger — 160/160
 
