@@ -15,10 +15,10 @@ describe('FE-05 backoffice navigation', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0]?.items).toEqual([
       {
-        href: '#',
+        href: '/backoffice',
         label: 'Tổng quan',
         icon: 'overview',
-        isDisabled: true,
+        isCurrent: false,
       },
       {
         href: '/backoffice/catalog/products',
@@ -56,10 +56,10 @@ describe('FE-05 backoffice navigation', () => {
 
     expect(groups[0]?.items).toEqual([
       {
-        href: '#',
+        href: '/backoffice',
         label: 'Tổng quan',
         icon: 'overview',
-        isDisabled: true,
+        isCurrent: false,
       },
       {
         href: '/backoffice/catalog/products',
@@ -97,5 +97,19 @@ describe('FE-05 backoffice navigation', () => {
     expect(catalogVoucherNavigationForRole(null, '/backoffice/catalog/products')).toEqual([]);
     expect(canAccessCatalogVoucherPath('CUSTOMER', '/backoffice/catalog/products')).toBe(false);
     expect(canAccessCatalogVoucherPath(undefined, '/backoffice/catalog/products')).toBe(false);
+  });
+
+  it('links to and marks the overview current only on the exact backoffice root', () => {
+    const rootOverview = catalogVoucherNavigationForRole('EMPLOYEE', '/backoffice')[0]?.items[0];
+    const nestedOverview = catalogVoucherNavigationForRole('EMPLOYEE', '/backoffice/orders')[0]
+      ?.items[0];
+
+    expect(rootOverview).toEqual({
+      href: '/backoffice',
+      label: 'Tổng quan',
+      icon: 'overview',
+      isCurrent: true,
+    });
+    expect(nestedOverview).toMatchObject({ href: '/backoffice', isCurrent: false });
   });
 });
