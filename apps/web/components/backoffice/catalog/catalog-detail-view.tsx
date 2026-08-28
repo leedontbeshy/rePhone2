@@ -6,6 +6,7 @@ import {
   DotsThreeIcon,
   PencilSimpleIcon,
   PlusIcon,
+  TrashIcon,
   UploadSimpleIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -37,17 +38,27 @@ export interface CatalogMediaRecord extends CatalogMediaSource {
 }
 
 export interface CatalogVariantRecord {
+  readonly attributes: readonly CatalogAttributeRecord[];
   readonly colorHex?: string | null;
   readonly colorName?: string | null;
   readonly compareAtPrice?: string | null;
   readonly displayName: string;
   readonly id: string;
+  readonly inventoryMode: 'QUANTITY' | 'SERIALIZED';
   readonly media: readonly CatalogMediaRecord[];
   readonly salePrice?: string | null;
   readonly sku: string;
   readonly status: CatalogRecordStatus;
   readonly storageCapacityGb?: number | null;
   readonly warrantyPolicyId?: string | null;
+}
+
+export interface CatalogAttributeRecord {
+  readonly hidden?: boolean;
+  readonly name: string;
+  readonly originalName?: string;
+  readonly originalValue?: unknown;
+  readonly value: string;
 }
 
 export interface CatalogProductDetailRecord {
@@ -86,14 +97,15 @@ export interface CatalogProductUpdateInput {
 }
 
 export interface CatalogVariantInput {
-  readonly colorHex?: string;
-  readonly colorName?: string;
-  readonly compareAtPrice?: string;
+  readonly attributes?: readonly CatalogAttributeRecord[];
+  readonly colorHex?: string | null;
+  readonly colorName?: string | null;
+  readonly compareAtPrice?: string | null;
   readonly displayName: string;
   readonly salePrice?: string;
   readonly sku: string;
   readonly storageCapacityGb?: number;
-  readonly warrantyPolicyId?: string;
+  readonly warrantyPolicyId?: string | null;
 }
 
 export interface CatalogMediaMetadataInput {
@@ -804,12 +816,37 @@ function CatalogVariantDialog({
   const [error, setError] = useState<string | null>(null);
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    const input = variantInputFromDraft(draft, product.type);
+    const input = variantInputFromDraft(draft, product.type, variant);
     if (input instanceof Error) {
       setError(input.message);
       return;
     }
     onSubmit(input);
+  }
+  function updateAttribute(index: number, field: keyof CatalogAttributeRecord, value: string) {
+    setDraft((current) => ({
+      ...current,
+      attributes: current.attributes.map((attribute, attributeIndex) =>
+        attributeIndex === index ? { ...attribute, [field]: value } : attribute,
+      ),
+    }));
+  }
+  function addAttribute() {
+    setDraft((current) => ({
+      ...current,
+      attributes: [...current.attributes, { name: '', value: '' }],
+    }));
+  }
+  function removeAttribute(index: number) {
+    setDraft((current) => ({
+      ...current,
+      attributes:
+        current.attributes.filter((attribute) => attribute.hidden !== true).length === 1
+          ? current.attributes.map((attribute, attributeIndex) =>
+              attributeIndex === index ? { name: '', value: '' } : attribute,
+            )
+          : current.attributes.filter((_, attributeIndex) => attributeIndex !== index),
+    }));
   }
   return (
     <dialog
@@ -828,124 +865,299 @@ function CatalogVariantDialog({
           </h2>
           <p>Nhập thông tin khách hàng cần thấy khi chọn cấu hình.</p>
         </div>
-        {error === null ? null : <div className={styles.errorBanner}>{error}</div>}
+        {error === null ? null : (
+          <div className={styles.errorBanner} role="alert">
+            {error}
+          </div>
+        )}
         {operationError === null || operationError === undefined ? null : (
           <div className={styles.errorBanner} role="alert">
             {operationError}
           </div>
         )}
-        <div className={styles.fieldGrid}>
-          <DialogField id="variant-name" label="Tên hiển thị">
-            <input
-              className={styles.nativeInput}
-              id="variant-name"
-              maxLength={255}
-              required
-              value={draft.displayName}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, displayName: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="variant-sku" label="Mã biến thể">
-            <input
-              className={styles.nativeInput}
-              id="variant-sku"
-              maxLength={64}
-              required
-              value={draft.sku}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, sku: event.target.value.toUpperCase() }));
-              }}
-            />
-          </DialogField>
-          {product.type === 'IPHONE' ? (
-            <>
-              <DialogField id="variant-storage" label="Dung lượng lưu trữ">
+        <div className={styles.variantSections}>
+          <section aria-labelledby="variant-identity-title" className={styles.variantFormSection}>
+            <div className={styles.variantSectionHeading}>
+              <h3 id="variant-identity-title">Nhận diện</h3>
+              <p>Tên và mã giúp nhân viên tìm đúng biến thể khi vận hành.</p>
+            </div>
+            <div className={styles.fieldGrid}>
+              <DialogField id="variant-name" label="Tên phiên bản *">
                 <input
                   className={styles.nativeInput}
-                  id="variant-storage"
-                  inputMode="numeric"
-                  min={1}
-                  required
-                  type="number"
-                  value={draft.storageCapacityGb}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, storageCapacityGb: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="variant-color" label="Tên màu">
-                <input
-                  className={styles.nativeInput}
-                  id="variant-color"
+                  id="variant-name"
                   maxLength={255}
                   required
-                  value={draft.colorName}
+                  value={draft.displayName}
                   onChange={(event) => {
-                    setDraft((current) => ({ ...current, colorName: event.target.value }));
+                    setDraft((current) => ({ ...current, displayName: event.target.value }));
                   }}
                 />
               </DialogField>
-              <DialogField id="variant-color-hex" label="Mã màu">
+              <DialogField id="variant-sku" label="Mã biến thể *">
                 <input
                   className={styles.nativeInput}
-                  id="variant-color-hex"
-                  pattern="#[0-9A-Fa-f]{6}"
-                  placeholder="#A1A1A1"
-                  value={draft.colorHex}
+                  id="variant-sku"
+                  maxLength={64}
+                  required
+                  value={draft.sku}
                   onChange={(event) => {
-                    setDraft((current) => ({ ...current, colorHex: event.target.value }));
+                    setDraft((current) => ({ ...current, sku: event.target.value.toUpperCase() }));
                   }}
                 />
               </DialogField>
-            </>
+            </div>
+          </section>
+
+          {product.type === 'IPHONE' ? (
+            <section aria-labelledby="variant-config-title" className={styles.variantFormSection}>
+              <div className={styles.variantSectionHeading}>
+                <h3 id="variant-config-title">Cấu hình</h3>
+                <p>Thông tin khách hàng dùng để phân biệt các phiên bản của cùng dòng máy.</p>
+              </div>
+              <div className={styles.fieldGrid}>
+                <DialogField id="variant-storage" label="Dung lượng *">
+                  <input
+                    className={styles.nativeInput}
+                    id="variant-storage"
+                    inputMode="numeric"
+                    min={1}
+                    required
+                    type="number"
+                    value={draft.storageCapacityGb}
+                    onChange={(event) => {
+                      setDraft((current) => ({
+                        ...current,
+                        storageCapacityGb: event.target.value,
+                      }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="variant-color" label="Tên màu *">
+                  <input
+                    className={styles.nativeInput}
+                    id="variant-color"
+                    maxLength={255}
+                    required
+                    value={draft.colorName}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, colorName: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField
+                  className={styles.wideField}
+                  id="variant-color-hex"
+                  label="Màu hiển thị"
+                >
+                  <div className={styles.colorControl}>
+                    <input
+                      aria-label="Chọn màu hiển thị"
+                      className={styles.colorPicker}
+                      type="color"
+                      value={colorPickerValue(draft.colorHex)}
+                      onChange={(event) => {
+                        setDraft((current) => ({
+                          ...current,
+                          colorHex: event.target.value.toUpperCase(),
+                        }));
+                      }}
+                    />
+                    <input
+                      className={styles.nativeInput}
+                      id="variant-color-hex"
+                      pattern="#[0-9A-Fa-f]{6}"
+                      placeholder="#A1A1A1"
+                      value={draft.colorHex}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, colorHex: event.target.value }));
+                      }}
+                    />
+                  </div>
+                </DialogField>
+              </div>
+            </section>
           ) : (
-            <DialogField id="variant-price" label="Giá bán">
-              <input
-                className={styles.nativeInput}
-                id="variant-price"
-                inputMode="numeric"
-                min={1}
-                required
-                type="number"
-                value={draft.salePrice}
-                onChange={(event) => {
-                  setDraft((current) => ({ ...current, salePrice: event.target.value }));
-                }}
-              />
-            </DialogField>
+            <>
+              <section aria-labelledby="variant-sales-title" className={styles.variantFormSection}>
+                <div className={styles.variantSectionHeading}>
+                  <h3 id="variant-sales-title">Bán hàng</h3>
+                  <p>Giá bán và màu sắc áp dụng cho biến thể phụ kiện này.</p>
+                </div>
+                <div className={styles.fieldGrid}>
+                  <DialogField id="variant-price" label="Giá bán *">
+                    <input
+                      className={styles.nativeInput}
+                      id="variant-price"
+                      inputMode="numeric"
+                      min={1}
+                      required
+                      type="number"
+                      value={draft.salePrice}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, salePrice: event.target.value }));
+                      }}
+                    />
+                  </DialogField>
+                  <DialogField id="variant-compare-price" label="Giá niêm yết">
+                    <input
+                      className={styles.nativeInput}
+                      id="variant-compare-price"
+                      inputMode="numeric"
+                      min={1}
+                      type="number"
+                      value={draft.compareAtPrice}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, compareAtPrice: event.target.value }));
+                      }}
+                    />
+                  </DialogField>
+                  <DialogField id="variant-color" label="Tên màu">
+                    <input
+                      className={styles.nativeInput}
+                      id="variant-color"
+                      maxLength={255}
+                      value={draft.colorName}
+                      onChange={(event) => {
+                        setDraft((current) => ({ ...current, colorName: event.target.value }));
+                      }}
+                    />
+                  </DialogField>
+                  <DialogField id="variant-color-hex" label="Màu hiển thị">
+                    <div className={styles.colorControl}>
+                      <input
+                        aria-label="Chọn màu phụ kiện"
+                        className={styles.colorPicker}
+                        type="color"
+                        value={colorPickerValue(draft.colorHex)}
+                        onChange={(event) => {
+                          setDraft((current) => ({
+                            ...current,
+                            colorHex: event.target.value.toUpperCase(),
+                          }));
+                        }}
+                      />
+                      <input
+                        className={styles.nativeInput}
+                        id="variant-color-hex"
+                        pattern="#[0-9A-Fa-f]{6}"
+                        placeholder="#A1A1A1"
+                        value={draft.colorHex}
+                        onChange={(event) => {
+                          setDraft((current) => ({ ...current, colorHex: event.target.value }));
+                        }}
+                      />
+                    </div>
+                  </DialogField>
+                </div>
+              </section>
+
+              <section
+                aria-labelledby="variant-attributes-title"
+                className={styles.variantFormSection}
+              >
+                <div className={styles.variantSectionHeading}>
+                  <h3 id="variant-attributes-title">Thông số phụ kiện</h3>
+                  <p>Thêm các thông tin hữu ích như tương thích, chất liệu hoặc công suất.</p>
+                </div>
+                <datalist id="variant-attribute-suggestions">
+                  <option value="Tương thích" />
+                  <option value="Chất liệu" />
+                  <option value="Đầu kết nối" />
+                  <option value="Chiều dài" />
+                  <option value="Công suất" />
+                </datalist>
+                <div className={styles.attributeRows}>
+                  {draft.attributes.map((attribute, index) =>
+                    attribute.hidden === true ? null : (
+                      <div className={styles.attributeRow} key={`attribute-${index.toString()}`}>
+                        <DialogField
+                          id={`variant-attribute-name-${index.toString()}`}
+                          label="Tên thông số"
+                        >
+                          <input
+                            className={styles.nativeInput}
+                            id={`variant-attribute-name-${index.toString()}`}
+                            list="variant-attribute-suggestions"
+                            maxLength={80}
+                            placeholder="Ví dụ: Tương thích"
+                            value={attribute.name}
+                            onChange={(event) => {
+                              updateAttribute(index, 'name', event.target.value);
+                            }}
+                          />
+                        </DialogField>
+                        <DialogField
+                          id={`variant-attribute-value-${index.toString()}`}
+                          label="Giá trị"
+                        >
+                          <input
+                            className={styles.nativeInput}
+                            id={`variant-attribute-value-${index.toString()}`}
+                            maxLength={255}
+                            placeholder="Ví dụ: iPhone 15 trở lên"
+                            value={attribute.value}
+                            onChange={(event) => {
+                              updateAttribute(index, 'value', event.target.value);
+                            }}
+                          />
+                        </DialogField>
+                        <button
+                          aria-label={`Xóa thông số ${(index + 1).toString()}`}
+                          className={styles.removeAttributeButton}
+                          type="button"
+                          onClick={() => {
+                            removeAttribute(index);
+                          }}
+                        >
+                          <TrashIcon aria-hidden="true" size={19} />
+                        </button>
+                      </div>
+                    ),
+                  )}
+                </div>
+                <button className={styles.addAttributeButton} type="button" onClick={addAttribute}>
+                  <PlusIcon aria-hidden="true" size={18} weight="bold" />
+                  Thêm thông số
+                </button>
+              </section>
+            </>
           )}
-          <DialogField id="variant-compare-price" label="Giá tham khảo">
-            <input
-              className={styles.nativeInput}
-              id="variant-compare-price"
-              inputMode="numeric"
-              min={1}
-              type="number"
-              value={draft.compareAtPrice}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, compareAtPrice: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="variant-warranty" label="Chính sách bảo hành">
-            <select
-              className={styles.nativeSelect}
-              id="variant-warranty"
-              value={draft.warrantyPolicyId}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
-              }}
-            >
-              <option value="">Dùng chính sách của sản phẩm</option>
-              {warranties.map((warranty) => (
-                <option key={warranty.id} value={warranty.id}>
-                  {warranty.name}
-                </option>
-              ))}
-            </select>
-          </DialogField>
+
+          <section aria-labelledby="variant-policy-title" className={styles.variantFormSection}>
+            <div className={styles.variantSectionHeading}>
+              <h3 id="variant-policy-title">Bảo hành và quản lý kho</h3>
+              <p>Biến thể có thể dùng chính sách chung của sản phẩm hoặc một chính sách riêng.</p>
+            </div>
+            <div className={styles.fieldGrid}>
+              <DialogField id="variant-warranty" label="Chính sách bảo hành">
+                <select
+                  className={styles.nativeSelect}
+                  id="variant-warranty"
+                  value={draft.warrantyPolicyId}
+                  onChange={(event) => {
+                    setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
+                  }}
+                >
+                  <option value="">Dùng chính sách của sản phẩm</option>
+                  {warranties.map((warranty) => (
+                    <option key={warranty.id} value={warranty.id}>
+                      {warranty.name}
+                    </option>
+                  ))}
+                </select>
+              </DialogField>
+              <div className={styles.readOnlyField}>
+                <span>Kiểu quản lý tồn kho</span>
+                <strong>{product.type === 'IPHONE' ? 'Theo từng máy' : 'Theo số lượng'}</strong>
+                <small>
+                  {product.type === 'IPHONE'
+                    ? 'Giá bán và tình trạng được quản lý riêng cho từng máy trong kho.'
+                    : 'Số lượng được theo dõi chung cho biến thể phụ kiện này.'}
+                </small>
+              </div>
+            </div>
+          </section>
         </div>
         <div className={styles.dialogActions}>
           <button className={styles.secondaryLink} disabled={busy} type="button" onClick={onCancel}>
@@ -1326,7 +1538,8 @@ function DialogField({
   );
 }
 
-interface VariantDraft {
+export interface VariantDraft {
+  attributes: CatalogAttributeRecord[];
   colorHex: string;
   colorName: string;
   compareAtPrice: string;
@@ -1357,8 +1570,15 @@ export function validateCatalogMediaFile(file: Pick<File, 'size' | 'type'>): str
   return undefined;
 }
 
-function variantDraftFrom(variant?: CatalogVariantRecord): VariantDraft {
+export function variantDraftFrom(variant?: CatalogVariantRecord): VariantDraft {
+  const attributes = variant?.attributes.map((attribute) => ({ ...attribute })) ?? [];
   return {
+    attributes:
+      attributes.some((attribute) => attribute.hidden !== true) || attributes.length === 0
+        ? attributes.length === 0
+          ? [{ name: '', value: '' }]
+          : attributes
+        : [...attributes, { name: '', value: '' }],
     colorHex: variant?.colorHex ?? '',
     colorName: variant?.colorName ?? '',
     compareAtPrice: variant?.compareAtPrice ?? '',
@@ -1373,37 +1593,102 @@ function variantDraftFrom(variant?: CatalogVariantRecord): VariantDraft {
   };
 }
 
-function variantInputFromDraft(
+export function variantInputFromDraft(
   draft: VariantDraft,
   productType: CatalogProductType,
+  variant?: CatalogVariantRecord,
 ): CatalogVariantInput | Error {
   if (draft.displayName.trim() === '' || draft.sku.trim() === '') {
     return new Error('Nhập tên hiển thị và mã biến thể.');
+  }
+  if (draft.colorHex !== '' && !/^#[0-9A-Fa-f]{6}$/.test(draft.colorHex)) {
+    return new Error('Mã màu cần có dạng #A1A1A1.');
   }
   if (productType === 'IPHONE') {
     if (!/^\d+$/.test(draft.storageCapacityGb) || draft.colorName.trim() === '') {
       return new Error('Nhập dung lượng lưu trữ và tên màu cho biến thể iPhone.');
     }
-    if (draft.colorHex !== '' && !/^#[0-9A-Fa-f]{6}$/.test(draft.colorHex)) {
-      return new Error('Mã màu cần có dạng #A1A1A1.');
-    }
   }
   if (productType === 'ACCESSORY' && !/^\d{1,15}$/.test(draft.salePrice)) {
     return new Error('Nhập giá bán hợp lệ cho phụ kiện.');
   }
+  if (productType === 'ACCESSORY' && draft.compareAtPrice !== '') {
+    if (!/^\d{1,15}$/.test(draft.compareAtPrice)) {
+      return new Error('Nhập giá niêm yết hợp lệ.');
+    }
+    if (BigInt(draft.compareAtPrice) < BigInt(draft.salePrice)) {
+      return new Error('Giá niêm yết không được thấp hơn giá bán.');
+    }
+  }
+  if (productType === 'ACCESSORY' && draft.colorHex !== '' && draft.colorName.trim() === '') {
+    return new Error('Nhập tên màu khi đã chọn màu hiển thị.');
+  }
+  const editableAttributes = draft.attributes
+    .filter((attribute) => attribute.hidden !== true)
+    .map((attribute) => ({ name: attribute.name.trim(), value: attribute.value.trim() }))
+    .filter((attribute) => attribute.name !== '' || attribute.value !== '');
+  if (editableAttributes.some((attribute) => attribute.name === '' || attribute.value === '')) {
+    return new Error('Mỗi thông số phụ kiện cần có đủ tên và giá trị.');
+  }
+  const attributeNames = editableAttributes.map((attribute) =>
+    attribute.name.toLocaleLowerCase('vi'),
+  );
+  if (new Set(attributeNames).size !== attributeNames.length) {
+    return new Error('Tên thông số phụ kiện không được trùng nhau.');
+  }
+  const attributes = [
+    ...draft.attributes
+      .filter((attribute) => attribute.hidden !== true)
+      .map((attribute) => ({
+        ...attribute,
+        name: attribute.name.trim(),
+        value: attribute.value.trim(),
+      }))
+      .filter((attribute) => attribute.name !== ''),
+    ...draft.attributes.filter((attribute) => attribute.hidden === true),
+  ];
   return {
     displayName: draft.displayName.trim(),
     sku: draft.sku.trim().toUpperCase(),
-    ...(draft.compareAtPrice === '' ? {} : { compareAtPrice: draft.compareAtPrice }),
-    ...(draft.warrantyPolicyId === '' ? {} : { warrantyPolicyId: draft.warrantyPolicyId }),
+    ...(draft.warrantyPolicyId === ''
+      ? variant?.warrantyPolicyId
+        ? { warrantyPolicyId: null }
+        : {}
+      : { warrantyPolicyId: draft.warrantyPolicyId }),
     ...(productType === 'IPHONE'
       ? {
           colorName: draft.colorName.trim(),
           storageCapacityGb: Number(draft.storageCapacityGb),
-          ...(draft.colorHex === '' ? {} : { colorHex: draft.colorHex }),
+          ...(draft.colorHex === ''
+            ? variant?.colorHex
+              ? { colorHex: null }
+              : {}
+            : { colorHex: draft.colorHex.toUpperCase() }),
         }
-      : { salePrice: draft.salePrice }),
+      : {
+          attributes,
+          salePrice: draft.salePrice,
+          ...(draft.colorName.trim() === ''
+            ? variant?.colorName
+              ? { colorName: null }
+              : {}
+            : { colorName: draft.colorName.trim() }),
+          ...(draft.colorHex === ''
+            ? variant?.colorHex
+              ? { colorHex: null }
+              : {}
+            : { colorHex: draft.colorHex.toUpperCase() }),
+          ...(draft.compareAtPrice === ''
+            ? variant?.compareAtPrice
+              ? { compareAtPrice: null }
+              : {}
+            : { compareAtPrice: draft.compareAtPrice }),
+        }),
   };
+}
+
+function colorPickerValue(value: string): string {
+  return /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#0F8299';
 }
 
 function catalogStatusDescription(status: CatalogRecordStatus): string {

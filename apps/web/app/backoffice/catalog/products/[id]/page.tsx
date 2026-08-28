@@ -226,11 +226,13 @@ function presentDetail(product: CatalogProductDetail): CatalogProductDetailRecor
     type: product.type === 'iphone' ? 'IPHONE' : 'ACCESSORY',
     updatedAt: product.updatedAt,
     variants: product.variants.map((variant) => ({
+      attributes: variant.attributes,
       colorHex: variant.colorHex,
       colorName: variant.colorName,
       compareAtPrice: variant.compareAtPrice,
       displayName: variant.displayName,
       id: variant.id,
+      inventoryMode: variant.inventoryMode === 'serialized' ? 'SERIALIZED' : 'QUANTITY',
       media: variant.media,
       salePrice: variant.salePrice,
       sku: variant.sku,
@@ -253,7 +255,13 @@ function adapterProductUpdate(input: CatalogProductUpdateInput): UpdateCatalogPr
 }
 
 function adapterVariantInput(input: CatalogVariantInput): AdapterVariantInput {
-  return input;
+  const { attributes, ...fields } = input;
+  return {
+    ...fields,
+    ...(attributes === undefined
+      ? {}
+      : { attributes: attributes.map((attribute) => ({ ...attribute })) }),
+  };
 }
 
 function adapterMediaUpload(file: File, input: CatalogMediaMetadataInput) {

@@ -110,8 +110,10 @@ function productFixture(
     updatedAt: '2026-08-28T07:20:00.000Z',
     variants: [
       {
+        attributes: [],
         displayName: '256 GB · Titan tự nhiên',
         id: 'variant-1',
+        inventoryMode: 'SERIALIZED',
         media: [],
         sku: 'IP16P-256-TN',
         status: 'ACTIVE',
