@@ -3524,15 +3524,15 @@ export interface components {
             accessoryAttributes?: {
                 [key: string]: unknown;
             };
-            colorHex?: string;
-            colorName?: string;
-            compareAtPrice?: string;
+            colorHex?: string | null;
+            colorName?: string | null;
+            compareAtPrice?: string | null;
             displayName: string;
             salePrice?: string;
             sku: string;
             storageCapacityGb?: number;
             /** Format: uuid */
-            warrantyPolicyId?: string;
+            warrantyPolicyId?: string | null;
         };
         CreateVoucherDto: {
             code: string;
@@ -4752,15 +4752,15 @@ export interface components {
             accessoryAttributes?: {
                 [key: string]: unknown;
             };
-            colorHex?: string;
-            colorName?: string;
-            compareAtPrice?: string;
+            colorHex?: string | null;
+            colorName?: string | null;
+            compareAtPrice?: string | null;
             displayName?: string;
             salePrice?: string;
             sku?: string;
             storageCapacityGb?: number;
             /** Format: uuid */
-            warrantyPolicyId?: string;
+            warrantyPolicyId?: string | null;
         };
         UpdateVoucherDto: {
             description?: string | null;

@@ -52,7 +52,10 @@ export interface CatalogProductListItem {
 }
 
 export interface CatalogAttribute {
+  hidden?: boolean;
   name: string;
+  originalName?: string;
+  originalValue?: unknown;
   value: string;
 }
 
@@ -147,12 +150,12 @@ export interface CatalogVariantInput {
   sku: string;
   displayName: string;
   storageCapacityGb?: number;
-  colorName?: string;
-  colorHex?: string;
+  colorName?: string | null;
+  colorHex?: string | null;
   salePrice?: string;
-  compareAtPrice?: string;
+  compareAtPrice?: string | null;
   attributes?: CatalogAttribute[];
-  warrantyPolicyId?: string;
+  warrantyPolicyId?: string | null;
 }
 
 export type UpdateCatalogVariantInput = Partial<CatalogVariantInput>;
@@ -617,19 +620,32 @@ function toApiUpdateVariant(input: UpdateCatalogVariantInput): ApiUpdateVariant 
   };
 }
 
-function attributesToRecord(attributes: CatalogAttribute[]): Record<string, string> {
+function attributesToRecord(attributes: CatalogAttribute[]): Record<string, unknown> {
   return Object.fromEntries(
-    attributes
-      .map((attribute) => [attribute.name.trim(), attribute.value.trim()] as const)
-      .filter(([name]) => name.length > 0),
+    attributes.flatMap((attribute) => {
+      const name = attribute.name.trim();
+      const value = attribute.value.trim();
+      if (name.length === 0) return [];
+      const originalFormatted = attributeValue(attribute.originalValue);
+      const unchanged =
+        attribute.originalName === name &&
+        (attribute.hidden === true || originalFormatted === value);
+      return [[name, unchanged ? attribute.originalValue : value] as const];
+    }),
   );
 }
 
 function toAttributes(value: unknown): CatalogAttribute[] {
   if (!isRecord(value)) return [];
-  return Object.entries(value).flatMap(([name, attribute]) => {
+  return Object.entries(value).map(([name, attribute]) => {
     const formatted = attributeValue(attribute);
-    return formatted === null ? [] : [{ name, value: formatted }];
+    return {
+      ...(formatted === null ? { hidden: true } : {}),
+      name,
+      originalName: name,
+      originalValue: attribute,
+      value: formatted ?? '',
+    };
   });
 }
 

@@ -179,8 +179,10 @@ describe('backoffice catalog adapter', () => {
 
   it('loads a detail while converting variant attributes into friendly fields', async () => {
     const get = vi.fn().mockResolvedValue({ data: { data: PRODUCT } });
+    const patch = vi.fn().mockResolvedValue({ data: { data: VARIANT } });
 
-    const result = await getCatalogProduct(mockClient({ GET: get }), PRODUCT_ID);
+    const client = mockClient({ GET: get, PATCH: patch });
+    const result = await getCatalogProduct(client, PRODUCT_ID);
 
     expect(get).toHaveBeenCalledWith('/api/v1/backoffice/products/{id}', {
       params: { path: { id: PRODUCT_ID } },
@@ -191,12 +193,21 @@ describe('backoffice catalog adapter', () => {
       attributes: [
         { name: 'chatLieu', value: 'Nhôm' },
         { name: 'tuongThich', value: 'iPhone 15, iPhone 15 Pro' },
+        { hidden: true, name: 'hiddenTechnicalObject', value: '' },
       ],
     });
     expect(result.variants[0]).not.toHaveProperty('accessoryAttributes');
-    expect(result.variants[0]?.attributes.map(({ name }) => name)).not.toContain(
-      'hiddenTechnicalObject',
-    );
+    await updateCatalogVariant(client, VARIANT_ID, {
+      attributes: result.variants[0]?.attributes ?? [],
+      displayName: 'Không đổi thông số',
+    });
+    expect(patch).toHaveBeenCalledWith('/api/v1/backoffice/variants/{id}', {
+      params: { path: { id: VARIANT_ID } },
+      body: {
+        accessoryAttributes: VARIANT.accessoryAttributes,
+        displayName: 'Không đổi thông số',
+      },
+    });
   });
 
   it('uses the generated create, update, publish, and archive contracts', async () => {
@@ -263,6 +274,7 @@ describe('backoffice catalog adapter', () => {
     await updateCatalogVariant(client, VARIANT_ID, {
       displayName: 'Trong suốt MagSafe',
       attributes: [{ name: 'tương thích', value: 'iPhone 15' }],
+      warrantyPolicyId: null,
     });
     await activateCatalogVariant(client, VARIANT_ID);
     await archiveCatalogVariant(client, VARIANT_ID, 'Không còn nhập phiên bản này');
@@ -294,6 +306,7 @@ describe('backoffice catalog adapter', () => {
       body: {
         displayName: 'Trong suốt MagSafe',
         accessoryAttributes: { 'tương thích': 'iPhone 15' },
+        warrantyPolicyId: null,
       },
     });
   });

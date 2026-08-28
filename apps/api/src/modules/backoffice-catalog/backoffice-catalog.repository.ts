@@ -149,7 +149,9 @@ export class BackofficeCatalogRepository {
           ? {}
           : { storageCapacityGb: input.storageCapacityGb }),
         ...(input.colorName === undefined ? {} : { colorName: input.colorName }),
-        ...(input.colorHex === undefined ? {} : { colorHex: input.colorHex.toUpperCase() }),
+        ...(input.colorHex === undefined
+          ? {}
+          : { colorHex: input.colorHex === null ? null : input.colorHex.toUpperCase() }),
         ...(input.salePrice === undefined ? {} : { salePrice: input.salePrice }),
         ...(input.compareAtPrice === undefined ? {} : { compareAtPrice: input.compareAtPrice }),
         ...(input.accessoryAttributes === undefined
@@ -173,7 +175,9 @@ export class BackofficeCatalogRepository {
           ? {}
           : { storageCapacityGb: input.storageCapacityGb }),
         ...(input.colorName === undefined ? {} : { colorName: input.colorName }),
-        ...(input.colorHex === undefined ? {} : { colorHex: input.colorHex.toUpperCase() }),
+        ...(input.colorHex === undefined
+          ? {}
+          : { colorHex: input.colorHex === null ? null : input.colorHex.toUpperCase() }),
         ...(input.salePrice === undefined ? {} : { salePrice: input.salePrice }),
         ...(input.compareAtPrice === undefined ? {} : { compareAtPrice: input.compareAtPrice }),
         ...(input.accessoryAttributes === undefined

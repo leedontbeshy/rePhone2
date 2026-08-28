@@ -199,37 +199,37 @@ export class CreateVariantDto {
   @Min(1)
   public storageCapacityGb?: number;
 
-  @ApiPropertyOptional({ type: String, maxLength: 255 })
+  @ApiPropertyOptional({ type: String, maxLength: 255, nullable: true })
   @IsOptional()
   @Transform(optionalTrim)
   @IsString()
   @MaxLength(255)
-  public colorName?: string;
+  public colorName?: string | null;
 
-  @ApiPropertyOptional({ type: String, pattern: '^#[0-9A-Fa-f]{6}$' })
+  @ApiPropertyOptional({ type: String, pattern: '^#[0-9A-Fa-f]{6}$', nullable: true })
   @IsOptional()
   @Matches(/^#[0-9A-Fa-f]{6}$/)
-  public colorHex?: string;
+  public colorHex?: string | null;
 
   @ApiPropertyOptional({ type: String, pattern: '^[0-9]{1,15}$' })
   @IsOptional()
   @Matches(/^\d{1,15}$/)
   public salePrice?: string;
 
-  @ApiPropertyOptional({ type: String, pattern: '^[0-9]{1,15}$' })
+  @ApiPropertyOptional({ type: String, pattern: '^[0-9]{1,15}$', nullable: true })
   @IsOptional()
   @Matches(/^\d{1,15}$/)
-  public compareAtPrice?: string;
+  public compareAtPrice?: string | null;
 
   @ApiPropertyOptional({ type: Object, additionalProperties: true })
   @IsOptional()
   @IsObject()
   public accessoryAttributes?: Record<string, unknown>;
 
-  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   @IsOptional()
   @IsUUID()
-  public warrantyPolicyId?: string;
+  public warrantyPolicyId?: string | null;
 }
 
 export class UpdateVariantDto extends PartialType(CreateVariantDto) {}

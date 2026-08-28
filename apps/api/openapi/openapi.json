@@ -4544,14 +4544,17 @@
             "type": "object"
           },
           "colorHex": {
+            "nullable": true,
             "pattern": "^#[0-9A-Fa-f]{6}$",
             "type": "string"
           },
           "colorName": {
             "maxLength": 255,
+            "nullable": true,
             "type": "string"
           },
           "compareAtPrice": {
+            "nullable": true,
             "pattern": "^[0-9]{1,15}$",
             "type": "string"
           },
@@ -4573,6 +4576,7 @@
           },
           "warrantyPolicyId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
@@ -9158,14 +9162,17 @@
             "type": "object"
           },
           "colorHex": {
+            "nullable": true,
             "pattern": "^#[0-9A-Fa-f]{6}$",
             "type": "string"
           },
           "colorName": {
             "maxLength": 255,
+            "nullable": true,
             "type": "string"
           },
           "compareAtPrice": {
+            "nullable": true,
             "pattern": "^[0-9]{1,15}$",
             "type": "string"
           },
@@ -9187,6 +9194,7 @@
           },
           "warrantyPolicyId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },

@@ -440,8 +440,17 @@ describe('BackofficeCatalogService', () => {
       variant({ inventoryMode: 'QUANTITY', salePrice: '150', compareAtPrice: '200' }),
     );
     await expect(
-      success.service.updateVariant('variant-1', { salePrice: '150' }, ACTOR),
+      success.service.updateVariant(
+        'variant-1',
+        { compareAtPrice: null, salePrice: '150', warrantyPolicyId: null },
+        ACTOR,
+      ),
     ).resolves.toMatchObject({ salePrice: '150' });
+    expect(success.repository.updateVariant).toHaveBeenCalledWith(
+      'variant-1',
+      { compareAtPrice: null, salePrice: '150', warrantyPolicyId: null },
+      success.transaction,
+    );
   });
 
   it('maps unique variant update conflicts and validates the effective price pair', async () => {

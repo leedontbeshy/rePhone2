@@ -237,8 +237,10 @@ export class BackofficeCatalogService {
         }
         assertVariantShape(existing.product.type, input);
         assertPricePair(
-          input.salePrice ?? existing.salePrice?.toString(),
-          input.compareAtPrice ?? existing.compareAtPrice?.toString(),
+          input.salePrice === undefined ? existing.salePrice?.toString() : input.salePrice,
+          input.compareAtPrice === undefined
+            ? existing.compareAtPrice?.toString()
+            : (input.compareAtPrice ?? undefined),
         );
         const updated = await this.repository.updateVariant(id, input, transaction);
         await this.audit.write(transaction, actor, {
@@ -503,10 +505,12 @@ function assertVariantShape(type: 'IPHONE' | 'ACCESSORY', input: Partial<CreateV
   assertPricePair(input.salePrice, input.compareAtPrice);
 }
 
-function assertPricePair(salePrice?: string, compareAtPrice?: string): void {
+function assertPricePair(salePrice?: string | null, compareAtPrice?: string | null): void {
   if (
     salePrice !== undefined &&
+    salePrice !== null &&
     compareAtPrice !== undefined &&
+    compareAtPrice !== null &&
     BigInt(compareAtPrice) < BigInt(salePrice)
   ) {
     throw validation('compareAtPrice', 'COMPARE_AT_PRICE_TOO_LOW');
