@@ -55,6 +55,29 @@ export function voucherQueryFromDraft(filters: VoucherFilterDraft, page = 1): Vo
   };
 }
 
+export function voucherQueriesEqual(left: VoucherQuery, right: VoucherQuery): boolean {
+  return (
+    left.page === right.page &&
+    left.pageSize === right.pageSize &&
+    left.q === right.q &&
+    left.status === right.status &&
+    left.discountType === right.discountType &&
+    left.scopeType === right.scopeType
+  );
+}
+
+export function voucherFilterDraftsEqual(
+  left: VoucherFilterDraft,
+  right: VoucherFilterDraft,
+): boolean {
+  return (
+    left.q === right.q &&
+    left.status === right.status &&
+    left.discountType === right.discountType &&
+    left.scopeType === right.scopeType
+  );
+}
+
 export function buildVoucherListHref(
   root: string,
   filters: VoucherFilterDraft & { readonly page: number },

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildVoucherListHref,
   voucherDraftFromQuery,
+  voucherFilterDraftsEqual,
+  voucherQueriesEqual,
   voucherQueryFromDraft,
   voucherQueryFromSearch,
 } from './voucher-list-filters';
@@ -45,5 +47,18 @@ describe('voucher list filters', () => {
     expect(buildVoucherListHref('/backoffice/vouchers', { ...draft, page: 2 })).toBe(
       '/backoffice/vouchers?q=th%C3%A1ng+9&status=DRAFT&scopeType=ORDER&page=2',
     );
+  });
+
+  it('compares normalized queries and filter drafts by value', () => {
+    const query = voucherQueryFromSearch(
+      new URLSearchParams('q=iphone&status=ACTIVE&scopeType=PRODUCTS&page=2'),
+    );
+    const sameQuery = { ...query };
+    const draft = voucherDraftFromQuery(query);
+
+    expect(voucherQueriesEqual(query, sameQuery)).toBe(true);
+    expect(voucherQueriesEqual(query, { ...sameQuery, page: 3 })).toBe(false);
+    expect(voucherFilterDraftsEqual(draft, { ...draft })).toBe(true);
+    expect(voucherFilterDraftsEqual(draft, { ...draft, q: 'phụ kiện' })).toBe(false);
   });
 });

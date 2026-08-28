@@ -28,6 +28,8 @@ import {
   buildVoucherListHref,
   VOUCHER_LIST_PAGE_SIZE,
   voucherDraftFromQuery,
+  voucherFilterDraftsEqual,
+  voucherQueriesEqual,
   voucherQueryFromDraft,
   voucherQueryFromSearch,
   type VoucherDiscountFilter,
@@ -67,7 +69,7 @@ export function VoucherListView() {
   const applyDraft = useCallback(
     (nextDraft: VoucherFilterDraft, historyMode: 'push' | 'replace' = 'push') => {
       const nextQuery = voucherQueryFromDraft(nextDraft);
-      setQuery(nextQuery);
+      setQuery((current) => (voucherQueriesEqual(current, nextQuery) ? current : nextQuery));
       if (typeof window === 'undefined') return;
       const href = buildVoucherListHref(VOUCHERS_ROOT, { ...nextDraft, page: 1 });
       const currentHref = `${window.location.pathname}${window.location.search}`;
@@ -83,15 +85,17 @@ export function VoucherListView() {
 
   useEffect(() => {
     const nextQuery = voucherQueryFromSearch(new URLSearchParams(searchKey));
-    setQuery(nextQuery);
-    setDraft(voucherDraftFromQuery(nextQuery));
+    const nextDraft = voucherDraftFromQuery(nextQuery);
+    setQuery((current) => (voucherQueriesEqual(current, nextQuery) ? current : nextQuery));
+    setDraft((current) => (voucherFilterDraftsEqual(current, nextDraft) ? current : nextDraft));
   }, [searchKey]);
 
   useEffect(() => {
     function syncFromHistory() {
       const nextQuery = voucherQueryFromSearch(new URLSearchParams(window.location.search));
-      setQuery(nextQuery);
-      setDraft(voucherDraftFromQuery(nextQuery));
+      const nextDraft = voucherDraftFromQuery(nextQuery);
+      setQuery((current) => (voucherQueriesEqual(current, nextQuery) ? current : nextQuery));
+      setDraft((current) => (voucherFilterDraftsEqual(current, nextDraft) ? current : nextDraft));
     }
 
     window.addEventListener('popstate', syncFromHistory);
@@ -273,7 +277,13 @@ export function VoucherListView() {
             className={styles.voucherBoard}
             aria-label="Danh sách mã ưu đãi"
             aria-busy={loading || undefined}
+            data-updating={loading && vouchers.length > 0}
           >
+            {loading && vouchers.length > 0 ? (
+              <p className={styles.updateStatus} role="status">
+                Đang cập nhật danh sách…
+              </p>
+            ) : null}
             {vouchers.length === 0 ? (
               <div className={styles.emptyState}>
                 <h2>Chưa có mã ưu đãi phù hợp</h2>
