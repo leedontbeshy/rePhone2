@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { CatalogVoucherShell } from '@/components/backoffice';
 import {
@@ -27,6 +27,14 @@ const EMPTY_PAGINATION: CatalogPagination = {
 };
 
 export default function CatalogProductsPage() {
+  return (
+    <Suspense fallback={<CatalogProductsPageFallback />}>
+      <CatalogProductsPageContent />
+    </Suspense>
+  );
+}
+
+function CatalogProductsPageContent() {
   const searchParams = useSearchParams();
   const { client, status, user } = useAuth();
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
@@ -86,6 +94,21 @@ export default function CatalogProductsPage() {
         pagination={pagination}
         products={products}
         query={query}
+      />
+    </CatalogVoucherShell>
+  );
+}
+
+function CatalogProductsPageFallback() {
+  return (
+    <CatalogVoucherShell breadcrumbs={[{ label: 'Vận hành' }, { label: 'Danh mục' }]}>
+      <CatalogListView
+        counts={EMPTY_COUNTS}
+        error={null}
+        loading
+        pagination={EMPTY_PAGINATION}
+        products={[]}
+        query={{ page: 1, pageSize: 6, sortBy: 'updatedAt', sortOrder: 'desc' }}
       />
     </CatalogVoucherShell>
   );
