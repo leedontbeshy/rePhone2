@@ -43,7 +43,7 @@ export function VoucherCreateView() {
             <h1>Tạo mã ưu đãi</h1>
             <p>Thiết lập điều kiện rõ ràng trước khi áp dụng cho khách hàng.</p>
           </div>
-          <div className={styles.headerActions}>
+          <div className={`${styles.headerActions ?? ''} ${styles.editorHeaderActions ?? ''}`}>
             <Link className={styles.secondaryLink} href={VOUCHERS_ROOT}>
               Hủy
             </Link>

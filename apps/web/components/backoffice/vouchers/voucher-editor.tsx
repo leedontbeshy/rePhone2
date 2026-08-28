@@ -1,8 +1,9 @@
 'use client';
 
-import { CheckCircleIcon, InfoIcon } from '@phosphor-icons/react';
+import { CircleIcon, InfoIcon } from '@phosphor-icons/react';
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
+import { CatalogVoucherStatusChip } from '@/components/backoffice';
 import {
   Checkbox,
   InlineAlert,
@@ -586,6 +587,7 @@ export function VoucherEditor({
 
         <section className={styles.sideCard}>
           <h2>Trạng thái</h2>
+          <CatalogVoucherStatusChip label="Bản nháp" status="DRAFT" />
           <p className={styles.supportCopy}>Mã mới sẽ được lưu thành bản nháp.</p>
         </section>
 
@@ -593,15 +595,15 @@ export function VoucherEditor({
           <h2>Sau khi lưu</h2>
           <ul className={styles.checkList}>
             <li>
-              <CheckCircleIcon aria-hidden size={20} />
+              <CircleIcon aria-hidden size={20} />
               Kiểm tra lại điều kiện
             </li>
             <li>
-              <CheckCircleIcon aria-hidden size={20} />
+              <CircleIcon aria-hidden size={20} />
               Mở áp dụng khi sẵn sàng
             </li>
             <li>
-              <CheckCircleIcon aria-hidden size={20} />
+              <CircleIcon aria-hidden size={20} />
               Theo dõi lượt sử dụng
             </li>
           </ul>
