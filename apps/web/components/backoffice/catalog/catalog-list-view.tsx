@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowRightIcon, MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import { BackofficePagination, CatalogVoucherStatusChip } from '@/components/backoffice';
@@ -165,6 +167,9 @@ function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
         defaultValue={query.type ?? ''}
         id="catalog-type"
         name="type"
+        onChange={(event) => {
+          event.currentTarget.form?.requestSubmit();
+        }}
       >
         <option value="">Loại sản phẩm</option>
         <option value="IPHONE">iPhone</option>
@@ -183,6 +188,9 @@ function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
         name="releaseYear"
         placeholder="Năm ra mắt"
         type="number"
+        onBlur={(event) => {
+          event.currentTarget.form?.requestSubmit();
+        }}
       />
       <label className="rp-visually-hidden" htmlFor="catalog-sort">
         Sắp xếp sản phẩm
@@ -192,6 +200,9 @@ function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
         defaultValue={sortValue}
         id="catalog-sort"
         name="sort"
+        onChange={(event) => {
+          event.currentTarget.form?.requestSubmit();
+        }}
       >
         <option value="updatedAt:desc">Cập nhật mới nhất</option>
         <option value="updatedAt:asc">Cập nhật cũ nhất</option>

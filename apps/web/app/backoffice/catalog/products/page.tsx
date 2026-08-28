@@ -56,14 +56,16 @@ function CatalogProductsPageContent() {
       listCatalogProducts(client, countQuery(query, 'draft')),
       listCatalogProducts(client, countQuery(query, 'archived')),
     ]);
-    setProducts(page.data.map(presentListProduct));
-    setPagination(page.pagination);
-    setCounts({
-      ACTIVE: active.pagination.totalItems,
-      ARCHIVED: archived.pagination.totalItems,
-      DRAFT: draft.pagination.totalItems,
-      total: total.pagination.totalItems,
-    });
+    return {
+      products: page.data.map(presentListProduct),
+      pagination: page.pagination,
+      counts: {
+        ACTIVE: active.pagination.totalItems,
+        ARCHIVED: archived.pagination.totalItems,
+        DRAFT: draft.pagination.totalItems,
+        total: total.pagination.totalItems,
+      } satisfies CatalogStatusCounts,
+    };
   }, [client, query]);
 
   useEffect(() => {
@@ -72,6 +74,12 @@ function CatalogProductsPageContent() {
     setLoading(true);
     setError(null);
     void load()
+      .then((result) => {
+        if (!current) return;
+        setProducts(result.products);
+        setPagination(result.pagination);
+        setCounts(result.counts);
+      })
       .catch((caught: unknown) => {
         if (current) {
           setError(caught instanceof Error ? caught.message : 'Không thể tải danh mục sản phẩm.');
