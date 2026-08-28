@@ -9,7 +9,14 @@ import {
   UploadSimpleIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useRef, useState, type ChangeEvent, type ReactNode, type SyntheticEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+  type SyntheticEvent,
+} from 'react';
 import { BackofficeActionDialog, CatalogVoucherStatusChip } from '@/components/backoffice';
 import { CatalogMediaImage, type CatalogMediaSource } from './catalog-media';
 import type { CatalogWarrantyChoice } from './catalog-product-form';
@@ -523,6 +530,7 @@ export function CatalogDetailView({
       <BackofficeActionDialog
         confirmLabel="Mở bán sản phẩm"
         description="Sản phẩm sẽ xuất hiện trên cửa hàng sau khi hệ thống xác nhận các điều kiện mở bán."
+        error={dialog?.kind === 'publish-product' ? currentError : null}
         pending={busy === 'publish-product'}
         open={dialog?.kind === 'publish-product'}
         title={`Mở bán ${product.name}?`}
@@ -538,6 +546,7 @@ export function CatalogDetailView({
         confirmLabel="Lưu trữ sản phẩm"
         description="Sản phẩm sẽ ngừng hiển thị trên cửa hàng và không thể khôi phục trong giao diện này."
         destructive
+        error={dialog?.kind === 'archive-product' ? currentError : null}
         pending={busy === 'archive-product'}
         open={dialog?.kind === 'archive-product'}
         reason={{ value: reason, onChange: setReason }}
@@ -555,6 +564,7 @@ export function CatalogDetailView({
         confirmLabel="Lưu trữ biến thể"
         description="Biến thể này sẽ ngừng bán và không thể khôi phục trong giao diện này."
         destructive
+        error={dialog?.kind === 'archive-variant' ? currentError : null}
         pending={
           dialog?.kind === 'archive-variant' && busy === `archive-variant:${dialog.variant.id}`
         }
@@ -578,6 +588,7 @@ export function CatalogDetailView({
       <BackofficeActionDialog
         confirmLabel="Mở bán biến thể"
         description="Biến thể sẽ sẵn sàng để sử dụng trong sản phẩm đang bán."
+        error={dialog?.kind === 'activate-variant' ? currentError : null}
         open={dialog?.kind === 'activate-variant'}
         pending={
           dialog?.kind === 'activate-variant' && busy === `activate-variant:${dialog.variant.id}`
@@ -600,6 +611,7 @@ export function CatalogDetailView({
         confirmLabel="Xóa hình ảnh"
         description="Hình ảnh sẽ bị gỡ khỏi sản phẩm và không thể khôi phục trong giao diện này."
         destructive
+        error={dialog?.kind === 'delete-media' ? currentError : null}
         open={dialog?.kind === 'delete-media'}
         pending={dialog?.kind === 'delete-media' && busy === `delete-media:${dialog.media.id}`}
         title="Xóa hình ảnh này?"
@@ -615,6 +627,7 @@ export function CatalogDetailView({
       {dialog?.kind === 'create-variant' || dialog?.kind === 'edit-variant' ? (
         <CatalogVariantDialog
           busy={busy !== null}
+          operationError={currentError}
           product={product}
           variant={dialog.kind === 'edit-variant' ? dialog.variant : undefined}
           warranties={warranties}
@@ -634,6 +647,7 @@ export function CatalogDetailView({
       {dialog?.kind === 'edit-product' ? (
         <CatalogProductEditDialog
           busy={busy !== null}
+          operationError={currentError}
           product={product}
           warranties={warranties}
           onCancel={() => {
@@ -649,6 +663,7 @@ export function CatalogDetailView({
         <CatalogMediaEditDialog
           busy={busy !== null}
           media={dialog.media}
+          operationError={currentError}
           onCancel={() => {
             setDialog(null);
           }}
@@ -667,7 +682,7 @@ export function CatalogDetailView({
         if (clearReason) setReason('');
       })
       .catch(() => {
-        // The route keeps the dialog open and renders the projected domain error above the content.
+        // Keep the dialog open so its inline message remains beside the attempted action.
       });
   }
 }
@@ -767,6 +782,7 @@ function CatalogVariantRow({
 
 function CatalogVariantDialog({
   busy,
+  operationError,
   product,
   variant,
   warranties,
@@ -774,12 +790,14 @@ function CatalogVariantDialog({
   onSubmit,
 }: Readonly<{
   busy: boolean;
+  operationError?: string | null;
   product: CatalogProductDetailRecord;
   variant?: CatalogVariantRecord | undefined;
   warranties: readonly CatalogWarrantyChoice[];
   onCancel: () => void;
   onSubmit: (input: CatalogVariantInput) => void;
 }>) {
+  const dialogRef = useOpenCatalogDialog();
   const [draft, setDraft] = useState(() => variantDraftFrom(variant));
   const [error, setError] = useState<string | null>(null);
   function submit(event: SyntheticEvent<HTMLFormElement>) {
@@ -792,7 +810,15 @@ function CatalogVariantDialog({
     onSubmit(input);
   }
   return (
-    <dialog aria-labelledby="variant-dialog-title" className={styles.dialogPanel} open>
+    <dialog
+      aria-labelledby="variant-dialog-title"
+      className={styles.dialogPanel}
+      ref={dialogRef}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onCancel();
+      }}
+    >
       <form onSubmit={submit}>
         <div className={styles.dialogHeading}>
           <h2 id="variant-dialog-title">
@@ -801,6 +827,11 @@ function CatalogVariantDialog({
           <p>Nhập thông tin khách hàng cần thấy khi chọn cấu hình.</p>
         </div>
         {error === null ? null : <div className={styles.errorBanner}>{error}</div>}
+        {operationError === null || operationError === undefined ? null : (
+          <div className={styles.errorBanner} role="alert">
+            {operationError}
+          </div>
+        )}
         <div className={styles.fieldGrid}>
           <DialogField id="variant-name" label="Tên hiển thị">
             <input
@@ -929,17 +960,20 @@ function CatalogVariantDialog({
 
 function CatalogProductEditDialog({
   busy,
+  operationError,
   product,
   warranties,
   onCancel,
   onSubmit,
 }: Readonly<{
   busy: boolean;
+  operationError?: string | null;
   product: CatalogProductDetailRecord;
   warranties: readonly CatalogWarrantyChoice[];
   onCancel: () => void;
   onSubmit: (input: CatalogProductUpdateInput) => void;
 }>) {
+  const dialogRef = useOpenCatalogDialog();
   const [draft, setDraft] = useState(() => ({
     brand: product.brand,
     chipset: product.chipset ?? '',
@@ -978,12 +1012,25 @@ function CatalogProductEditDialog({
     });
   }
   return (
-    <dialog aria-labelledby="product-edit-title" className={styles.dialogPanel} open>
+    <dialog
+      aria-labelledby="product-edit-title"
+      className={styles.dialogPanel}
+      ref={dialogRef}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onCancel();
+      }}
+    >
       <form onSubmit={submit}>
         <div className={styles.dialogHeading}>
           <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
           <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
         </div>
+        {operationError === null || operationError === undefined ? null : (
+          <div className={styles.errorBanner} role="alert">
+            {operationError}
+          </div>
+        )}
         <div className={styles.fieldGrid}>
           <DialogField id="edit-product-name" label="Tên sản phẩm">
             <input
@@ -1145,18 +1192,29 @@ function CatalogProductEditDialog({
 function CatalogMediaEditDialog({
   busy,
   media,
+  operationError,
   onCancel,
   onSubmit,
 }: Readonly<{
   busy: boolean;
   media: CatalogMediaRecord;
+  operationError?: string | null;
   onCancel: () => void;
   onSubmit: (input: CatalogMediaMetadataInput) => void;
 }>) {
+  const dialogRef = useOpenCatalogDialog();
   const [altText, setAltText] = useState(media.altText ?? '');
   const [sortOrder, setSortOrder] = useState(String(media.sortOrder));
   return (
-    <dialog aria-labelledby="media-edit-title" className={styles.dialogPanel} open>
+    <dialog
+      aria-labelledby="media-edit-title"
+      className={styles.dialogPanel}
+      ref={dialogRef}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onCancel();
+      }}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -1167,6 +1225,11 @@ function CatalogMediaEditDialog({
           <h2 id="media-edit-title">Chỉnh sửa hình ảnh</h2>
           <p>Mô tả rõ nội dung ảnh và sắp xếp thứ tự hiển thị.</p>
         </div>
+        {operationError === null || operationError === undefined ? null : (
+          <div className={styles.errorBanner} role="alert">
+            {operationError}
+          </div>
+        )}
         <DialogField id="media-alt-text" label="Mô tả hình ảnh">
           <input
             className={styles.nativeInput}
@@ -1202,6 +1265,24 @@ function CatalogMediaEditDialog({
       </form>
     </dialog>
   );
+}
+
+function useOpenCatalogDialog() {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog === null) return;
+    if (!dialog.open) {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    }
+    return () => {
+      if (!dialog.open) return;
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    };
+  }, []);
+  return dialogRef;
 }
 
 function CatalogDescription({ label, value }: Readonly<{ label: string; value: string }>) {

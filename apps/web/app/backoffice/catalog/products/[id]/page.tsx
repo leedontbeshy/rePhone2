@@ -84,8 +84,12 @@ export default function CatalogProductDetailPage() {
     setNotice(null);
     try {
       await operation();
-      await load();
       setNotice(success);
+      try {
+        await load();
+      } catch {
+        setError('Thao tác đã hoàn tất nhưng chưa tải được thông tin mới. Hãy tải lại trang.');
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Chưa thể hoàn tất thao tác.');
       throw caught;
