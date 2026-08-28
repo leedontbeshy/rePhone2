@@ -95,6 +95,12 @@
   max-width: 48rem;
 }
 
+@media (min-width: 48rem) {
+  .workspaceNavigation ul {
+    justify-content: center;
+  }
+}
+
 @media (max-width: 47.999rem) {
   .surface {
     gap: var(--space-4);
