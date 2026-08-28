@@ -7,10 +7,10 @@
 > Design contract: [design.md](design.md)  
 > Frontend baseline SHA: `801ad26`  
 > Ngày cập nhật: `2026-08-28`<br>
-> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE**<br>
+> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE · FE-5 IN PROGRESS**<br>
 > HTTP baseline: `apps/api/openapi/openapi.json` — **160 operations**
 
-Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 đã hoàn thành auth và self-service account; FE-3 đã hoàn thành cart, wishlist và checkout; FE-4 đã hoàn thành customer post-purchase portal. FE-5 là phase tiếp theo. Tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
+Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 đã hoàn thành auth và self-service account; FE-3 đã hoàn thành cart, wishlist và checkout; FE-4 đã hoàn thành customer post-purchase portal. FE-5 đang triển khai catalog, media và mã ưu đãi trong backoffice. Tại một thời điểm chỉ được có tối đa một phase mang trạng thái `IN PROGRESS`.
 
 ## 1. Vai trò tài liệu và thứ tự nguồn sự thật
 
@@ -322,7 +322,7 @@ Contract chung cho mọi phase:
 
 | Thuộc tính        | Nội dung                                                                                                                                                        |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **NOT STARTED**                                                                                                                                                 |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                                 |
 | Mục tiêu          | Cung cấp full product/variant/media CRUD và admin voucher lifecycle thay cho Swagger-only operations.                                                           |
 | Non-goal          | Không generic JSON editor, bulk import, campaign engine hoặc bypass publish/lifecycle rules.                                                                    |
 | Dependency        | FE-0 + FE-1; có thể song song FE-3.                                                                                                                             |
@@ -501,6 +501,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-27 | FE-3              | DONE                   | Khóa exact-unit cart, Wishlist và checkout guest/CUSTOMER                                          | Code SHA `8c0438b` + `e761c92`; 10/10 operation; web `169/169`; lint/typecheck/build/coverage/a11y xanh; Browser QA 320/768/1440 và comparison `passed`; FE-4 là bước kế tiếp                                                                |
 | 2026-08-28 | FE-4              | IN PROGRESS            | Bắt đầu portal đơn hàng, bảo hành và hỗ trợ sau mua theo hướng “Hành trình theo chặng”             | Branch `feat/fe-4-customer-post-purchase`; record `docs/planning/2026-08-27-fe-04-customer-post-purchase-design.md`; 12 operation vẫn `NOT STARTED` trong package nền tảng                                                                   |
 | 2026-08-28 | FE-4              | DONE                   | Khóa portal đơn hàng, bảo hành và hỗ trợ sau mua                                                   | Code SHA `8465951`; 12/12 operation; web `221/221`; API `609/609`; FE-4 browser `5/5`; lint/typecheck/build/coverage/a11y và visual comparison `passed`; FE-5 là bước kế tiếp                                                                |
+| 2026-08-28 | FE-5              | IN PROGRESS            | Bắt đầu quản trị catalog, media và mã ưu đãi theo phương án visual catalog board                   | Branch `codex/feat-fe-05-catalog-vouchers`; record `docs/planning/2026-08-28-fe-05-catalog-voucher-administration.md`; 22 operation giữ `NOT STARTED` cho đến khi có evidence theo lát cắt                                                   |
 
 ## 12. Operation coverage ledger — 160/160
 
