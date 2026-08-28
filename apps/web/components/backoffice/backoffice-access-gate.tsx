@@ -1,7 +1,7 @@
 'use client';
 
 import { LockKeyIcon } from '@phosphor-icons/react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { Button, Link, Skeleton } from '@/components/ui';
 import styles from './backoffice-access-gate.module.css';
@@ -25,8 +25,7 @@ export function BackofficeAccessGate({ children }: BackofficeAccessGateProps) {
   }
   if (status === 'anonymous') return <BackofficeAccessDenied audience="anonymous" />;
 
-  // Fail closed if the authentication state is ever incomplete. AuthProvider does not currently
-  // expose refresh errors separately, so this defensive state must never reveal the workspace.
+  // Fail closed if the authentication state is ever incomplete.
   if (user === null) {
     return (
       <BackofficeAccessUnavailable
@@ -40,7 +39,14 @@ export function BackofficeAccessGate({ children }: BackofficeAccessGateProps) {
     return <BackofficeAccessDenied audience="customer" />;
   }
 
-  return children;
+  return (
+    <>
+      <span className="rp-visually-hidden" role="status">
+        Đã xác nhận quyền truy cập.
+      </span>
+      {children}
+    </>
+  );
 }
 
 function AccessScreen({ children }: Readonly<{ children: ReactNode }>) {
@@ -79,6 +85,7 @@ function BackofficeAccessLoading() {
 
 function BackofficeAccessDenied({ audience }: Readonly<{ audience: 'anonymous' | 'customer' }>) {
   const anonymous = audience === 'anonymous';
+  const titleRef = useAccessOutcomeFocus();
 
   return (
     <AccessScreen>
@@ -88,7 +95,9 @@ function BackofficeAccessDenied({ audience }: Readonly<{ audience: 'anonymous' |
         </span>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Khu vực vận hành</p>
-          <h1 id="backoffice-access-title">Không có quyền truy cập</h1>
+          <h1 id="backoffice-access-title" ref={titleRef} tabIndex={-1}>
+            Không có quyền truy cập
+          </h1>
           <p>
             {anonymous
               ? 'Khu vực này chỉ dành cho nhân viên rePhone. Hãy đăng nhập bằng tài khoản được cấp quyền.'
@@ -115,6 +124,8 @@ function BackofficeAccessDenied({ audience }: Readonly<{ audience: 'anonymous' |
 }
 
 function BackofficeAccessUnavailable({ onRetry }: Readonly<{ onRetry: () => void }>) {
+  const titleRef = useAccessOutcomeFocus();
+
   return (
     <AccessScreen>
       <section aria-labelledby="backoffice-access-title" className={styles.card}>
@@ -123,7 +134,9 @@ function BackofficeAccessUnavailable({ onRetry }: Readonly<{ onRetry: () => void
         </span>
         <div className={styles.copy}>
           <p className={styles.eyebrow}>Khu vực vận hành</p>
-          <h1 id="backoffice-access-title">Chưa thể kiểm tra quyền truy cập</h1>
+          <h1 id="backoffice-access-title" ref={titleRef} tabIndex={-1}>
+            Chưa thể kiểm tra quyền truy cập
+          </h1>
           <p>Nội dung vận hành đang được bảo vệ. Hãy tải lại trang khi kết nối ổn định.</p>
         </div>
         <div aria-label="Lựa chọn tiếp theo" className={styles.actions} role="group">
@@ -135,4 +148,12 @@ function BackofficeAccessUnavailable({ onRetry }: Readonly<{ onRetry: () => void
       </section>
     </AccessScreen>
   );
+}
+
+function useAccessOutcomeFocus() {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, []);
+  return titleRef;
 }

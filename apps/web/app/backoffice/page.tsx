@@ -1,3 +1,5 @@
+'use client';
+
 import { CatalogVoucherShell } from '@/components/backoffice';
 import { Skeleton } from '@/components/ui';
 import styles from './page.module.css';

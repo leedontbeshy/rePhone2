@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense } from 'react';
 import { InventoryShell } from '@/components/backoffice';
 import { InventoryIntakeWizard } from './wizard';

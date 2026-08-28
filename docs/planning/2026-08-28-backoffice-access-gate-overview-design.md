@@ -36,6 +36,7 @@
 - `AuthProvider` cần hoàn thành phục hồi phiên bằng cookie trước khi biết vai trò. Trong khoảng này chỉ được render màn kiểm tra quyền trung tính, tuyệt đối không render `children`.
 - Không lưu vai trò vào `localStorage` hoặc thêm cookie đọc được từ JavaScript chỉ để rút ngắn màn kiểm tra quyền.
 - Cổng đặt ở layout gốc của backoffice để chi phí bảo trì không tăng theo số lượng trang.
+- Mọi route entry có thể render dưới `/backoffice` (`page`, `layout`, `template`, `loading`, `error`, `not-found` và các biến thể tương ứng) phải là client leaf; kiểm thử kiến trúc chặn Server Component mới để nội dung hoặc truy vấn trang con không bị thực thi và serialize trước cổng quyền.
 - Trạng thái mất mạng hoặc không xác định được phiên mặc định đóng: không render nội dung quản trị.
 - Giao diện phải hoạt động ở desktop và mobile, dùng token và primitive sẵn có, hỗ trợ bàn phím và trình đọc màn hình.
 
@@ -91,6 +92,7 @@ Chủ dự án cho phép kiểm thử và debug sâu trước khi bàn giao.
 - Unit test cổng quyền cho `loading`, `anonymous`, `CUSTOMER`, `EMPLOYEE`, `ADMIN` và trạng thái kiểm tra phiên thất bại.
 - Ở ba trạng thái không được phép, assert nội dung bí mật không tồn tại trong DOM thay vì chỉ bị ẩn.
 - Browser test mở route gốc và route con khi là khách vãng lai/khách hàng; ghi nhận số request và assert không có request `/api/v1/backoffice/**` từ trang con.
+- Kiểm tra trực tiếp HTML/RSC phản hồi ban đầu không chứa marker nội dung quản trị; không chỉ kiểm tra DOM sau hydration.
 - Browser test nhân viên/quản trị được render nội dung và nút Quản trị dẫn về Tổng quan.
 - Kiểm tra không nháy UI bằng cách trì hoãn response phục hồi phiên có kiểm soát và quan sát DOM/screenshot trong khoảng chờ.
 - Kiểm tra desktop và mobile cho loading, forbidden và overview; không tràn ngang, không lỗi console, focus và thao tác bàn phím đúng.

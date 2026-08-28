@@ -41,7 +41,8 @@ describe('BackofficeAccessGate', () => {
 
     const markup = renderGate(<ProtectedContent />);
 
-    expect(markup).toContain('<h1 id="backoffice-access-title">Không có quyền truy cập</h1>');
+    expect(markup).toContain('tabindex="-1"');
+    expect(markup).toContain('Không có quyền truy cập</h1>');
     expect(markup).toContain('href="/login"');
     expect(markup).toContain('>Đăng nhập</a>');
     expect(markup).toContain('href="/"');
@@ -55,7 +56,8 @@ describe('BackofficeAccessGate', () => {
 
     const markup = renderGate(<ProtectedContent />);
 
-    expect(markup).toContain('<h1 id="backoffice-access-title">Không có quyền truy cập</h1>');
+    expect(markup).toContain('tabindex="-1"');
+    expect(markup).toContain('Không có quyền truy cập</h1>');
     expect(markup).toContain('href="/account"');
     expect(markup).toContain('>Quản lý tài khoản</a>');
     expect(markup).toContain('>Về cửa hàng</a>');
@@ -91,6 +93,8 @@ describe('BackofficeAccessGate', () => {
 
     const markup = renderGate(<ProtectedContent />);
 
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('Đã xác nhận quyền truy cập.');
     expect(markup).toContain('Dữ liệu vận hành bí mật');
     expect(markup).not.toContain('Không có quyền truy cập');
     expect(childRenderCount).toBe(1);

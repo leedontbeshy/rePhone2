@@ -77,6 +77,10 @@
   margin: 0;
 }
 
+.copy h1:focus {
+  outline: none;
+}
+
 .copy > p:last-child {
   max-width: 34rem;
   color: var(--color-muted);
