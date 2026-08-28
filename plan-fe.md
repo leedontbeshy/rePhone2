@@ -185,12 +185,12 @@ Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc
 |  39 | `/account`                               | Hiện có | FE-2        |
 |  40 | `/account/addresses`                     | Hiện có | FE-2        |
 |  41 | `/account/security`                      | Hiện có | FE-2        |
-|  42 | `/backoffice/catalog/products`           | Mới     | FE-5        |
-|  43 | `/backoffice/catalog/products/new`       | Mới     | FE-5        |
-|  44 | `/backoffice/catalog/products/[id]`      | Mới     | FE-5        |
-|  45 | `/backoffice/vouchers`                   | Mới     | FE-5        |
-|  46 | `/backoffice/vouchers/new`               | Mới     | FE-5        |
-|  47 | `/backoffice/vouchers/[id]`              | Mới     | FE-5        |
+|  42 | `/backoffice/catalog/products`           | Hiện có | FE-5        |
+|  43 | `/backoffice/catalog/products/new`       | Hiện có | FE-5        |
+|  44 | `/backoffice/catalog/products/[id]`      | Hiện có | FE-5        |
+|  45 | `/backoffice/vouchers`                   | Hiện có | FE-5        |
+|  46 | `/backoffice/vouchers/new`               | Hiện có | FE-5        |
+|  47 | `/backoffice/vouchers/[id]`              | Hiện có | FE-5        |
 |  48 | `/backoffice/inventory/units`            | Mới     | FE-6        |
 |  49 | `/backoffice/inventory/units/[id]`       | Mới     | FE-6        |
 |  50 | `/backoffice/inventory/lookup`           | Mới     | FE-6        |
