@@ -60,6 +60,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Chưa thể tra cứu mã máy.');
       setIdentifier('');
+      setAttempted(false);
     } finally {
       setPending(false);
     }
