@@ -1,111 +1,94 @@
-# Design QA — FE-04 portal sau mua
+# Design QA — FE-05 quản trị danh mục và mã ưu đãi
 
 Date: 2026-08-28
 
-Preview: `http://localhost:3000/after-sales`
+Preview: `http://localhost:3000/backoffice/catalog/products`
 
-## Nguồn hình ảnh và phạm vi
+## Phạm vi và nguồn đối chiếu
 
-- Hướng hình ảnh đã duyệt: **Hành trình theo chặng**.
-- Mockup chuẩn: `docs/assets/ui/fe-04/`.
-- Ảnh lỗi do người dùng cung cấp:
-  - `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-07a0d2bf-9b0a-4f1d-8678-3bd6a1c52ff1.png`
-  - `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-03c12aa6-f6c1-4e39-b202-f098c2e176f3.png`
-- Phạm vi: `/orders`, `/orders/[orderNumber]`, `/warranties`,
-  `/warranties/[warrantyCode]`, `/after-sales`, `/after-sales/new` và
-  `/after-sales/[requestNumber]`.
+- Phương án hình ảnh đã duyệt: catalog board cho sản phẩm và mã ưu đãi.
+- Mockup chuẩn: `docs/assets/ui/fe-05/`.
+- Sáu màn hình được nghiệm thu:
+  - `/backoffice/catalog/products`
+  - `/backoffice/catalog/products/new`
+  - `/backoffice/catalog/products/[id]`
+  - `/backoffice/vouchers`
+  - `/backoffice/vouchers/new`
+  - `/backoffice/vouchers/[id]`
 
-## Điều kiện chụp
+## Điều kiện kiểm tra
 
-| Nhóm                    | Viewport logic | Tỉ lệ điểm ảnh | Kích thước ảnh |
-| ----------------------- | -------------: | -------------: | -------------: |
-| Desktop                 |    1487 × 1058 |              1 |    1487 × 1058 |
-| Mobile hành vi          |      390 × 844 |              1 |      390 × 844 |
-| Mobile đối chiếu mockup |      390 × 843 |          2.187 |     853 × 1844 |
+| Nhóm              |    Viewport | Tỉ lệ điểm ảnh | Trạng thái                                          |
+| ----------------- | ----------: | -------------: | --------------------------------------------------- |
+| Desktop đối chiếu | 1487 × 1058 |              1 | Quản trị viên đã đăng nhập, dữ liệu giả lập ổn định |
+| Mobile hành vi    |   360 × 800 |              1 | Cùng tài khoản và dữ liệu                           |
 
-Trạng thái chung: khách đã đăng nhập, giỏ hàng trống và dữ liệu giả lập ổn định.
-Các màn hình được chụp sau khi tải xong phông chữ; không có lỗi console.
+Ảnh triển khai được chụp bằng in-app browser ở cùng viewport với mockup. Không dùng
+Playwright CLI trong lượt đóng phase này.
 
-## Bằng chứng đối chiếu
+## Bằng chứng đối chiếu desktop
 
-Mỗi ảnh desktop tổng hợp có kích thước 2974 × 1114, gồm mockup nguồn và bản triển khai
-cùng viewport. Ảnh mobile tổng hợp có kích thước 1706 × 1900.
+Mỗi ảnh dưới đây đặt mockup nguồn ở bên trái và bản triển khai ở bên phải trong cùng
+một ảnh để đánh giá trực tiếp:
 
-- Danh sách đơn hàng:
-  `.local/product-design-qa/fe04/orders-list-desktop--comparison.png`
-- Danh sách hỗ trợ:
-  `.local/product-design-qa/fe04/support-list-desktop--comparison.png`
-- Form hỗ trợ sau khi đã chọn sản phẩm:
-  `.local/product-design-qa/fe04/support-new-form-desktop--comparison.png`
-- Chi tiết bảo hành:
-  `.local/product-design-qa/fe04/warranty-detail-desktop--comparison.png`
-- Chi tiết đơn hàng trên mobile:
-  `.local/product-design-qa/fe04/order-detail-mobile--comparison.png`
-- Ô minh chứng thanh toán:
-  `.local/product-design-qa/fe04/payment-proof-control.png`
-- Màn hình mobile 390 px:
-  - `.local/product-design-qa/fe04/orders-list-mobile.png`
-  - `.local/product-design-qa/fe04/support-list-mobile.png`
+- Danh sách sản phẩm:
+  `.local/product-design-qa/fe05/catalog-list-desktop--comparison.png`
+- Tạo sản phẩm:
+  `.local/product-design-qa/fe05/catalog-create-desktop--comparison.png`
+- Chi tiết sản phẩm:
+  `.local/product-design-qa/fe05/catalog-detail-desktop--comparison.png`
+- Danh sách mã ưu đãi:
+  `.local/product-design-qa/fe05/vouchers-list-desktop--comparison.png`
+- Tạo mã ưu đãi:
+  `.local/product-design-qa/fe05/voucher-create-desktop--comparison.png`
+- Chi tiết mã ưu đãi:
+  `.local/product-design-qa/fe05/voucher-detail-desktop--comparison.png`
 
-## Kết quả theo sáu yêu cầu
+Bằng chứng mobile:
 
-1. Danh sách đơn hàng dùng lưới cột ổn định; mã dài được rút gọn trong ô, không làm
-   lệch ngày đặt, tổng tiền và trạng thái. Mã đầy đủ vẫn có trong tooltip.
-2. Minh chứng thanh toán dùng bộ chọn tệp riêng, có nút “Chọn tệp”, tên tệp, định
-   dạng hỗ trợ, trạng thái focus và trạng thái vô hiệu hóa nhất quán.
-3. “Chọn sản phẩm từ đơn hàng” mở bộ chọn ngay trong luồng hỗ trợ. Bộ chọn chỉ tải
-   đơn đã hoàn tất, hỗ trợ đầy đủ nhiều trang và cho chọn đúng sản phẩm trước khi mở
-   form.
-4. Trạng thái phiếu và nút “Xem tiến độ” đã căn giữa trên cùng một hàng ở desktop;
-   mobile chuyển thành bố cục xếp lớp rõ ràng.
-5. Frontend, đường dẫn trực tiếp và máy chủ đều kiểm tra trạng thái hoàn tất. Đơn đã
-   đặt, đã xác nhận, đã hủy hoặc vừa đổi trạng thái không thể tạo phiếu.
-6. Hai CTA tại trang hỗ trợ và chi tiết bảo hành dùng đúng màu chính ở trạng thái
-   thường, hover, active và focus.
+- `.local/product-design-qa/fe05/catalog-list-mobile-final.png`
+- `.local/product-design-qa/fe05/voucher-create-mobile.png`
 
-## Lịch sử lặp QA
+## Kết quả trực quan
 
-### Lần 1
-
-- P1 accessibility: chữ trạng thái cảnh báo có độ tương phản 4.22:1, chưa đạt ngưỡng
-  4.5:1.
-- P2 responsive: trang rộng 486 px trong viewport 390 px; thanh điều hướng và bộ lọc
-  bị cắt.
-- P2 chức năng: bộ chọn hỗ trợ chỉ đọc 100 đơn hoàn tất đầu tiên.
-
-Đã sửa màu cảnh báo thành `#9b5b00` (khoảng 4.94:1), khóa kích thước tối thiểu của
-shell, cho bộ lọc xếp một cột, cân ba mục điều hướng trong 390 px và tải tuần tự toàn
-bộ trang đơn hoàn tất với giới hạn an toàn.
-
-### Lần 2
-
-- Không còn P0, P1 hoặc P2.
-- `documentElement.scrollWidth === 390` tại `/orders`, chi tiết đơn hàng và
-  `/after-sales`; không còn phần tử vượt viewport.
-- Axe không còn lỗi serious/critical trong hành trình desktop đã kiểm tra.
-- Sai khác P3 chấp nhận được: lượng dữ liệu mẫu và ảnh sản phẩm trong bản triển khai
-  phụ thuộc dữ liệu API, nên mật độ hàng có thể khác mockup; cấu trúc, nhịp khoảng
-  cách, màu, chữ và hành vi chính vẫn nhất quán.
+- Cấu trúc hai cột, phân cấp tiêu đề, bộ lọc, tab trạng thái, card dữ liệu, panel bên
+  phải và CTA chính giữ đúng hướng hình ảnh đã duyệt.
+- CTA chính giữ tương phản chữ ở trạng thái thường, hover và focus.
+- Dải trạng thái mã ưu đãi không còn xuất hiện thanh cuộn dọc thừa.
+- Header backoffice trên mobile chỉ giữ các thao tác thiết yếu, không còn cắt tên hay
+  chia chữ thành nhiều cột hẹp.
+- Các dải tab vẫn cuộn ngang được trên màn hình hẹp nhưng không hiển thị thanh cuộn
+  thô; toàn trang không tràn ngang.
+- Không còn P0, P1 hoặc P2 sau vòng sửa cuối. Sai khác P3 chấp nhận được đến từ số
+  lượng dữ liệu, trạng thái bản ghi và mật độ nội dung của dữ liệu giả lập; cấu trúc và
+  hành vi chính không thay đổi.
 
 ## Tương tác đã kiểm tra
 
-- Lọc và mở danh sách đơn; mở chi tiết; dialog hủy đơn; quyền truy cập khách.
-- Hiển thị và thao tác với bộ chọn minh chứng thanh toán.
-- Danh sách và chi tiết bảo hành; CTA yêu cầu hỗ trợ.
-- Danh sách, chi tiết và hủy phiếu hỗ trợ.
-- Chọn đơn hoàn tất, chọn sản phẩm và mở form tạo yêu cầu.
-- URL không hợp lệ, trạng thái đơn không hợp lệ và thay đổi trạng thái đồng thời.
-- Một vùng nội dung chính, keyboard focus, độ tương phản và không tràn ngang.
+- Bộ lọc loại sản phẩm tự cập nhật URL và danh sách đúng dữ liệu.
+- Tab trạng thái mã ưu đãi cập nhật URL và chỉ giữ các chương trình phù hợp.
+- Hộp xác nhận lưu trữ sản phẩm mở bằng modal thật, giữ focus và đóng sạch bằng nút
+  hủy.
+- Sáu route đều có đúng một vùng nội dung chính và một tiêu đề cấp một.
+- Các điều khiển hiển thị đều có nhãn; nút tải ảnh ẩn khỏi luồng bàn phím trùng lặp và
+  thao tác qua nút “Tải ảnh” có tên rõ ràng.
+- Sáu route không hiển thị UUID, enum thô hoặc nội dung kỹ thuật dành cho lập trình
+  viên.
+- `documentElement.scrollWidth <= documentElement.clientWidth` ở cả sáu route tại
+  1487 × 1058 và 360 × 800.
+- Console không có lỗi sau hành trình kiểm tra cuối.
 
-## Kiểm tra kỹ thuật
+## Kiểm tra tự động
 
-- Web unit: 51 file, 221 test đạt.
-- API unit toàn bộ: 104 file, 609 test đạt; kiểm tra mục tiêu sau cùng: 1 file,
-  5 test đạt.
-- Browser/visual: 5 test đạt, gồm viewport mobile 390 × 844.
-- A11y contract: 4 file, 15 test đạt.
-- Coverage contract: 1 file, 4 test đạt.
-- Lint, typecheck, format và production build đạt; đủ bảy route FE-04.
-- Chụp visual cuối: không có lỗi console.
+- Web unit: 59 file, 257/257 test đạt.
+- API unit: 105 file, 612/612 test đạt.
+- A11y contract: 4 file, 15/15 test đạt.
+- Coverage contract: 1 file, 4/4 test đạt.
+- Lint, typecheck và production build đạt; build tạo 36 trang tĩnh.
+- Browser evidence spec cho sáu route đã có trong
+  `tests/browser/catalog-voucher-admin.spec.ts`, nhưng không chạy Playwright CLI trong
+  lượt nghiệm thu này.
+- PostgreSQL/Docker integration chưa chạy trong lượt này; kết quả trên không tuyên bố
+  integration hoặc E2E cơ sở dữ liệu đã đạt.
 
 final result: passed
