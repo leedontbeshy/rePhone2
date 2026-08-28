@@ -19,6 +19,7 @@ import {
   type IntakeField,
   type IntakeFieldErrors,
 } from './intake-form-model';
+import { orderIphoneProducts, orderIphoneVariants } from './intake-option-order';
 import styles from './intake.module.css';
 
 type ProductListItem = components['schemas']['BackofficeProductListItemDto'];
@@ -78,7 +79,16 @@ export function InventoryIntakeWizard() {
     setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/products', {
-        params: { query: { type: 'IPHONE', status: 'ACTIVE', page: 1, pageSize: 100 } },
+        params: {
+          query: {
+            type: 'IPHONE',
+            status: 'ACTIVE',
+            sortBy: 'releaseYear',
+            sortOrder: 'desc',
+            page: 1,
+            pageSize: 100,
+          },
+        },
       }),
       client.GET('/api/v1/backoffice/inventory-locations'),
     ])
@@ -86,7 +96,7 @@ export function InventoryIntakeWizard() {
         if (!active) return;
         if (productResult.data === undefined) throw apiRequestError(productResult.error);
         if (locationResult.data === undefined) throw apiRequestError(locationResult.error);
-        const nextProducts = productResult.data.data;
+        const nextProducts = orderIphoneProducts(productResult.data.data);
         const nextLocations = locationResult.data.data.filter((item) => item.status === 'ACTIVE');
         setProducts(nextProducts);
         setLocations(nextLocations);
@@ -822,8 +832,10 @@ function UnitSummary({ unit }: { unit: Unit }) {
 }
 
 function sellableVariants(product: ProductDetail) {
-  return product.variants.filter(
-    (variant) => variant.status === 'ACTIVE' && variant.inventoryMode === 'SERIALIZED',
+  return orderIphoneVariants(
+    product.variants.filter(
+      (variant) => variant.status === 'ACTIVE' && variant.inventoryMode === 'SERIALIZED',
+    ),
   );
 }
 
