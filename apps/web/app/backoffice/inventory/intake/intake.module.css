@@ -64,6 +64,16 @@
   grid-column: 1 / -1;
 }
 
+.workspace :global(.wizard-form) {
+  align-items: start;
+}
+
+.workspace :global(.wizard-form > div > label) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+}
+
 .workspace :global(.wizard-card) {
   border: var(--border-default);
   border-radius: var(--radius-card);
