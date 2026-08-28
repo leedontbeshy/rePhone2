@@ -1,7 +1,7 @@
 # FE-05 — Quản trị danh mục và mã ưu đãi
 
 > Ngày chốt: 2026-08-28  
-> Trạng thái: IN PROGRESS  
+> Trạng thái: DONE
 > Nhánh: `codex/feat-fe-05-catalog-vouchers`
 
 ## 1. Mục tiêu đã chốt
@@ -57,29 +57,27 @@ Sau mỗi command, UI refetch dữ liệu authoritative. Không tự retry publi
 - Không làm bulk import, campaign engine, generic JSON editor, unit media hoặc inventory workflow của FE-06.
 - Không chuyển toàn bộ backoffice legacy sang shell mới trong FE-05.
 
-## 6. Chia commit
+## 6. Lịch sử triển khai
 
-1. `fix(web): align FE-04 coverage ledger`
-2. `docs(fe): start catalog voucher administration`
-3. `feat(api): expose catalog administration projections`
-4. `feat(api): expose typed voucher administration projections`
-5. `feat(web): add FE-05 backoffice workspace`
-6. `feat(web): add product catalog list and creation`
-7. `feat(web): add product lifecycle and variants`
-8. `feat(web): add catalog media manager`
-9. `feat(web): add voucher list and creation`
-10. `feat(web): add voucher lifecycle and usage history`
-11. `test(web): verify catalog and voucher administration`
-12. `docs(fe): close catalog voucher administration`
+Chuỗi commit FE-05 đã có đến thời điểm đóng phase:
 
-Mỗi commit chạy test tập trung, lint, typecheck và coverage contract tương ứng trước khi chuyển sang lát cắt tiếp theo.
+1. `4c58920` — căn lại coverage ledger sau FE-04.
+2. `d252557` — mở hồ sơ quản trị catalog và mã ưu đãi.
+3. `48da379`, `a65ef3c` — bổ sung projection quản trị và gửi upload bằng binary body.
+4. `79f1deb`, `6751495`, `c08a0fe` — dựng workspace cùng data layer voucher và catalog.
+5. `8f82e8d`, `9362bf4`, `d439974`, `ae33e5f` — hoàn thiện nền trình bày, danh sách, rule builder, lifecycle và usage history của mã ưu đãi.
+6. `2343cf4`, `b273866`, `465bdfb`, `d919a45` — hoàn thiện nền trình bày, catalog board, tạo sản phẩm, lifecycle, biến thể và media.
+7. `5b4bbe9`, `8453753`, `73bafee`, `afb950d`, `545b25a`, `7bfd52a` — ghi nhận route delivery và sửa các vấn đề phát hiện khi kiểm tra hành vi.
+8. `0425da6` — bổ sung bốn browser scenario tự động cho FE-05.
+9. `75af7cc`, `2f225fa`, `164b688`, `b734ff9` — giữ tương phản CTA, hoàn thiện responsive, chuẩn hóa định dạng và sửa luồng focus tải ảnh.
 
-## 7. Điều kiện nghiệm thu
+## 7. Kết quả nghiệm thu
 
-- 22/22 operation FE-05 có UI và evidence tự động.
-- EMPLOYEE không nhìn thấy hoặc truy cập được Mã ưu đãi; ADMIN dùng đủ lifecycle.
-- Catalog publish/archive, variant activate/archive và media upload/update/delete tuân thủ backend.
-- Voucher DRAFT/ACTIVE/PAUSED/ARCHIVED và usage pagination hiển thị đúng tiếng Việt.
-- Không có raw UUID/JSON/enum kỹ thuật trong UI.
-- Browser flow, accessibility, responsive overflow, lint, typecheck, test và production build đều xanh.
-- `design-qa.md` so sánh implementation với sáu mockup và có `final result: passed` trước khi bàn giao.
+- FE-05 được đóng ở trạng thái `DONE`; cả 22/22 operation trong manifest và `plan-fe.md` được đánh dấu `DONE`.
+- Sáu route catalog/voucher đã có UI; phân quyền giữ Catalog cho EMPLOYEE/ADMIN và giới hạn Mã ưu đãi cho ADMIN.
+- Adapter và component tests hiện có bao phủ product/variant/media command, voucher rule/lifecycle/usage, copy tiếng Việt, phân trang, quyền điều hướng và responsive contract.
+- `pnpm --filter @rephone/web test`: 59 test files, 257/257 tests đạt.
+- `pnpm --filter @rephone/api test`: 105 test files, 612/612 tests đạt ở lần chạy độc lập.
+- Browser QA thủ công được thực hiện bằng in-app browser trên sáu route ở bố cục desktop và mobile, tập trung vào điều hướng, phân quyền, form, lifecycle chính và overflow.
+- `tests/browser/catalog-voucher-admin.spec.ts` có bốn scenario tự động từ commit `0425da6`, nhưng Playwright CLI không được chạy trong lượt đóng phase này; không ghi nhận kết quả Playwright.
+- PostgreSQL/Docker integration chưa chạy trong lượt đóng phase này, nên hồ sơ không tuyên bố integration, E2E cơ sở dữ liệu hoặc coverage backend đã đạt.
