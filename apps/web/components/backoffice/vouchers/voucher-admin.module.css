@@ -217,8 +217,11 @@
 }
 
 .voucherBoard[data-updating='true'] .voucherCard {
-  pointer-events: none;
   opacity: 0.72;
+}
+
+.voucherCard[aria-disabled='true'] {
+  cursor: wait;
 }
 
 .updateStatus {
