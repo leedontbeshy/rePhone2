@@ -8,7 +8,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-1': 'DONE',
   'FE-2': 'DONE',
   'FE-3': 'DONE',
-  'FE-4': 'IN PROGRESS',
+  'FE-4': 'DONE',
   'FE-5': 'NOT STARTED',
   'FE-6': 'NOT STARTED',
   'FE-7': 'NOT STARTED',
@@ -128,7 +128,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createAfterSalesRequest',
@@ -139,7 +139,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createAfterSalesRequest; validation, pending, success, conflict',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getAfterSalesRequest',
@@ -150,7 +150,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'uploadAfterSalesAttachment',
@@ -161,7 +161,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Upload; select, validate, progress, success, 413/415/503',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getAfterSalesAttachmentUrl',
@@ -172,7 +172,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Mở signed URL; pending, expired, forbidden, provider error',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'cancelAfterSalesRequest',
@@ -183,7 +183,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action cancelAfterSalesRequest; confirm/reason, pending, success, replay/conflict',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'acceptEmployeeInvitation',
@@ -1635,7 +1635,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getCustomerOrder',
@@ -1646,7 +1646,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'cancelCustomerOrder',
@@ -1657,7 +1657,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action cancelCustomerOrder; confirm/reason, pending, success, replay/conflict',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'submitPaymentProof',
@@ -1668,7 +1668,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command submitPaymentProof; pending, authoritative success, replay/conflict',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listProducts',
@@ -1734,7 +1734,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getCustomerWarranty',
@@ -1745,7 +1745,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-4',
     'browser:customer-post-purchase',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getWishlist',
