@@ -215,10 +215,10 @@ export async function listCatalogProducts(
     pageSize: query.pageSize,
     sortBy: query.sortBy,
     sortOrder: query.sortOrder,
-    ...(query.search === undefined || query.search.trim() === ''
+    ...(query.search === undefined || query.search.trim() === '' ? {} : { q: query.search.trim() }),
+    ...(query.type === undefined || query.type === ''
       ? {}
-      : { q: query.search.trim() }),
-    ...(query.type === undefined || query.type === '' ? {} : { type: toApiProductType(query.type) }),
+      : { type: toApiProductType(query.type) }),
     ...(query.status === undefined || query.status === ''
       ? {}
       : { status: toApiStatus(query.status) }),
@@ -455,9 +455,7 @@ export function catalogError(value: unknown, fallback: string): BackofficeCatalo
   const detailCode = validationDetailCode(value);
   const detailMessage = detailCode === undefined ? undefined : VALIDATION_MESSAGES[detailCode];
   const message =
-    detailMessage ??
-    (code === undefined ? undefined : ERROR_MESSAGES[code]) ??
-    fallback;
+    detailMessage ?? (code === undefined ? undefined : ERROR_MESSAGES[code]) ?? fallback;
   return new BackofficeCatalogError(message, code);
 }
 
@@ -605,9 +603,7 @@ function toApiCreateVariant(input: CatalogVariantInput): ApiCreateVariant {
   const { attributes, ...fields } = input;
   return {
     ...fields,
-    ...(attributes === undefined
-      ? {}
-      : { accessoryAttributes: attributesToRecord(attributes) }),
+    ...(attributes === undefined ? {} : { accessoryAttributes: attributesToRecord(attributes) }),
   };
 }
 
@@ -615,9 +611,7 @@ function toApiUpdateVariant(input: UpdateCatalogVariantInput): ApiUpdateVariant 
   const { attributes, ...fields } = input;
   return {
     ...fields,
-    ...(attributes === undefined
-      ? {}
-      : { accessoryAttributes: attributesToRecord(attributes) }),
+    ...(attributes === undefined ? {} : { accessoryAttributes: attributesToRecord(attributes) }),
   };
 }
 

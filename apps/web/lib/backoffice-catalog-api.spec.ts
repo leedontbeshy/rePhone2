@@ -196,10 +196,7 @@ describe('backoffice catalog adapter', () => {
           },
         },
       ],
-      [
-        '/api/v1/backoffice/products/{id}/publish',
-        { params: { path: { id: PRODUCT_ID } } },
-      ],
+      ['/api/v1/backoffice/products/{id}/publish', { params: { path: { id: PRODUCT_ID } } }],
       [
         '/api/v1/backoffice/products/{id}/archive',
         {
@@ -248,10 +245,7 @@ describe('backoffice catalog adapter', () => {
           },
         },
       ],
-      [
-        '/api/v1/backoffice/variants/{id}/activate',
-        { params: { path: { id: VARIANT_ID } } },
-      ],
+      ['/api/v1/backoffice/variants/{id}/activate', { params: { path: { id: VARIANT_ID } } }],
       [
         '/api/v1/backoffice/variants/{id}/archive',
         {
