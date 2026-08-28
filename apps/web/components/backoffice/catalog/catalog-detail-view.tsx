@@ -399,8 +399,10 @@ export function CatalogDetailView({
               )}
               <input
                 accept="image/jpeg,image/png,image/webp"
+                aria-hidden="true"
                 className={styles.hiddenFileInput}
                 ref={productUploadRef}
+                tabIndex={-1}
                 type="file"
                 onChange={(event) => {
                   void upload('product', product.id, event);
