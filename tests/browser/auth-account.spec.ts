@@ -182,10 +182,8 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await page.goto('/checkout');
     await expect(page.getByRole('heading', { level: 1, name: 'Hoàn tất đơn hàng' })).toBeVisible();
-    await expect(page.getByLabel('Họ và tên', { exact: true })).toHaveValue(
-      BROWSER_CUSTOMER.updatedFullName,
-    );
-    await expect(page.getByLabel('Điện thoại', { exact: true })).toHaveValue('0900000222');
+    await expect(page.locator('#checkout-fullName')).toHaveValue(BROWSER_CUSTOMER.updatedFullName);
+    await expect(page.locator('#checkout-phone')).toHaveValue('0900000222');
 
     await page.goto('/account/addresses');
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
