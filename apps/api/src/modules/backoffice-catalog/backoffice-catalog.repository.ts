@@ -56,11 +56,18 @@ export class BackofficeCatalogRepository {
             ],
           }),
     };
-    const orderBy = { [query.sortBy]: query.sortOrder } as Prisma.ProductOrderByWithRelationInput;
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      query.sortBy === 'releaseYear'
+        ? [
+            { releaseYear: { sort: query.sortOrder, nulls: 'last' } },
+            { name: 'asc' },
+            { id: 'asc' },
+          ]
+        : [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }];
     const [items, totalItems] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        orderBy: [orderBy, { id: 'asc' }],
+        orderBy,
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
         include: {

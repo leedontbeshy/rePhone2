@@ -38,6 +38,20 @@ describe('trình bày danh mục FE-05', () => {
     );
   });
 
+  it('ưu tiên đời máy mới nhất khi đường dẫn không chọn cách sắp xếp', () => {
+    const query = catalogQueryFromSearchParams({});
+
+    expect(query).toMatchObject({
+      page: 1,
+      sortBy: 'releaseYear',
+      sortOrder: 'desc',
+    });
+    expect(buildCatalogListHref(query, {})).toBe('/backoffice/catalog/products');
+    expect(buildCatalogListHref(query, { sortBy: 'updatedAt' })).toBe(
+      '/backoffice/catalog/products?sortBy=updatedAt',
+    );
+  });
+
   it('tạo đường dẫn và mã hiển thị từ tên mà không lộ mã nội bộ', () => {
     expect(slugFromProductName('Ốp lưng MagSafe Đen')).toBe('op-lung-magsafe-den');
     expect(catalogDisplayCode('iphone-16-pro')).toBe('IPHONE-16-PRO');

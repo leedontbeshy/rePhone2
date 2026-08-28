@@ -142,6 +142,41 @@ describe('backoffice catalog adapter', () => {
     });
   });
 
+  it('forwards a cancellation signal for live search requests', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+        meta: { pagination: { page: 1, pageSize: 6, totalItems: 0, totalPages: 0 } },
+      },
+    });
+    const controller = new AbortController();
+
+    await listCatalogProducts(
+      mockClient({ GET: get }),
+      {
+        search: 'iPhone 17',
+        page: 1,
+        pageSize: 6,
+        sortBy: 'releaseYear',
+        sortOrder: 'desc',
+      },
+      { signal: controller.signal },
+    );
+
+    expect(get).toHaveBeenCalledWith('/api/v1/backoffice/products', {
+      params: {
+        query: {
+          q: 'iPhone 17',
+          page: 1,
+          pageSize: 6,
+          sortBy: 'releaseYear',
+          sortOrder: 'desc',
+        },
+      },
+      signal: controller.signal,
+    });
+  });
+
   it('loads a detail while converting variant attributes into friendly fields', async () => {
     const get = vi.fn().mockResolvedValue({ data: { data: PRODUCT } });
 

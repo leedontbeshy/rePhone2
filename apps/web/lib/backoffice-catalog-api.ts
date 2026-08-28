@@ -209,6 +209,7 @@ export function validateCatalogMediaFile(file: Blob): string | null {
 export async function listCatalogProducts(
   client: CatalogApiClient,
   query: CatalogProductListQuery,
+  options: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<CatalogProductPage> {
   const apiQuery: ApiProductListQuery = {
     page: query.page,
@@ -226,6 +227,7 @@ export async function listCatalogProducts(
   };
   const result = await client.GET('/api/v1/backoffice/products', {
     params: { query: apiQuery },
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
   });
   if (result.data === undefined) {
     throw catalogError(result.error, 'Không thể tải danh sách sản phẩm.');

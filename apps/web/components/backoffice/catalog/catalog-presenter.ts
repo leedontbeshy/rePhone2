@@ -145,7 +145,7 @@ export function buildCatalogListHref(
   if (next.type !== undefined) params.set('type', next.type);
   if (next.status !== undefined) params.set('status', next.status);
   if (next.releaseYear !== undefined) params.set('releaseYear', String(next.releaseYear));
-  if (next.sortBy !== 'updatedAt') params.set('sortBy', next.sortBy);
+  if (next.sortBy !== 'releaseYear') params.set('sortBy', next.sortBy);
   if (next.sortOrder !== 'desc') params.set('sortOrder', next.sortOrder);
   const encoded = params.toString();
   return `/backoffice/catalog/products${encoded === '' ? '' : `?${encoded}`}`;
@@ -297,6 +297,6 @@ function catalogRecordStatus(value: string | undefined): CatalogRecordStatus | u
 }
 
 function catalogSortField(value: string | undefined): CatalogQueryState['sortBy'] {
-  if (value === 'createdAt' || value === 'name' || value === 'releaseYear') return value;
-  return 'updatedAt';
+  if (value === 'createdAt' || value === 'updatedAt' || value === 'name') return value;
+  return 'releaseYear';
 }

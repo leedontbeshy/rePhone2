@@ -2,6 +2,15 @@
 
 import { ArrowRightIcon, MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type SyntheticEvent,
+} from 'react';
 import { BackofficePagination, CatalogVoucherStatusChip } from '@/components/backoffice';
 import { CatalogMediaImage, type CatalogMediaSource } from './catalog-media';
 import {
@@ -44,6 +53,18 @@ export interface CatalogPagination {
   readonly totalPages: number;
 }
 
+export interface CatalogSuggestion {
+  readonly id: string;
+  readonly name: string;
+  readonly primaryMedia: CatalogMediaSource | null;
+  readonly releaseYear?: number | null;
+  readonly type: CatalogProductType;
+}
+
+export interface CatalogQueryChangeOptions {
+  readonly history?: 'push' | 'replace';
+}
+
 interface CatalogListViewProps {
   readonly counts: CatalogStatusCounts;
   readonly error?: string | null;
@@ -51,6 +72,14 @@ interface CatalogListViewProps {
   readonly pagination: CatalogPagination;
   readonly products: readonly CatalogListProduct[];
   readonly query: CatalogQueryState;
+  readonly loadSuggestions?: (
+    search: string,
+    signal: AbortSignal,
+  ) => Promise<readonly CatalogSuggestion[]>;
+  readonly onQueryChange?: (
+    overrides: Parameters<typeof buildCatalogListHref>[1],
+    options?: CatalogQueryChangeOptions,
+  ) => void;
 }
 
 const STATUS_TABS: ReadonlyArray<{ label: string; status?: CatalogRecordStatus }> = [
@@ -67,6 +96,8 @@ export function CatalogListView({
   pagination,
   products,
   query,
+  loadSuggestions,
+  onQueryChange,
 }: CatalogListViewProps) {
   return (
     <div className={styles.page}>
@@ -87,7 +118,11 @@ export function CatalogListView({
         </div>
       )}
 
-      <CatalogListFilters query={query} />
+      <CatalogListFilters
+        loadSuggestions={loadSuggestions}
+        onQueryChange={onQueryChange}
+        query={query}
+      />
 
       <nav className={styles.toolbarTabs} aria-label="Lọc theo trạng thái sản phẩm">
         {STATUS_TABS.map((tab) => {
@@ -100,6 +135,11 @@ export function CatalogListView({
               data-active={active}
               href={buildCatalogListHref(query, { page: 1, status: tab.status })}
               key={tab.label}
+              onClick={(event) => {
+                if (!canHandleLinkClick(event) || onQueryChange === undefined) return;
+                event.preventDefault();
+                onQueryChange({ page: 1, status: tab.status });
+              }}
             >
               {tab.label}
               <span className={styles.tabCount}>{String(count)}</span>
@@ -110,10 +150,16 @@ export function CatalogListView({
 
       <section
         className={styles.board}
+        data-updating={loading && products.length > 0}
         aria-busy={loading || undefined}
         aria-label="Danh sách sản phẩm"
       >
-        {loading ? <CatalogListLoading /> : null}
+        {loading && products.length === 0 ? <CatalogListLoading /> : null}
+        {loading && products.length > 0 ? (
+          <p className={styles.updateStatus} role="status">
+            Đang cập nhật danh sách…
+          </p>
+        ) : null}
         {!loading && products.length === 0 ? (
           <div className={styles.emptyState}>
             <h2>Chưa có sản phẩm phù hợp</h2>
@@ -123,53 +169,105 @@ export function CatalogListView({
             </Link>
           </div>
         ) : null}
-        {!loading
-          ? products.map((product, index) => (
-              <CatalogProductCard key={product.id} priority={index < 2} product={product} />
-            ))
-          : null}
+        {products.map((product, index) => (
+          <CatalogProductCard key={product.id} priority={index < 2} product={product} />
+        ))}
       </section>
 
-      <BackofficePagination
-        buildHref={(page) => buildCatalogListHref(query, { page })}
-        page={pagination.page}
-        pageSize={pagination.pageSize}
-        totalItems={pagination.totalItems}
-        totalPages={pagination.totalPages}
-      />
+      <div
+        onClick={(event) => {
+          if (!canHandleLinkClick(event) || onQueryChange === undefined) return;
+          const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href]');
+          if (anchor === null) return;
+          const page = Number(new URL(anchor.href).searchParams.get('page') ?? '1');
+          if (!Number.isSafeInteger(page) || page < 1) return;
+          event.preventDefault();
+          onQueryChange({ page });
+        }}
+      >
+        <BackofficePagination
+          buildHref={(page) => buildCatalogListHref(query, { page })}
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          totalItems={pagination.totalItems}
+          totalPages={pagination.totalPages}
+        />
+      </div>
     </div>
   );
 }
 
-function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
+function CatalogListFilters({
+  loadSuggestions,
+  onQueryChange,
+  query,
+}: Readonly<{
+  loadSuggestions?: CatalogListViewProps['loadSuggestions'];
+  onQueryChange?: CatalogListViewProps['onQueryChange'];
+  query: CatalogQueryState;
+}>) {
   const sortValue = `${query.sortBy}:${query.sortOrder}`;
+  const [searchValue, setSearchValue] = useState(query.q ?? '');
+  const [yearValue, setYearValue] = useState(
+    query.releaseYear === undefined ? '' : String(query.releaseYear),
+  );
+
+  useEffect(() => {
+    setSearchValue(query.q ?? '');
+  }, [query.q]);
+
+  useEffect(() => {
+    setYearValue(query.releaseYear === undefined ? '' : String(query.releaseYear));
+  }, [query.releaseYear]);
+
+  useEffect(() => {
+    if (onQueryChange === undefined) return;
+    const normalized = searchValue.trim();
+    if (normalized === (query.q ?? '')) return;
+    const timer = window.setTimeout(() => {
+      onQueryChange(
+        { page: 1, q: normalized === '' ? undefined : normalized },
+        { history: 'replace' },
+      );
+    }, 250);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [onQueryChange, query.q, searchValue]);
+
+  const applyFilters = (event?: SyntheticEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (onQueryChange === undefined) return;
+    const releaseYear = normalizedReleaseYear(yearValue);
+    onQueryChange({
+      page: 1,
+      q: searchValue.trim() === '' ? undefined : searchValue.trim(),
+      releaseYear,
+    });
+  };
+
   return (
-    <form action="/backoffice/catalog/products" className={styles.filters} method="get">
-      <div className={styles.searchField}>
-        <label className="rp-visually-hidden" htmlFor="catalog-search">
-          Tìm tên hoặc đường dẫn sản phẩm
-        </label>
-        <MagnifyingGlassIcon aria-hidden="true" size={20} />
-        <input
-          defaultValue={query.q ?? ''}
-          id="catalog-search"
-          maxLength={100}
-          name="q"
-          placeholder="Tìm tên hoặc đường dẫn sản phẩm"
-          type="search"
-        />
-      </div>
+    <form className={styles.filters} onSubmit={applyFilters}>
+      <CatalogSearchCombobox
+        loadSuggestions={loadSuggestions}
+        onValueChange={setSearchValue}
+        value={searchValue}
+      />
       <label className="rp-visually-hidden" htmlFor="catalog-type">
         Loại sản phẩm
       </label>
       <select
         className={styles.filterSelect}
-        defaultValue={query.type ?? ''}
         id="catalog-type"
-        name="type"
         onChange={(event) => {
-          event.currentTarget.form?.requestSubmit();
+          if (onQueryChange === undefined) return;
+          const value = event.currentTarget.value;
+          onQueryChange({
+            page: 1,
+            type: value === 'IPHONE' || value === 'ACCESSORY' ? value : undefined,
+          });
         }}
+        value={query.type ?? ''}
       >
         <option value="">Loại sản phẩm</option>
         <option value="IPHONE">iPhone</option>
@@ -180,40 +278,49 @@ function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
       </label>
       <input
         className={styles.filterSelect}
-        defaultValue={query.releaseYear ?? ''}
         id="catalog-year"
         inputMode="numeric"
         max={2100}
         min={2007}
-        name="releaseYear"
+        onChange={(event) => {
+          setYearValue(event.currentTarget.value);
+        }}
+        onBlur={() => {
+          if (onQueryChange === undefined) return;
+          const releaseYear = normalizedReleaseYear(yearValue);
+          if (
+            releaseYear === query.releaseYear ||
+            (releaseYear === undefined && yearValue !== '')
+          ) {
+            return;
+          }
+          onQueryChange({ page: 1, releaseYear });
+        }}
         placeholder="Năm ra mắt"
         type="number"
-        onBlur={(event) => {
-          event.currentTarget.form?.requestSubmit();
-        }}
+        value={yearValue}
       />
       <label className="rp-visually-hidden" htmlFor="catalog-sort">
         Sắp xếp sản phẩm
       </label>
       <select
         className={styles.filterSelect}
-        defaultValue={sortValue}
         id="catalog-sort"
-        name="sort"
         onChange={(event) => {
-          event.currentTarget.form?.requestSubmit();
+          if (onQueryChange === undefined) return;
+          const [sortBy, sortOrder] = event.currentTarget.value.split(':');
+          if (!isCatalogSortBy(sortBy) || (sortOrder !== 'asc' && sortOrder !== 'desc')) return;
+          onQueryChange({ page: 1, sortBy, sortOrder });
         }}
+        value={sortValue}
       >
+        <option value="releaseYear:desc">Năm ra mắt mới nhất</option>
+        <option value="releaseYear:asc">Năm ra mắt cũ nhất</option>
         <option value="updatedAt:desc">Cập nhật mới nhất</option>
         <option value="updatedAt:asc">Cập nhật cũ nhất</option>
         <option value="createdAt:desc">Tạo mới nhất</option>
         <option value="name:asc">Tên từ A đến Z</option>
-        <option value="releaseYear:desc">Năm ra mắt mới nhất</option>
       </select>
-      {query.status === undefined ? null : (
-        <input name="status" type="hidden" value={query.status} />
-      )}
-      <SortQueryFields value={sortValue} />
       <button className="rp-visually-hidden" type="submit">
         Áp dụng bộ lọc
       </button>
@@ -221,18 +328,221 @@ function CatalogListFilters({ query }: Readonly<{ query: CatalogQueryState }>) {
   );
 }
 
-/**
- * HTML forms cannot split a friendly compound sort choice into two query fields without script.
- * The list controller also understands the `sort` fallback and normalizes it before loading.
- */
-function SortQueryFields({ value }: Readonly<{ value: string }>) {
-  const [sortBy, sortOrder] = value.split(':');
+function CatalogSearchCombobox({
+  loadSuggestions,
+  onValueChange,
+  value,
+}: Readonly<{
+  loadSuggestions?: CatalogListViewProps['loadSuggestions'];
+  onValueChange: (value: string) => void;
+  value: string;
+}>) {
+  const listId = useId();
+  const requestId = useRef(0);
+  const optionRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [open, setOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState<readonly CatalogSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const normalized = value.trim();
+
+  useEffect(() => {
+    const currentRequest = ++requestId.current;
+    setActiveIndex(-1);
+    if (normalized.length < 2 || loadSuggestions === undefined) {
+      setSuggestions([]);
+      setSuggestionsLoading(false);
+      return;
+    }
+
+    setSuggestions([]);
+    setSuggestionsLoading(true);
+    let controller: AbortController | undefined;
+    const timer = window.setTimeout(() => {
+      controller = new AbortController();
+      void loadSuggestions(normalized, controller.signal)
+        .then((items) => {
+          if (requestId.current !== currentRequest || controller?.signal.aborted === true) return;
+          setSuggestions(items.slice(0, 6));
+        })
+        .catch((caught: unknown) => {
+          if (controller?.signal.aborted === true || isAbortError(caught)) return;
+          if (requestId.current === currentRequest) setSuggestions([]);
+        })
+        .finally(() => {
+          if (requestId.current === currentRequest && controller?.signal.aborted !== true) {
+            setSuggestionsLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller?.abort();
+    };
+  }, [loadSuggestions, normalized]);
+
+  const visible = open && normalized.length >= 2;
+  const activeSuggestion = activeIndex < 0 ? undefined : suggestions[activeIndex];
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Escape') {
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && suggestions.length > 0) {
+      const direction = event.key;
+      event.preventDefault();
+      setOpen(true);
+      setActiveIndex((current) => nextSuggestionIndex(current, suggestions.length, direction));
+      return;
+    }
+    if (event.key === 'Enter' && activeIndex >= 0) {
+      event.preventDefault();
+      optionRefs.current[activeIndex]?.click();
+    }
+  };
+
   return (
-    <>
-      <input name="sortBy" type="hidden" value={sortBy ?? 'updatedAt'} />
-      <input name="sortOrder" type="hidden" value={sortOrder ?? 'desc'} />
-    </>
+    <div
+      className={styles.searchField}
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        setOpen(false);
+        setActiveIndex(-1);
+      }}
+      onFocus={() => {
+        if (normalized.length >= 2) setOpen(true);
+      }}
+    >
+      <label className="rp-visually-hidden" htmlFor="catalog-search">
+        Tìm sản phẩm
+      </label>
+      <MagnifyingGlassIcon aria-hidden="true" size={20} />
+      <input
+        aria-activedescendant={
+          activeSuggestion === undefined ? undefined : `${listId}-${activeSuggestion.id}`
+        }
+        aria-autocomplete="list"
+        aria-controls={listId}
+        aria-expanded={visible}
+        autoComplete="off"
+        id="catalog-search"
+        maxLength={100}
+        onChange={(event) => {
+          onValueChange(event.currentTarget.value);
+          setOpen(event.currentTarget.value.trim().length >= 2);
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder="Tìm sản phẩm theo tên hoặc phiên bản"
+        role="combobox"
+        type="search"
+        value={value}
+      />
+      {visible ? (
+        <div
+          aria-busy={suggestionsLoading || undefined}
+          aria-label="Gợi ý sản phẩm"
+          aria-live="polite"
+          className={styles.suggestionPanel}
+          id={listId}
+          role="listbox"
+        >
+          {suggestionsLoading ? (
+            <div
+              aria-disabled="true"
+              aria-selected="false"
+              className={styles.suggestionMessage}
+              role="option"
+            >
+              Đang tìm sản phẩm…
+            </div>
+          ) : null}
+          {!suggestionsLoading && suggestions.length === 0 ? (
+            <div
+              aria-disabled="true"
+              aria-selected="false"
+              className={styles.suggestionMessage}
+              role="option"
+            >
+              Không tìm thấy sản phẩm phù hợp.
+            </div>
+          ) : null}
+          {suggestions.map((suggestion, index) => (
+            <Link
+              aria-selected={index === activeIndex}
+              className={styles.suggestionOption}
+              href={`/backoffice/catalog/products/${suggestion.id}`}
+              id={`${listId}-${suggestion.id}`}
+              key={suggestion.id}
+              onMouseEnter={() => {
+                setActiveIndex(index);
+              }}
+              ref={(node) => {
+                optionRefs.current[index] = node;
+              }}
+              role="option"
+              tabIndex={-1}
+            >
+              <CatalogMediaImage
+                className={styles.suggestionThumbnail}
+                fallbackLabel={`Chưa có ảnh cho ${suggestion.name}`}
+                media={suggestion.primaryMedia}
+              />
+              <span className={styles.suggestionCopy}>
+                <strong>{suggestion.name}</strong>
+                <span>
+                  {catalogProductTypeLabel(suggestion.type)}
+                  {suggestion.releaseYear === null || suggestion.releaseYear === undefined
+                    ? ''
+                    : ` · ${String(suggestion.releaseYear)}`}
+                </span>
+              </span>
+              <ArrowRightIcon aria-hidden="true" size={18} />
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
+}
+
+export function nextSuggestionIndex(
+  current: number,
+  total: number,
+  direction: 'ArrowDown' | 'ArrowUp',
+): number {
+  if (total <= 0) return -1;
+  if (direction === 'ArrowDown') return current >= total - 1 ? 0 : current + 1;
+  return current <= 0 ? total - 1 : current - 1;
+}
+
+function normalizedReleaseYear(value: string): number | undefined {
+  if (value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 2007 && parsed <= 2100 ? parsed : undefined;
+}
+
+function isCatalogSortBy(value: string | undefined): value is CatalogQueryState['sortBy'] {
+  return (
+    value === 'createdAt' || value === 'updatedAt' || value === 'name' || value === 'releaseYear'
+  );
+}
+
+function canHandleLinkClick(event: MouseEvent<HTMLElement>): boolean {
+  return (
+    event.button === 0 &&
+    !event.defaultPrevented &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+function isAbortError(value: unknown): boolean {
+  return value instanceof DOMException && value.name === 'AbortError';
 }
 
 function CatalogProductCard({

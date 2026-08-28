@@ -30,4 +30,24 @@ describe('BackofficeCatalogRepository', () => {
     );
     expect(count).toHaveBeenCalledTimes(1);
   });
+
+  it('keeps products without a release year after newer models and uses the name as a tie-breaker', async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const repository = new BackofficeCatalogRepository({
+      product: { findMany, count: vi.fn().mockResolvedValue(0) },
+    } as never);
+
+    await repository.listProducts({
+      page: 1,
+      pageSize: 20,
+      sortBy: 'releaseYear',
+      sortOrder: 'desc',
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ releaseYear: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }, { id: 'asc' }],
+      }),
+    );
+  });
 });
