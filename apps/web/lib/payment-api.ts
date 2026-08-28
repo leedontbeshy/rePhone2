@@ -146,7 +146,7 @@ export async function submitPaymentProof(
         ...(guestOrderToken === undefined ? {} : { 'X-Guest-Order-Token': guestOrderToken }),
       },
     },
-    body: { file: file.name },
+    body: { file },
     bodySerializer: () => formData,
   });
   if (result.data === undefined) {
