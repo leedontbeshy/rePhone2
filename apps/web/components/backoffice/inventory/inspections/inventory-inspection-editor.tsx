@@ -41,22 +41,31 @@ const CHECK_STATUS_OPTIONS: ReadonlyArray<{
 
 export interface InventoryInspectionEditorProps {
   readonly busyAction?: 'save' | 'complete' | null;
+  readonly editable?: boolean;
   readonly error?: string | null;
   readonly inspection: InventoryInspectionDetail;
   readonly notice?: string | null;
   readonly onComplete: (input: UpdateInventoryInspectionInput) => void;
   readonly onReload?: () => void;
   readonly onSave: (input: UpdateInventoryInspectionInput) => void;
+  readonly unitSummary?: {
+    readonly inventoryCode: string;
+    readonly maskedIdentifiers: readonly string[];
+    readonly productName: string;
+    readonly variantName: string;
+  } | null;
 }
 
 export function InventoryInspectionEditor({
   busyAction = null,
+  editable = true,
   error = null,
   inspection,
   notice = null,
   onComplete,
   onReload,
   onSave,
+  unitSummary = null,
 }: InventoryInspectionEditorProps) {
   const [draft, setDraft] = useState(() => inspectionDraftFrom(inspection));
   const [errors, setErrors] = useState<InspectionEditorFieldErrors>({});
@@ -76,7 +85,7 @@ export function InventoryInspectionEditor({
       new Map((inspection.checklist?.items ?? []).map((item) => [item.key, item.label] as const)),
     [inspection.checklist],
   );
-  const readonly = inspection.status === 'COMPLETED';
+  const readonly = inspection.status === 'COMPLETED' || !editable;
   const statusPresentation = inspectionStatusPresentation(inspection.status);
   const resultPresentation = inspectionResultPresentation(inspection.overallResult);
 
@@ -139,6 +148,19 @@ export function InventoryInspectionEditor({
               Mở hồ sơ máy
             </Link>
           </p>
+          {unitSummary === null ? null : (
+            <div className={styles.unitContext}>
+              <strong>{unitSummary.inventoryCode}</strong>
+              <span>
+                {unitSummary.productName} · {unitSummary.variantName}
+              </span>
+              <small>{unitSummary.maskedIdentifiers.join(' · ') || 'Chưa có mã định danh'}</small>
+            </div>
+          )}
+          <p>
+            Kỹ thuật viên: {inspection.inspector?.fullName ?? 'Chưa có thông tin'}
+            {inspection.inspector?.employeeCode ? ` · ${inspection.inspector.employeeCode}` : ''}
+          </p>
         </div>
         <div className={styles.headerSummary}>
           <span>Kết quả hiện tại</span>
@@ -162,6 +184,11 @@ export function InventoryInspectionEditor({
           {notice}
         </InlineAlert>
       )}
+      {!editable && inspection.status === 'DRAFT' ? (
+        <InlineAlert title="Phiếu đang do người khác phụ trách" tone="warning">
+          Bạn có thể xem kết quả hiện tại nhưng không thể sửa hoặc hoàn tất phiếu này.
+        </InlineAlert>
+      ) : null}
 
       {readonly ? (
         <CompletedInspection
@@ -334,6 +361,7 @@ export function InventoryInspectionEditor({
                   <div className={styles.checkRows}>
                     {group.items.map((check, index) => {
                       const value = draft.checks[check.key];
+                      const checkLabel = checklistLabels.get(check.key) ?? check.label;
                       const requiresNote =
                         value.status !== '' && inspectionCheckRequiresNote(value.status);
                       return (
@@ -350,12 +378,13 @@ export function InventoryInspectionEditor({
                               )}
                             </span>
                             <div>
-                              <h4>{checklistLabels.get(check.key) ?? check.label}</h4>
+                              <h4>{checkLabel}</h4>
                               <p>{check.description}</p>
                             </div>
                           </div>
                           <div className={styles.checkFields}>
                             <Select
+                              aria-label={`Kết quả của ${checkLabel}`}
                               error={errors[`checks.${check.key}.status`]}
                               id={`check-${check.key.toLowerCase()}-status`}
                               label="Kết quả"
@@ -372,6 +401,7 @@ export function InventoryInspectionEditor({
                               ))}
                             </Select>
                             <Textarea
+                              aria-label={`Ghi chú cho ${checkLabel}`}
                               error={errors[`checks.${check.key}.note`]}
                               id={`check-${check.key.toLowerCase()}-note`}
                               label="Ghi chú"
@@ -470,7 +500,7 @@ function CompletedInspection({
         </div>
         <dl className={styles.readonlySummary}>
           <SummaryItem
-            label="Nguồn gốc pin"
+            label="Dung lượng pin"
             value={
               inspection.batteryHealthPercent === null
                 ? 'Chưa ghi nhận'
@@ -486,7 +516,7 @@ function CompletedInspection({
             }
           />
           <SummaryItem
-            label="Tình trạng pin"
+            label="Nguồn gốc pin"
             value={batteryReplacementLabel(inspection.batteryReplacementStatus)}
           />
           <SummaryItem

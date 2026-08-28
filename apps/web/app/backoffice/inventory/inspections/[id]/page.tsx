@@ -10,9 +10,11 @@ import { Button, InlineAlert, Skeleton } from '@/components/ui';
 import {
   completeInventoryInspection,
   getInventoryInspection,
+  getInventoryUnit,
   inventoryErrorRequiresRefetch,
   updateInventoryInspection,
   type InventoryInspectionDetail,
+  type InventoryUnitDetail,
   type UpdateInventoryInspectionInput,
 } from '@/lib/backoffice-inventory-api';
 
@@ -33,8 +35,9 @@ export default function InventoryInspectionPage() {
 }
 
 function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: string }>) {
-  const { client } = useAuth();
+  const { client, user } = useAuth();
   const [inspection, setInspection] = useState<InventoryInspectionDetail | null>(null);
+  const [unit, setUnit] = useState<InventoryUnitDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<'save' | 'complete' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,9 @@ function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: st
 
   const loadInspection = useCallback(async () => {
     const result = await getInventoryInspection(client, inspectionId);
+    const relatedUnit = await getInventoryUnit(client, result.inventoryUnitId);
     setInspection(result);
+    setUnit(relatedUnit);
     return result;
   }, [client, inspectionId]);
 
@@ -52,10 +57,12 @@ function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: st
     setLoading(true);
     setError(null);
     setInspection(null);
+    setUnit(null);
     setNotice(null);
-    void getInventoryInspection(client, inspectionId)
+    void loadInspection()
       .then((result) => {
-        if (active) setInspection(result);
+        if (!active) return;
+        setInspection(result);
       })
       .catch((caught: unknown) => {
         if (active) setError(errorMessage(caught, 'Không thể mở phiếu kiểm định.'));
@@ -66,7 +73,7 @@ function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: st
     return () => {
       active = false;
     };
-  }, [client, inspectionId]);
+  }, [loadInspection]);
 
   async function runMutation(action: 'save' | 'complete', input: UpdateInventoryInspectionInput) {
     if (mutationInFlight.current) return;
@@ -130,6 +137,7 @@ function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: st
       busyAction={busyAction}
       error={error}
       inspection={inspection}
+      editable={user?.role === 'ADMIN' || inspection.inspectorId === user?.id}
       notice={notice}
       onComplete={(input) => {
         void runMutation('complete', input);
@@ -143,6 +151,16 @@ function InventoryInspectionLoader({ inspectionId }: Readonly<{ inspectionId: st
       onSave={(input) => {
         void runMutation('save', input);
       }}
+      unitSummary={
+        unit === null
+          ? null
+          : {
+              inventoryCode: unit.inventoryCode,
+              maskedIdentifiers: unit.maskedIdentifiers.map((item) => item.maskedValue),
+              productName: unit.product.name,
+              variantName: unit.variant.displayName,
+            }
+      }
     />
   );
 }

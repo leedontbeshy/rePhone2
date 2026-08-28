@@ -77,6 +77,24 @@
   font-weight: var(--font-weight-semibold);
 }
 
+.unitContext {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.unitContext strong {
+  color: var(--color-ink);
+}
+
+.unitContext span,
+.unitContext small {
+  color: var(--color-muted);
+}
+
 .headerSummary {
   min-width: 13rem;
   justify-items: start;

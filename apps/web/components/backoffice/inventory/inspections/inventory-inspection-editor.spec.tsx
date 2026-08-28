@@ -90,6 +90,30 @@ describe('FE-06 InventoryInspectionEditor', () => {
     expect(markup).not.toContain('<select');
     expect(markup).not.toContain('<textarea');
   });
+
+  it('keeps another employee draft read-only and shows masked unit context', () => {
+    const markup = renderToStaticMarkup(
+      <InventoryInspectionEditor
+        editable={false}
+        inspection={inspection()}
+        onComplete={vi.fn()}
+        onSave={vi.fn()}
+        unitSummary={{
+          inventoryCode: 'RPH-IP15-001',
+          maskedIdentifiers: ['•••• 5678'],
+          productName: 'iPhone 15',
+          variantName: '128 GB · Đen',
+        }}
+      />,
+    );
+
+    expect(markup).toContain('Phiếu đang do người khác phụ trách');
+    expect(markup).toContain('RPH-IP15-001');
+    expect(markup).toContain('•••• 5678');
+    expect(markup).toContain('Nhân viên Demo');
+    expect(markup).not.toContain('Lưu bản nháp');
+    expect(markup).not.toContain('<select');
+  });
 });
 
 function inspection(overrides: Partial<InventoryInspectionDetail> = {}): InventoryInspectionDetail {
