@@ -6,13 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '../../../auth-provider';
 import {
-  allPassChecklist,
-  CHECK_STATUSES,
-  checklistFromApi,
-  checklistPayload,
-  IPHONE_CHECKLIST_V1,
-  type ChecklistDraft,
-} from '../../../../lib/inventory-intake';
+  inventoryAdminError,
+  inventoryErrorRequiresRefetch,
+  validateInventoryMediaFile,
+} from '../../../../lib/backoffice-inventory-api';
 import styles from './intake.module.css';
 
 type ProductListItem = components['schemas']['BackofficeProductListItemDto'];
@@ -53,16 +50,6 @@ export function InventoryIntakeWizard() {
   const [intake, setIntake] = useState(EMPTY_INTAKE);
   const [unit, setUnit] = useState<Unit | null>(null);
   const [inspection, setInspection] = useState<Inspection | null>(null);
-  const [checks, setChecks] = useState<ChecklistDraft>(allPassChecklist);
-  const [batteryHealth, setBatteryHealth] = useState('90');
-  const [conditionGrade, setConditionGrade] = useState<'A' | 'B' | 'C'>('A');
-  const [batteryReplacement, setBatteryReplacement] = useState<'ORIGINAL' | 'REPLACED' | 'UNKNOWN'>(
-    'ORIGINAL',
-  );
-  const [repairHistory, setRepairHistory] = useState<'NONE_KNOWN' | 'KNOWN' | 'UNKNOWN'>(
-    'NONE_KNOWN',
-  );
-  const [repairNotes, setRepairNotes] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,6 +65,7 @@ export function InventoryIntakeWizard() {
     if (status !== 'authenticated' || !isStaff) return;
     let active = true;
     setLoading(true);
+    setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/products', {
         params: { query: { type: 'IPHONE', status: 'ACTIVE', page: 1, pageSize: 100 } },
@@ -159,8 +147,18 @@ export function InventoryIntakeWizard() {
         if (listResult.data === undefined) throw apiRequestError(listResult.error);
         const nextUnit = unitResult.data.data;
         setUnit(nextUnit);
+        const requestedInspection =
+          inspectionId === null
+            ? undefined
+            : listResult.data.data.find((item) => item.id === inspectionId);
+        if (inspectionId !== null && requestedInspection === undefined) {
+          setInspection(null);
+          setNotice('Đường dẫn cũ không khớp với máy này. Đã mở lại dữ liệu an toàn.');
+          replaceQuery(nextUnit.id);
+          return;
+        }
         const resumeId =
-          inspectionId ??
+          requestedInspection?.id ??
           listResult.data.data.find((item) => item.status === 'DRAFT')?.id ??
           nextUnit.currentInspection?.id;
         if (resumeId === undefined) {
@@ -194,16 +192,6 @@ export function InventoryIntakeWizard() {
 
   function acceptInspection(next: Inspection) {
     setInspection(next);
-    setChecks(checklistFromApi(next.checks));
-    if (next.batteryHealthPercent !== null && next.batteryHealthPercent !== undefined) {
-      setBatteryHealth(String(next.batteryHealthPercent));
-    }
-    if (next.conditionGrade !== null && next.conditionGrade !== undefined) {
-      setConditionGrade(next.conditionGrade);
-    }
-    setBatteryReplacement(next.batteryReplacementStatus);
-    setRepairHistory(next.repairHistoryStatus);
-    setRepairNotes(next.repairNotes ?? '');
   }
 
   function submitIntake(event: SyntheticEvent<HTMLFormElement>) {
@@ -255,6 +243,8 @@ export function InventoryIntakeWizard() {
     event.preventDefault();
     void runAction('upload', async () => {
       if (unit === null || file === null) throw new Error('Hãy chọn một ảnh JPEG, PNG hoặc WebP.');
+      const fileError = validateInventoryMediaFile(file);
+      if (fileError !== null) throw new Error(fileError);
       const formData = new FormData();
       formData.set('file', file);
       formData.set('altText', `Ảnh thực tế ${unit.inventoryCode}`);
@@ -283,42 +273,7 @@ export function InventoryIntakeWizard() {
       replaceQuery(unit.id, result.data.data.id);
       await refreshUnit(unit.id);
       setNotice('Đã tạo bản kiểm định nháp.');
-    });
-  }
-
-  function saveInspection(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    void runAction('inspection-save', async () => {
-      if (inspection === null) throw new Error('Chưa có phiếu kiểm định nháp.');
-      const result = await client.PATCH('/api/v1/backoffice/inspections/{id}', {
-        params: { path: { id: inspection.id } },
-        body: {
-          batteryHealthPercent: Number(batteryHealth),
-          batteryReplacementStatus: batteryReplacement,
-          conditionGrade,
-          checks: checklistPayload(checks) as never,
-          repairHistoryStatus: repairHistory,
-          ...(repairNotes.trim() === '' ? {} : { repairNotes }),
-        },
-      });
-      if (result.data === undefined) throw apiRequestError(result.error);
-      acceptInspection(result.data.data);
-      setNotice('Đã lưu đủ dữ liệu kiểm định nháp.');
-    });
-  }
-
-  async function completeInspection() {
-    await runAction('inspection-complete', async () => {
-      if (inspection === null || unit === null) throw new Error('Chưa có phiếu kiểm định.');
-      const result = await client.POST('/api/v1/backoffice/inspections/{id}/complete', {
-        params: { path: { id: inspection.id } },
-      });
-      if (result.data === undefined) throw apiRequestError(result.error);
-      acceptInspection(result.data.data);
-      await refreshUnit(unit.id);
-      setNotice(
-        `Đã hoàn tất kiểm định với kết quả ${inspectionResultLabel(result.data.data.overallResult)}.`,
-      );
+      router.push(`/backoffice/inventory/inspections/${result.data.data.id}`);
     });
   }
 
@@ -342,6 +297,21 @@ export function InventoryIntakeWizard() {
     setUnit(result.data.data);
   }
 
+  async function refreshCurrentState() {
+    const currentUnitId = unit?.id ?? unitId;
+    if (currentUnitId !== null) await refreshUnit(currentUnitId);
+    if (inspection === null) return;
+    const detail = await client.GET('/api/v1/backoffice/inspections/{id}', {
+      params: { path: { id: inspection.id } },
+    });
+    if (detail.data === undefined) throw apiRequestError(detail.error);
+    if (currentUnitId !== null && detail.data.data.inventoryUnitId !== currentUnitId) {
+      setInspection(null);
+      return;
+    }
+    acceptInspection(detail.data.data);
+  }
+
   async function runAction(name: string, action: () => Promise<void>) {
     setBusy(name);
     setError(null);
@@ -349,6 +319,13 @@ export function InventoryIntakeWizard() {
     try {
       await action();
     } catch (cause) {
+      if (inventoryErrorRequiresRefetch(cause)) {
+        try {
+          await refreshCurrentState();
+        } catch {
+          // Giữ thông báo gốc; lần mở tiếp theo vẫn lấy dữ liệu mới nhất từ máy chủ.
+        }
+      }
       setError(messageOf(cause));
     } finally {
       setBusy(null);
@@ -394,7 +371,7 @@ export function InventoryIntakeWizard() {
           {notice}
         </div>
       ) : null}
-      {loading ? <div className="status">Đang tải dữ liệu wizard…</div> : null}
+      {loading ? <div className="status">Đang tải dữ liệu tiếp nhận máy…</div> : null}
 
       <section className="wizard-card" aria-labelledby="intake-title">
         <StepHeading number="1" id="intake-title" title="Tiếp nhận máy" done={unit !== null} />
@@ -443,7 +420,7 @@ export function InventoryIntakeWizard() {
               >
                 {locations.map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.name} · {item.type}
+                    {item.name} · {item.type === 'STORE' ? 'Cửa hàng' : 'Kho trung tâm'}
                   </option>
                 ))}
               </select>
@@ -456,7 +433,7 @@ export function InventoryIntakeWizard() {
                   setIntake({ ...intake, imei1: event.target.value });
                 }}
                 inputMode="numeric"
-                placeholder="15 chữ số, có Luhn hợp lệ"
+                placeholder="15 chữ số"
               />
             </label>
             <label>
@@ -479,7 +456,7 @@ export function InventoryIntakeWizard() {
                 }}
                 minLength={6}
                 maxLength={32}
-                placeholder="Ít nhất IMEI hoặc serial"
+                placeholder="Ít nhất IMEI hoặc số sê-ri"
               />
             </label>
             <label>
@@ -656,147 +633,25 @@ export function InventoryIntakeWizard() {
           </button>
         ) : null}
         {inspection?.status === 'DRAFT' ? (
-          <form className="inspection-form" onSubmit={saveInspection}>
-            <div className="wizard-form compact">
-              <label>
-                Dung lượng pin (%)
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={batteryHealth}
-                  onChange={(event) => {
-                    setBatteryHealth(event.target.value);
-                  }}
-                  required
-                />
-              </label>
-              <label>
-                Xếp loại ngoại hình
-                <select
-                  value={conditionGrade}
-                  onChange={(event) => {
-                    setConditionGrade(event.target.value as typeof conditionGrade);
-                  }}
-                >
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </select>
-              </label>
-              <label>
-                Tình trạng pin
-                <select
-                  value={batteryReplacement}
-                  onChange={(event) => {
-                    setBatteryReplacement(event.target.value as typeof batteryReplacement);
-                  }}
-                >
-                  <option value="ORIGINAL">Nguyên bản</option>
-                  <option value="REPLACED">Đã thay</option>
-                  <option value="UNKNOWN">Chưa rõ</option>
-                </select>
-              </label>
-              <label>
-                Lịch sử sửa chữa
-                <select
-                  value={repairHistory}
-                  onChange={(event) => {
-                    setRepairHistory(event.target.value as typeof repairHistory);
-                  }}
-                >
-                  <option value="NONE_KNOWN">Không ghi nhận</option>
-                  <option value="KNOWN">Có sửa chữa</option>
-                  <option value="UNKNOWN">Chưa rõ</option>
-                </select>
-              </label>
-              {repairHistory === 'KNOWN' ? (
-                <label className="field-wide">
-                  Ghi chú sửa chữa
-                  <textarea
-                    value={repairNotes}
-                    onChange={(event) => {
-                      setRepairNotes(event.target.value);
-                    }}
-                    required
-                  />
-                </label>
-              ) : null}
-            </div>
-            <div className="checklist-heading">
-              <h3>Danh sách kiểm tra kỹ thuật</h3>
-              <button
-                className="button"
-                type="button"
-                onClick={() => {
-                  setChecks(allPassChecklist());
-                }}
-              >
-                Đánh dấu tất cả đạt
-              </button>
-            </div>
-            <div className="checklist-grid">
-              {IPHONE_CHECKLIST_V1.map(([key, label]) => (
-                <fieldset key={key}>
-                  <legend>{label}</legend>
-                  <label>
-                    Trạng thái
-                    <select
-                      value={checks[key].status}
-                      onChange={(event) => {
-                        setChecks({
-                          ...checks,
-                          [key]: {
-                            ...checks[key],
-                            status: event.target.value as ChecklistDraft[typeof key]['status'],
-                          },
-                        });
-                      }}
-                    >
-                      {CHECK_STATUSES.map((value) => (
-                        <option value={value} key={value}>
-                          {checkStatusLabel(value)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Ghi chú
-                    <input
-                      value={checks[key].note}
-                      onChange={(event) => {
-                        setChecks({
-                          ...checks,
-                          [key]: { ...checks[key], note: event.target.value },
-                        });
-                      }}
-                      required={['FAIL', 'DEGRADED', 'NOT_TESTED', 'UNKNOWN'].includes(
-                        checks[key].status,
-                      )}
-                    />
-                  </label>
-                </fieldset>
-              ))}
-            </div>
-            <div className="wizard-actions">
-              <button className="button primary" disabled={busy !== null} type="submit">
-                {busy === 'inspection-save' ? 'Đang lưu…' : 'Lưu kiểm định'}
-              </button>
-              <button
-                className="button"
-                disabled={busy !== null}
-                type="button"
-                onClick={() => void completeInspection()}
-              >
-                {busy === 'inspection-complete' ? 'Đang hoàn tất…' : 'Hoàn tất kiểm định'}
-              </button>
-            </div>
-          </form>
+          <div className="wizard-actions">
+            <p>Phiếu đang chờ kỹ thuật viên ghi nhận đủ 18 hạng mục.</p>
+            <Link
+              className="button primary"
+              href={`/backoffice/inventory/inspections/${inspection.id}`}
+            >
+              Tiếp tục kiểm định
+            </Link>
+          </div>
         ) : null}
         {inspection?.status === 'COMPLETED' ? (
-          <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
-            Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
-          </p>
+          <div className="wizard-actions">
+            <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
+              Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
+            </p>
+            <Link className="button" href={`/backoffice/inventory/inspections/${inspection.id}`}>
+              Xem phiếu kiểm định
+            </Link>
+          </div>
         ) : null}
       </section>
 
@@ -905,37 +760,7 @@ function sellableVariants(product: ProductDetail) {
 }
 
 function apiRequestError(value: unknown): Error {
-  if (isRecord(value) && isRecord(value['error'])) {
-    const payload = value['error'];
-    const code = typeof payload['code'] === 'string' ? payload['code'] : 'API_ERROR';
-    const message =
-      typeof payload['message'] === 'string' ? payload['message'] : 'Yêu cầu không thành công.';
-    return new Error(friendlyCode(code, message));
-  }
-  return new Error('Không thể kết nối tới hệ thống. Hãy thử lại.');
-}
-
-function friendlyCode(code: string, fallback: string) {
-  if (code === 'CONCURRENT_MODIFICATION')
-    return 'Dữ liệu vừa được thay đổi ở phiên khác. Hãy tải lại bước này.';
-  if (code === 'INVALID_STATE_TRANSITION') return 'Trạng thái máy không cho phép thao tác này.';
-  if (code === 'INVENTORY_INSPECTION_REQUIRED') return 'Cần một phiếu kiểm định đạt hiện hành.';
-  if (code === 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET')
-    return 'Thiếu giá bán, ảnh hoặc thông tin bắt buộc; sản phẩm hay địa điểm chưa sẵn sàng.';
-  if (code === 'FILE_TOO_LARGE') return 'Ảnh vượt quá 8 MB.';
-  if (code === 'UNSUPPORTED_FILE_TYPE') return 'Ảnh không phải JPEG, PNG hoặc WebP hợp lệ.';
-  if (code === 'STORAGE_UNAVAILABLE')
-    return 'Dịch vụ lưu ảnh đang tạm gián đoạn. Hãy thử tải lại sau ít phút.';
-  return fallback;
-}
-
-function checkStatusLabel(value: (typeof CHECK_STATUSES)[number]): string {
-  if (value === 'PASS') return 'Đạt';
-  if (value === 'FAIL') return 'Không đạt';
-  if (value === 'DEGRADED') return 'Hoạt động chưa tốt';
-  if (value === 'NOT_TESTED') return 'Chưa kiểm tra';
-  if (value === 'NOT_APPLICABLE') return 'Không áp dụng';
-  return 'Chưa xác định';
+  return inventoryAdminError(value, 'Không thể kết nối tới hệ thống. Hãy thử lại.');
 }
 
 function inspectionResultLabel(value: Inspection['overallResult']): string {
@@ -965,8 +790,4 @@ function identifierLabel(value: Unit['maskedIdentifiers'][number]['type']): stri
 
 function messageOf(value: unknown): string {
   return value instanceof Error ? value.message : 'Đã có lỗi không xác định.';
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
