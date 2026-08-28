@@ -38,6 +38,7 @@ import {
   voucherVisibilityLabel,
 } from './voucher-admin-ui';
 import { VoucherEditor } from './voucher-editor';
+import { voucherAllowsOnlyEndDateUpdate, voucherUpdateFromEditor } from './voucher-editor-logic';
 import styles from './voucher-admin.module.css';
 
 const USAGE_PAGE_SIZE = 10;
@@ -164,12 +165,17 @@ export function VoucherDetailView() {
 
   function save(input: CreateVoucherInput) {
     if (voucher === null) return;
-    const { code, ...update } = input;
-    void code;
+    const update = voucherUpdateFromEditor(voucher, input);
     void runMutation(
       () => updateVoucher(client, voucher.id, update),
       'Đã lưu thay đổi của mã ưu đãi.',
     );
+  }
+
+  function openAction(action: Exclude<PendingAction, null>) {
+    setError(null);
+    setReason('');
+    setPendingAction(action);
   }
 
   function confirmAction() {
@@ -193,7 +199,7 @@ export function VoucherDetailView() {
     >
       <div className={styles.page}>
         {loading && voucher === null ? <VoucherDetailLoading /> : null}
-        {error === null ? null : (
+        {error === null || pendingAction !== null ? null : (
           <InlineAlert title="Chưa thể hoàn tất" tone="danger">
             {error}{' '}
             <Button
@@ -257,6 +263,7 @@ export function VoucherDetailView() {
                       <Button
                         variant="secondary"
                         onClick={() => {
+                          setError(null);
                           setEditing(true);
                         }}
                       >
@@ -266,7 +273,7 @@ export function VoucherDetailView() {
                     {voucher.status === 'DRAFT' || voucher.status === 'PAUSED' ? (
                       <Button
                         onClick={() => {
-                          setPendingAction('activate');
+                          openAction('activate');
                         }}
                       >
                         Mở áp dụng
@@ -276,7 +283,7 @@ export function VoucherDetailView() {
                       <Button
                         variant="secondary"
                         onClick={() => {
-                          setPendingAction('pause');
+                          openAction('pause');
                         }}
                       >
                         Tạm dừng
@@ -289,6 +296,7 @@ export function VoucherDetailView() {
 
             {editing ? (
               <VoucherEditor
+                endDateOnly={voucherAllowsOnlyEndDateUpdate(voucher)}
                 formId={EDIT_FORM_ID}
                 initialVoucher={voucher}
                 pending={busy}
@@ -303,7 +311,7 @@ export function VoucherDetailView() {
                 usages={usages}
                 voucher={voucher}
                 onArchive={() => {
-                  setPendingAction('archive');
+                  openAction('archive');
                 }}
                 onUsagePageChange={setUsagePage}
                 onUsageStatusChange={(next) => {
@@ -323,6 +331,7 @@ export function VoucherDetailView() {
               }
               description={actionDescription(pendingAction)}
               destructive={pendingAction === 'archive'}
+              error={error ?? undefined}
               open={pendingAction !== null}
               pending={busy}
               {...(pendingAction === 'pause' || pendingAction === 'archive'
@@ -339,6 +348,7 @@ export function VoucherDetailView() {
                 if (!busy) {
                   setPendingAction(null);
                   setReason('');
+                  setError(null);
                 }
               }}
               onConfirm={confirmAction}

@@ -2,7 +2,7 @@
 
 import { CaretRightIcon, PlusIcon } from '@phosphor-icons/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   BackofficePagination,
@@ -63,6 +63,7 @@ export function VoucherListView() {
   const [pagination, setPagination] = useState<Pagination>(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestRequest = useRef(0);
   const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -70,26 +71,28 @@ export function VoucherListView() {
   }, [query]);
 
   const load = useCallback(async () => {
-    const result = await listVouchers(client, query);
-    setVouchers(result.data);
-    setPagination(result.pagination);
+    const request = latestRequest.current + 1;
+    latestRequest.current = request;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await listVouchers(client, query);
+      if (request !== latestRequest.current) return;
+      setVouchers(result.data);
+      setPagination(result.pagination);
+    } catch (caught: unknown) {
+      if (request !== latestRequest.current) return;
+      setError(errorMessage(caught, 'Không thể tải danh sách mã ưu đãi.'));
+    } finally {
+      if (request === latestRequest.current) setLoading(false);
+    }
   }, [client, query]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !isAdmin) return;
-    let active = true;
-    setLoading(true);
-    setError(null);
-    void load()
-      .catch((caught: unknown) => {
-        if (!active) return;
-        setError(errorMessage(caught, 'Không thể tải danh sách mã ưu đãi.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    void load();
     return () => {
-      active = false;
+      latestRequest.current += 1;
     };
   }, [isAdmin, load, status]);
 

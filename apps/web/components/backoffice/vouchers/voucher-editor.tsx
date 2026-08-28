@@ -31,9 +31,14 @@ import {
   voucherDiscountSummary,
   voucherScopeSummary,
 } from './voucher-admin-ui';
+import {
+  loadAllVoucherCatalogProducts,
+  voucherEndDateExtensionError,
+} from './voucher-editor-logic';
 import styles from './voucher-admin.module.css';
 
 export interface VoucherEditorProps {
+  readonly endDateOnly?: boolean;
   readonly formId: string;
   readonly initialVoucher?: Voucher;
   readonly onSubmit: (input: CreateVoucherInput) => void;
@@ -81,6 +86,7 @@ const EMPTY_DRAFT: VoucherDraft = {
 };
 
 export function VoucherEditor({
+  endDateOnly = false,
   formId,
   initialVoucher,
   onSubmit,
@@ -94,27 +100,30 @@ export function VoucherEditor({
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const canLoadCatalog = status === 'authenticated' && user?.role === 'ADMIN';
+  const shouldLoadCatalog = canLoadCatalog && !endDateOnly;
 
   useEffect(() => {
     setDraft(draftFromVoucher(initialVoucher));
   }, [initialVoucher]);
 
   useEffect(() => {
-    if (!canLoadCatalog) return;
+    if (!shouldLoadCatalog) return;
     let active = true;
     setCatalogLoading(true);
     setCatalogError(null);
-    void listCatalogProducts(client, {
-      page: 1,
-      pageSize: 100,
-      search: '',
-      sortBy: 'name',
-      sortOrder: 'asc',
-      status: 'active',
-      type: '',
-    })
+    void loadAllVoucherCatalogProducts((page, pageSize) =>
+      listCatalogProducts(client, {
+        page,
+        pageSize,
+        search: '',
+        sortBy: 'name',
+        sortOrder: 'asc',
+        status: 'active',
+        type: '',
+      }),
+    )
       .then((result) => {
-        if (active) setProducts(result.data);
+        if (active) setProducts(result);
       })
       .catch((caught: unknown) => {
         if (active) setCatalogError(errorMessage(caught, 'Không thể tải lựa chọn sản phẩm.'));
@@ -125,10 +134,10 @@ export function VoucherEditor({
     return () => {
       active = false;
     };
-  }, [canLoadCatalog, client]);
+  }, [client, shouldLoadCatalog]);
 
   useEffect(() => {
-    if (!canLoadCatalog || draft.scopeType !== 'VARIANTS' || draft.variantProductId === '') {
+    if (!shouldLoadCatalog || draft.scopeType !== 'VARIANTS' || draft.variantProductId === '') {
       setVariantProduct(null);
       return;
     }
@@ -148,7 +157,7 @@ export function VoucherEditor({
     return () => {
       active = false;
     };
-  }, [canLoadCatalog, client, draft.scopeType, draft.variantProductId]);
+  }, [client, draft.scopeType, draft.variantProductId, shouldLoadCatalog]);
 
   const preview = useMemo(() => previewVoucher(draft), [draft]);
 
@@ -160,8 +169,63 @@ export function VoucherEditor({
       setFormError(result.message);
       return;
     }
+    if (endDateOnly && initialVoucher !== undefined) {
+      const dateError = voucherEndDateExtensionError(initialVoucher.endsAt, result.endsAt);
+      if (dateError !== null) {
+        setFormError(dateError);
+        return;
+      }
+    }
     setFormError(null);
     onSubmit(result);
+  }
+
+  if (endDateOnly && initialVoucher !== undefined) {
+    return (
+      <div className={styles.editorGrid}>
+        <form className={styles.editorMain} id={formId} noValidate onSubmit={submit}>
+          {formError === null ? null : (
+            <InlineAlert title="Hãy kiểm tra lại thông tin" tone="danger">
+              {formError}
+            </InlineAlert>
+          )}
+          <InlineAlert title="Chỉ có thể gia hạn thời gian" tone="info">
+            Mã ưu đãi này đã có lượt sử dụng. Các điều kiện hiện tại được giữ nguyên; bạn chỉ có thể
+            dời thời gian kết thúc sang cùng thời điểm hoặc muộn hơn.
+          </InlineAlert>
+          <section className={styles.formSection}>
+            <h2>Gia hạn thời gian áp dụng</h2>
+            <Input
+              id="voucher-end"
+              label="Kết thúc"
+              min={toDateTimeLocal(initialVoucher.endsAt)}
+              required
+              type="datetime-local"
+              value={draft.endsAt}
+              onChange={(event) => {
+                setDraft((current) => ({ ...current, endsAt: event.target.value }));
+              }}
+            />
+          </section>
+        </form>
+
+        <aside className={styles.editorRail} aria-label="Thông tin gia hạn mã ưu đãi">
+          <section className={styles.sideCard}>
+            <h2>Điều kiện được giữ nguyên</h2>
+            <div className={styles.previewCopy}>
+              <h3>{initialVoucher.name}</h3>
+              <p>{voucherDiscountSummary(initialVoucher)}</p>
+              <p>{voucherScopeSummary(initialVoucher)}</p>
+              <p>{preview.time}</p>
+            </div>
+          </section>
+          <div className={styles.infoBox}>
+            <InfoIcon aria-hidden size={20} />
+            <span>Việc gia hạn không thay đổi mức giảm, phạm vi hay giới hạn sử dụng.</span>
+          </div>
+        </aside>
+      </div>
+    );
   }
 
   return (
