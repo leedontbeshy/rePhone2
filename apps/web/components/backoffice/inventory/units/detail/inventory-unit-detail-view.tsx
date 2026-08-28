@@ -2,6 +2,7 @@
 
 import {
   ArrowLeftIcon,
+  ArrowClockwiseIcon,
   CheckCircleIcon,
   ImageSquareIcon,
   LockKeyIcon,
@@ -74,6 +75,7 @@ export interface InventoryUnitDetailViewProps {
     input?: { readonly reason?: string; readonly toLocationId?: string },
   ) => Promise<boolean>;
   readonly onRevealIdentifiers: (reason: string) => Promise<boolean>;
+  readonly onRefresh: () => Promise<void>;
   readonly onUpdate: (input: UpdateInventoryUnitInput) => Promise<boolean>;
   readonly onUpload: (input: InventoryMediaUploadInput) => Promise<boolean>;
   readonly unit: InventoryUnitDetail;
@@ -142,6 +144,7 @@ export function InventoryUnitDetailView({
   onCreateInspection,
   onLifecycleCommand,
   onRevealIdentifiers,
+  onRefresh,
   onUpdate,
   onUpload,
   unit,
@@ -191,20 +194,32 @@ export function InventoryUnitDetailView({
             {unit.variant.displayName} · <span className={styles.mono}>{unit.inventoryCode}</span>
           </p>
         </div>
-        <dl className={styles.headerFacts}>
-          <div>
-            <dt>Địa điểm</dt>
-            <dd>{unit.location.name}</dd>
-          </div>
-          <div>
-            <dt>Giá bán</dt>
-            <dd>{unit.salePrice === null ? 'Chưa đặt' : formatVnd(unit.salePrice)}</dd>
-          </div>
-          <div>
-            <dt>Ngày tiếp nhận</dt>
-            <dd>{formatDate(unit.receivedAt)}</dd>
-          </div>
-        </dl>
+        <div className={styles.headerAside}>
+          <Button
+            iconLeading={<ArrowClockwiseIcon aria-hidden="true" size={18} />}
+            loading={busyAction === 'refresh'}
+            loadingLabel="Đang tải lại hồ sơ"
+            size="compact"
+            variant="secondary"
+            onClick={() => void onRefresh()}
+          >
+            Tải lại hồ sơ
+          </Button>
+          <dl className={styles.headerFacts}>
+            <div>
+              <dt>Địa điểm</dt>
+              <dd>{unit.location.name}</dd>
+            </div>
+            <div>
+              <dt>Giá bán</dt>
+              <dd>{unit.salePrice === null ? 'Chưa đặt' : formatVnd(unit.salePrice)}</dd>
+            </div>
+            <div>
+              <dt>Ngày tiếp nhận</dt>
+              <dd>{formatDate(unit.receivedAt)}</dd>
+            </div>
+          </dl>
+        </div>
       </header>
 
       {error === null ? null : (
@@ -525,7 +540,7 @@ function UnitInformationForm({
         <Input
           error={errors.modelNumber}
           id="unit-model-number"
-          label="Mã model"
+          label="Mã kiểu máy"
           maxLength={255}
           placeholder="Ví dụ: A2890"
           value={draft.modelNumber}

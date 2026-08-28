@@ -81,6 +81,17 @@
   background: var(--color-surface);
 }
 
+.headerAside {
+  display: grid;
+  min-width: min(100%, 30rem);
+  justify-items: end;
+  gap: var(--space-3);
+}
+
+.headerAside .headerFacts {
+  min-width: 100%;
+}
+
 .headerFacts div {
   display: grid;
   gap: var(--space-1);
@@ -135,7 +146,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-raised);
 }
 
 .sectionHeading {
@@ -399,6 +410,58 @@
   background: var(--color-canvas);
 }
 
+.adminCostCard {
+  border-color: var(--color-warning);
+  background: linear-gradient(180deg, var(--color-warning-soft), var(--color-surface) 10rem);
+}
+
+.costSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.costSummary div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.costSummary dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.costSummary dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-bold);
+}
+
+.loadState,
+.loadingState {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.loadingGrid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.45fr);
+  gap: var(--space-5);
+}
+
 .dialog {
   width: min(calc(100% - (var(--space-4) * 2)), 38rem);
   max-height: calc(100dvh - (var(--space-4) * 2));
@@ -451,6 +514,15 @@
     width: 100%;
   }
 
+  .headerAside {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .headerAside > button {
+    justify-self: end;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -472,7 +544,9 @@
   .formGrid,
   .uploadForm,
   .identifierGrid,
-  .ephemeralIdentifiers dl {
+  .ephemeralIdentifiers dl,
+  .costSummary,
+  .loadingGrid {
     grid-template-columns: 1fr;
   }
 

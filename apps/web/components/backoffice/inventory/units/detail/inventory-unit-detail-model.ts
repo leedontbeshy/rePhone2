@@ -47,8 +47,8 @@ export const LIFECYCLE_ACTIONS = [
   'MAKE_AVAILABLE',
   'SEND_TO_REPAIR',
   'QUARANTINE',
-  'WRITE_OFF',
   'TRANSFER',
+  'WRITE_OFF',
 ] as const satisfies readonly InventoryUnitAction[];
 
 const READINESS_LABELS: Readonly<Record<InventoryAvailabilityReadinessReason, string>> = {

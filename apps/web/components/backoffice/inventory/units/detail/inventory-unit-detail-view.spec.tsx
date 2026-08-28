@@ -58,6 +58,7 @@ function render(unitValue: InventoryUnitDetail): string {
       onCreateInspection={vi.fn(() => Promise.resolve(true))}
       onLifecycleCommand={vi.fn(() => Promise.resolve(true))}
       onRevealIdentifiers={vi.fn(() => Promise.resolve(true))}
+      onRefresh={vi.fn(() => Promise.resolve())}
       onUpdate={vi.fn(() => Promise.resolve(true))}
       onUpload={vi.fn(() => Promise.resolve(true))}
     />,
