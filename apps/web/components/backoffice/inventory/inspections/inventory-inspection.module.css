@@ -1,0 +1,373 @@
+.page,
+.editor,
+.readonlyLayout,
+.loadingState {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.heading,
+.headerSummary,
+.panelHeading,
+.checklistHeading,
+.checkGroup > header,
+.checkCopy > div,
+.actionBar > div:first-child {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.eyebrow,
+.heading h1,
+.heading p,
+.headerSummary span,
+.headerSummary small,
+.panel h2,
+.panel p,
+.checklistSection h2,
+.checklistSection p,
+.checkGroup h3,
+.checkGroup h4,
+.readonlyNote p,
+.actionBar strong,
+.actionBar span {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.titleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.heading h1 {
+  color: var(--color-ink);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+.heading > p:last-child,
+.panelHeading p,
+.checklistHeading p,
+.checkGroup > header p,
+.checkCopy p,
+.actionBar span,
+.headerSummary small {
+  color: var(--color-muted);
+}
+
+.heading a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.headerSummary {
+  min-width: 13rem;
+  justify-items: start;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.headerSummary > span {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.panel,
+.checklistSection {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.panelHeading,
+.checklistHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.summaryFields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.notesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.repairFields {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.progress {
+  display: grid;
+  min-width: 13rem;
+  gap: var(--space-2);
+  justify-items: end;
+}
+
+.progress > div {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+}
+
+.progress > div > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 160ms ease;
+}
+
+.groups {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.checkGroup {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-subtle);
+}
+
+.checkRows,
+.readonlyChecks {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.checkRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(15rem, 0.8fr) minmax(24rem, 1.2fr);
+  gap: var(--space-5);
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.checkCopy {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.checkCopy > span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+}
+
+.checkCopy h4 {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+}
+
+.checkCopy p {
+  font-size: var(--font-size-small);
+}
+
+.checkFields {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr);
+  gap: var(--space-4);
+}
+
+.actionBar {
+  position: sticky;
+  z-index: 2;
+  inset-block-end: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-strong);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  box-shadow: var(--shadow-overlay);
+  backdrop-filter: blur(12px);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.readonlySummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.readonlySummary > div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.readonlySummary dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.readonlySummary dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.readonlyNote {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: var(--border-default);
+}
+
+.readonlyChecks article {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.readonlyChecks article > div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.readonlyChecks article p {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+@media (max-width: 75rem) {
+  .summaryFields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .page,
+  .editor,
+  .readonlyLayout {
+    gap: var(--space-4);
+  }
+
+  .header,
+  .panelHeading,
+  .checklistHeading,
+  .actionBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .headerSummary,
+  .progress {
+    width: 100%;
+    justify-items: start;
+  }
+
+  .panel,
+  .checklistSection,
+  .checkGroup {
+    padding: var(--space-4);
+  }
+
+  .summaryFields,
+  .notesGrid,
+  .checkFields,
+  .readonlySummary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .checkRow {
+    padding: var(--space-3);
+  }
+
+  .actionBar {
+    position: static;
+    padding: var(--space-4);
+  }
+
+  .actions,
+  .actions > * {
+    width: 100%;
+  }
+
+  .readonlyChecks article {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress > div > span {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .progress > div > span,
+  .checkCopy > span {
+    border: 1px solid CanvasText;
+  }
+}
