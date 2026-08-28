@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildInventoryUnitHref,
-  inventoryLifecycleLabel,
   type InventoryUnitQueryState,
 } from './inventory-unit-list-view';
 
@@ -26,11 +25,5 @@ describe('inventory unit list presenter', () => {
     ).toBe(
       '/backoffice/inventory/units?q=iphone+15&lifecycleStatus=INSPECTING&locationId=store-1&conditionGrade=B&page=2',
     );
-  });
-
-  it('uses natural Vietnamese lifecycle labels', () => {
-    expect(inventoryLifecycleLabel('RECEIVED')).toBe('Mới tiếp nhận');
-    expect(inventoryLifecycleLabel('AVAILABLE')).toBe('Sẵn sàng bán');
-    expect(inventoryLifecycleLabel('WRITTEN_OFF')).toBe('Đã thanh lý');
   });
 });

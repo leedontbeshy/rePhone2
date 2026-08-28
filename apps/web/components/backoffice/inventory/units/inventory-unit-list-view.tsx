@@ -6,20 +6,14 @@ import { useEffect, useState, type MouseEvent } from 'react';
 import {
   BackofficeDataBoard,
   BackofficePagination,
+  inspectionResultLabel,
+  inventoryLifecycleLabel,
+  inventoryLifecyclePresentation,
   type BackofficeDataColumn,
+  type InventoryLifecycleStatus,
 } from '@/components/backoffice';
 import { StatusChip, formatVnd } from '@/components/ui';
 import styles from './inventory-units.module.css';
-
-export type InventoryLifecycleStatus =
-  | 'RECEIVED'
-  | 'INSPECTING'
-  | 'AVAILABLE'
-  | 'IN_TRANSIT'
-  | 'SOLD'
-  | 'REPAIRING'
-  | 'QUARANTINED'
-  | 'WRITTEN_OFF';
 
 export interface InventoryUnitListRecord {
   readonly activeReservationCount: number;
@@ -80,15 +74,15 @@ export interface InventoryUnitListViewProps {
   readonly units: readonly InventoryUnitListRecord[];
 }
 
-const STATUS_OPTIONS: ReadonlyArray<{ label: string; value: InventoryLifecycleStatus }> = [
-  { label: 'Mới tiếp nhận', value: 'RECEIVED' },
-  { label: 'Đang kiểm định', value: 'INSPECTING' },
-  { label: 'Sẵn sàng bán', value: 'AVAILABLE' },
-  { label: 'Đang chuyển kho', value: 'IN_TRANSIT' },
-  { label: 'Đã bán', value: 'SOLD' },
-  { label: 'Đang sửa chữa', value: 'REPAIRING' },
-  { label: 'Đang cách ly', value: 'QUARANTINED' },
-  { label: 'Đã thanh lý', value: 'WRITTEN_OFF' },
+const STATUS_OPTIONS: readonly InventoryLifecycleStatus[] = [
+  'RECEIVED',
+  'INSPECTING',
+  'AVAILABLE',
+  'IN_TRANSIT',
+  'SOLD',
+  'REPAIRING',
+  'QUARANTINED',
+  'WRITTEN_OFF',
 ];
 
 export function InventoryUnitListView({
@@ -135,12 +129,7 @@ export function InventoryUnitListView({
     {
       key: 'status',
       label: 'Trạng thái',
-      render: (unit) => (
-        <StatusChip
-          label={inventoryLifecycleLabel(unit.lifecycleStatus)}
-          tone={inventoryLifecycleTone(unit.lifecycleStatus)}
-        />
-      ),
+      render: (unit) => <InventoryLifecycleChip status={unit.lifecycleStatus} />,
     },
     {
       key: 'location',
@@ -229,9 +218,9 @@ export function InventoryUnitListView({
           }}
         >
           <option value="">Tất cả trạng thái</option>
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          {STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>
+              {inventoryLifecycleLabel(status)}
             </option>
           ))}
         </select>
@@ -355,25 +344,9 @@ export function buildInventoryUnitHref(
   return value === '' ? '/backoffice/inventory/units' : `/backoffice/inventory/units?${value}`;
 }
 
-export function inventoryLifecycleLabel(status: InventoryLifecycleStatus): string {
-  return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? 'Chưa xác định';
-}
-
-function inventoryLifecycleTone(status: InventoryLifecycleStatus) {
-  if (status === 'AVAILABLE') return 'success' as const;
-  if (status === 'INSPECTING' || status === 'IN_TRANSIT') return 'info' as const;
-  if (status === 'REPAIRING' || status === 'RECEIVED') return 'warning' as const;
-  if (status === 'QUARANTINED' || status === 'WRITTEN_OFF') return 'danger' as const;
-  return 'neutral' as const;
-}
-
-function inspectionResultLabel(
-  result: NonNullable<InventoryUnitListRecord['inspectionResult']>,
-): string {
-  if (result === 'PASSED') return 'Đạt';
-  if (result === 'PARTIAL') return 'Cần lưu ý';
-  if (result === 'FAILED') return 'Không đạt';
-  return 'Chưa hoàn tất';
+function InventoryLifecycleChip({ status }: Readonly<{ status: InventoryLifecycleStatus }>) {
+  const presentation = inventoryLifecyclePresentation(status);
+  return <StatusChip label={presentation.label} tone={presentation.tone} />;
 }
 
 function formatInventoryDate(value: string): string {
