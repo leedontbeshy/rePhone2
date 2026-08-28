@@ -1,0 +1,396 @@
+'use client';
+
+import { MagnifyingGlassIcon, PlusIcon, ScanIcon } from '@phosphor-icons/react/ssr';
+import Link from 'next/link';
+import { useEffect, useState, type MouseEvent } from 'react';
+import {
+  BackofficeDataBoard,
+  BackofficePagination,
+  type BackofficeDataColumn,
+} from '@/components/backoffice';
+import { StatusChip, formatVnd } from '@/components/ui';
+import styles from './inventory-units.module.css';
+
+export type InventoryLifecycleStatus =
+  | 'RECEIVED'
+  | 'INSPECTING'
+  | 'AVAILABLE'
+  | 'IN_TRANSIT'
+  | 'SOLD'
+  | 'REPAIRING'
+  | 'QUARANTINED'
+  | 'WRITTEN_OFF';
+
+export interface InventoryUnitListRecord {
+  readonly activeReservationCount: number;
+  readonly batteryHealthPercent: number | null;
+  readonly conditionGrade: 'A' | 'B' | 'C' | null;
+  readonly id: string;
+  readonly inspectionResult: 'INCOMPLETE' | 'PASSED' | 'PARTIAL' | 'FAILED' | null;
+  readonly inventoryCode: string;
+  readonly lifecycleStatus: InventoryLifecycleStatus;
+  readonly locationName: string;
+  readonly maskedIdentifierSummary: string;
+  readonly mediaCount: number;
+  readonly productName: string;
+  readonly receivedAt: string;
+  readonly salePrice: string | null;
+  readonly variantName: string;
+}
+
+export interface InventoryUnitLocationOption {
+  readonly id: string;
+  readonly name: string;
+}
+
+export interface InventoryUnitQueryState {
+  readonly conditionGrade?: 'A' | 'B' | 'C';
+  readonly lifecycleStatus?: InventoryLifecycleStatus;
+  readonly locationId?: string;
+  readonly minBatteryHealth?: number;
+  readonly page: number;
+  readonly pageSize: number;
+  readonly q?: string;
+  readonly simLockStatus?: 'UNLOCKED' | 'CARRIER_LOCKED' | 'UNKNOWN';
+  readonly sortBy: 'receivedAt' | 'updatedAt' | 'inventoryCode' | 'salePrice';
+  readonly sortOrder: 'asc' | 'desc';
+}
+
+export type InventoryUnitQueryOverrides = {
+  readonly [Key in keyof InventoryUnitQueryState]?: InventoryUnitQueryState[Key] | undefined;
+};
+
+export interface InventoryUnitPagination {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalItems: number;
+  readonly totalPages: number;
+}
+
+export interface InventoryUnitListViewProps {
+  readonly error?: string | null;
+  readonly loading?: boolean;
+  readonly locations: readonly InventoryUnitLocationOption[];
+  readonly onQueryChange?: (
+    overrides: InventoryUnitQueryOverrides,
+    options?: { history?: 'push' | 'replace' },
+  ) => void;
+  readonly pagination: InventoryUnitPagination;
+  readonly query: InventoryUnitQueryState;
+  readonly units: readonly InventoryUnitListRecord[];
+}
+
+const STATUS_OPTIONS: ReadonlyArray<{ label: string; value: InventoryLifecycleStatus }> = [
+  { label: 'Mới tiếp nhận', value: 'RECEIVED' },
+  { label: 'Đang kiểm định', value: 'INSPECTING' },
+  { label: 'Sẵn sàng bán', value: 'AVAILABLE' },
+  { label: 'Đang chuyển kho', value: 'IN_TRANSIT' },
+  { label: 'Đã bán', value: 'SOLD' },
+  { label: 'Đang sửa chữa', value: 'REPAIRING' },
+  { label: 'Đang cách ly', value: 'QUARANTINED' },
+  { label: 'Đã thanh lý', value: 'WRITTEN_OFF' },
+];
+
+export function InventoryUnitListView({
+  error = null,
+  loading = false,
+  locations,
+  onQueryChange,
+  pagination,
+  query,
+  units,
+}: InventoryUnitListViewProps) {
+  const [search, setSearch] = useState(query.q ?? '');
+
+  useEffect(() => {
+    setSearch(query.q ?? '');
+  }, [query.q]);
+
+  useEffect(() => {
+    if (onQueryChange === undefined || search.trim() === (query.q ?? '')) return;
+    const timer = window.setTimeout(() => {
+      onQueryChange(
+        { page: 1, q: search.trim() === '' ? undefined : search.trim() },
+        { history: 'replace' },
+      );
+    }, 250);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [onQueryChange, query.q, search]);
+
+  const columns: readonly BackofficeDataColumn<InventoryUnitListRecord>[] = [
+    {
+      key: 'unit',
+      label: 'Máy',
+      mobileRole: 'primary',
+      render: (unit) => (
+        <div className={styles.unitIdentity}>
+          <Link href={`/backoffice/inventory/units/${unit.id}`}>{unit.productName}</Link>
+          <span>{unit.variantName}</span>
+          <small>{unit.inventoryCode}</small>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      render: (unit) => (
+        <StatusChip
+          label={inventoryLifecycleLabel(unit.lifecycleStatus)}
+          tone={inventoryLifecycleTone(unit.lifecycleStatus)}
+        />
+      ),
+    },
+    {
+      key: 'location',
+      label: 'Địa điểm',
+      render: (unit) => unit.locationName,
+    },
+    {
+      key: 'inspection',
+      label: 'Kiểm định',
+      render: (unit) => <InspectionSummary unit={unit} />,
+    },
+    {
+      align: 'end',
+      key: 'price',
+      label: 'Giá bán',
+      render: (unit) => (unit.salePrice === null ? 'Chưa đặt' : formatVnd(unit.salePrice)),
+    },
+    {
+      align: 'end',
+      key: 'received',
+      label: 'Ngày nhận',
+      render: (unit) => formatInventoryDate(unit.receivedAt),
+    },
+    {
+      align: 'end',
+      key: 'action',
+      label: '',
+      mobileRole: 'action',
+      render: (unit) => (
+        <Link className={styles.detailLink} href={`/backoffice/inventory/units/${unit.id}`}>
+          Xem hồ sơ
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>Kho hàng · Máy vật lý</p>
+          <h1>Danh sách máy</h1>
+          <p>Theo dõi từng chiếc iPhone từ khi tiếp nhận đến khi bán hoặc xử lý nội bộ.</p>
+        </div>
+        <div className={styles.headerActions}>
+          <Link className={styles.secondaryAction} href="/backoffice/inventory/lookup">
+            <ScanIcon aria-hidden="true" size={18} />
+            Tra cứu mã máy
+          </Link>
+          <Link className={styles.primaryAction} href="/backoffice/inventory/intake">
+            <PlusIcon aria-hidden="true" size={18} weight="bold" />
+            Nhập máy
+          </Link>
+        </div>
+      </header>
+
+      {error === null ? null : (
+        <div className={styles.errorBanner} role="alert">
+          {error}
+        </div>
+      )}
+
+      <section className={styles.filters} aria-label="Bộ lọc máy vật lý">
+        <label className={styles.searchField}>
+          <span className="rp-visually-hidden">Tìm máy</span>
+          <MagnifyingGlassIcon aria-hidden="true" size={20} />
+          <input
+            placeholder="Tên máy, mã kho hoặc 4 số cuối định danh"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
+          />
+        </label>
+        <select
+          aria-label="Trạng thái máy"
+          value={query.lifecycleStatus ?? ''}
+          onChange={(event) => {
+            onQueryChange?.({
+              lifecycleStatus:
+                event.target.value === ''
+                  ? undefined
+                  : (event.target.value as InventoryLifecycleStatus),
+              page: 1,
+            });
+          }}
+        >
+          <option value="">Tất cả trạng thái</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Địa điểm"
+          value={query.locationId ?? ''}
+          onChange={(event) => {
+            onQueryChange?.({ locationId: event.target.value || undefined, page: 1 });
+          }}
+        >
+          <option value="">Tất cả địa điểm</option>
+          {locations.map((location) => (
+            <option key={location.id} value={location.id}>
+              {location.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Tình trạng ngoại hình"
+          value={query.conditionGrade ?? ''}
+          onChange={(event) => {
+            onQueryChange?.({
+              conditionGrade:
+                event.target.value === ''
+                  ? undefined
+                  : (event.target.value as 'A' | 'B' | 'C'),
+              page: 1,
+            });
+          }}
+        >
+          <option value="">Mọi ngoại hình</option>
+          <option value="A">Loại A</option>
+          <option value="B">Loại B</option>
+          <option value="C">Loại C</option>
+        </select>
+        <select
+          aria-label="Sắp xếp"
+          value={`${query.sortBy}:${query.sortOrder}`}
+          onChange={(event) => {
+            const [sortBy, sortOrder] = event.target.value.split(':') as [
+              InventoryUnitQueryState['sortBy'],
+              InventoryUnitQueryState['sortOrder'],
+            ];
+            onQueryChange?.({ page: 1, sortBy, sortOrder });
+          }}
+        >
+          <option value="receivedAt:desc">Mới nhận gần đây</option>
+          <option value="updatedAt:desc">Mới cập nhật</option>
+          <option value="inventoryCode:asc">Mã máy A–Z</option>
+          <option value="salePrice:desc">Giá cao đến thấp</option>
+          <option value="salePrice:asc">Giá thấp đến cao</option>
+        </select>
+      </section>
+
+      <p className={styles.resultSummary} role="status">
+        {loading && units.length > 0
+          ? 'Đang cập nhật danh sách…'
+          : `${String(pagination.totalItems)} máy phù hợp`}
+      </p>
+
+      <BackofficeDataBoard
+        ariaLabel="Danh sách máy vật lý"
+        columns={columns}
+        emptyDescription="Thay đổi bộ lọc hoặc tiếp nhận một máy mới."
+        emptyTitle="Chưa có máy phù hợp"
+        getRowKey={(unit) => unit.id}
+        loading={loading}
+        rows={units}
+      />
+
+      <div onClick={(event) => handlePaginationClick(event, onQueryChange)}>
+        <BackofficePagination
+          buildHref={(page) => buildInventoryUnitHref(query, { page })}
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          totalItems={pagination.totalItems}
+          totalPages={pagination.totalPages}
+        />
+      </div>
+    </div>
+  );
+}
+
+function InspectionSummary({ unit }: Readonly<{ unit: InventoryUnitListRecord }>) {
+  if (unit.inspectionResult === null) return <span className={styles.muted}>Chưa kiểm định</span>;
+  return (
+    <div className={styles.inspectionSummary}>
+      <strong>{inspectionResultLabel(unit.inspectionResult)}</strong>
+      <span>
+        {unit.conditionGrade === null ? 'Chưa xếp loại' : `Loại ${unit.conditionGrade}`}
+        {unit.batteryHealthPercent === null
+          ? ''
+          : ` · Pin ${String(unit.batteryHealthPercent)}%`}
+      </span>
+    </div>
+  );
+}
+
+export function buildInventoryUnitHref(
+  query: InventoryUnitQueryState,
+  overrides: InventoryUnitQueryOverrides = {},
+): string {
+  const next = { ...query, ...overrides };
+  const page = next.page ?? query.page;
+  const pageSize = next.pageSize ?? query.pageSize;
+  const sortBy = next.sortBy ?? query.sortBy;
+  const sortOrder = next.sortOrder ?? query.sortOrder;
+  const params = new URLSearchParams();
+  if (next.q) params.set('q', next.q);
+  if (next.lifecycleStatus) params.set('lifecycleStatus', next.lifecycleStatus);
+  if (next.locationId) params.set('locationId', next.locationId);
+  if (next.conditionGrade) params.set('conditionGrade', next.conditionGrade);
+  if (next.simLockStatus) params.set('simLockStatus', next.simLockStatus);
+  if (next.minBatteryHealth !== undefined)
+    params.set('minBatteryHealth', String(next.minBatteryHealth));
+  if (page > 1) params.set('page', String(page));
+  if (pageSize !== 20) params.set('pageSize', String(pageSize));
+  if (sortBy !== 'receivedAt') params.set('sortBy', sortBy);
+  if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+  const value = params.toString();
+  return value === '' ? '/backoffice/inventory/units' : `/backoffice/inventory/units?${value}`;
+}
+
+export function inventoryLifecycleLabel(status: InventoryLifecycleStatus): string {
+  return STATUS_OPTIONS.find((option) => option.value === status)?.label ?? 'Chưa xác định';
+}
+
+function inventoryLifecycleTone(status: InventoryLifecycleStatus) {
+  if (status === 'AVAILABLE') return 'success' as const;
+  if (status === 'INSPECTING' || status === 'IN_TRANSIT') return 'info' as const;
+  if (status === 'REPAIRING' || status === 'RECEIVED') return 'warning' as const;
+  if (status === 'QUARANTINED' || status === 'WRITTEN_OFF') return 'danger' as const;
+  return 'neutral' as const;
+}
+
+function inspectionResultLabel(
+  result: NonNullable<InventoryUnitListRecord['inspectionResult']>,
+): string {
+  if (result === 'PASSED') return 'Đạt';
+  if (result === 'PARTIAL') return 'Cần lưu ý';
+  if (result === 'FAILED') return 'Không đạt';
+  return 'Chưa hoàn tất';
+}
+
+function formatInventoryDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short' }).format(date);
+}
+
+function handlePaginationClick(
+  event: MouseEvent<HTMLDivElement>,
+  onQueryChange: InventoryUnitListViewProps['onQueryChange'],
+) {
+  if (onQueryChange === undefined || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+  const target = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[href]');
+  if (target === null) return;
+  const page = Number(new URL(target.href).searchParams.get('page') ?? '1');
+  if (!Number.isSafeInteger(page) || page < 1) return;
+  event.preventDefault();
+  onQueryChange({ page });
+}
