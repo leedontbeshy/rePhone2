@@ -117,6 +117,12 @@ export class InventoryUnitListItemDto {
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
 }
 
+export class InventoryAvailabilityReadinessDto {
+  @ApiProperty({ type: Boolean }) public isReady!: boolean;
+  @ApiProperty({ enum: AVAILABILITY_READINESS_REASONS, isArray: true })
+  public reasons!: AvailabilityReadinessReason[];
+}
+
 export class InventoryUnitDetailDto extends InventoryUnitListItemDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public modelNumber!: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) public regionCode!: string | null;
@@ -145,12 +151,6 @@ export class InventoryUnitMediaDto {
   @ApiProperty({ type: Number }) public sortOrder!: number;
   @ApiPropertyOptional({ type: String, nullable: true }) public altText!: string | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
-}
-
-export class InventoryAvailabilityReadinessDto {
-  @ApiProperty({ type: Boolean }) public isReady!: boolean;
-  @ApiProperty({ enum: AVAILABILITY_READINESS_REASONS, isArray: true })
-  public reasons!: AvailabilityReadinessReason[];
 }
 
 export class DecryptedIdentifiersDto {
@@ -189,6 +189,12 @@ export class InventoryLocationListResponse {
   @ApiProperty({ type: () => [InventoryLocationDto] }) public data!: InventoryLocationDto[];
 }
 
+export class InspectionInspectorDto {
+  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
+  @ApiProperty({ type: String }) public fullName!: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public employeeCode!: string | null;
+}
+
 export class InspectionSummaryDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ enum: ['INTAKE', 'RETURN', 'WARRANTY', 'PRE_SALE'] })
@@ -204,12 +210,6 @@ export class InspectionSummaryDto {
   public inspectedAt!: Date | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
-}
-
-export class InspectionInspectorDto {
-  @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
-  @ApiProperty({ type: String }) public fullName!: string;
-  @ApiPropertyOptional({ type: String, nullable: true }) public employeeCode!: string | null;
 }
 
 export class InspectionChecklistItemDto {
