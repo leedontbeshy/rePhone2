@@ -151,7 +151,7 @@ Các bổ sung trên chỉ là dữ liệu đọc. DTO command, state machine, t
 
 ## 10. Bằng chứng hoàn tất
 
-- Code chức năng và kiểm thử đến SHA `0d1bba0` trên nhánh `feat/fe-6-inventory-stock`.
+- Code chức năng và kiểm thử đến SHA `c9ca675` trên nhánh `feat/fe-6-inventory-stock`.
 - 26/26 thao tác FE-06 và 8/8 route được đánh dấu `DONE` trong sổ theo dõi thực thi.
 - Web đạt 76 tệp / 324 bài kiểm tra; API đạt 107 tệp / 625 bài kiểm tra; API client đạt 7/7; hợp đồng accessibility đạt 15/15.
 - Bộ kiểm thử trình duyệt FE-06 đạt 6/6, gồm phân quyền giá vốn, bảo vệ định danh, lọc không tải lại trang, kiểm định 18 hạng mục, đối soát tồn kho và responsive toàn bộ tám route.
