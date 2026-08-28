@@ -1636,6 +1636,7 @@ export function variantInputFromDraft(
   if (new Set(attributeNames).size !== attributeNames.length) {
     return new Error('Tên thông số phụ kiện không được trùng nhau.');
   }
+  const editableAttributeNames = new Set(attributeNames);
   const attributes = [
     ...draft.attributes
       .filter((attribute) => attribute.hidden !== true)
@@ -1645,7 +1646,11 @@ export function variantInputFromDraft(
         value: attribute.value.trim(),
       }))
       .filter((attribute) => attribute.name !== ''),
-    ...draft.attributes.filter((attribute) => attribute.hidden === true),
+    ...draft.attributes.filter(
+      (attribute) =>
+        attribute.hidden === true &&
+        !editableAttributeNames.has(attribute.name.trim().toLocaleLowerCase('vi')),
+    ),
   ];
   return {
     displayName: draft.displayName.trim(),

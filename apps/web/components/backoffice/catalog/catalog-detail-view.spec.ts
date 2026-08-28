@@ -55,6 +55,28 @@ describe('biểu mẫu biến thể sản phẩm', () => {
     expect((duplicateName as Error).message).toContain('không được trùng');
   });
 
+  it('ưu tiên thông số người dùng nhập khi trùng tên với dữ liệu kỹ thuật ẩn', () => {
+    const input = variantInputFromDraft(
+      draft({
+        attributes: [
+          { name: 'Tương thích', value: 'iPhone 17 trở lên' },
+          { hidden: true, name: 'tương thích', value: 'Dữ liệu cũ' },
+          { hidden: true, name: 'payload', value: '{"connector":"USB-C"}' },
+        ],
+        salePrice: '590000',
+      }),
+      'ACCESSORY',
+    );
+
+    expect(input).not.toBeInstanceOf(Error);
+    expect(input).toMatchObject({
+      attributes: [
+        { name: 'Tương thích', value: 'iPhone 17 trở lên' },
+        { hidden: true, name: 'payload', value: '{"connector":"USB-C"}' },
+      ],
+    });
+  });
+
   it('cho phép biến thể quay về chính sách bảo hành chung của sản phẩm', () => {
     const existing = variant({ warrantyPolicyId: 'policy-1' });
     const input = variantInputFromDraft(
