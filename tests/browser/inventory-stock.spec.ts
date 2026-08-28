@@ -152,8 +152,38 @@ test.describe('FE-06 inventory and stock workspace', () => {
       page.getByRole('heading', { level: 1, name: 'Phiếu kiểm định iPhone' }),
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: '18 hạng mục kỹ thuật' })).toBeVisible();
+    const summaryControlHeights = await Promise.all(
+      [
+        '#battery-health-percent',
+        '#battery-cycle-count',
+        '#battery-replacement-status',
+        '#condition-grade',
+      ].map((selector) =>
+        page.locator(selector).evaluate((element) => element.getBoundingClientRect().height),
+      ),
+    );
+    expect(
+      Math.max(...summaryControlHeights) - Math.min(...summaryControlHeights),
+    ).toBeLessThanOrEqual(1);
+    const noteHeights = await Promise.all(
+      ['#cosmetic-notes', '#repair-notes'].map((selector) =>
+        page.locator(selector).evaluate((element) => element.getBoundingClientRect().height),
+      ),
+    );
+    expect(Math.max(...noteHeights) - Math.min(...noteHeights)).toBeLessThanOrEqual(1);
     const resultFields = await page.getByRole('combobox', { name: /^Kết quả của / }).all();
     expect(resultFields).toHaveLength(18);
+    const resultControlHeights = await Promise.all(
+      resultFields.map((field) =>
+        field.evaluate((element) => element.getBoundingClientRect().height),
+      ),
+    );
+    expect(
+      Math.max(...resultControlHeights) - Math.min(...resultControlHeights),
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs((resultControlHeights[0] ?? 0) - (summaryControlHeights[0] ?? 0)),
+    ).toBeLessThanOrEqual(1);
     for (const field of resultFields) await field.selectOption('PASS');
     await page.getByLabel('Tình trạng pin (%)').fill('94');
     await page.getByLabel('Xếp loại ngoại hình').selectOption('A');

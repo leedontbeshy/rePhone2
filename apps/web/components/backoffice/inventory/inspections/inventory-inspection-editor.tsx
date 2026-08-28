@@ -315,7 +315,7 @@ export function InventoryInspectionEditor({
                   }
                   maxLength={2_000}
                   placeholder="Mô tả linh kiện hoặc lần sửa chữa đã biết"
-                  rows={3}
+                  rows={4}
                   value={draft.repairNotes}
                   onChange={(event) => {
                     updateField('repairNotes', event.target.value);
