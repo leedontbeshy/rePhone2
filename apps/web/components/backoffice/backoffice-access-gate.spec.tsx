@@ -75,6 +75,17 @@ describe('BackofficeAccessGate', () => {
     expect(childRenderCount).toBe(0);
   });
 
+  it('shows a retry state after the session check fails without mounting protected children', () => {
+    mockUseAuth.mockReturnValue({ ...authState('anonymous'), sessionCheckFailed: true });
+
+    const markup = renderGate(<ProtectedContent />);
+
+    expect(markup).toContain('Chưa thể kiểm tra quyền truy cập');
+    expect(markup).toContain('Thử lại');
+    expect(markup).not.toContain('Dữ liệu vận hành bí mật');
+    expect(childRenderCount).toBe(0);
+  });
+
   it.each(['EMPLOYEE', 'ADMIN'] as const)('mounts protected children for %s accounts', (role) => {
     mockUseAuth.mockReturnValue(authState('authenticated', role));
 
@@ -96,6 +107,8 @@ function authState(
 ) {
   return {
     status,
+    retrySessionCheck: vi.fn(),
+    sessionCheckFailed: false,
     user:
       role === undefined
         ? null

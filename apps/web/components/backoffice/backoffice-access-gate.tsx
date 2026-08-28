@@ -11,14 +11,31 @@ export interface BackofficeAccessGateProps {
 }
 
 export function BackofficeAccessGate({ children }: BackofficeAccessGateProps) {
-  const { status, user } = useAuth();
+  const { retrySessionCheck, sessionCheckFailed, status, user } = useAuth();
 
   if (status === 'loading') return <BackofficeAccessLoading />;
+  if (sessionCheckFailed) {
+    return (
+      <BackofficeAccessUnavailable
+        onRetry={() => {
+          void retrySessionCheck();
+        }}
+      />
+    );
+  }
   if (status === 'anonymous') return <BackofficeAccessDenied audience="anonymous" />;
 
   // Fail closed if the authentication state is ever incomplete. AuthProvider does not currently
   // expose refresh errors separately, so this defensive state must never reveal the workspace.
-  if (user === null) return <BackofficeAccessUnavailable />;
+  if (user === null) {
+    return (
+      <BackofficeAccessUnavailable
+        onRetry={() => {
+          void retrySessionCheck();
+        }}
+      />
+    );
+  }
   if (user.role !== 'EMPLOYEE' && user.role !== 'ADMIN') {
     return <BackofficeAccessDenied audience="customer" />;
   }
@@ -97,7 +114,7 @@ function BackofficeAccessDenied({ audience }: Readonly<{ audience: 'anonymous' |
   );
 }
 
-function BackofficeAccessUnavailable() {
+function BackofficeAccessUnavailable({ onRetry }: Readonly<{ onRetry: () => void }>) {
   return (
     <AccessScreen>
       <section aria-labelledby="backoffice-access-title" className={styles.card}>
@@ -110,13 +127,7 @@ function BackofficeAccessUnavailable() {
           <p>Nội dung vận hành đang được bảo vệ. Hãy tải lại trang khi kết nối ổn định.</p>
         </div>
         <div aria-label="Lựa chọn tiếp theo" className={styles.actions} role="group">
-          <Button
-            onClick={() => {
-              globalThis.location.reload();
-            }}
-          >
-            Thử lại
-          </Button>
+          <Button onClick={onRetry}>Thử lại</Button>
           <Link className={styles.secondaryAction} href="/">
             Về cửa hàng
           </Link>

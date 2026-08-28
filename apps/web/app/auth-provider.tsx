@@ -71,11 +71,13 @@ export interface AuthContextValue {
   user: AuthUser | null;
   role: AuthRole | null;
   accountStatus: AccountStatus | null;
+  sessionCheckFailed: boolean;
   client: ApiClient;
   logoutPending: boolean;
   login: (input: LoginInput) => Promise<AuthUser>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
+  retrySessionCheck: () => Promise<void>;
   syncAccountProfile: (profile: AuthAccountProfile) => void;
 }
 
@@ -180,11 +182,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const logoutInFlight = useRef<Promise<void> | undefined>(undefined);
   const [authState, setAuthState] = useState<AuthViewState>({ status: 'loading', user: null });
+  const [sessionCheckFailed, setSessionCheckFailed] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
 
   const syncAuthenticatedSession = useCallback(
     (session: ParsedSession) => {
       memory.accept(session);
+      setSessionCheckFailed(false);
       setAuthState({ status: 'authenticated', user: session.user });
     },
     [memory],
@@ -192,6 +196,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const clearSession = useCallback(() => {
     memory.clear();
+    setSessionCheckFailed(false);
     setAuthState({ status: 'anonymous', user: null });
   }, [memory]);
 
@@ -202,11 +207,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       try {
         const session = await requestCookieAuthSession('refresh');
         const result = memory.acceptIfCurrent(expectedRevision, session);
-        if (result.applied) setAuthState({ status: 'authenticated', user: session.user });
+        if (result.applied) {
+          setSessionCheckFailed(false);
+          setAuthState({ status: 'authenticated', user: session.user });
+        }
         return result.applied ? result.accessToken : undefined;
-      } catch {
+      } catch (caught) {
         const result = memory.clearIfCurrent(expectedRevision);
-        if (result.applied) setAuthState({ status: 'anonymous', user: null });
+        if (result.applied) {
+          setSessionCheckFailed(isSessionCheckFailure(caught));
+          setAuthState({ status: 'anonymous', user: null });
+        }
         return undefined;
       }
     },
@@ -214,6 +225,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   const refreshAccessToken = useMemo(() => createSingleFlight(refreshWork), [refreshWork]);
+
+  const retrySessionCheck = useCallback(async () => {
+    setSessionCheckFailed(false);
+    setAuthState({ status: 'loading', user: null });
+    await refreshAccessToken(memory.getAccessToken());
+  }, [memory, refreshAccessToken]);
 
   const client = useMemo(
     () =>
@@ -301,14 +318,26 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       user: authState.user,
       role: authState.user?.role ?? null,
       accountStatus: authState.user?.status ?? null,
+      sessionCheckFailed,
       client,
       logoutPending,
       login,
       register,
       logout,
+      retrySessionCheck,
       syncAccountProfile,
     }),
-    [authState, client, login, logout, logoutPending, register, syncAccountProfile],
+    [
+      authState,
+      client,
+      login,
+      logout,
+      logoutPending,
+      register,
+      retrySessionCheck,
+      sessionCheckFailed,
+      syncAccountProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -363,6 +392,11 @@ export function parseSessionResponse(value: unknown): ParsedSession | undefined 
   const data = value['data'];
   if (typeof data['accessToken'] !== 'string' || !isAuthUser(data['user'])) return undefined;
   return { accessToken: data['accessToken'], user: data['user'] };
+}
+
+export function isSessionCheckFailure(caught: unknown): boolean {
+  if (!(caught instanceof AuthActionError)) return true;
+  return !['AUTH_REQUIRED', 'ACCESS_TOKEN_INVALID', 'SESSION_REVOKED'].includes(caught.code);
 }
 
 export function authErrorFromResponse(

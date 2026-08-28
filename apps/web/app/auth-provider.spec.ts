@@ -4,6 +4,7 @@ import {
   authErrorFromResponse,
   createMemoryAuthSession,
   createSingleFlight,
+  isSessionCheckFailure,
   parseSessionResponse,
   requestCookieAuthSession,
   type AuthUser,
@@ -156,5 +157,19 @@ describe('AuthProvider foundations', () => {
     expect(
       parseSessionResponse({ data: { accessToken: 'token', user: { role: 'CUSTOMER' } } }),
     ).toBe(undefined);
+  });
+
+  it('distinguishes an absent session from a failed session check', () => {
+    expect(
+      isSessionCheckFailure(new AuthActionError('AUTH_REQUIRED', 'anonymous', { status: 401 })),
+    ).toBe(false);
+    expect(
+      isSessionCheckFailure(new AuthActionError('SESSION_REVOKED', 'revoked', { status: 401 })),
+    ).toBe(false);
+    expect(isSessionCheckFailure(new AuthActionError('NETWORK_ERROR', 'offline'))).toBe(true);
+    expect(
+      isSessionCheckFailure(new AuthActionError('SERVICE_UNAVAILABLE', 'offline', { status: 503 })),
+    ).toBe(true);
+    expect(isSessionCheckFailure(new Error('unexpected'))).toBe(true);
   });
 });
