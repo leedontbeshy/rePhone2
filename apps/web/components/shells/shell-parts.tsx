@@ -1,3 +1,10 @@
+import {
+  CubeIcon,
+  HouseIcon,
+  ShoppingBagIcon,
+  TagIcon,
+  TicketIcon,
+} from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { joinClassNames, navigationAccessibleLabel } from './shell-utils';
@@ -33,25 +40,57 @@ export function NavigationList({
 }>) {
   return (
     <ul className={joinClassNames(styles.navigationList, className)}>
-      {items.map((item) => (
-        <li key={`${item.href}:${item.label}`}>
-          <Link
-            className={styles.navigationLink}
-            href={item.href}
-            aria-current={item.isCurrent ? 'page' : undefined}
-            aria-label={navigationAccessibleLabel(item)}
-          >
-            <span>{item.label}</span>
+      {items.map((item) => {
+        const content = (
+          <>
+            {item.icon === undefined ? null : (
+              <span className={styles.navigationIcon} aria-hidden="true">
+                <NavigationIcon name={item.icon} />
+              </span>
+            )}
+            <span className={styles.navigationLabel}>{item.label}</span>
             {item.badgeCount === undefined ? null : (
               <span className={styles.navigationBadge} aria-hidden="true">
                 {item.badgeCount}
               </span>
             )}
-          </Link>
-        </li>
-      ))}
+          </>
+        );
+
+        return (
+          <li
+            className={item.isSeparated ? styles.navigationItemSeparated : undefined}
+            key={`${item.href}:${item.label}`}
+          >
+            {item.isDisabled ? (
+              <span className={styles.navigationLink} aria-disabled="true">
+                {content}
+              </span>
+            ) : (
+              <Link
+                className={styles.navigationLink}
+                href={item.href}
+                aria-current={item.isCurrent ? 'page' : undefined}
+                aria-label={navigationAccessibleLabel(item)}
+              >
+                {content}
+              </Link>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
+}
+
+function NavigationIcon({ name }: Readonly<{ name: NonNullable<ShellNavigationItem['icon']> }>) {
+  const iconProps = { size: 22, weight: 'regular' as const };
+
+  if (name === 'overview') return <HouseIcon {...iconProps} />;
+  if (name === 'catalog') return <TagIcon {...iconProps} />;
+  if (name === 'inventory') return <CubeIcon {...iconProps} />;
+  if (name === 'orders') return <ShoppingBagIcon {...iconProps} />;
+  return <TicketIcon {...iconProps} />;
 }
 
 export function MainLandmark({

@@ -6,7 +6,7 @@ import {
 } from './catalog-voucher-navigation';
 
 describe('FE-05 backoffice navigation', () => {
-  it('shows product management to employees without exposing voucher administration', () => {
+  it('shows the complete operations navigation while keeping voucher administration disabled', () => {
     const groups = catalogVoucherNavigationForRole(
       'EMPLOYEE',
       '/backoffice/catalog/products/product-id',
@@ -15,28 +15,77 @@ describe('FE-05 backoffice navigation', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0]?.items).toEqual([
       {
+        href: '#',
+        label: 'Tổng quan',
+        icon: 'overview',
+        isDisabled: true,
+      },
+      {
         href: '/backoffice/catalog/products',
-        label: 'Sản phẩm',
+        label: 'Danh mục',
+        icon: 'catalog',
         isCurrent: true,
+      },
+      {
+        href: '/backoffice/inventory/intake',
+        label: 'Kho hàng',
+        icon: 'inventory',
+        isCurrent: false,
+      },
+      {
+        href: '/backoffice/orders',
+        label: 'Đơn hàng',
+        icon: 'orders',
+        isCurrent: false,
+      },
+      {
+        href: '/backoffice/vouchers',
+        label: 'Mã ưu đãi',
+        icon: 'vouchers',
+        isCurrent: false,
+        isDisabled: true,
+        isSeparated: true,
       },
     ]);
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/catalog/products/new')).toBe(true);
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/vouchers')).toBe(false);
   });
 
-  it('adds voucher administration for admins and marks nested routes current', () => {
+  it('enables voucher administration for admins and marks nested routes current', () => {
     const groups = catalogVoucherNavigationForRole('ADMIN', '/backoffice/vouchers/voucher-id');
 
     expect(groups[0]?.items).toEqual([
       {
+        href: '#',
+        label: 'Tổng quan',
+        icon: 'overview',
+        isDisabled: true,
+      },
+      {
         href: '/backoffice/catalog/products',
-        label: 'Sản phẩm',
+        label: 'Danh mục',
+        icon: 'catalog',
+        isCurrent: false,
+      },
+      {
+        href: '/backoffice/inventory/intake',
+        label: 'Kho hàng',
+        icon: 'inventory',
+        isCurrent: false,
+      },
+      {
+        href: '/backoffice/orders',
+        label: 'Đơn hàng',
+        icon: 'orders',
         isCurrent: false,
       },
       {
         href: '/backoffice/vouchers',
         label: 'Mã ưu đãi',
+        icon: 'vouchers',
         isCurrent: true,
+        isDisabled: false,
+        isSeparated: true,
       },
     ]);
     expect(catalogVoucherAccessForPath('/backoffice/vouchers/new')).toBe('admin');

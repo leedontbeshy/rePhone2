@@ -2,6 +2,8 @@ import type { AuthRole } from '@/app/auth-provider';
 import type { BackofficeNavigationGroup } from '@/components/shells';
 
 export const CATALOG_PRODUCTS_ROOT = '/backoffice/catalog/products';
+export const INVENTORY_ROOT = '/backoffice/inventory/intake';
+export const ORDERS_ROOT = '/backoffice/orders';
 export const VOUCHERS_ROOT = '/backoffice/vouchers';
 
 export type CatalogVoucherAccess = 'staff' | 'admin';
@@ -14,22 +16,40 @@ export function catalogVoucherNavigationForRole(
 
   return [
     {
-      label: 'Danh mục',
+      label: 'Vận hành',
       items: [
         {
+          href: '#',
+          label: 'Tổng quan',
+          icon: 'overview',
+          isDisabled: true,
+        },
+        {
           href: CATALOG_PRODUCTS_ROOT,
-          label: 'Sản phẩm',
+          label: 'Danh mục',
+          icon: 'catalog',
           isCurrent: isPathWithin(pathname, CATALOG_PRODUCTS_ROOT),
         },
-        ...(role === 'ADMIN'
-          ? [
-              {
-                href: VOUCHERS_ROOT,
-                label: 'Mã ưu đãi',
-                isCurrent: isPathWithin(pathname, VOUCHERS_ROOT),
-              },
-            ]
-          : []),
+        {
+          href: INVENTORY_ROOT,
+          label: 'Kho hàng',
+          icon: 'inventory',
+          isCurrent: isPathWithin(pathname, '/backoffice/inventory'),
+        },
+        {
+          href: ORDERS_ROOT,
+          label: 'Đơn hàng',
+          icon: 'orders',
+          isCurrent: isPathWithin(pathname, ORDERS_ROOT),
+        },
+        {
+          href: VOUCHERS_ROOT,
+          label: 'Mã ưu đãi',
+          icon: 'vouchers',
+          isCurrent: isPathWithin(pathname, VOUCHERS_ROOT),
+          isDisabled: role !== 'ADMIN',
+          isSeparated: true,
+        },
       ],
     },
   ];
