@@ -132,6 +132,29 @@ describe('FE-06 inspection editor logic', () => {
       batteryHealthPercent: 'Giá trị phải từ 0 đến 100.',
     });
   });
+
+  it('clears old notes explicitly when staff removes their content', () => {
+    const draft = inspectionDraftFrom(
+      inspection({
+        cosmeticNotes: 'Trầy nhẹ ở viền',
+        repairHistoryStatus: 'KNOWN',
+        repairNotes: 'Đã thay pin',
+      }),
+    );
+    const result = validateInspectionDraft(
+      {
+        ...draft,
+        cosmeticNotes: '   ',
+        repairHistoryStatus: 'NONE_KNOWN',
+        repairNotes: 'Nội dung cũ không được giữ lại',
+      },
+      'save',
+    );
+
+    expect(result.isValid).toBe(true);
+    expect(result.input.cosmeticNotes).toBeNull();
+    expect(result.input.repairNotes).toBeNull();
+  });
 });
 
 function inspection(overrides: Partial<InventoryInspectionDetail> = {}): InventoryInspectionDetail {

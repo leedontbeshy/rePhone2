@@ -274,12 +274,12 @@ export function validateInspectionDraft(
   const input: UpdateInventoryInspectionInput = {
     batteryReplacementStatus: draft.batteryReplacementStatus,
     checks: { schemaVersion: 1, items },
+    cosmeticNotes: draft.cosmeticNotes.trim() || null,
+    repairNotes: draft.repairHistoryStatus === 'KNOWN' ? draft.repairNotes.trim() || null : null,
     repairHistoryStatus: draft.repairHistoryStatus,
     ...(batteryHealthPercent === undefined ? {} : { batteryHealthPercent }),
     ...(batteryCycleCount === undefined ? {} : { batteryCycleCount }),
     ...(draft.conditionGrade === '' ? {} : { conditionGrade: draft.conditionGrade }),
-    ...(draft.cosmeticNotes.trim() === '' ? {} : { cosmeticNotes: draft.cosmeticNotes.trim() }),
-    ...(draft.repairNotes.trim() === '' ? {} : { repairNotes: draft.repairNotes.trim() }),
   };
 
   return { errors, input, isValid: Object.keys(errors).length === 0 };
