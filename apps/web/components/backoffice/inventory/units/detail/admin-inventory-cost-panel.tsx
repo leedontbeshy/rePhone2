@@ -24,11 +24,7 @@ export function loadAdminCostWhenAllowed<Value>(
   return canRequestInventoryCost(role) ? loader() : Promise.resolve(null);
 }
 
-export function AdminInventoryCostPanel({
-  client,
-  role,
-  unitId,
-}: AdminInventoryCostPanelProps) {
+export function AdminInventoryCostPanel({ client, role, unitId }: AdminInventoryCostPanelProps) {
   const [cost, setCost] = useState<AdminInventoryCost | null>(null);
   const [acquisitionCost, setAcquisitionCost] = useState('');
   const [additionalCost, setAdditionalCost] = useState('0');

@@ -25,9 +25,7 @@ export interface InventoryIdentifierCorrectionDraft {
 }
 
 export type InventoryUnitUpdateField = keyof InventoryUnitEditDraft | 'form';
-export type InventoryIdentifierCorrectionField =
-  | keyof InventoryIdentifierCorrectionDraft
-  | 'form';
+export type InventoryIdentifierCorrectionField = keyof InventoryIdentifierCorrectionDraft | 'form';
 
 export type InventoryUnitUpdateResult =
   | { readonly input: UpdateInventoryUnitInput; readonly ok: true }
@@ -97,7 +95,8 @@ export function buildInventoryUnitUpdate(
   const regionCode = draft.regionCode.trim();
   const carrierName = draft.carrierName.trim();
 
-  if (modelNumber !== '' && modelNumber !== (unit.modelNumber ?? '')) input.modelNumber = modelNumber;
+  if (modelNumber !== '' && modelNumber !== (unit.modelNumber ?? ''))
+    input.modelNumber = modelNumber;
   if (regionCode !== '' && regionCode !== (unit.regionCode ?? '')) input.regionCode = regionCode;
   if (carrierName !== (unit.carrierName ?? '')) input.carrierName = carrierName || null;
   if (draft.simLockStatus !== unit.simLockStatus) input.simLockStatus = draft.simLockStatus;
@@ -108,10 +107,7 @@ export function buildInventoryUnitUpdate(
   if (compareAtPrice !== undefined && compareAtPrice !== unit.compareAtPrice) {
     input.compareAtPrice = compareAtPrice;
   }
-  if (
-    warrantyDaysOverride !== undefined &&
-    warrantyDaysOverride !== unit.warrantyDaysOverride
-  ) {
+  if (warrantyDaysOverride !== undefined && warrantyDaysOverride !== unit.warrantyDaysOverride) {
     input.warrantyDaysOverride = warrantyDaysOverride;
   }
 
@@ -137,9 +133,7 @@ export function buildIdentifierCorrection(
   const reason = draft.reason.trim();
   if (reason.length < 5) errors.reason = 'Lý do cần ít nhất 5 ký tự.';
   if (reason.length > 500) errors.reason = 'Lý do không được quá 500 ký tự.';
-  for (const [key, value] of Object.entries(values) as Array<
-    [keyof typeof values, string]
-  >) {
+  for (const [key, value] of Object.entries(values) as Array<[keyof typeof values, string]>) {
     if (value.length > 100) errors[key] = 'Mã không được quá 100 ký tự.';
   }
   if (Object.keys(errors).length > 0) return { errors, ok: false };

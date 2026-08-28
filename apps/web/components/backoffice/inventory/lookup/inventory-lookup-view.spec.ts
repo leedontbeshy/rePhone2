@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  identifierTypeLabel,
-  validateInventoryLookupInput,
-} from './inventory-lookup-view';
+import { identifierTypeLabel, validateInventoryLookupInput } from './inventory-lookup-view';
 
 describe('inventory identifier lookup', () => {
   it('validates identifier shapes without persisting values', () => {
