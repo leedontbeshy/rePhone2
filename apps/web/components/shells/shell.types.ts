@@ -5,6 +5,9 @@ export interface ShellNavigationItem {
   readonly label: string;
   readonly isCurrent?: boolean;
   readonly badgeCount?: number;
+  readonly icon?: 'overview' | 'catalog' | 'inventory' | 'orders' | 'vouchers';
+  readonly isDisabled?: boolean;
+  readonly isSeparated?: boolean;
 }
 
 export interface BackofficeNavigationGroup {

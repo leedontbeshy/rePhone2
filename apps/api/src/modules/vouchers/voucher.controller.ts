@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -51,6 +52,11 @@ import {
   VoucherUsageListResponse,
 } from './voucher-response.dto.js';
 import { VoucherService } from './voucher.service.js';
+import {
+  VoucherProductsScopeConfigDto,
+  VoucherProductTypeScopeConfigDto,
+  VoucherVariantsScopeConfigDto,
+} from './voucher-scope.dto.js';
 
 const ADMIN_ERRORS = [
   { status: 400 as const, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
@@ -85,6 +91,11 @@ export class PublicVouchersController {
 }
 
 @ApiTags('backoffice-vouchers')
+@ApiExtraModels(
+  VoucherProductTypeScopeConfigDto,
+  VoucherProductsScopeConfigDto,
+  VoucherVariantsScopeConfigDto,
+)
 @ApiBearerAuth('access-token')
 @Roles('ADMIN')
 @UseGuards(SessionGuard, RolesGuard, BackofficeRateLimitGuard)

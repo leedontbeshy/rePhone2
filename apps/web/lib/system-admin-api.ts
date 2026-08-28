@@ -191,7 +191,7 @@ export async function uploadBankQr(
   form.set('expectedVersion', String(expectedVersion));
   form.set('file', file);
   const result = await runtimeClient(client).POST('/api/v1/backoffice/settings/bank-qr', {
-    body: { expectedVersion, file: file.name },
+    body: { expectedVersion, file },
     bodySerializer: () => form,
   });
   const envelope = result.data;

@@ -10,10 +10,18 @@ import type {
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
+const mediaOrderBy = [{ sortOrder: 'asc' as const }, { id: 'asc' as const }];
+const variantMediaInclude = {
+  media: { orderBy: mediaOrderBy },
+} satisfies Prisma.ProductVariantInclude;
+
 const productInclude = {
   _count: { select: { variants: true } },
-  media: { orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }] },
-  variants: { orderBy: [{ displayName: 'asc' as const }, { id: 'asc' as const }] },
+  media: { orderBy: mediaOrderBy },
+  variants: {
+    orderBy: [{ displayName: 'asc' as const }, { id: 'asc' as const }],
+    include: variantMediaInclude,
+  },
 } satisfies Prisma.ProductInclude;
 
 export type BackofficeProductRecord = Prisma.ProductGetPayload<{
@@ -48,14 +56,24 @@ export class BackofficeCatalogRepository {
             ],
           }),
     };
-    const orderBy = { [query.sortBy]: query.sortOrder } as Prisma.ProductOrderByWithRelationInput;
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      query.sortBy === 'releaseYear'
+        ? [
+            { releaseYear: { sort: query.sortOrder, nulls: 'last' } },
+            { name: 'asc' },
+            { id: 'asc' },
+          ]
+        : [{ [query.sortBy]: query.sortOrder }, { id: 'asc' }];
     const [items, totalItems] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        orderBy: [orderBy, { id: 'asc' }],
+        orderBy,
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
-        include: { _count: { select: { variants: true } } },
+        include: {
+          _count: { select: { variants: true } },
+          media: { orderBy: mediaOrderBy, take: 1 },
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -104,7 +122,14 @@ export class BackofficeCatalogRepository {
       include: {
         product: true,
         _count: { select: { stockLevels: true, stockMovements: true, orderItems: true } },
+        ...variantMediaInclude,
       },
+    });
+  }
+
+  public countActiveVariants(productId: string, client: DbClient = this.prisma) {
+    return client.productVariant.count({
+      where: { productId, status: 'ACTIVE' },
     });
   }
 
@@ -124,7 +149,9 @@ export class BackofficeCatalogRepository {
           ? {}
           : { storageCapacityGb: input.storageCapacityGb }),
         ...(input.colorName === undefined ? {} : { colorName: input.colorName }),
-        ...(input.colorHex === undefined ? {} : { colorHex: input.colorHex.toUpperCase() }),
+        ...(input.colorHex === undefined
+          ? {}
+          : { colorHex: input.colorHex === null ? null : input.colorHex.toUpperCase() }),
         ...(input.salePrice === undefined ? {} : { salePrice: input.salePrice }),
         ...(input.compareAtPrice === undefined ? {} : { compareAtPrice: input.compareAtPrice }),
         ...(input.accessoryAttributes === undefined
@@ -134,6 +161,7 @@ export class BackofficeCatalogRepository {
           ? {}
           : { warrantyPolicyId: input.warrantyPolicyId }),
       },
+      include: variantMediaInclude,
     });
   }
 
@@ -147,7 +175,9 @@ export class BackofficeCatalogRepository {
           ? {}
           : { storageCapacityGb: input.storageCapacityGb }),
         ...(input.colorName === undefined ? {} : { colorName: input.colorName }),
-        ...(input.colorHex === undefined ? {} : { colorHex: input.colorHex.toUpperCase() }),
+        ...(input.colorHex === undefined
+          ? {}
+          : { colorHex: input.colorHex === null ? null : input.colorHex.toUpperCase() }),
         ...(input.salePrice === undefined ? {} : { salePrice: input.salePrice }),
         ...(input.compareAtPrice === undefined ? {} : { compareAtPrice: input.compareAtPrice }),
         ...(input.accessoryAttributes === undefined
@@ -157,6 +187,19 @@ export class BackofficeCatalogRepository {
           ? {}
           : { warrantyPolicyId: input.warrantyPolicyId }),
       },
+      include: variantMediaInclude,
+    });
+  }
+
+  public updateVariantStatus(
+    id: string,
+    input: { status: 'ACTIVE' | 'ARCHIVED'; archivedAt?: Date },
+    client: DbClient,
+  ) {
+    return client.productVariant.update({
+      where: { id },
+      data: input,
+      include: variantMediaInclude,
     });
   }
 }

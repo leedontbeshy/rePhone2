@@ -185,7 +185,7 @@ export async function completeBankTransferRefund(
     '/api/v1/backoffice/refunds/{id}/complete-bank-transfer',
     {
       params: { path: { id: refundId } },
-      body: { file: file.name, note },
+      body: { file, note },
       bodySerializer: () => formData,
     },
   );

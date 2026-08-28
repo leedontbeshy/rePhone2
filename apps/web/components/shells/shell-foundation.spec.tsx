@@ -69,7 +69,20 @@ describe('frontend surface shell accessibility contracts', () => {
         navigationGroups={[
           {
             label: 'Vận hành',
-            items: [{ href: '/backoffice/orders', label: 'Đơn hàng', isCurrent: true }],
+            items: [
+              {
+                href: '#',
+                label: 'Tổng quan',
+                icon: 'overview',
+                isDisabled: true,
+              },
+              {
+                href: '/backoffice/orders',
+                label: 'Đơn hàng',
+                icon: 'orders',
+                isCurrent: true,
+              },
+            ],
           },
         ]}
       >
@@ -82,6 +95,8 @@ describe('frontend surface shell accessibility contracts', () => {
     expect(markup).toContain('aria-label="Các khu vực vận hành"');
     expect(markup).toContain('aria-label="Đường dẫn"');
     expect(markup).toContain('aria-current="page"');
+    expect(markup).toContain('aria-disabled="true"');
+    expect(markup).toContain('Tổng quan');
     expect(markup).toContain('<main id="main-content"');
   });
 });

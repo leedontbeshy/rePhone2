@@ -2812,6 +2812,15 @@
           "name": {
             "type": "string"
           },
+          "primaryMedia": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeMediaSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "ramGb": {
             "nullable": true,
             "type": "number"
@@ -2877,6 +2886,7 @@
           "slug",
           "status",
           "variantCount",
+          "primaryMedia",
           "createdAt",
           "updatedAt",
           "variants",
@@ -2899,6 +2909,15 @@
           },
           "name": {
             "type": "string"
+          },
+          "primaryMedia": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeMediaSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "releaseYear": {
             "nullable": true,
@@ -2938,6 +2957,7 @@
           "slug",
           "status",
           "variantCount",
+          "primaryMedia",
           "createdAt",
           "updatedAt"
         ],
@@ -3099,6 +3119,12 @@
             ],
             "type": "string"
           },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/BackofficeMediaSummaryDto"
+            },
+            "type": "array"
+          },
           "productId": {
             "format": "uuid",
             "type": "string"
@@ -3139,6 +3165,7 @@
           "displayName",
           "inventoryMode",
           "status",
+          "media",
           "createdAt",
           "updatedAt"
         ],
@@ -3205,7 +3232,17 @@
           },
           "scopeConfig": {
             "nullable": true,
-            "type": "object"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VoucherProductTypeScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherProductsScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherVariantsScopeConfigDto"
+              }
+            ]
           },
           "scopeType": {
             "enum": [
@@ -4507,14 +4544,17 @@
             "type": "object"
           },
           "colorHex": {
+            "nullable": true,
             "pattern": "^#[0-9A-Fa-f]{6}$",
             "type": "string"
           },
           "colorName": {
             "maxLength": 255,
+            "nullable": true,
             "type": "string"
           },
           "compareAtPrice": {
+            "nullable": true,
             "pattern": "^[0-9]{1,15}$",
             "type": "string"
           },
@@ -4536,6 +4576,7 @@
           },
           "warrantyPolicyId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
@@ -4592,8 +4633,19 @@
             "type": "number"
           },
           "scopeConfig": {
+            "description": "Null for ORDER; otherwise the object shape must match scopeType. The service validates this relationship strictly.",
             "nullable": true,
-            "type": "object"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VoucherProductTypeScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherProductsScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherVariantsScopeConfigDto"
+              }
+            ]
           },
           "scopeType": {
             "enum": [
@@ -8957,7 +9009,6 @@
       "UpdateProductDto": {
         "properties": {
           "brand": {
-            "default": "Apple",
             "maxLength": 255,
             "type": "string"
           },
@@ -9111,14 +9162,17 @@
             "type": "object"
           },
           "colorHex": {
+            "nullable": true,
             "pattern": "^#[0-9A-Fa-f]{6}$",
             "type": "string"
           },
           "colorName": {
             "maxLength": 255,
+            "nullable": true,
             "type": "string"
           },
           "compareAtPrice": {
+            "nullable": true,
             "pattern": "^[0-9]{1,15}$",
             "type": "string"
           },
@@ -9140,6 +9194,7 @@
           },
           "warrantyPolicyId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
@@ -9187,8 +9242,19 @@
             "type": "number"
           },
           "scopeConfig": {
+            "description": "Null for ORDER; otherwise the object shape must match scopeType. The service validates this relationship strictly.",
             "nullable": true,
-            "type": "object"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VoucherProductTypeScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherProductsScopeConfigDto"
+              },
+              {
+                "$ref": "#/components/schemas/VoucherVariantsScopeConfigDto"
+              }
+            ]
           },
           "scopeType": {
             "enum": [
@@ -9587,6 +9653,39 @@
         ],
         "type": "object"
       },
+      "VoucherProductsScopeConfigDto": {
+        "properties": {
+          "productIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "productIds"
+        ],
+        "type": "object"
+      },
+      "VoucherProductTypeScopeConfigDto": {
+        "properties": {
+          "productType": {
+            "enum": [
+              "IPHONE",
+              "ACCESSORY"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "productType"
+        ],
+        "type": "object"
+      },
       "VoucherReasonDto": {
         "properties": {
           "reason": {
@@ -9619,6 +9718,22 @@
         ],
         "type": "object"
       },
+      "VoucherUsageCustomerSummaryDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ],
+        "type": "object"
+      },
       "VoucherUsageDto": {
         "properties": {
           "consumedAt": {
@@ -9629,6 +9744,15 @@
           "createdAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "customer": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VoucherUsageCustomerSummaryDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "customerId": {
             "format": "uuid",
@@ -9641,6 +9765,9 @@
           },
           "orderId": {
             "format": "uuid",
+            "type": "string"
+          },
+          "orderNumber": {
             "type": "string"
           },
           "releasedAt": {
@@ -9660,6 +9787,8 @@
         "required": [
           "id",
           "orderId",
+          "orderNumber",
+          "customer",
           "status",
           "createdAt"
         ],
@@ -9680,6 +9809,24 @@
         "required": [
           "data",
           "meta"
+        ],
+        "type": "object"
+      },
+      "VoucherVariantsScopeConfigDto": {
+        "properties": {
+          "variantIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "variantIds"
         ],
         "type": "object"
       },

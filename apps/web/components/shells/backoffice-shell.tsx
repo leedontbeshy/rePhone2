@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { StorefrontIcon, UserIcon } from '@phosphor-icons/react/ssr';
 import type { ReactNode } from 'react';
 import { DEFAULT_MAIN_ID, MainLandmark, NavigationList, SkipLink, Wordmark } from './shell-parts';
 import { joinClassNames } from './shell-utils';
@@ -34,17 +35,23 @@ export function BackofficeShell({
   return (
     <div className={joinClassNames('rp-surface', styles.backofficeShell)} data-shell="backoffice">
       <SkipLink targetId={mainId} />
-      <header className={styles.backofficeTopbar}>
+      <div className={styles.backofficeBrandPanel}>
         <div className={styles.backofficeBrand}>
           <Wordmark brand={brand} />
           <span className={styles.backofficeLabel}>Vận hành</span>
         </div>
+      </div>
+      <header className={styles.backofficeTopbar}>
         <div className={styles.topbarContext}>
           <Link className={styles.contextLink} href={contextHref}>
-            {contextLabel}
+            <StorefrontIcon aria-hidden="true" size={22} />
+            <span>{contextLabel}</span>
           </Link>
           {actorSummary === undefined ? null : (
-            <div className={styles.actorSummary}>{actorSummary}</div>
+            <div className={styles.actorSummary}>
+              <UserIcon aria-hidden="true" size={24} />
+              {actorSummary}
+            </div>
           )}
           {topbarActions === undefined ? null : (
             <div className={styles.topbarActions} role="group" aria-label="Thao tác phiên làm việc">

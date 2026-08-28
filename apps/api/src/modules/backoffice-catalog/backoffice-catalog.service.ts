@@ -42,7 +42,7 @@ export class BackofficeCatalogService {
   public async listProducts(query: BackofficeProductListQueryDto) {
     const result = await this.repository.listProducts(query);
     return new PaginatedApiResult(
-      result.items.map((product) => toProductListItem(product)),
+      result.items.map((product) => toProductListItem(product, this.config)),
       {
         page: query.page,
         pageSize: query.pageSize,
@@ -172,15 +172,11 @@ export class BackofficeCatalogService {
       const existing = await this.repository.findProduct(id, transaction);
       if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
       if (existing.status === 'ARCHIVED') throw new ApiError('INVALID_STATE_TRANSITION');
-      const updated = await transaction.product.update({
-        where: { id },
-        data: { status: 'ARCHIVED', archivedAt: new Date() },
-        include: {
-          _count: { select: { variants: true } },
-          variants: { orderBy: [{ displayName: 'asc' }, { id: 'asc' }] },
-          media: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
-        },
-      });
+      const updated = await this.repository.updateProduct(
+        id,
+        { status: 'ARCHIVED', archivedAt: new Date() },
+        transaction,
+      );
       await this.audit.write(transaction, actor, {
         action: 'catalog.product.archived',
         resourceType: 'Product',
@@ -218,7 +214,7 @@ export class BackofficeCatalogService {
         });
         return created;
       });
-      return toVariantDto(variant);
+      return toVariantDto(variant, this.config);
     } catch (error) {
       mapUniqueError(error);
     }
@@ -241,8 +237,10 @@ export class BackofficeCatalogService {
         }
         assertVariantShape(existing.product.type, input);
         assertPricePair(
-          input.salePrice ?? existing.salePrice?.toString(),
-          input.compareAtPrice ?? existing.compareAtPrice?.toString(),
+          input.salePrice === undefined ? existing.salePrice?.toString() : input.salePrice,
+          input.compareAtPrice === undefined
+            ? existing.compareAtPrice?.toString()
+            : (input.compareAtPrice ?? undefined),
         );
         const updated = await this.repository.updateVariant(id, input, transaction);
         await this.audit.write(transaction, actor, {
@@ -256,7 +254,7 @@ export class BackofficeCatalogService {
         });
         return updated;
       });
-      return toVariantDto(variant);
+      return toVariantDto(variant, this.config);
     } catch (error) {
       mapUniqueError(error);
     }
@@ -282,10 +280,11 @@ export class BackofficeCatalogService {
         existing.warrantyPolicyId ?? existing.product.warrantyPolicyId,
         transaction,
       );
-      const updated = await transaction.productVariant.update({
-        where: { id },
-        data: { status: 'ACTIVE' },
-      });
+      const updated = await this.repository.updateVariantStatus(
+        id,
+        { status: 'ACTIVE' },
+        transaction,
+      );
       await this.audit.write(transaction, actor, {
         action: 'catalog.variant.activated',
         resourceType: 'ProductVariant',
@@ -294,7 +293,7 @@ export class BackofficeCatalogService {
       });
       return updated;
     });
-    return toVariantDto(variant);
+    return toVariantDto(variant, this.config);
   }
 
   public async archiveVariant(id: string, input: ArchiveReasonDto, actor: AuditActorContext) {
@@ -302,10 +301,18 @@ export class BackofficeCatalogService {
       const existing = await this.repository.findVariant(id, transaction);
       if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
       if (existing.status === 'ARCHIVED') throw new ApiError('INVALID_STATE_TRANSITION');
-      const updated = await transaction.productVariant.update({
-        where: { id },
-        data: { status: 'ARCHIVED', archivedAt: new Date() },
-      });
+      if (
+        existing.status === 'ACTIVE' &&
+        existing.product.status === 'ACTIVE' &&
+        (await this.repository.countActiveVariants(existing.productId, transaction)) <= 1
+      ) {
+        throw validation('variant', 'LAST_ACTIVE_VARIANT_REQUIRED');
+      }
+      const updated = await this.repository.updateVariantStatus(
+        id,
+        { status: 'ARCHIVED', archivedAt: new Date() },
+        transaction,
+      );
       await this.audit.write(transaction, actor, {
         action: 'catalog.variant.archived',
         resourceType: 'ProductVariant',
@@ -315,7 +322,7 @@ export class BackofficeCatalogService {
       });
       return updated;
     });
-    return toVariantDto(variant);
+    return toVariantDto(variant, this.config);
   }
 
   public async assertProductMediaOwner(id: string, transaction?: Prisma.TransactionClient) {
@@ -345,7 +352,7 @@ export class BackofficeCatalogService {
   }
 
   private toProductDetail(product: BackofficeProductRecord): BackofficeProductDetailDto {
-    const summary = toProductListItem(product);
+    const summary = toProductListItem(product, this.config);
     return {
       id: summary.id,
       type: summary.type,
@@ -355,6 +362,7 @@ export class BackofficeCatalogService {
       status: summary.status,
       releaseYear: summary.releaseYear,
       variantCount: summary.variantCount,
+      primaryMedia: summary.primaryMedia,
       createdAt: summary.createdAt,
       updatedAt: summary.updatedAt,
       description: product.description,
@@ -365,29 +373,34 @@ export class BackofficeCatalogService {
       seoTitle: product.seoTitle,
       seoDescription: product.seoDescription,
       archivedAt: product.archivedAt,
-      variants: product.variants.map(toVariantDto),
-      media: product.media.map((media) => ({
-        id: media.id,
-        url: publicMediaUrl(this.config, media.bucket, media.objectPath),
-        altText: media.altText,
-        sortOrder: media.sortOrder,
-      })),
+      variants: product.variants.map((variant) => toVariantDto(variant, this.config)),
+      media: product.media.map((media) => toMediaSummary(media, this.config)),
     };
   }
 }
 
-function toProductListItem(product: {
-  id: string;
-  type: 'IPHONE' | 'ACCESSORY';
-  brand: string;
-  name: string;
-  slug: string;
-  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
-  releaseYear: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-  _count: { variants: number };
-}): BackofficeProductListItemDto {
+function toProductListItem(
+  product: {
+    id: string;
+    type: 'IPHONE' | 'ACCESSORY';
+    brand: string;
+    name: string;
+    slug: string;
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+    releaseYear: number | null;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: { variants: number };
+    media: Array<{
+      id: string;
+      bucket: string;
+      objectPath: string;
+      altText: string | null;
+      sortOrder: number;
+    }>;
+  },
+  config: AppConfig,
+): BackofficeProductListItemDto {
   return {
     id: product.id,
     type: product.type,
@@ -397,28 +410,39 @@ function toProductListItem(product: {
     status: product.status,
     releaseYear: product.releaseYear,
     variantCount: product._count.variants,
+    primaryMedia: product.media[0] === undefined ? null : toMediaSummary(product.media[0], config),
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
 }
 
-function toVariantDto(variant: {
-  id: string;
-  productId: string;
-  sku: string;
-  displayName: string;
-  storageCapacityGb: number | null;
-  colorName: string | null;
-  colorHex: string | null;
-  inventoryMode: 'SERIALIZED' | 'QUANTITY';
-  salePrice: { toString(): string } | null;
-  compareAtPrice: { toString(): string } | null;
-  accessoryAttributes: unknown;
-  warrantyPolicyId: string | null;
-  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
-  createdAt: Date;
-  updatedAt: Date;
-}): BackofficeVariantDto {
+function toVariantDto(
+  variant: {
+    id: string;
+    productId: string;
+    sku: string;
+    displayName: string;
+    storageCapacityGb: number | null;
+    colorName: string | null;
+    colorHex: string | null;
+    inventoryMode: 'SERIALIZED' | 'QUANTITY';
+    salePrice: { toString(): string } | null;
+    compareAtPrice: { toString(): string } | null;
+    accessoryAttributes: unknown;
+    warrantyPolicyId: string | null;
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+    media: Array<{
+      id: string;
+      bucket: string;
+      objectPath: string;
+      altText: string | null;
+      sortOrder: number;
+    }>;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  config: AppConfig,
+): BackofficeVariantDto {
   return {
     id: variant.id,
     productId: variant.productId,
@@ -433,8 +457,27 @@ function toVariantDto(variant: {
     accessoryAttributes: variant.accessoryAttributes,
     warrantyPolicyId: variant.warrantyPolicyId,
     status: variant.status,
+    media: variant.media.map((media) => toMediaSummary(media, config)),
     createdAt: variant.createdAt,
     updatedAt: variant.updatedAt,
+  };
+}
+
+function toMediaSummary(
+  media: {
+    id: string;
+    bucket: string;
+    objectPath: string;
+    altText: string | null;
+    sortOrder: number;
+  },
+  config: AppConfig,
+) {
+  return {
+    id: media.id,
+    url: publicMediaUrl(config, media.bucket, media.objectPath),
+    altText: media.altText,
+    sortOrder: media.sortOrder,
   };
 }
 
@@ -462,10 +505,12 @@ function assertVariantShape(type: 'IPHONE' | 'ACCESSORY', input: Partial<CreateV
   assertPricePair(input.salePrice, input.compareAtPrice);
 }
 
-function assertPricePair(salePrice?: string, compareAtPrice?: string): void {
+function assertPricePair(salePrice?: string | null, compareAtPrice?: string | null): void {
   if (
     salePrice !== undefined &&
+    salePrice !== null &&
     compareAtPrice !== undefined &&
+    compareAtPrice !== null &&
     BigInt(compareAtPrice) < BigInt(salePrice)
   ) {
     throw validation('compareAtPrice', 'COMPARE_AT_PRICE_TOO_LOW');

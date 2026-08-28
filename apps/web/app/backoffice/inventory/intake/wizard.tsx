@@ -238,7 +238,7 @@ export function InventoryIntakeWizard() {
       formData.set('sortOrder', '0');
       const result = await client.POST('/api/v1/backoffice/inventory-units/{id}/media', {
         params: { path: { id: unit.id } },
-        body: { file: file.name, altText: `Ảnh thực tế ${unit.inventoryCode}`, sortOrder: 0 },
+        body: { file, altText: `Ảnh thực tế ${unit.inventoryCode}`, sortOrder: 0 },
         bodySerializer: () => formData,
       });
       if (result.data === undefined) throw apiRequestError(result.error);

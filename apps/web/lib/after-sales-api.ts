@@ -214,7 +214,7 @@ export async function uploadAfterSalesAttachment(
         path: { requestNumber },
         header: mutationHeaders(guestOrderToken),
       },
-      body: { file: file.name },
+      body: { file },
       bodySerializer: () => formData,
     },
   );

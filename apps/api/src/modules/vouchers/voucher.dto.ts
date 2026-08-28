@@ -14,6 +14,10 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
+import {
+  type VoucherScopeConfigDto,
+  voucherScopeConfigOpenApiSchemas,
+} from './voucher-scope.dto.js';
 
 const DISCOUNT_TYPES = ['FIXED', 'PERCENT'] as const;
 const VISIBILITIES = ['PUBLIC', 'ACCOUNT_ONLY'] as const;
@@ -93,10 +97,16 @@ export class CreateVoucherDto {
   @IsIn(SCOPE_TYPES)
   public scopeType!: (typeof SCOPE_TYPES)[number];
 
-  @ApiPropertyOptional({ type: Object, nullable: true })
+  @ApiPropertyOptional({
+    type: Object,
+    nullable: true,
+    description:
+      'Null for ORDER; otherwise the object shape must match scopeType. The service validates this relationship strictly.',
+    oneOf: voucherScopeConfigOpenApiSchemas(),
+  })
   @IsOptional()
   @IsObject()
-  public scopeConfig?: Record<string, unknown> | null;
+  public scopeConfig?: VoucherScopeConfigDto | null;
 }
 
 export class UpdateVoucherDto extends PartialType(OmitType(CreateVoucherDto, ['code'] as const)) {}

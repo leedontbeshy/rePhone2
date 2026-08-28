@@ -158,7 +158,7 @@ describe('refund api adapter', () => {
       body: unknown;
       bodySerializer: () => FormData;
     };
-    expect(options.body).toEqual({ file: 'refund.pdf', note: 'Đã chuyển khoản thành công' });
+    expect(options.body).toEqual({ file, note: 'Đã chuyển khoản thành công' });
     expect(options.bodySerializer()).toBeInstanceOf(FormData);
     expect(options.bodySerializer().get('file')).toBeInstanceOf(File);
   });
