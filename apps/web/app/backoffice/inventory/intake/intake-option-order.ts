@@ -58,7 +58,7 @@ function productReleaseYear(product: SortableIphoneProduct): number {
 }
 
 function iphoneGeneration(name: string): number {
-  const numeric = /\biphone\s+(\d{1,2})\b/i.exec(name)?.[1];
+  const numeric = /\biphone\s+(\d{1,2})(?:e)?\b/i.exec(name)?.[1];
   if (numeric !== undefined) return Number(numeric);
   return /\biphone\s+x(?:r|s)?\b/i.test(name) ? 10 : 0;
 }
@@ -68,6 +68,7 @@ function iphoneTier(name: string): number {
   if (/\bpro\b/i.test(name)) return 4;
   if (/\bplus\b/i.test(name)) return 3;
   if (/\bmax\b/i.test(name)) return 3;
+  if (/\d{1,2}e\b/i.test(name)) return 1.5;
   if (/\bmini\b/i.test(name)) return 1;
   return 2;
 }
