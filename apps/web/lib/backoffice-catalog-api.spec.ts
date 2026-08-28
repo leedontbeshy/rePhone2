@@ -386,6 +386,22 @@ describe('backoffice catalog adapter', () => {
 
     expect(
       catalogError(
+        {
+          error: {
+            code: 'VALIDATION_FAILED',
+            details: [{ field: 'variant', code: 'LAST_ACTIVE_VARIANT_REQUIRED' }],
+          },
+        },
+        'fallback',
+      ),
+    ).toMatchObject({
+      message:
+        'Sản phẩm đang bán cần ít nhất một phiên bản đang bán. Hãy mở bán phiên bản khác trước.',
+      code: 'VALIDATION_FAILED',
+    });
+
+    expect(
+      catalogError(
         { error: { code: 'INVALID_STATE_TRANSITION', message: 'private detail' } },
         'fallback',
       ),

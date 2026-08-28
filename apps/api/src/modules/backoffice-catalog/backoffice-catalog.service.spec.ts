@@ -523,8 +523,20 @@ describe('BackofficeCatalogService', () => {
       archived.service.archiveVariant('variant-1', { reason: 'Retired SKU' }, ACTOR),
     ).rejects.toMatchObject({ code: 'INVALID_STATE_TRANSITION' });
 
+    const lastActive = createFixture();
+    lastActive.repository.findVariant.mockResolvedValue(variant({ status: 'ACTIVE' }));
+    lastActive.repository.countActiveVariants.mockResolvedValue(1);
+    await expect(
+      lastActive.service.archiveVariant('variant-1', { reason: 'Retired SKU' }, ACTOR),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: [{ field: 'variant', code: 'LAST_ACTIVE_VARIANT_REQUIRED' }],
+    });
+    expect(lastActive.repository.updateVariantStatus).not.toHaveBeenCalled();
+
     const success = createFixture();
-    success.repository.findVariant.mockResolvedValue(variant());
+    success.repository.findVariant.mockResolvedValue(variant({ status: 'ACTIVE' }));
+    success.repository.countActiveVariants.mockResolvedValue(2);
     success.repository.updateVariantStatus.mockResolvedValue(variant({ status: 'ARCHIVED' }));
     await expect(
       success.service.archiveVariant('variant-1', { reason: 'Retired SKU' }, ACTOR),
@@ -583,6 +595,7 @@ function createFixture() {
     createProduct: vi.fn(),
     updateProduct: vi.fn(),
     findVariant: vi.fn(),
+    countActiveVariants: vi.fn().mockResolvedValue(2),
     createVariant: vi.fn(),
     updateVariant: vi.fn(),
     updateVariantStatus: vi.fn(),

@@ -732,6 +732,8 @@ const VALIDATION_MESSAGES: Readonly<Record<string, string>> = {
   FILE_REQUIRED: 'Hãy chọn một ảnh để tải lên.',
   PRODUCT_TYPE_IMMUTABLE: 'Không thể đổi loại sản phẩm sau khi đã tạo phiên bản.',
   ACTIVE_VARIANT_REQUIRED: 'Cần ít nhất một phiên bản đang bán trước khi đưa sản phẩm lên bán.',
+  LAST_ACTIVE_VARIANT_REQUIRED:
+    'Sản phẩm đang bán cần ít nhất một phiên bản đang bán. Hãy mở bán phiên bản khác trước.',
   SKU_IMMUTABLE: 'Không thể đổi mã phiên bản sau khi phiên bản đã được mở bán.',
   SALE_PRICE_REQUIRED: 'Hãy nhập giá bán cho phụ kiện.',
   IPHONE_CONFIGURATION_REQUIRED: 'Phiên bản iPhone cần đủ dung lượng và màu sắc.',

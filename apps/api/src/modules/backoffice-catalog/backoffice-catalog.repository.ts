@@ -120,6 +120,12 @@ export class BackofficeCatalogRepository {
     });
   }
 
+  public countActiveVariants(productId: string, client: DbClient = this.prisma) {
+    return client.productVariant.count({
+      where: { productId, status: 'ACTIVE' },
+    });
+  }
+
   public createVariant(
     productId: string,
     inventoryMode: 'SERIALIZED' | 'QUANTITY',

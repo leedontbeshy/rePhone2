@@ -299,6 +299,13 @@ export class BackofficeCatalogService {
       const existing = await this.repository.findVariant(id, transaction);
       if (existing === null) throw new ApiError('RESOURCE_NOT_FOUND');
       if (existing.status === 'ARCHIVED') throw new ApiError('INVALID_STATE_TRANSITION');
+      if (
+        existing.status === 'ACTIVE' &&
+        existing.product.status === 'ACTIVE' &&
+        (await this.repository.countActiveVariants(existing.productId, transaction)) <= 1
+      ) {
+        throw validation('variant', 'LAST_ACTIVE_VARIANT_REQUIRED');
+      }
       const updated = await this.repository.updateVariantStatus(
         id,
         { status: 'ARCHIVED', archivedAt: new Date() },
