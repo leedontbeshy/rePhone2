@@ -605,7 +605,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'active reservation exists',
-      unit: availableCandidate({ _count: { media: 1, reservations: 1 } }),
+      unit: availableCandidate({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       error: 'INVENTORY_NOT_AVAILABLE',
     },
     {
@@ -637,7 +637,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'photo is missing',
-      unit: availableCandidate({ _count: { media: 0, reservations: 0 } }),
+      unit: availableCandidate({ _count: { media: 0, reservations: 0, inspections: 0 } }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
   ])('rejects make available when $name', async ({ unit, error }) => {
@@ -702,7 +702,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'reservation is active',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       role: 'ADMIN' as const,
       error: 'INVENTORY_NOT_AVAILABLE',
     },
@@ -751,7 +751,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'unit is reserved',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       location: locationRecord(),
       error: 'INVENTORY_NOT_AVAILABLE',
     },
@@ -826,13 +826,16 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     {
       name: 'last available photo would be removed',
       method: 'delete',
-      unit: unitRecord({ lifecycleStatus: 'AVAILABLE', _count: { media: 1, reservations: 0 } }),
+      unit: unitRecord({
+        lifecycleStatus: 'AVAILABLE',
+        _count: { media: 1, reservations: 0, inspections: 0 },
+      }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
     {
       name: 'last reserved photo would be removed',
       method: 'delete',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
   ])('enforces media policy when $name', async ({ method, unit, error }) => {
@@ -845,7 +848,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
   });
 
   it('allows media ownership and deletion when lifecycle requirements remain satisfied', async () => {
-    const unit = unitRecord({ _count: { media: 2, reservations: 1 } });
+    const unit = unitRecord({ _count: { media: 2, reservations: 1, inspections: 0 } });
     const fixture = serviceFixture({ findUnit: vi.fn(async () => unit) });
     await expect(fixture.service.assertUnitMediaOwner(UNIT_ID)).resolves.toBe(unit);
     await expect(
@@ -992,7 +995,7 @@ function availableCandidate(overrides: Record<string, unknown> = {}): InventoryU
     salePrice: decimal('100'),
     imei1Hmac: 'IMEI:sellable',
     inspections: [inspectionSummary()],
-    _count: { media: 1, reservations: 0 },
+    _count: { media: 1, reservations: 0, inspections: 0 },
     ...overrides,
   });
 }

@@ -734,7 +734,7 @@ function availableActions(
       unit.lifecycleStatus,
     ) &&
     !(unit.lifecycleStatus === 'AVAILABLE' && hasActiveReservation) &&
-    (unit._count.inspections ?? 0) === 0;
+    unit._count.inspections === 0;
   if (canInspect) actions.push('CREATE_INSPECTION');
   if (readinessReasons.length === 0) actions.push('MAKE_AVAILABLE');
   if (['INSPECTING', 'QUARANTINED'].includes(unit.lifecycleStatus)) {

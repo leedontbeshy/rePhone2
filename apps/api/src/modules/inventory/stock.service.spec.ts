@@ -41,7 +41,7 @@ describe('StockService shipment return', () => {
     } as unknown as StockRepository;
     const service = new StockService(repository, runnerFixture().runner, {
       write: vi.fn(),
-    } as unknown as AuditWriter);
+    });
 
     await expect(service.listLevels({ page: 1, pageSize: 20 })).resolves.toMatchObject({
       items: [

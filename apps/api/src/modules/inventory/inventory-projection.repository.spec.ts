@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/require-await, @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/require-await */
 import { describe, expect, it, vi } from 'vitest';
 import type { PrismaService } from '../../database/prisma.service.js';
 import { InspectionRepository } from './inspection.repository.js';
