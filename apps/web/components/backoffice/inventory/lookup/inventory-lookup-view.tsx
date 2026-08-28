@@ -74,7 +74,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
       <header className={styles.header}>
         <p className={styles.eyebrow}>Kho hàng · Bảo vệ định danh</p>
         <h1>Tra cứu mã máy</h1>
-        <p>Tìm đúng máy bằng IMEI, số sê-ri hoặc EID mà không lưu mã đầy đủ trên trình duyệt.</p>
+        <p>Tìm đúng máy bằng IMEI, số sê-ri hoặc EID; kết quả chỉ hiển thị mã đã che.</p>
       </header>
 
       <div className={styles.layout}>
@@ -161,8 +161,8 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
             do mới.
           </p>
           <ul>
-            <li>Không lưu vào lịch sử URL</li>
-            <li>Không lưu vào bộ nhớ trình duyệt</li>
+            <li>Mã đầy đủ không xuất hiện trong đường dẫn</li>
+            <li>Ô nhập được xóa ngay sau khi tra cứu</li>
             <li>Mọi lần tra cứu đều được ghi nhận</li>
           </ul>
         </aside>

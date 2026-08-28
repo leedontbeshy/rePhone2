@@ -53,9 +53,16 @@
   text-decoration: none;
 }
 
-.primaryAction {
+.primaryAction,
+.primaryAction:link,
+.primaryAction:visited,
+.primaryAction:active {
   background: var(--color-primary);
-  color: white;
+  color: var(--color-on-primary) !important;
+}
+
+.primaryAction svg {
+  color: currentColor;
 }
 
 .secondaryAction {

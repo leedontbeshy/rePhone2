@@ -39,7 +39,7 @@ export function InventoryShell({
     navigationRef.current
       ?.querySelector('[aria-current="page"]')
       ?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-  }, [pathname]);
+  }, [pathname, status]);
 
   async function signOut() {
     setLogoutError(false);

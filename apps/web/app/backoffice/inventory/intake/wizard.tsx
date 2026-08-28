@@ -471,7 +471,7 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              Giá bán (VND)
+              Giá bán (đồng)
               <input
                 value={intake.salePrice}
                 onChange={(event) => {
@@ -483,7 +483,7 @@ export function InventoryIntakeWizard() {
               />
             </label>
             <label>
-              Giá niêm yết (VND)
+              Giá niêm yết (đồng)
               <input
                 value={intake.compareAtPrice}
                 onChange={(event) => {
