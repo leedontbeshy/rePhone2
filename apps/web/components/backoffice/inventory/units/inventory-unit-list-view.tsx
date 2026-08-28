@@ -244,9 +244,7 @@ export function InventoryUnitListView({
           onChange={(event) => {
             onQueryChange?.({
               conditionGrade:
-                event.target.value === ''
-                  ? undefined
-                  : (event.target.value as 'A' | 'B' | 'C'),
+                event.target.value === '' ? undefined : (event.target.value as 'A' | 'B' | 'C'),
               page: 1,
             });
           }}
@@ -255,6 +253,40 @@ export function InventoryUnitListView({
           <option value="A">Loại A</option>
           <option value="B">Loại B</option>
           <option value="C">Loại C</option>
+        </select>
+        <select
+          aria-label="Tình trạng khóa mạng"
+          value={query.simLockStatus ?? ''}
+          onChange={(event) => {
+            onQueryChange?.({
+              page: 1,
+              simLockStatus:
+                event.target.value === ''
+                  ? undefined
+                  : (event.target.value as InventoryUnitQueryState['simLockStatus']),
+            });
+          }}
+        >
+          <option value="">Mọi tình trạng mạng</option>
+          <option value="UNLOCKED">Không khóa mạng</option>
+          <option value="CARRIER_LOCKED">Khóa theo nhà mạng</option>
+          <option value="UNKNOWN">Chưa xác định</option>
+        </select>
+        <select
+          aria-label="Dung lượng pin tối thiểu"
+          value={query.minBatteryHealth ?? ''}
+          onChange={(event) => {
+            onQueryChange?.({
+              minBatteryHealth: event.target.value === '' ? undefined : Number(event.target.value),
+              page: 1,
+            });
+          }}
+        >
+          <option value="">Mọi mức pin</option>
+          <option value="80">Từ 80%</option>
+          <option value="85">Từ 85%</option>
+          <option value="90">Từ 90%</option>
+          <option value="95">Từ 95%</option>
         </select>
         <select
           aria-label="Sắp xếp"
@@ -291,7 +323,11 @@ export function InventoryUnitListView({
         rows={units}
       />
 
-      <div onClick={(event) => handlePaginationClick(event, onQueryChange)}>
+      <div
+        onClick={(event) => {
+          handlePaginationClick(event, onQueryChange);
+        }}
+      >
         <BackofficePagination
           buildHref={(page) => buildInventoryUnitHref(query, { page })}
           page={pagination.page}
@@ -311,9 +347,7 @@ function InspectionSummary({ unit }: Readonly<{ unit: InventoryUnitListRecord }>
       <strong>{inspectionResultLabel(unit.inspectionResult)}</strong>
       <span>
         {unit.conditionGrade === null ? 'Chưa xếp loại' : `Loại ${unit.conditionGrade}`}
-        {unit.batteryHealthPercent === null
-          ? ''
-          : ` · Pin ${String(unit.batteryHealthPercent)}%`}
+        {unit.batteryHealthPercent === null ? '' : ` · Pin ${String(unit.batteryHealthPercent)}%`}
       </span>
     </div>
   );

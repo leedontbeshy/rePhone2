@@ -31,7 +31,12 @@ export default function InventoryUnitsPage() {
   const [query, setQuery] = useState<InventoryUnitQueryState>(() => currentQuery());
   const [units, setUnits] = useState<readonly InventoryUnitListRecord[]>([]);
   const [locations, setLocations] = useState<readonly InventoryLocation[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    totalItems: 0,
+    totalPages: 1,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const queryKey = useMemo(() => JSON.stringify(query), [query]);
@@ -40,6 +45,7 @@ export default function InventoryUnitsPage() {
     const syncFromBrowser = () => {
       setQuery(currentQuery());
     };
+    syncFromBrowser();
     window.addEventListener('popstate', syncFromBrowser);
     return () => {
       window.removeEventListener('popstate', syncFromBrowser);
@@ -74,9 +80,7 @@ export default function InventoryUnitsPage() {
         sortOrder: query.sortOrder,
         ...(query.q === undefined ? {} : { q: query.q }),
         ...(query.locationId === undefined ? {} : { locationId: query.locationId }),
-        ...(query.lifecycleStatus === undefined
-          ? {}
-          : { lifecycleStatus: query.lifecycleStatus }),
+        ...(query.lifecycleStatus === undefined ? {} : { lifecycleStatus: query.lifecycleStatus }),
         ...(query.conditionGrade === undefined ? {} : { conditionGrade: query.conditionGrade }),
         ...(query.simLockStatus === undefined ? {} : { simLockStatus: query.simLockStatus }),
         ...(query.minBatteryHealth === undefined
@@ -90,8 +94,7 @@ export default function InventoryUnitsPage() {
         setPagination(page.pagination);
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted)
-          setError(messageOf(cause, 'Không thể tải danh sách máy.'));
+        if (!controller.signal.aborted) setError(messageOf(cause, 'Không thể tải danh sách máy.'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -102,10 +105,7 @@ export default function InventoryUnitsPage() {
   }, [canLoad, client, queryKey]);
 
   const updateQuery = useCallback(
-    (
-      overrides: InventoryUnitQueryOverrides,
-      options: { history?: 'push' | 'replace' } = {},
-    ) => {
+    (overrides: InventoryUnitQueryOverrides, options: { history?: 'push' | 'replace' } = {}) => {
       setQuery((current) => {
         const next = mergeQuery(current, overrides);
         const href = buildInventoryUnitHref(next);
@@ -135,19 +135,28 @@ export default function InventoryUnitsPage() {
 function currentQuery(): InventoryUnitQueryState {
   if (typeof window === 'undefined') return DEFAULT_QUERY;
   const params = new URLSearchParams(window.location.search);
-  const lifecycleStatus = enumValue(
-    params.get('lifecycleStatus'),
-    ['RECEIVED', 'INSPECTING', 'AVAILABLE', 'IN_TRANSIT', 'SOLD', 'REPAIRING', 'QUARANTINED', 'WRITTEN_OFF'] as const,
-  );
+  const lifecycleStatus = enumValue(params.get('lifecycleStatus'), [
+    'RECEIVED',
+    'INSPECTING',
+    'AVAILABLE',
+    'IN_TRANSIT',
+    'SOLD',
+    'REPAIRING',
+    'QUARANTINED',
+    'WRITTEN_OFF',
+  ] as const);
   const conditionGrade = enumValue(params.get('conditionGrade'), ['A', 'B', 'C'] as const);
-  const simLockStatus = enumValue(
-    params.get('simLockStatus'),
-    ['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN'] as const,
-  );
-  const sortBy = enumValue(
-    params.get('sortBy'),
-    ['receivedAt', 'updatedAt', 'inventoryCode', 'salePrice'] as const,
-  );
+  const simLockStatus = enumValue(params.get('simLockStatus'), [
+    'UNLOCKED',
+    'CARRIER_LOCKED',
+    'UNKNOWN',
+  ] as const);
+  const sortBy = enumValue(params.get('sortBy'), [
+    'receivedAt',
+    'updatedAt',
+    'inventoryCode',
+    'salePrice',
+  ] as const);
   const sortOrder = enumValue(params.get('sortOrder'), ['asc', 'desc'] as const);
   const page = positiveInteger(params.get('page'), 1);
   const pageSize = Math.min(100, positiveInteger(params.get('pageSize'), 20));
@@ -183,9 +192,7 @@ function mergeQuery(
     ...(next.lifecycleStatus === undefined ? {} : { lifecycleStatus: next.lifecycleStatus }),
     ...(next.conditionGrade === undefined ? {} : { conditionGrade: next.conditionGrade }),
     ...(next.simLockStatus === undefined ? {} : { simLockStatus: next.simLockStatus }),
-    ...(next.minBatteryHealth === undefined
-      ? {}
-      : { minBatteryHealth: next.minBatteryHealth }),
+    ...(next.minBatteryHealth === undefined ? {} : { minBatteryHealth: next.minBatteryHealth }),
   };
 }
 
@@ -213,7 +220,7 @@ function enumValue<const Values extends readonly string[]>(
   value: string | null,
   values: Values,
 ): Values[number] | undefined {
-  return value !== null && values.includes(value) ? (value as Values[number]) : undefined;
+  return values.find((candidate) => candidate === value);
 }
 
 function positiveInteger(value: string | null, fallback: number): number {
