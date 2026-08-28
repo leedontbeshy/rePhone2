@@ -106,8 +106,8 @@ describe('FE-0 frontend coverage contract', () => {
     );
 
     expect(currentRoutes).toHaveLength(existingRoutes.length);
-    expect(new Set(manifestRoutes).size).toBe(55);
-    expect(existingRoutes.length + plannedRoutes.length).toBe(55);
+    expect(new Set(manifestRoutes).size).toBe(56);
+    expect(existingRoutes.length + plannedRoutes.length).toBe(56);
     expect([...existingRoutes].sort()).toEqual([...currentRoutes].sort());
     expect(plannedRoutes.filter((route) => currentRoutes.includes(route))).toEqual([]);
     expect(plannedRoutes).not.toContain('/backoffice/catalog/products/[id]/variants/[variantId]');

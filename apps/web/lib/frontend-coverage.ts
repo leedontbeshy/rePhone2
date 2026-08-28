@@ -1804,7 +1804,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
   ],
 ] as const satisfies readonly FrontendOperationCoverage[];
 
-/** Route ownership baseline: 37 existing URLs and 18 approved P1 URLs. */
+/** Route ownership baseline: 55 existing URLs and 1 approved P1 URL. */
 export const FRONTEND_ROUTE_COVERAGE = [
   ['/', 'EXISTING', 'FE-1'],
   ['/login', 'EXISTING', 'FE-2'],
@@ -1860,6 +1860,7 @@ export const FRONTEND_ROUTE_COVERAGE = [
   ['/backoffice/inventory/locations', 'EXISTING', 'FE-6'],
   ['/backoffice/inventory/stock', 'EXISTING', 'FE-6'],
   ['/backoffice/inventory/stock/movements', 'EXISTING', 'FE-6'],
+  ['/backoffice', 'EXISTING', 'FE-6'],
   ['/backoffice/system/health', 'PLANNED', 'FE-8'],
 ] as const satisfies readonly FrontendRouteCoverage[];
 
