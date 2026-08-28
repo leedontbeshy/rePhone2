@@ -31,7 +31,7 @@ export function StorefrontSessionActions() {
       ) : (
         <Link
           className={styles.sessionAction}
-          href={status === 'anonymous' ? '/login' : '/backoffice/orders'}
+          href={status === 'anonymous' ? '/login' : '/backoffice'}
         >
           <UserCircleIcon aria-hidden="true" size={22} weight="regular" />
           <span>{status === 'anonymous' ? 'Tài khoản' : 'Quản trị'}</span>
