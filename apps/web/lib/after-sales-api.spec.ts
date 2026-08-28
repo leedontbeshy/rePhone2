@@ -5,11 +5,15 @@ import {
   createAfterSalesRequest,
   getAfterSalesAttachmentUrl,
   getAfterSalesRequest,
+  getAfterSalesOrderItem,
+  getCompletedAfterSalesOrder,
   listCustomerAfterSalesRequests,
+  listCompletedAfterSalesOrders,
   resolveGuestOrderToken,
   uploadAfterSalesAttachment,
   validateAfterSalesAttachment,
   type AfterSalesApiClient,
+  type AfterSalesCustomerError,
 } from './after-sales-api';
 import { orderTokenStorageKey } from './order-access';
 
@@ -99,6 +103,31 @@ describe('after-sales typed-client adapter', () => {
     });
   });
 
+  it('does not add a guest credential when bearer identity is authoritative', async () => {
+    const get = vi.fn().mockResolvedValue({ data: { data: DETAIL } });
+    const post = vi.fn().mockResolvedValue({ data: { data: DETAIL } });
+    const client = mockClient({ GET: get, POST: post });
+
+    await getAfterSalesRequest(client, REQUEST_NUMBER);
+    await createAfterSalesRequest(client, {
+      orderItemId: ITEM_ID,
+      type: 'RETURN',
+      issueDescription: DETAIL.issueDescription,
+    });
+
+    expect(get).toHaveBeenCalledWith('/api/v1/after-sales/{requestNumber}', {
+      params: { path: { requestNumber: REQUEST_NUMBER }, header: {} },
+    });
+    expect(post).toHaveBeenCalledWith('/api/v1/after-sales', {
+      params: { header: { 'X-Rephone-CSRF': '1' } },
+      body: {
+        orderItemId: ITEM_ID,
+        type: 'RETURN',
+        issueDescription: DETAIL.issueDescription,
+      },
+    });
+  });
+
   it('resolves only a valid order-scoped session token', () => {
     const values = new Map<string, string>([[orderTokenStorageKey(ORDER_NUMBER), TOKEN]]);
     const storage = { getItem: (key: string) => values.get(key) ?? null };
@@ -180,6 +209,131 @@ describe('after-sales typed-client adapter', () => {
         'fallback',
       ),
     ).toBe('Hiện chưa thể lưu tệp. Vui lòng thử lại sau.');
+    expect(afterSalesError({ error: { code: 'WARRANTY_NOT_ACTIVE' } }, 'fallback')).toBe(
+      'Bảo hành hiện chưa đủ điều kiện để gửi yêu cầu.',
+    );
+  });
+
+  it('classifies hidden resources and concurrent changes for customer flows', async () => {
+    const missing = mockClient({
+      GET: vi.fn().mockResolvedValue({ error: { error: { code: 'RESOURCE_NOT_FOUND' } } }),
+    });
+    await expect(getAfterSalesRequest(missing, REQUEST_NUMBER, TOKEN)).rejects.toMatchObject({
+      name: 'AfterSalesCustomerError',
+      code: 'RESOURCE_NOT_FOUND',
+      notFound: true,
+      conflict: false,
+    });
+
+    const conflict = mockClient({
+      POST: vi.fn().mockResolvedValue({ error: { error: { code: 'CONCURRENT_MODIFICATION' } } }),
+    });
+    await expect(
+      cancelAfterSalesRequest(conflict, REQUEST_NUMBER, 'Không còn nhu cầu', TOKEN),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<AfterSalesCustomerError>>({ conflict: true }),
+    );
+  });
+
+  it('returns only the selected order item and hides a missing item as not found', async () => {
+    const client = mockClient({
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            status: 'COMPLETED',
+            completedAt: '2026-08-28T00:00:00.000Z',
+            items: [{ ...DETAIL.orderItem, id: ITEM_ID }],
+          },
+        },
+      }),
+    });
+    await expect(
+      getAfterSalesOrderItem(client, ORDER_NUMBER, ITEM_ID, TOKEN),
+    ).resolves.toMatchObject({ id: ITEM_ID });
+    await expect(
+      getAfterSalesOrderItem(client, ORDER_NUMBER, 'missing', TOKEN),
+    ).rejects.toMatchObject({ notFound: true });
+  });
+
+  it('uses authoritative completed status for selectable orders and direct item access', async () => {
+    const completedOrder = {
+      status: 'COMPLETED',
+      completedAt: '2026-08-28T00:00:00.000Z',
+      orderNumber: ORDER_NUMBER,
+      items: [{ ...DETAIL.orderItem, id: ITEM_ID }],
+    };
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: [
+            { orderNumber: ORDER_NUMBER, status: 'COMPLETED' },
+            { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' },
+          ],
+          meta: { pagination: { page: 1, pageSize: 100, totalItems: 2, totalPages: 1 } },
+        },
+      })
+      .mockResolvedValueOnce({ data: { data: completedOrder } })
+      .mockResolvedValueOnce({ data: { data: { ...completedOrder, status: 'PROCESSING' } } });
+    const client = mockClient({ GET: get });
+
+    await expect(listCompletedAfterSalesOrders(client)).resolves.toEqual([
+      expect.objectContaining({ orderNumber: ORDER_NUMBER }),
+    ]);
+    await expect(getCompletedAfterSalesOrder(client, ORDER_NUMBER)).resolves.toMatchObject({
+      status: 'COMPLETED',
+    });
+    await expect(getAfterSalesOrderItem(client, ORDER_NUMBER, ITEM_ID)).rejects.toMatchObject({
+      code: 'INVALID_STATE_TRANSITION',
+      conflict: true,
+    });
+    expect(get.mock.calls[0]?.[1]).toMatchObject({ params: { query: { status: 'COMPLETED' } } });
+  });
+
+  it('loads every completed-order page and filters each page authoritatively', async () => {
+    const first = { orderNumber: ORDER_NUMBER, status: 'COMPLETED' };
+    const second = { orderNumber: 'RPH-20260826-DEF23456', status: 'COMPLETED' };
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: [first, { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' }],
+          meta: { pagination: { page: 1, pageSize: 100, totalItems: 3, totalPages: 2 } },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: [second],
+          meta: { pagination: { page: 2, pageSize: 100, totalItems: 3, totalPages: 2 } },
+        },
+      });
+
+    await expect(listCompletedAfterSalesOrders(mockClient({ GET: get }))).resolves.toEqual([
+      first,
+      second,
+    ]);
+    expect(get).toHaveBeenNthCalledWith(1, '/api/v1/orders', {
+      params: {
+        query: {
+          status: 'COMPLETED',
+          page: 1,
+          pageSize: 100,
+          sortBy: 'placedAt',
+          sortOrder: 'desc',
+        },
+      },
+    });
+    expect(get).toHaveBeenNthCalledWith(2, '/api/v1/orders', {
+      params: {
+        query: {
+          status: 'COMPLETED',
+          page: 2,
+          pageSize: 100,
+          sortBy: 'placedAt',
+          sortOrder: 'desc',
+        },
+      },
+    });
   });
 });
 

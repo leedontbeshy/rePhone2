@@ -194,7 +194,7 @@ button.sessionAction {
   }
 
   .mobileCartLabel {
-    display: inline;
+    display: none;
   }
 
   .cartAction {

@@ -2,14 +2,18 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   activateWarrantyPolicy,
   archiveWarrantyPolicy,
+  clearWarrantyGuestCredential,
   createWarrantyPolicy,
   customerWarrantyError,
   getCustomerWarranty,
   listBackofficeWarranties,
   listCustomerWarranties,
   listWarrantyPolicies,
+  resolveWarrantyGuestCredential,
   updateWarrantyPolicy,
   voidWarranty,
+  warrantyAccessKey,
+  type WarrantyCustomerError,
   warrantyError,
   type WarrantyApiClient,
 } from './warranty-api';
@@ -76,6 +80,77 @@ describe('warranty typed-client adapter', () => {
         header: { 'X-Guest-Order-Token': 'token' },
       },
     });
+  });
+
+  it('allows a cookie-authorized guest detail request when no session credential exists', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: { data: { ...CUSTOMER_WARRANTY, sku: 'IP15-128-BLK', termsSnapshot: 'Terms' } },
+    });
+
+    await getCustomerWarranty(mockClient({ GET: get }), CUSTOMER_WARRANTY.warrantyCode);
+
+    expect(get).toHaveBeenCalledWith('/api/v1/warranties/{warrantyCode}', {
+      params: {
+        path: { warrantyCode: CUSTOMER_WARRANTY.warrantyCode },
+        header: {},
+      },
+    });
+  });
+
+  it('never resolves a stored guest credential for an authenticated bearer session', () => {
+    const token = 'A'.repeat(43);
+    const storage = {
+      getItem: vi.fn(() => token),
+    };
+
+    expect(
+      resolveWarrantyGuestCredential('anonymous', CUSTOMER_WARRANTY.orderNumber, storage),
+    ).toBe(token);
+    expect(
+      resolveWarrantyGuestCredential('authenticated', CUSTOMER_WARRANTY.orderNumber, storage),
+    ).toBeUndefined();
+    expect(resolveWarrantyGuestCredential('anonymous', 'invalid-order', storage)).toBeUndefined();
+  });
+
+  it('keys warranty access by account identity and removes only the owning guest token', () => {
+    expect(
+      warrantyAccessKey(
+        'authenticated',
+        'customer-a',
+        CUSTOMER_WARRANTY.orderNumber,
+        CUSTOMER_WARRANTY.warrantyCode,
+      ),
+    ).not.toBe(
+      warrantyAccessKey(
+        'authenticated',
+        'customer-b',
+        CUSTOMER_WARRANTY.orderNumber,
+        CUSTOMER_WARRANTY.warrantyCode,
+      ),
+    );
+
+    const removeItem = vi.fn();
+    clearWarrantyGuestCredential(CUSTOMER_WARRANTY.orderNumber.toLowerCase(), { removeItem });
+    clearWarrantyGuestCredential('invalid-order', { removeItem });
+    expect(removeItem).toHaveBeenCalledTimes(1);
+    expect(removeItem).toHaveBeenCalledWith(`rephone_order_token:${CUSTOMER_WARRANTY.orderNumber}`);
+  });
+
+  it('classifies missing or non-owned customer warranty as one safe not-found state', async () => {
+    const client = mockClient({
+      GET: vi.fn().mockResolvedValue({
+        error: { error: { code: 'ORDER_NOT_FOUND', message: 'private ownership detail' } },
+      }),
+    });
+
+    await expect(
+      getCustomerWarranty(client, CUSTOMER_WARRANTY.warrantyCode, 'token'),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<WarrantyCustomerError>>({
+        kind: 'not-found',
+        message: 'Không tìm thấy thông tin hoặc bạn không có quyền truy cập.',
+      }),
+    );
   });
 
   it('normalizes policy filters and keeps code out of the update body', async () => {

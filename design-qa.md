@@ -1,74 +1,111 @@
-# Design QA — FE-03 giỏ hàng, ưa thích và đặt hàng
+# Design QA — FE-04 portal sau mua
 
-Date: 2026-08-27
+Date: 2026-08-28
 
-Preview: `http://localhost:3000/checkout`
+Preview: `http://localhost:3000/after-sales`
 
-## Nguồn hình ảnh và phạm vi triển khai
+## Nguồn hình ảnh và phạm vi
 
-- Visual target đã được duyệt — phương án 1, “Biên tập cân bằng”: `C:\Users\Lee\.codex\generated_images\01a0411f-37e0-7011-9f4b-b7c3ee17d7b5\exec-a7c4f307-d556-46be-896a-27851ade70c8.png` (1487×1058).
-- Bản chụp checkout cuối: `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-1440x1024-top.png` (1425×1013).
-- Bản so sánh cùng một khung nhìn: `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-source-vs-implementation.png` (2850×1013).
-- Bằng chứng desktop bổ sung:
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-1440x1024.png` (1425×1013).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-1440x1024.png` (1425×1013).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\header-account-popup-1440x900.jpg` (1425×891).
-- Bằng chứng responsive:
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320x800.png` (320×764).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-320-summary.png` (320×764).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\checkout-content-768x900.png` (768×883).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\cart-content-320x800.png` (320×764).
-  - `D:\Dev\rePhone2\.local\fe3-design-qa\wishlist-content-320x800.png` (320×764).
-- Phần triển khai chính: `apps/web/components/commerce/`, `apps/web/app/commerce-provider.tsx`, `apps/web/lib/checkout-api.ts`, `/cart`, `/wishlist` và `/checkout`.
+- Hướng hình ảnh đã duyệt: **Hành trình theo chặng**.
+- Mockup chuẩn: `docs/assets/ui/fe-04/`.
+- Ảnh lỗi do người dùng cung cấp:
+  - `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-07a0d2bf-9b0a-4f1d-8678-3bd6a1c52ff1.png`
+  - `C:/Users/Lee/AppData/Local/Temp/codex-clipboard-03c12aa6-f6c1-4e39-b202-f098c2e176f3.png`
+- Phạm vi: `/orders`, `/orders/[orderNumber]`, `/warranties`,
+  `/warranties/[warrantyCode]`, `/after-sales`, `/after-sales/new` và
+  `/after-sales/[requestNumber]`.
 
-## Viewport, dữ liệu và trạng thái
+## Điều kiện chụp
 
-- Kiểm tra bằng in-app Browser trên local preview, phiên `CUSTOMER` `customer@rephone.local`.
-- Desktop đặt viewport 1440×1024; thanh cuộn cổ điển của browser làm vùng nội dung và ảnh chụp còn 1425×1013. `clientWidth` và `scrollWidth` đều bằng 1425, không có tràn ngang.
-- Mobile dùng vùng nội dung thật 320 px; `clientWidth` và `scrollWidth` đều bằng 320 trên cart, wishlist và checkout. Ảnh chụp cao 764 px vì phần chrome của in-app Browser.
-- Tablet 768 px chuyển checkout về một cột; biểu mẫu và bản xác nhận cùng rộng 735 px, không tràn ngang.
-- Giỏ hàng dùng exact unit `RPH-IPX-64-GRY-U01`; Wishlist dùng `RPH-IP17P-256-DBL-U01`.
-- Checkout đã kiểm tra cả `SHIPPING` và `PICKUP`. Bản xác nhận giao tận nơi trả về tạm tính 3.490.000 ₫, phí giao hàng 30.000 ₫, đặt cọc 500.000 ₫ và tổng thanh toán 3.520.000 ₫. Bản nhận tại cửa hàng trả về phí giao hàng 0 ₫ và đúng cửa hàng Hồ Chí Minh.
-- Không bấm hành động tạo đơn trong phiên kiểm tra thủ công; browser specs dùng phản hồi tạo đơn được kiểm soát để xác minh redirect mà không tiêu thụ máy seed.
+| Nhóm                    | Viewport logic | Tỉ lệ điểm ảnh | Kích thước ảnh |
+| ----------------------- | -------------: | -------------: | -------------: |
+| Desktop                 |    1487 × 1058 |              1 |    1487 × 1058 |
+| Mobile hành vi          |      390 × 844 |              1 |      390 × 844 |
+| Mobile đối chiếu mockup |      390 × 843 |          2.187 |     853 × 1844 |
 
-## So sánh visual target và implementation
+Trạng thái chung: khách đã đăng nhập, giỏ hàng trống và dữ liệu giả lập ổn định.
+Các màn hình được chụp sau khi tải xong phông chữ; không có lỗi console.
 
-- Bản so sánh ghép nguồn bên trái và implementation bên phải trong cùng một ảnh, cùng kích thước 1425×1013.
-- Giữ đúng cấu trúc đã duyệt: header storefront, tỷ lệ hai cột gần 62/38, biểu mẫu biên tập liên tục, hai lựa chọn nhận hàng, summary rail, teal/navy, ảnh sản phẩm và một CTA chính.
-- Khác biệt dữ liệu là chủ ý: visual target dùng hai sản phẩm minh họa và ít trường hơn; implementation dùng exact unit thật cùng các trường người nhận/quận-huyện bắt buộc bởi backend.
-- Breadcrumb được đưa vào cột biểu mẫu để mép trên của summary cân với phần nội dung chính.
-- Không còn CTA chữ teal trên nền teal, giá hiện tại bị gạch ngang, ảnh méo, card lệch, clipping hoặc khoảng trắng bất thường.
+## Bằng chứng đối chiếu
 
-## Kiểm tra chức năng chính
+Mỗi ảnh desktop tổng hợp có kích thước 2974 × 1114, gồm mockup nguồn và bản triển khai
+cùng viewport. Ảnh mobile tổng hợp có kích thước 1706 × 1900.
 
-- Cart: exact-unit identity, giá hiện tại, số lượng cố định cho iPhone, xóa theo dòng, warning gate, summary và CTA checkout hoạt động; CTA desktop cao 52 px.
-- Wishlist: trạng thái còn hàng, ảnh đúng máy, thêm vào giỏ và xóa độc lập; trạng thái tải ổn định thành card thật, CTA mobile cao 52 px.
-- Checkout: sao chép địa chỉ đã lưu, chuyển Shipping/Pickup, preview có thẩm quyền, voucher invalidation, summary, review-required và khóa double-submit đều có test.
-- Browser specs bổ sung guest create + token handoff, CUSTOMER pickup create, merge retry và 409 buộc xác nhận lại; create response được mock để không thay đổi inventory seed.
-- Sau thao tác preview, nút `Đặt hàng` cao 56 px và chỉ mở khi preview hợp lệ. Không có hành động tài chính nào được thực hiện trong QA thủ công.
+- Danh sách đơn hàng:
+  `.local/product-design-qa/fe04/orders-list-desktop--comparison.png`
+- Danh sách hỗ trợ:
+  `.local/product-design-qa/fe04/support-list-desktop--comparison.png`
+- Form hỗ trợ sau khi đã chọn sản phẩm:
+  `.local/product-design-qa/fe04/support-new-form-desktop--comparison.png`
+- Chi tiết bảo hành:
+  `.local/product-design-qa/fe04/warranty-detail-desktop--comparison.png`
+- Chi tiết đơn hàng trên mobile:
+  `.local/product-design-qa/fe04/order-detail-mobile--comparison.png`
+- Ô minh chứng thanh toán:
+  `.local/product-design-qa/fe04/payment-proof-control.png`
+- Màn hình mobile 390 px:
+  - `.local/product-design-qa/fe04/orders-list-mobile.png`
+  - `.local/product-design-qa/fe04/support-list-mobile.png`
 
-## Responsive, accessibility và runtime
+## Kết quả theo sáu yêu cầu
 
-- 320 px: cart, wishlist và checkout đều có `scrollWidth === clientWidth`; header thu gọn nhãn giỏ thành biểu tượng và số lượng để logo, giỏ và nút Danh mục không chồng lấn; tổng tiền xếp dọc an toàn, không cắt chữ hoặc CTA.
-- 768 px: checkout xếp một cột; hai lựa chọn nhận hàng, field grid và summary vẫn đọc đúng thứ tự.
-- 1440 px: cart/checkout dùng rail bên phải; rail không che focus hoặc nội dung. Wishlist giữ card đồng đều và khoảng trống còn lại tự nhiên.
-- Focus ring của trường checkout là teal solid 2 px; semantic heading, label, `required`, `aria-live`, `role="alert"` và focus-after-remove được giữ.
-- Các hành động chính đo được 52–56 px, đạt vùng bấm tối thiểu 44 px.
-- Nhật ký Browser không có console error. Chỉ có cảnh báo Fast Refresh do chỉnh file trong lúc dev; cảnh báo này không xuất hiện trong production build.
-- Toàn bộ nội dung khách hàng dùng tiếng Việt tự nhiên; không hiển thị thuật ngữ access token, refresh session, cookie hoặc localStorage.
+1. Danh sách đơn hàng dùng lưới cột ổn định; mã dài được rút gọn trong ô, không làm
+   lệch ngày đặt, tổng tiền và trạng thái. Mã đầy đủ vẫn có trong tooltip.
+2. Minh chứng thanh toán dùng bộ chọn tệp riêng, có nút “Chọn tệp”, tên tệp, định
+   dạng hỗ trợ, trạng thái focus và trạng thái vô hiệu hóa nhất quán.
+3. “Chọn sản phẩm từ đơn hàng” mở bộ chọn ngay trong luồng hỗ trợ. Bộ chọn chỉ tải
+   đơn đã hoàn tất, hỗ trợ đầy đủ nhiều trang và cho chọn đúng sản phẩm trước khi mở
+   form.
+4. Trạng thái phiếu và nút “Xem tiến độ” đã căn giữa trên cùng một hàng ở desktop;
+   mobile chuyển thành bố cục xếp lớp rõ ràng.
+5. Frontend, đường dẫn trực tiếp và máy chủ đều kiểm tra trạng thái hoàn tất. Đơn đã
+   đặt, đã xác nhận, đã hủy hoặc vừa đổi trạng thái không thể tạo phiếu.
+6. Hai CTA tại trang hỗ trợ và chi tiết bảo hành dùng đúng màu chính ở trạng thái
+   thường, hover, active và focus.
 
-## Lịch sử phát hiện và chỉnh sửa
+## Lịch sử lặp QA
 
-1. P1 — CTA chính bị kế thừa màu link teal trên nền teal. Đã khóa màu chữ trắng cho cart và checkout.
-2. P1 — giá hiện tại của cart bị selector gạch ngang. Đã tách class `oldPrice`, chỉ giá cũ mới có gạch.
-3. P1 — checkout có thể giữ dữ liệu người dùng cũ trong một khung hình khi đổi phiên. Đã remount session theo danh tính auth; Wishlist áp dụng cùng nguyên tắc.
-4. P1 — lỗi mạng khi tạo đơn có thể khiến người dùng gửi lại một đơn chưa rõ kết quả. Đã khóa create ở trạng thái chờ xác nhận và không auto-retry.
-5. P2 — review-required 409, payload pickup/store và số tiền chưa được kiểm tra đủ chặt. Parser và regression tests đã được bổ sung.
-6. P2 — thông báo wishlist, focus sau khi xóa, fulfillment disabled và tổng tiền 320 px chưa hoàn chỉnh. Đã sửa trạng thái, focus recovery và responsive stacking.
-7. P2 — copy “đồng bộ/gộp” và một đoạn giải thích bị lặp chưa phù hợp khách hàng. Đã chuyển sang tiếng Việt tự nhiên và rút gọn.
-8. P2 — lần tinh chỉnh trước đặt `Bảo hành`, `Ưa thích`, `Đơn hàng` ngang hàng với menu công khai nên header còn dày thông tin. Theo quyết định cuối, desktop chỉ giữ năm mục công khai được căn giữa và chia đều; bốn mục `Quản lý tài khoản`, `Bảo hành`, `Ưa thích`, `Đơn hàng` nằm trong popup `Tài khoản`. Popup được cân giữa dưới nút mở và chủ động phủ lên hàng điều hướng để tổng thể gọn hơn; mobile tiếp tục dùng drawer hiện có.
-9. P2 — sau khi tăng kích thước header, logo, giỏ và nút Danh mục có thể chồng lấn ở vùng nội dung 320 px. Đã giảm khoảng cách riêng tại breakpoint rất nhỏ và chỉ giữ biểu tượng cùng số lượng giỏ; vùng nội dung thật 320 px không còn tràn ngang.
+### Lần 1
 
-Không còn phát hiện P0, P1 hoặc P2.
+- P1 accessibility: chữ trạng thái cảnh báo có độ tương phản 4.22:1, chưa đạt ngưỡng
+  4.5:1.
+- P2 responsive: trang rộng 486 px trong viewport 390 px; thanh điều hướng và bộ lọc
+  bị cắt.
+- P2 chức năng: bộ chọn hỗ trợ chỉ đọc 100 đơn hoàn tất đầu tiên.
+
+Đã sửa màu cảnh báo thành `#9b5b00` (khoảng 4.94:1), khóa kích thước tối thiểu của
+shell, cho bộ lọc xếp một cột, cân ba mục điều hướng trong 390 px và tải tuần tự toàn
+bộ trang đơn hoàn tất với giới hạn an toàn.
+
+### Lần 2
+
+- Không còn P0, P1 hoặc P2.
+- `documentElement.scrollWidth === 390` tại `/orders`, chi tiết đơn hàng và
+  `/after-sales`; không còn phần tử vượt viewport.
+- Axe không còn lỗi serious/critical trong hành trình desktop đã kiểm tra.
+- Sai khác P3 chấp nhận được: lượng dữ liệu mẫu và ảnh sản phẩm trong bản triển khai
+  phụ thuộc dữ liệu API, nên mật độ hàng có thể khác mockup; cấu trúc, nhịp khoảng
+  cách, màu, chữ và hành vi chính vẫn nhất quán.
+
+## Tương tác đã kiểm tra
+
+- Lọc và mở danh sách đơn; mở chi tiết; dialog hủy đơn; quyền truy cập khách.
+- Hiển thị và thao tác với bộ chọn minh chứng thanh toán.
+- Danh sách và chi tiết bảo hành; CTA yêu cầu hỗ trợ.
+- Danh sách, chi tiết và hủy phiếu hỗ trợ.
+- Chọn đơn hoàn tất, chọn sản phẩm và mở form tạo yêu cầu.
+- URL không hợp lệ, trạng thái đơn không hợp lệ và thay đổi trạng thái đồng thời.
+- Một vùng nội dung chính, keyboard focus, độ tương phản và không tràn ngang.
+
+## Kiểm tra kỹ thuật
+
+- Web unit: 51 file, 221 test đạt.
+- API unit toàn bộ: 104 file, 609 test đạt; kiểm tra mục tiêu sau cùng: 1 file,
+  5 test đạt.
+- Browser/visual: 5 test đạt, gồm viewport mobile 390 × 844.
+- A11y contract: 4 file, 15 test đạt.
+- Coverage contract: 1 file, 4 test đạt.
+- Lint, typecheck, format và production build đạt; đủ bảy route FE-04.
+- Chụp visual cuối: không có lỗi console.
 
 final result: passed

@@ -1,5 +1,5 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { apiError, customerApiError } from './order-access';
+import { apiError, customerApiError, orderTokenStorageKey } from './order-access';
 
 export type WarrantyApiClient = ReturnType<typeof createApiClient>;
 export type WarrantyListItem = components['schemas']['WarrantyListItemDto'];
@@ -27,6 +27,22 @@ export interface CustomerWarrantyQuery {
   pageSize: number;
 }
 
+export type WarrantyCustomerErrorKind =
+  'conflict' | 'not-found' | 'provider' | 'rate-limit' | 'unknown';
+
+export class WarrantyCustomerError extends Error {
+  public constructor(
+    message: string,
+    public readonly kind: WarrantyCustomerErrorKind,
+  ) {
+    super(message);
+    this.name = 'WarrantyCustomerError';
+  }
+}
+
+const ORDER_NUMBER_PATTERN = /^RPH-\d{8}-[A-Z0-9]{8}$/;
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
 export interface WarrantyPolicyQuery extends CustomerWarrantyQuery {
   q?: string;
   status?: '' | 'ACTIVE' | 'INACTIVE';
@@ -45,8 +61,9 @@ export async function listCustomerWarranties(
   query: CustomerWarrantyQuery,
 ): Promise<WarrantyPage<WarrantyListItem>> {
   const result = await client.GET('/api/v1/warranties', { params: { query } });
-  if (result.data === undefined)
-    throw new Error(customerWarrantyError(result.error, 'Không thể tải bảo hành.'));
+  if (result.data === undefined) {
+    throw customerWarrantyFailure(result.error, 'Không thể tải bảo hành.');
+  }
   return pageFrom(result.data.data, result.data.meta, query);
 }
 
@@ -62,9 +79,42 @@ export async function getCustomerWarranty(
     },
   });
   if (result.data === undefined) {
-    throw new Error(customerWarrantyError(result.error, 'Không thể mở bảo hành này.'));
+    throw customerWarrantyFailure(result.error, 'Không thể mở bảo hành này.');
   }
   return result.data.data;
+}
+
+export function resolveWarrantyGuestCredential(
+  authStatus: 'anonymous' | 'authenticated' | 'loading',
+  orderNumber: string | null | undefined,
+  storage: Pick<Storage, 'getItem'>,
+): string | undefined {
+  if (authStatus !== 'anonymous' || orderNumber === null || orderNumber === undefined) {
+    return undefined;
+  }
+  const normalized = orderNumber.trim().toUpperCase();
+  if (!ORDER_NUMBER_PATTERN.test(normalized)) return undefined;
+  const token = storage.getItem(orderTokenStorageKey(normalized)) ?? undefined;
+  return token !== undefined && TOKEN_PATTERN.test(token) ? token : undefined;
+}
+
+export function clearWarrantyGuestCredential(
+  orderNumber: string | null | undefined,
+  storage: Pick<Storage, 'removeItem'>,
+): void {
+  if (orderNumber === null || orderNumber === undefined) return;
+  const normalized = orderNumber.trim().toUpperCase();
+  if (!ORDER_NUMBER_PATTERN.test(normalized)) return;
+  storage.removeItem(orderTokenStorageKey(normalized));
+}
+
+export function warrantyAccessKey(
+  authStatus: 'anonymous' | 'authenticated' | 'loading',
+  userId: string | null | undefined,
+  orderNumber: string | null | undefined,
+  warrantyCode: string,
+): string {
+  return JSON.stringify([authStatus, userId ?? '', orderNumber ?? '', warrantyCode]);
 }
 
 export async function listWarrantyPolicies(
@@ -197,6 +247,26 @@ export function warrantyError(value: unknown, fallback: string): string {
 
 export function customerWarrantyError(value: unknown, fallback: string): string {
   return mappedWarrantyError(value, fallback, customerApiError);
+}
+
+function customerWarrantyFailure(value: unknown, fallback: string): WarrantyCustomerError {
+  const code = errorCode(value);
+  const kind: WarrantyCustomerErrorKind =
+    code === 'ORDER_NOT_FOUND' || code === 'RESOURCE_NOT_FOUND'
+      ? 'not-found'
+      : code === 'CONCURRENT_MODIFICATION' || code === 'INVALID_STATE_TRANSITION'
+        ? 'conflict'
+        : code === 'RATE_LIMITED'
+          ? 'rate-limit'
+          : code === 'STORAGE_UNAVAILABLE' || code === 'SERVICE_UNAVAILABLE'
+            ? 'provider'
+            : 'unknown';
+  return new WarrantyCustomerError(
+    kind === 'not-found'
+      ? 'Không tìm thấy thông tin hoặc bạn không có quyền truy cập.'
+      : customerWarrantyError(value, fallback),
+    kind,
+  );
 }
 
 function mappedWarrantyError(

@@ -63,7 +63,7 @@ describe('FE-0 frontend coverage contract', () => {
     const inProgressPhases = phaseStatuses
       .filter(([, status]) => status === 'IN PROGRESS')
       .map(([phase]) => phase);
-    expect(inProgressPhases).toEqual([]);
+    expect(inProgressPhases).toEqual(['FE-4']);
     expect(readPlanPhaseStatuses()).toEqual(FRONTEND_PHASE_STATUS);
   });
 
