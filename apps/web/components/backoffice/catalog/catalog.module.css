@@ -103,13 +103,14 @@
 
 .primaryLink {
   border-color: var(--color-primary);
-  color: var(--color-on-primary);
+  color: var(--color-on-primary) !important;
   background: var(--color-primary);
 }
 
 .primaryLink:hover,
 .primaryLink:focus-visible {
   border-color: var(--color-primary-hover);
+  color: var(--color-on-primary) !important;
   background: var(--color-primary-hover);
 }
 
