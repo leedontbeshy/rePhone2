@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { InventoryAdminError } from '@/lib/backoffice-inventory-api';
 import {
   buildStockLevelHref,
   buildStockMovementHref,
   emptyStockCommandDraft,
   mergeStockLevelQuery,
+  stockCommandErrorMessage,
+  stockCommandErrorRequiresReconcile,
   stockLevelQueryFromSearch,
   stockMovementQueryFromSearch,
   validateStockCommand,
@@ -63,6 +66,23 @@ describe('inventory stock query model', () => {
     expect(href).toContain(`referenceId=${REFERENCE_ID}`);
     expect(href).not.toContain('ignored');
     expect(href).not.toContain('iPhone');
+  });
+});
+
+describe('inventory stock command conflicts', () => {
+  it('reconciles all authoritative stock conflicts, including duplicate returns', () => {
+    const duplicateReturn = new InventoryAdminError(
+      'Thông tin này đã tồn tại trong hệ thống.',
+      'DUPLICATE_RESOURCE',
+    );
+    const validation = new InventoryAdminError('Thông tin chưa hợp lệ.', 'VALIDATION_FAILED');
+
+    expect(stockCommandErrorRequiresReconcile(duplicateReturn)).toBe(true);
+    expect(stockCommandErrorRequiresReconcile(validation)).toBe(false);
+    expect(stockCommandErrorMessage(duplicateReturn, 'Dự phòng')).toContain(
+      'đối chiếu lịch sử kho',
+    );
+    expect(stockCommandErrorMessage(validation, 'Dự phòng')).toBe('Thông tin chưa hợp lệ.');
   });
 });
 

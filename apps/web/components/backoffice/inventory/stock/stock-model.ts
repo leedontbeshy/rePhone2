@@ -1,9 +1,11 @@
-import type {
-  AdjustInventoryStockInput,
-  InventoryStockMovementType,
-  ReceiveInventoryStockInput,
-  ReturnInventoryStockInput,
-  TransferInventoryStockInput,
+import {
+  InventoryAdminError,
+  inventoryErrorRequiresRefetch,
+  type AdjustInventoryStockInput,
+  type InventoryStockMovementType,
+  type ReceiveInventoryStockInput,
+  type ReturnInventoryStockInput,
+  type TransferInventoryStockInput,
 } from '@/lib/backoffice-inventory-api';
 
 export const STOCK_PAGE_SIZE = 20;
@@ -293,6 +295,20 @@ export function stockCommandLabel(kind: StockCommandKind): string {
   if (kind === 'transfer') return 'Chuyển kho';
   if (kind === 'adjust') return 'Điều chỉnh';
   return 'Hoàn kho';
+}
+
+export function stockCommandErrorRequiresReconcile(error: unknown): boolean {
+  return (
+    inventoryErrorRequiresRefetch(error) ||
+    (error instanceof InventoryAdminError && error.code === 'DUPLICATE_RESOURCE')
+  );
+}
+
+export function stockCommandErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof InventoryAdminError && error.code === 'DUPLICATE_RESOURCE') {
+    return 'Yêu cầu hoàn kho này đã được ghi nhận với thông tin khác. Hãy đối chiếu lịch sử kho trước khi thử lại.';
+  }
+  return error instanceof Error ? error.message : fallback;
 }
 
 function requiredLocation(

@@ -11,6 +11,8 @@ import {
 import {
   buildStockLevelHref,
   mergeStockLevelQuery,
+  stockCommandErrorMessage,
+  stockCommandErrorRequiresReconcile,
   stockLevelQueryFromSearch,
   type StockCommandRequest,
   type StockLevelQueryOverrides,
@@ -18,7 +20,6 @@ import {
 } from '@/components/backoffice/inventory/stock/stock-model';
 import {
   adjustInventoryStock,
-  inventoryErrorRequiresRefetch,
   listInventoryLocations,
   listInventoryStockLevels,
   listInventoryStockMovements,
@@ -138,14 +139,17 @@ export default function InventoryStockPage() {
         else if (request.kind === 'adjust') await adjustInventoryStock(client, request.input);
         else await returnInventoryStock(client, request.input);
       } catch (cause: unknown) {
-        if (inventoryErrorRequiresRefetch(cause)) {
+        if (stockCommandErrorRequiresReconcile(cause)) {
           try {
             await reconcile();
           } catch {
             // Keep the authoritative command error; the next normal refresh can reconcile again.
           }
         }
-        return { ok: false, message: messageOf(cause, 'Không thể cập nhật tồn kho.') };
+        return {
+          ok: false,
+          message: stockCommandErrorMessage(cause, 'Không thể cập nhật tồn kho.'),
+        };
       }
 
       try {
