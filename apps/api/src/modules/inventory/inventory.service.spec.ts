@@ -199,15 +199,11 @@ describe('InventoryService projections and identifiers', () => {
     await expect(
       missing.service.lookupIdentifier({ type: 'SERIAL', value: 'ABC123' }, actor),
     ).rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND' });
-    expect(missing.audit.write).toHaveBeenCalledWith(
-      expect.anything(),
-      actor,
-      {
-        action: 'inventory.identifier.lookup',
-        resourceType: 'InventoryUnit',
-        metadata: { identifierType: 'SERIAL', outcome: 'NOT_FOUND' },
-      },
-    );
+    expect(missing.audit.write).toHaveBeenCalledWith(expect.anything(), actor, {
+      action: 'inventory.identifier.lookup',
+      resourceType: 'InventoryUnit',
+      metadata: { identifierType: 'SERIAL', outcome: 'NOT_FOUND' },
+    });
     expect(JSON.stringify(vi.mocked(missing.audit.write).mock.calls)).not.toContain('ABC123');
   });
 
