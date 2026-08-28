@@ -445,7 +445,6 @@ export async function lookupInventoryUnitIdentifier(
   const body: ApiLookupIdentifier = {
     type: input.type,
     value: input.value.trim(),
-    reason: input.reason.trim(),
   };
   const result = await client.POST('/api/v1/backoffice/inventory-units/lookup-identifier', {
     body,

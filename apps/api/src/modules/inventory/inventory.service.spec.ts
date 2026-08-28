@@ -158,14 +158,11 @@ describe('InventoryService projections and identifiers', () => {
     });
   });
 
-  it('looks up an identifier, audits only the reason/type, and returns the safe projection', async () => {
+  it('looks up an identifier, audits the safe outcome, and returns the masked projection', async () => {
     const fixture = serviceFixture();
 
     await expect(
-      fixture.service.lookupIdentifier(
-        { type: 'SERIAL', value: 'ABC123', reason: 'Đối chiếu bảo hành' },
-        actor,
-      ),
+      fixture.service.lookupIdentifier({ type: 'SERIAL', value: 'ABC123' }, actor),
     ).resolves.toMatchObject({ id: UNIT_ID, maskedIdentifiers: [] });
     expect(fixture.identifiers.lookupHmac).toHaveBeenCalledWith('SERIAL', 'ABC123');
     expect(fixture.repository.findByIdentifier).toHaveBeenCalledWith(
@@ -178,9 +175,11 @@ describe('InventoryService projections and identifiers', () => {
       actor,
       expect.objectContaining({
         action: 'inventory.identifier.lookup',
-        metadata: { reason: 'Đối chiếu bảo hành', identifierType: 'SERIAL' },
+        resourceId: UNIT_ID,
+        metadata: { identifierType: 'SERIAL', outcome: 'FOUND' },
       }),
     );
+    expect(JSON.stringify(vi.mocked(fixture.audit.write).mock.calls)).not.toContain('ABC123');
   });
 
   it('maps invalid lookup input and missing lookup results safely', async () => {
@@ -190,10 +189,7 @@ describe('InventoryService projections and identifiers', () => {
       }),
     });
     await expect(
-      invalid.service.lookupIdentifier(
-        { type: 'IMEI', value: 'bad', reason: 'Kiểm tra máy' },
-        actor,
-      ),
+      invalid.service.lookupIdentifier({ type: 'IMEI', value: 'bad' }, actor),
     ).rejects.toMatchObject({
       code: 'VALIDATION_FAILED',
       details: [expect.objectContaining({ field: 'value', code: 'INVALID_IMEI' })],
@@ -201,11 +197,18 @@ describe('InventoryService projections and identifiers', () => {
 
     const missing = serviceFixture({ findByIdentifier: vi.fn(async () => null) });
     await expect(
-      missing.service.lookupIdentifier(
-        { type: 'SERIAL', value: 'ABC123', reason: 'Kiểm tra máy' },
-        actor,
-      ),
+      missing.service.lookupIdentifier({ type: 'SERIAL', value: 'ABC123' }, actor),
     ).rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND' });
+    expect(missing.audit.write).toHaveBeenCalledWith(
+      expect.anything(),
+      actor,
+      {
+        action: 'inventory.identifier.lookup',
+        resourceType: 'InventoryUnit',
+        metadata: { identifierType: 'SERIAL', outcome: 'NOT_FOUND' },
+      },
+    );
+    expect(JSON.stringify(vi.mocked(missing.audit.write).mock.calls)).not.toContain('ABC123');
   });
 
   it('reveals only present encrypted identifiers after the audit is written', async () => {

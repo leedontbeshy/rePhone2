@@ -95,7 +95,7 @@ warrantyPolicyId?
 | Method/path | Actor | Request chính | Success |
 |---|---|---|---|
 | `GET /api/v1/backoffice/inventory-units` | Staff/Admin | Filter/pagination | `200 InventoryUnitListItemDto[]` |
-| `POST /api/v1/backoffice/inventory-units/lookup-identifier` | Staff/Admin | `type`, `value`, `reason` | `200 InventoryUnitListItemDto` + audit |
+| `POST /api/v1/backoffice/inventory-units/lookup-identifier` | Staff/Admin | `type`, `value` | `200 InventoryUnitListItemDto` + audit tự động |
 | `POST /api/v1/backoffice/inventory-units` | Staff/Admin | Intake DTO | `201 InventoryUnitDetailDto` |
 | `GET /api/v1/backoffice/inventory-units/:id` | Staff/Admin | — | `200 InventoryUnitDetailDto` |
 | `PATCH /api/v1/backoffice/inventory-units/:id` | Staff/Admin | Mutable non-state fields | `200 InventoryUnitDetailDto` |
@@ -136,7 +136,7 @@ conditionGrade?, simLockStatus?, minBatteryHealth?,
 page=1, pageSize=20, sortBy=receivedAt, sortOrder=desc
 ```
 
-`q` tìm product/variant/inventoryCode/SKU. Exact identifier lookup nhận `type = IMEI | SERIAL | EID`, canonicalize giá trị, tính HMAC và tìm đúng cột/các slot IMEI; `reason` dài 5..500 ký tự, bắt buộc audit. Response chỉ là projection đã mask và không echo plaintext; không đi qua generic q.
+`q` tìm product/variant/inventoryCode/SKU. Exact identifier lookup nhận `type = IMEI | SERIAL | EID`, canonicalize giá trị, tính HMAC và tìm đúng cột/các slot IMEI. Hệ thống tự audit actor, thời gian, loại mã và kết quả `FOUND/NOT_FOUND` nhưng không ghi plaintext. Response chỉ là projection đã mask và không echo plaintext; không đi qua generic q.
 
 ### Availability gate
 
@@ -237,7 +237,7 @@ Availability gate lỗi trả structured details chỉ gồm các requirement pu
 - Product/variant type-mode invariant và publish/archive visibility đúng.
 - Employee không đọc/update cost; admin cost update có audit.
 - Intake encrypt/HMAC identifier, phát hiện duplicate và không log plaintext.
-- Exact identifier lookup dùng HMAC, bắt buộc reason/audit và không echo plaintext.
+- Exact identifier lookup dùng HMAC, tự audit loại mã/kết quả và không echo plaintext.
 - Reveal identifier bắt buộc reason/audit; response không cache.
 - Inspection complete tính result/current atomically và record completed không sửa được.
 - Unit thiếu PASSED inspection/price/identifier/unit photo không thể AVAILABLE.

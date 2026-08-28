@@ -248,7 +248,7 @@ export class UpdateInventoryUnitDto {
   public reason?: string;
 }
 
-export class IdentifierLookupDto extends InventoryReasonDto {
+export class IdentifierLookupDto {
   @ApiProperty({ enum: IDENTIFIER_TYPES })
   @IsIn(IDENTIFIER_TYPES)
   public type!: (typeof IDENTIFIER_TYPES)[number];

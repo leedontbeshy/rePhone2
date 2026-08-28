@@ -5281,11 +5281,6 @@
       },
       "IdentifierLookupDto": {
         "properties": {
-          "reason": {
-            "maxLength": 500,
-            "minLength": 5,
-            "type": "string"
-          },
           "type": {
             "enum": [
               "IMEI",
@@ -5299,7 +5294,6 @@
           }
         },
         "required": [
-          "reason",
           "type",
           "value"
         ],

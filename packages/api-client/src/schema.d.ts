@@ -3738,7 +3738,6 @@ export interface components {
             status: "ok";
         };
         IdentifierLookupDto: {
-            reason: string;
             /** @enum {string} */
             type: "IMEI" | "SERIAL" | "EID";
             value: string;

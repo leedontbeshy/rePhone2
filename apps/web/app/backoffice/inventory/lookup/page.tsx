@@ -16,7 +16,6 @@ export default function InventoryLookupPage() {
     const unit = await lookupInventoryUnitIdentifier(client, {
       type: input.identifierType,
       value: input.identifier,
-      reason: input.reason,
     });
     const presentation = inventoryLifecyclePresentation(unit.lifecycleStatus);
     return {

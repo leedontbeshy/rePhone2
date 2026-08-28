@@ -7,7 +7,6 @@ describe('inventory identifier lookup', () => {
       validateInventoryLookupInput({
         identifier: '123',
         identifierType: 'IMEI',
-        reason: 'Hỗ trợ khách tại cửa hàng',
       }),
     ).toEqual({ identifier: 'IMEI cần có đúng 15 chữ số.' });
 
@@ -15,19 +14,17 @@ describe('inventory identifier lookup', () => {
       validateInventoryLookupInput({
         identifier: '490154203237518',
         identifierType: 'IMEI',
-        reason: 'Kiểm tra máy đổi trả',
       }),
     ).toEqual({});
   });
 
-  it('requires a meaningful audit reason and uses Vietnamese labels', () => {
+  it('uses Vietnamese labels without asking for an audit reason', () => {
     expect(
       validateInventoryLookupInput({
         identifier: 'F2LX1234ABCD',
         identifierType: 'SERIAL',
-        reason: 'x',
       }),
-    ).toEqual({ reason: 'Lý do cần ít nhất 5 ký tự.' });
+    ).toEqual({});
     expect(identifierTypeLabel('SERIAL')).toBe('Số sê-ri');
   });
 });

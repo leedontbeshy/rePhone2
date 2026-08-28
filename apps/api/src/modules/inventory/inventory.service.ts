@@ -278,15 +278,18 @@ export class InventoryService {
     }
     const unit = await this.transactions.run('inventory.identifier.lookup', async (transaction) => {
       const found = await this.repository.findByIdentifier(input.type, hmac, transaction);
-      if (found === null) throw new ApiError('RESOURCE_NOT_FOUND');
       await this.audit.write(transaction, actor, {
         action: 'inventory.identifier.lookup',
         resourceType: 'InventoryUnit',
-        resourceId: found.id,
-        metadata: { reason: input.reason, identifierType: input.type },
+        ...(found === null ? {} : { resourceId: found.id }),
+        metadata: {
+          identifierType: input.type,
+          outcome: found === null ? 'NOT_FOUND' : 'FOUND',
+        },
       });
       return found;
     });
+    if (unit === null) throw new ApiError('RESOURCE_NOT_FOUND');
     return toListItem(unit);
   }
 

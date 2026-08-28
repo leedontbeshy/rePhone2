@@ -257,7 +257,6 @@ describe('backoffice inventory typed-client adapter', () => {
     const lookup = await lookupInventoryUnitIdentifier(client, {
       type: 'IMEI',
       value: ' 356789012341234 ',
-      reason: '  Đối chiếu máy khách mang đến  ',
     });
     const intake = await intakeInventoryUnit(client, {
       variantId: VARIANT_ID,
@@ -280,7 +279,6 @@ describe('backoffice inventory typed-client adapter', () => {
           body: {
             type: 'IMEI',
             value: '356789012341234',
-            reason: 'Đối chiếu máy khách mang đến',
           },
         },
       ],

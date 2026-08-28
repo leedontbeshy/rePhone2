@@ -3,7 +3,7 @@
 import { ArrowRightIcon, IdentificationCardIcon, ShieldCheckIcon } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import { useState, type SyntheticEvent } from 'react';
-import { Button, InlineAlert, Input, Select, StatusChip, Textarea } from '@/components/ui';
+import { Button, InlineAlert, Input, Select, StatusChip } from '@/components/ui';
 import styles from './inventory-lookup.module.css';
 
 export type InventoryLookupIdentifierType = 'IMEI' | 'SERIAL' | 'EID';
@@ -26,7 +26,6 @@ export interface InventoryLookupResult {
 export interface InventoryLookupInput {
   readonly identifier: string;
   readonly identifierType: InventoryLookupIdentifierType;
-  readonly reason: string;
 }
 
 export interface InventoryLookupViewProps {
@@ -36,30 +35,27 @@ export interface InventoryLookupViewProps {
 export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
   const [identifierType, setIdentifierType] = useState<InventoryLookupIdentifierType>('IMEI');
   const [identifier, setIdentifier] = useState('');
-  const [reason, setReason] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InventoryLookupResult | null>(null);
-  const validation = validateInventoryLookupInput({ identifier, identifierType, reason });
+  const validation = validateInventoryLookupInput({ identifier, identifierType });
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setAttempted(true);
     setError(null);
     setResult(null);
-    if (validation.identifier !== undefined || validation.reason !== undefined) return;
+    if (validation.identifier !== undefined) return;
 
     setPending(true);
     try {
       const found = await onLookup({
         identifier: identifier.trim(),
         identifierType,
-        reason: reason.trim(),
       });
       setResult(found);
       setIdentifier('');
-      setReason('');
       setAttempted(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Chưa thể tra cứu mã máy.');
@@ -88,7 +84,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
             <IdentificationCardIcon aria-hidden="true" size={24} />
             <div>
               <h2>Thông tin tra cứu</h2>
-              <p>Mỗi lần tra cứu đều cần lý do phục vụ công việc.</p>
+              <p>Mỗi lần tra cứu được tự động ghi nhận để bảo vệ thông tin máy.</p>
             </div>
           </div>
 
@@ -124,20 +120,6 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               }}
             />
           </div>
-          <Textarea
-            disabled={pending}
-            error={attempted ? validation.reason : undefined}
-            hint="Ghi rõ mục đích phục vụ khách hàng hoặc vận hành kho, từ 5 đến 500 ký tự."
-            id="inventory-lookup-reason"
-            label="Lý do tra cứu"
-            maxLength={500}
-            required
-            rows={4}
-            value={reason}
-            onChange={(event) => {
-              setReason(event.target.value);
-            }}
-          />
 
           {error === null ? null : (
             <InlineAlert title="Không tìm được máy" tone="danger">
@@ -212,7 +194,6 @@ function LookupResultCard({ result }: Readonly<{ result: InventoryLookupResult }
 
 export function validateInventoryLookupInput(input: InventoryLookupInput): {
   identifier?: string;
-  reason?: string;
 } {
   const identifier = input.identifier.trim();
   let identifierError: string | undefined;
@@ -227,17 +208,7 @@ export function validateInventoryLookupInput(input: InventoryLookupInput): {
     identifierError = 'Số sê-ri cần từ 6 đến 32 ký tự chữ hoặc số.';
   }
 
-  const reasonLength = input.reason.trim().length;
-  const reasonError =
-    reasonLength < 5
-      ? 'Lý do cần ít nhất 5 ký tự.'
-      : reasonLength > 500
-        ? 'Lý do không được quá 500 ký tự.'
-        : undefined;
-  return {
-    ...(identifierError === undefined ? {} : { identifier: identifierError }),
-    ...(reasonError === undefined ? {} : { reason: reasonError }),
-  };
+  return identifierError === undefined ? {} : { identifier: identifierError };
 }
 
 export function identifierTypeLabel(

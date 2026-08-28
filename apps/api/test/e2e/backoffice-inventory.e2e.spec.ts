@@ -84,7 +84,7 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
     const lookup = await request(server)
       .post('/api/v1/backoffice/inventory-units/lookup-identifier')
       .set(bearer(employee))
-      .send({ type: 'SERIAL', value: 'slice04flow01', reason: 'Đối chiếu lúc nhập máy' })
+      .send({ type: 'SERIAL', value: 'slice04flow01' })
       .expect(200);
     expect(stringProperty(successData(lookup), 'id')).toBe(unitId);
 

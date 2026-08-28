@@ -10,7 +10,7 @@
 - Quản lý iPhone theo từng máy vật lý (`InventoryUnit`) và phụ kiện theo số lượng (`StockLevel`).
 - Phủ tám route FE-06 và toàn bộ 26 operation inventory, inspection, unit media và stock hiện có.
 - Giữ backend làm nguồn sự thật cho quyền, vòng đời, điều kiện đưa bán, kiểm định và số dư kho.
-- Bảo vệ IMEI, serial và EID: danh sách chỉ hiện dạng che; tra cứu hoặc xem đầy đủ cần lý do và chỉ tồn tại tạm thời trong bộ nhớ.
+- Bảo vệ IMEI, serial và EID: danh sách và kết quả tra cứu chỉ hiện dạng che; tra cứu được audit tự động, còn xem đầy đủ vẫn cần lý do và chỉ tồn tại tạm thời trong bộ nhớ.
 - Giá vốn là vùng riêng cho quản trị viên; tài khoản nhân viên không được gọi endpoint hoặc nhận projection giá vốn.
 - Không cho sửa trực tiếp trạng thái hoặc bộ đếm tồn kho; mọi thay đổi dùng command có tên và tạo movement tương ứng.
 
@@ -82,7 +82,7 @@ Các route:
 - Wizard nhập máy giữ khả năng resume bằng `unitId`, nhưng được tách thành các bước có dữ liệu typed và copy thuần Việt.
 - Product/variant/location dùng selector theo tên; không yêu cầu người dùng nhập UUID.
 - Raw identifier được giữ trong form cục bộ, xóa sau khi submit thành công hoặc rời màn hình.
-- Lookup yêu cầu loại định danh, giá trị và lý do 5–500 ký tự; kết quả chỉ trả projection đã che và liên kết hồ sơ máy.
+- Lookup chỉ yêu cầu loại định danh và giá trị; hệ thống tự audit kết quả `FOUND/NOT_FOUND`, còn response chỉ trả projection đã che và liên kết hồ sơ máy.
 
 ### 4.4. Kiểm định
 

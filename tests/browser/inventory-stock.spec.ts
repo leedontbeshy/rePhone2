@@ -74,18 +74,17 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('looks up a raw identifier only through an audited POST body', async ({ page }) => {
+  test('looks up a raw identifier through an automatically audited POST body', async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/lookup', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { level: 1, name: 'Tra cứu mã máy' })).toBeVisible();
     await page.getByLabel('IMEI đầy đủ').fill(RAW_IMEI);
-    await page.getByLabel('Lý do tra cứu').fill('Đối chiếu khi tiếp nhận khách hàng');
+    await expect(page.getByLabel('Lý do tra cứu')).toHaveCount(0);
     await page.getByRole('button', { name: 'Tra cứu', exact: true }).click();
 
     await expect(page.getByRole('heading', { level: 2, name: PRODUCT_NAME })).toBeVisible();
     expect(probe.lookupBody).toEqual({
-      reason: 'Đối chiếu khi tiếp nhận khách hàng',
       type: 'IMEI',
       value: RAW_IMEI,
     });
