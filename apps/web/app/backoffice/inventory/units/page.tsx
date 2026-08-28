@@ -6,6 +6,7 @@ import { InventoryShell } from '@/components/backoffice';
 import {
   InventoryUnitListView,
   buildInventoryUnitHref,
+  looksLikeProtectedIdentifier,
   type InventoryUnitListRecord,
   type InventoryUnitQueryOverrides,
   type InventoryUnitQueryState,
@@ -161,7 +162,8 @@ function currentQuery(): InventoryUnitQueryState {
   const page = positiveInteger(params.get('page'), 1);
   const pageSize = Math.min(100, positiveInteger(params.get('pageSize'), 20));
   const minBatteryHealth = optionalInteger(params.get('minBatteryHealth'), 0, 100);
-  const q = trimmed(params.get('q'));
+  const rawQuery = trimmed(params.get('q'));
+  const q = rawQuery === undefined || looksLikeProtectedIdentifier(rawQuery) ? undefined : rawQuery;
   const locationId = trimmed(params.get('locationId'));
   return {
     page,

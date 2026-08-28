@@ -95,13 +95,14 @@ export function InventoryUnitListView({
   units,
 }: InventoryUnitListViewProps) {
   const [search, setSearch] = useState(query.q ?? '');
+  const protectedSearch = looksLikeProtectedIdentifier(search);
 
   useEffect(() => {
     setSearch(query.q ?? '');
   }, [query.q]);
 
   useEffect(() => {
-    if (onQueryChange === undefined || search.trim() === (query.q ?? '')) return;
+    if (onQueryChange === undefined || protectedSearch || search.trim() === (query.q ?? '')) return;
     const timer = window.setTimeout(() => {
       onQueryChange(
         { page: 1, q: search.trim() === '' ? undefined : search.trim() },
@@ -111,7 +112,7 @@ export function InventoryUnitListView({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [onQueryChange, query.q, search]);
+  }, [onQueryChange, protectedSearch, query.q, search]);
 
   const columns: readonly BackofficeDataColumn<InventoryUnitListRecord>[] = [
     {
@@ -193,17 +194,25 @@ export function InventoryUnitListView({
       )}
 
       <section className={styles.filters} aria-label="Bộ lọc máy vật lý">
-        <label className={styles.searchField}>
-          <span className="rp-visually-hidden">Tìm máy</span>
-          <MagnifyingGlassIcon aria-hidden="true" size={20} />
-          <input
-            placeholder="Tên máy, mã kho hoặc 4 số cuối định danh"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-            }}
-          />
-        </label>
+        <div className={styles.searchGroup}>
+          <label className={styles.searchField}>
+            <span className="rp-visually-hidden">Tìm máy</span>
+            <MagnifyingGlassIcon aria-hidden="true" size={20} />
+            <input
+              placeholder="Tên máy, cấu hình hoặc mã kho"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+              }}
+            />
+          </label>
+          {protectedSearch ? (
+            <span className={styles.searchPrivacyWarning} role="alert">
+              IMEI, EID và số sê-ri chỉ được nhập tại{' '}
+              <Link href="/backoffice/inventory/lookup">trang tra cứu mã máy</Link>.
+            </span>
+          ) : null}
+        </div>
         <select
           aria-label="Trạng thái máy"
           value={query.lifecycleStatus ?? ''}
@@ -376,6 +385,18 @@ export function buildInventoryUnitHref(
   if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
   const value = params.toString();
   return value === '' ? '/backoffice/inventory/units' : `/backoffice/inventory/units?${value}`;
+}
+
+export function looksLikeProtectedIdentifier(value: string): boolean {
+  const trimmed = value.trim();
+  const compact = trimmed.replace(/[.\s-]/g, '');
+  if (/^\d{10,32}$/.test(compact)) return true;
+  return (
+    trimmed === trimmed.toUpperCase() &&
+    /^[A-Z0-9]{8,20}$/.test(trimmed) &&
+    /[A-Z]/.test(trimmed) &&
+    /\d/.test(trimmed)
+  );
 }
 
 function InventoryLifecycleChip({ status }: Readonly<{ status: InventoryLifecycleStatus }>) {

@@ -82,8 +82,21 @@
   min-height: 2.8rem;
 }
 
-.searchField {
+.searchGroup {
+  display: grid;
+  gap: 0.35rem;
   grid-column: span 2;
+}
+
+.searchPrivacyWarning {
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.searchPrivacyWarning a {
+  color: inherit;
+  font-weight: 700;
 }
 
 .filters select {
@@ -155,8 +168,10 @@
 }
 
 .detailLink {
+  display: inline-flex;
+  align-items: center;
   color: var(--color-primary);
-  min-height: auto;
+  min-height: var(--control-height);
   padding: 0.35rem 0;
   white-space: nowrap;
 }
@@ -197,7 +212,7 @@
     grid-template-columns: 1fr;
   }
 
-  .searchField {
+  .searchGroup {
     grid-column: auto;
   }
 }
