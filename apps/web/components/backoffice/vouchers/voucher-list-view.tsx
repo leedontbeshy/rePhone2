@@ -1,8 +1,8 @@
 'use client';
 
-import { CaretRightIcon, PlusIcon } from '@phosphor-icons/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
+import { CaretRightIcon, MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react';
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   BackofficePagination,
@@ -24,21 +24,19 @@ import {
   voucherStatusLabel,
 } from './voucher-admin-ui';
 import styles from './voucher-admin.module.css';
+import {
+  buildVoucherListHref,
+  VOUCHER_LIST_PAGE_SIZE,
+  voucherDraftFromQuery,
+  voucherQueryFromDraft,
+  voucherQueryFromSearch,
+  type VoucherDiscountFilter,
+  type VoucherFilterDraft,
+  type VoucherScopeFilter,
+  type VoucherStatusFilter,
+} from './voucher-list-filters';
 
-const PAGE_SIZE = 12;
-
-type StatusFilter = '' | Voucher['status'];
-type DiscountFilter = '' | Voucher['discountType'];
-type ScopeFilter = '' | Voucher['scopeType'];
-
-interface FilterDraft {
-  readonly q: string;
-  readonly status: StatusFilter;
-  readonly discountType: DiscountFilter;
-  readonly scopeType: ScopeFilter;
-}
-
-const STATUS_TABS: ReadonlyArray<{ label: string; value: StatusFilter }> = [
+const STATUS_TABS: ReadonlyArray<{ label: string; value: VoucherStatusFilter }> = [
   { label: 'Tất cả', value: '' },
   { label: 'Đang áp dụng', value: 'ACTIVE' },
   { label: 'Bản nháp', value: 'DRAFT' },
@@ -48,27 +46,69 @@ const STATUS_TABS: ReadonlyArray<{ label: string; value: StatusFilter }> = [
 
 const EMPTY_PAGINATION: Pagination = {
   page: 1,
-  pageSize: PAGE_SIZE,
+  pageSize: VOUCHER_LIST_PAGE_SIZE,
   totalItems: 0,
   totalPages: 0,
 };
 
 export function VoucherListView() {
   const { client, status, user } = useAuth();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const query = useMemo(() => queryFromSearch(searchParams), [searchParams]);
-  const [draft, setDraft] = useState<FilterDraft>(() => draftFromQuery(query));
+  const [query, setQuery] = useState<VoucherQuery>(() => voucherQueryFromSearch(searchParams));
+  const [draft, setDraft] = useState<VoucherFilterDraft>(() => voucherDraftFromQuery(query));
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [pagination, setPagination] = useState<Pagination>(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const latestRequest = useRef(0);
   const isAdmin = user?.role === 'ADMIN';
+  const searchKey = searchParams.toString();
+
+  const applyDraft = useCallback(
+    (nextDraft: VoucherFilterDraft, historyMode: 'push' | 'replace' = 'push') => {
+      const nextQuery = voucherQueryFromDraft(nextDraft);
+      setQuery(nextQuery);
+      if (typeof window === 'undefined') return;
+      const href = buildVoucherListHref(VOUCHERS_ROOT, { ...nextDraft, page: 1 });
+      const currentHref = `${window.location.pathname}${window.location.search}`;
+      if (href === currentHref) return;
+      if (historyMode === 'replace') {
+        window.history.replaceState(window.history.state, '', href);
+      } else {
+        window.history.pushState(window.history.state, '', href);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    setDraft(draftFromQuery(query));
-  }, [query]);
+    const nextQuery = voucherQueryFromSearch(new URLSearchParams(searchKey));
+    setQuery(nextQuery);
+    setDraft(voucherDraftFromQuery(nextQuery));
+  }, [searchKey]);
+
+  useEffect(() => {
+    function syncFromHistory() {
+      const nextQuery = voucherQueryFromSearch(new URLSearchParams(window.location.search));
+      setQuery(nextQuery);
+      setDraft(voucherDraftFromQuery(nextQuery));
+    }
+
+    window.addEventListener('popstate', syncFromHistory);
+    return () => {
+      window.removeEventListener('popstate', syncFromHistory);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (draft.q.trim() === (query.q ?? '')) return;
+    const timeout = window.setTimeout(() => {
+      applyDraft(draft, 'replace');
+    }, 250);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [applyDraft, draft, query.q]);
 
   const load = useCallback(async () => {
     const request = latestRequest.current + 1;
@@ -98,11 +138,13 @@ export function VoucherListView() {
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(buildVoucherListHref({ ...draft, page: 1 }));
+    applyDraft(draft);
   }
 
-  function setStatus(nextStatus: StatusFilter) {
-    router.push(buildVoucherListHref({ ...draft, status: nextStatus, page: 1 }));
+  function setStatus(nextStatus: VoucherStatusFilter) {
+    const nextDraft = { ...draft, status: nextStatus };
+    setDraft(nextDraft);
+    applyDraft(nextDraft);
   }
 
   return (
@@ -120,25 +162,30 @@ export function VoucherListView() {
         </header>
 
         <form className={styles.listFilters} aria-label="Lọc mã ưu đãi" onSubmit={applyFilters}>
-          <Input
-            id="voucher-search"
-            label="Tìm kiếm"
-            maxLength={100}
-            placeholder="Mã hoặc tên chương trình"
-            value={draft.q}
-            onChange={(event) => {
-              setDraft((current) => ({ ...current, q: event.target.value }));
-            }}
-          />
+          <div className={styles.searchField}>
+            <MagnifyingGlassIcon aria-hidden size={20} />
+            <Input
+              id="voucher-search"
+              label="Tìm kiếm"
+              maxLength={100}
+              placeholder="Mã hoặc tên chương trình"
+              value={draft.q}
+              onChange={(event) => {
+                setDraft((current) => ({ ...current, q: event.target.value }));
+              }}
+            />
+          </div>
           <Select
             id="voucher-status"
             label="Trạng thái"
             value={draft.status}
             onChange={(event) => {
-              setDraft((current) => ({
-                ...current,
-                status: event.target.value as StatusFilter,
-              }));
+              const nextDraft = {
+                ...draft,
+                status: event.target.value as VoucherStatusFilter,
+              };
+              setDraft(nextDraft);
+              applyDraft(nextDraft);
             }}
           >
             <option value="">Tất cả</option>
@@ -152,10 +199,12 @@ export function VoucherListView() {
             label="Loại ưu đãi"
             value={draft.discountType}
             onChange={(event) => {
-              setDraft((current) => ({
-                ...current,
-                discountType: event.target.value as DiscountFilter,
-              }));
+              const nextDraft = {
+                ...draft,
+                discountType: event.target.value as VoucherDiscountFilter,
+              };
+              setDraft(nextDraft);
+              applyDraft(nextDraft);
             }}
           >
             <option value="">Tất cả</option>
@@ -167,10 +216,12 @@ export function VoucherListView() {
             label="Phạm vi áp dụng"
             value={draft.scopeType}
             onChange={(event) => {
-              setDraft((current) => ({
-                ...current,
-                scopeType: event.target.value as ScopeFilter,
-              }));
+              const nextDraft = {
+                ...draft,
+                scopeType: event.target.value as VoucherScopeFilter,
+              };
+              setDraft(nextDraft);
+              applyDraft(nextDraft);
             }}
           >
             <option value="">Tất cả</option>
@@ -179,9 +230,6 @@ export function VoucherListView() {
             <option value="PRODUCTS">Sản phẩm cụ thể</option>
             <option value="VARIANTS">Biến thể cụ thể</option>
           </Select>
-          <Button size="compact" type="submit" variant="secondary">
-            Áp dụng bộ lọc
-          </Button>
         </form>
 
         <div className={styles.tabs} role="tablist" aria-label="Lọc nhanh theo trạng thái">
@@ -239,7 +287,9 @@ export function VoucherListView() {
 
         <div className={styles.paginationWrap}>
           <BackofficePagination
-            buildHref={(page) => buildVoucherListHref({ ...draftFromQuery(query), page })}
+            buildHref={(page) =>
+              buildVoucherListHref(VOUCHERS_ROOT, { ...voucherDraftFromQuery(query), page })
+            }
             page={pagination.page}
             pageSize={pagination.pageSize}
             totalItems={pagination.totalItems}
@@ -286,62 +336,6 @@ function VoucherBoardCard({ voucher }: Readonly<{ voucher: Voucher }>) {
       </span>
     </Link>
   );
-}
-
-function queryFromSearch(searchParams: URLSearchParams): VoucherQuery {
-  const pageValue = Number(searchParams.get('page'));
-  const status = parseStatus(searchParams.get('status'));
-  const discountType = parseDiscount(searchParams.get('discountType'));
-  const scopeType = parseScope(searchParams.get('scopeType'));
-  const q = searchParams.get('q')?.trim();
-
-  return {
-    page: Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1,
-    pageSize: PAGE_SIZE,
-    ...(q === undefined || q === '' ? {} : { q }),
-    ...(status === '' ? {} : { status }),
-    ...(discountType === '' ? {} : { discountType }),
-    ...(scopeType === '' ? {} : { scopeType }),
-  };
-}
-
-function draftFromQuery(query: VoucherQuery): FilterDraft {
-  return {
-    q: query.q ?? '',
-    status: query.status ?? '',
-    discountType: query.discountType ?? '',
-    scopeType: query.scopeType ?? '',
-  };
-}
-
-function buildVoucherListHref(filters: FilterDraft & { readonly page: number }): string {
-  const params = new URLSearchParams();
-  if (filters.q.trim() !== '') params.set('q', filters.q.trim());
-  if (filters.status !== '') params.set('status', filters.status);
-  if (filters.discountType !== '') params.set('discountType', filters.discountType);
-  if (filters.scopeType !== '') params.set('scopeType', filters.scopeType);
-  if (filters.page > 1) params.set('page', String(filters.page));
-  const query = params.toString();
-  return query === '' ? VOUCHERS_ROOT : `${VOUCHERS_ROOT}?${query}`;
-}
-
-function parseStatus(value: string | null): StatusFilter {
-  return value === 'ACTIVE' || value === 'DRAFT' || value === 'PAUSED' || value === 'ARCHIVED'
-    ? value
-    : '';
-}
-
-function parseDiscount(value: string | null): DiscountFilter {
-  return value === 'PERCENT' || value === 'FIXED' ? value : '';
-}
-
-function parseScope(value: string | null): ScopeFilter {
-  return value === 'ORDER' ||
-    value === 'PRODUCT_TYPE' ||
-    value === 'PRODUCTS' ||
-    value === 'VARIANTS'
-    ? value
-    : '';
 }
 
 function errorMessage(value: unknown, fallback: string): string {
