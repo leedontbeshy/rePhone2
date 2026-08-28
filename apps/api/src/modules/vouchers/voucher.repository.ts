@@ -15,6 +15,22 @@ const voucherInclude = {
 
 export type VoucherRecord = Prisma.VoucherGetPayload<{ include: typeof voucherInclude }>;
 
+const voucherUsageSelect = {
+  id: true,
+  orderId: true,
+  customerId: true,
+  status: true,
+  createdAt: true,
+  consumedAt: true,
+  releasedAt: true,
+  order: { select: { orderNumber: true } },
+  customer: { select: { fullName: true, email: true } },
+} satisfies Prisma.VoucherUsageSelect;
+
+export type VoucherUsageRecord = Prisma.VoucherUsageGetPayload<{
+  select: typeof voucherUsageSelect;
+}>;
+
 @Injectable()
 export class VoucherRepository {
   public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -86,6 +102,7 @@ export class VoucherRepository {
     const [items, totalItems] = await Promise.all([
       this.prisma.voucherUsage.findMany({
         where,
+        select: voucherUsageSelect,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,

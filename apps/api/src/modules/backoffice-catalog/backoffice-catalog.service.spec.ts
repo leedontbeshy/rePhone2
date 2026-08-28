@@ -12,13 +12,40 @@ describe('BackofficeCatalogService', () => {
   it('lists products with stable pagination and maps complete product details safely', async () => {
     const fixture = createFixture();
     fixture.repository.listProducts.mockResolvedValue({
-      items: [product({ variants: undefined, media: undefined })],
+      items: [
+        product({
+          variants: undefined,
+          media: [
+            {
+              id: 'list-media-1',
+              bucket: 'public catalog',
+              objectPath: 'products/product 1/list image.webp',
+              altText: 'List image',
+              sortOrder: 0,
+            },
+          ],
+        }),
+      ],
       totalItems: 21,
     });
     fixture.repository.findProduct.mockResolvedValue(
       product({
         screenSizeInches: '6.7',
-        variants: [variant({ salePrice: null, compareAtPrice: null })],
+        variants: [
+          variant({
+            salePrice: null,
+            compareAtPrice: null,
+            media: [
+              {
+                id: 'variant-media-1',
+                bucket: 'public catalog',
+                objectPath: 'variants/variant 1/side image.webp',
+                altText: 'Side',
+                sortOrder: 1,
+              },
+            ],
+          }),
+        ],
         media: [
           {
             id: 'media-1',
@@ -35,12 +62,34 @@ describe('BackofficeCatalogService', () => {
     const detail = await fixture.service.getProduct('product-1');
 
     expect(list).toMatchObject({
-      items: [{ id: 'product-1', variantCount: 1 }],
+      items: [
+        {
+          id: 'product-1',
+          variantCount: 1,
+          primaryMedia: {
+            id: 'list-media-1',
+            url: 'https://storage.test/storage/v1/object/public/public%20catalog/products/product%201/list%20image.webp',
+          },
+        },
+      ],
       pagination: { page: 2, pageSize: 20, totalItems: 21, totalPages: 2 },
     });
     expect(detail).toMatchObject({
       screenSizeInches: '6.7',
-      variants: [{ salePrice: null, compareAtPrice: null }],
+      variants: [
+        {
+          salePrice: null,
+          compareAtPrice: null,
+          media: [
+            {
+              id: 'variant-media-1',
+              url: 'https://storage.test/storage/v1/object/public/public%20catalog/variants/variant%201/side%20image.webp',
+              altText: 'Side',
+              sortOrder: 1,
+            },
+          ],
+        },
+      ],
       media: [
         {
           url: 'https://storage.test/storage/v1/object/public/public%20catalog/products/product%201/front%20image.webp',
@@ -246,7 +295,7 @@ describe('BackofficeCatalogService', () => {
 
     const success = createFixture();
     success.repository.findProduct.mockResolvedValue(product());
-    success.transaction.product.update.mockResolvedValue(product({ status: 'ARCHIVED' }));
+    success.repository.updateProduct.mockResolvedValue(product({ status: 'ARCHIVED' }));
     await expect(
       success.service.archiveProduct('product-1', { reason: 'No longer sold' }, ACTOR),
     ).resolves.toMatchObject({ status: 'ARCHIVED' });
@@ -455,7 +504,7 @@ describe('BackofficeCatalogService', () => {
     const success = createFixture();
     success.repository.findVariant.mockResolvedValue(variant({ warrantyPolicyId: 'policy-1' }));
     success.warrantyPolicies.findUsableById.mockResolvedValue({ id: 'policy-1' });
-    success.transaction.productVariant.update.mockResolvedValue(variant({ status: 'ACTIVE' }));
+    success.repository.updateVariantStatus.mockResolvedValue(variant({ status: 'ACTIVE' }));
     await expect(success.service.activateVariant('variant-1', ACTOR)).resolves.toMatchObject({
       status: 'ACTIVE',
     });
@@ -476,7 +525,7 @@ describe('BackofficeCatalogService', () => {
 
     const success = createFixture();
     success.repository.findVariant.mockResolvedValue(variant());
-    success.transaction.productVariant.update.mockResolvedValue(variant({ status: 'ARCHIVED' }));
+    success.repository.updateVariantStatus.mockResolvedValue(variant({ status: 'ARCHIVED' }));
     await expect(
       success.service.archiveVariant('variant-1', { reason: 'Retired SKU' }, ACTOR),
     ).resolves.toMatchObject({ status: 'ARCHIVED' });
@@ -536,6 +585,7 @@ function createFixture() {
     findVariant: vi.fn(),
     createVariant: vi.fn(),
     updateVariant: vi.fn(),
+    updateVariantStatus: vi.fn(),
   };
   const transactions = {
     run: vi.fn((_name: string, work: (client: typeof transaction) => unknown) => work(transaction)),
@@ -610,6 +660,7 @@ function variant(overrides: Record<string, unknown> = {}) {
     accessoryAttributes: null,
     warrantyPolicyId: null,
     status: 'DRAFT',
+    media: [],
     createdAt: new Date('2026-08-01T00:00:00.000Z'),
     updatedAt: new Date('2026-08-01T00:00:00.000Z'),
     product: { status: 'ACTIVE', type: 'IPHONE', warrantyPolicyId: null },

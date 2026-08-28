@@ -3080,6 +3080,7 @@ export interface components {
             id: string;
             media: components["schemas"]["BackofficeMediaSummaryDto"][];
             name: string;
+            primaryMedia: components["schemas"]["BackofficeMediaSummaryDto"] | null;
             ramGb?: number | null;
             releaseYear?: number | null;
             screenSizeInches?: string | null;
@@ -3104,6 +3105,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            primaryMedia: components["schemas"]["BackofficeMediaSummaryDto"] | null;
             releaseYear?: number | null;
             slug: string;
             /** @enum {string} */
@@ -3159,6 +3161,7 @@ export interface components {
             id: string;
             /** @enum {string} */
             inventoryMode: "SERIALIZED" | "QUANTITY";
+            media: components["schemas"]["BackofficeMediaSummaryDto"][];
             /** Format: uuid */
             productId: string;
             salePrice?: string | null;
@@ -3190,7 +3193,7 @@ export interface components {
             minimumOrderAmount: string;
             name: string;
             perCustomerLimit?: number | null;
-            scopeConfig?: Record<string, never> | null;
+            scopeConfig?: (components["schemas"]["VoucherProductTypeScopeConfigDto"] | components["schemas"]["VoucherProductsScopeConfigDto"] | components["schemas"]["VoucherVariantsScopeConfigDto"]) | null;
             /** @enum {string} */
             scopeType: "ORDER" | "PRODUCT_TYPE" | "PRODUCTS" | "VARIANTS";
             /** Format: date-time */
@@ -3543,7 +3546,8 @@ export interface components {
             minimumOrderAmount: string;
             name: string;
             perCustomerLimit?: number | null;
-            scopeConfig?: Record<string, never> | null;
+            /** @description Null for ORDER; otherwise the object shape must match scopeType. The service validates this relationship strictly. */
+            scopeConfig?: (components["schemas"]["VoucherProductTypeScopeConfigDto"] | components["schemas"]["VoucherProductsScopeConfigDto"] | components["schemas"]["VoucherVariantsScopeConfigDto"]) | null;
             /** @enum {string} */
             scopeType: "ORDER" | "PRODUCT_TYPE" | "PRODUCTS" | "VARIANTS";
             /** Format: date-time */
@@ -4707,8 +4711,7 @@ export interface components {
             warrantyDaysOverride?: number;
         };
         UpdateProductDto: {
-            /** @default Apple */
-            brand: string;
+            brand?: string;
             chipset?: string;
             description?: string | null;
             name?: string;
@@ -4770,7 +4773,8 @@ export interface components {
             minimumOrderAmount?: string;
             name?: string;
             perCustomerLimit?: number | null;
-            scopeConfig?: Record<string, never> | null;
+            /** @description Null for ORDER; otherwise the object shape must match scopeType. The service validates this relationship strictly. */
+            scopeConfig?: (components["schemas"]["VoucherProductTypeScopeConfigDto"] | components["schemas"]["VoucherProductsScopeConfigDto"] | components["schemas"]["VoucherVariantsScopeConfigDto"]) | null;
             /** @enum {string} */
             scopeType?: "ORDER" | "PRODUCT_TYPE" | "PRODUCTS" | "VARIANTS";
             /** Format: date-time */
@@ -4869,6 +4873,13 @@ export interface components {
         VoucherListMetaDto: {
             pagination: components["schemas"]["PaginationDto"];
         };
+        VoucherProductsScopeConfigDto: {
+            productIds: string[];
+        };
+        VoucherProductTypeScopeConfigDto: {
+            /** @enum {string} */
+            productType: "IPHONE" | "ACCESSORY";
+        };
         VoucherReasonDto: {
             reason: string;
         };
@@ -4877,17 +4888,24 @@ export interface components {
             released: number;
             reserved: number;
         };
+        VoucherUsageCustomerSummaryDto: {
+            /** Format: email */
+            email: string;
+            name: string;
+        };
         VoucherUsageDto: {
             /** Format: date-time */
             consumedAt?: string | null;
             /** Format: date-time */
             createdAt: string;
+            customer: components["schemas"]["VoucherUsageCustomerSummaryDto"] | null;
             /** Format: uuid */
             customerId?: string | null;
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             orderId: string;
+            orderNumber: string;
             /** Format: date-time */
             releasedAt?: string | null;
             /** @enum {string} */
@@ -4896,6 +4914,9 @@ export interface components {
         VoucherUsageListResponse: {
             data: components["schemas"]["VoucherUsageDto"][];
             meta: components["schemas"]["VoucherListMetaDto"];
+        };
+        VoucherVariantsScopeConfigDto: {
+            variantIds: string[];
         };
         WarrantyActorSummaryDto: {
             fullName: string;
@@ -5633,7 +5654,7 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                 };
             };
         };
@@ -9944,7 +9965,7 @@ export interface operations {
                 "multipart/form-data": {
                     altText?: string;
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                     /** @default 0 */
                     sortOrder?: number;
                 };
@@ -12907,7 +12928,7 @@ export interface operations {
                 "multipart/form-data": {
                     altText?: string;
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                     /** @default 0 */
                     sortOrder?: number;
                 };
@@ -13466,7 +13487,7 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                     note: string;
                 };
             };
@@ -14177,7 +14198,7 @@ export interface operations {
                 "multipart/form-data": {
                     expectedVersion: number;
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                 };
             };
         };
@@ -15474,7 +15495,7 @@ export interface operations {
                 "multipart/form-data": {
                     altText?: string;
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                     /** @default 0 */
                     sortOrder?: number;
                 };
@@ -17781,7 +17802,7 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     /** Format: binary */
-                    file: string;
+                    file: Blob;
                 };
             };
         };

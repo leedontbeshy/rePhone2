@@ -13,6 +13,7 @@ import type {
   UpdateVoucherDto,
   VoucherUsageListQueryDto,
 } from './voucher.dto.js';
+import type { VoucherScopeConfigDto } from './voucher-scope.dto.js';
 import { parseVoucherScope, type VoucherScope } from './voucher-policy.js';
 import type {
   BackofficeVoucherDto,
@@ -211,7 +212,12 @@ export class VoucherService {
       result.items.map((usage) => ({
         id: usage.id,
         orderId: usage.orderId,
+        orderNumber: usage.order.orderNumber,
         customerId: usage.customerId,
+        customer:
+          usage.customer === null
+            ? null
+            : { name: usage.customer.fullName, email: usage.customer.email },
         status: usage.status,
         createdAt: usage.createdAt,
         consumedAt: usage.consumedAt,
@@ -369,9 +375,11 @@ function updateData(input: UpdateVoucherDto): Prisma.VoucherUpdateInput {
 }
 
 function jsonInput(
-  value: Record<string, unknown> | null | undefined,
+  value: VoucherScopeConfigDto | null | undefined,
 ): Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput {
-  return value === null || value === undefined ? Prisma.DbNull : (value as Prisma.InputJsonObject);
+  return value === null || value === undefined
+    ? Prisma.DbNull
+    : (value as unknown as Prisma.InputJsonObject);
 }
 
 function quotaExhausted(voucher: VoucherRecord): boolean {
@@ -413,7 +421,7 @@ function toBackofficeVoucher(voucher: VoucherRecord): BackofficeVoucherDto {
     perCustomerLimit: voucher.perCustomerLimit,
     visibility: voucher.visibility,
     scopeType: voucher.scopeType,
-    scopeConfig: voucher.scopeConfig as Record<string, unknown> | null,
+    scopeConfig: voucher.scopeConfig as VoucherScopeConfigDto | null,
     status: voucher.status,
     usageCounts: counts,
     createdAt: voucher.createdAt,

@@ -7,6 +7,10 @@ import type {
   VoucherVisibility,
 } from '../../generated/prisma/enums.js';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
+import {
+  type VoucherScopeConfigDto,
+  voucherScopeConfigOpenApiSchemas,
+} from './voucher-scope.dto.js';
 
 export class PublicVoucherDto {
   @ApiProperty({ type: String }) public code!: string;
@@ -55,8 +59,12 @@ export class BackofficeVoucherDto {
   @ApiProperty({ enum: ['PUBLIC', 'ACCOUNT_ONLY'] }) public visibility!: VoucherVisibility;
   @ApiProperty({ enum: ['ORDER', 'PRODUCT_TYPE', 'PRODUCTS', 'VARIANTS'] })
   public scopeType!: VoucherScopeType;
-  @ApiPropertyOptional({ type: Object, nullable: true })
-  public scopeConfig!: Record<string, unknown> | null;
+  @ApiPropertyOptional({
+    type: Object,
+    nullable: true,
+    oneOf: voucherScopeConfigOpenApiSchemas(),
+  })
+  public scopeConfig!: VoucherScopeConfigDto | null;
   @ApiProperty({ enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'] })
   public status!: VoucherStatus;
   @ApiProperty({ type: () => VoucherUsageCountsDto }) public usageCounts!: VoucherUsageCountsDto;
@@ -76,8 +84,11 @@ export class BackofficeVoucherListResponse {
 export class VoucherUsageDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String, format: 'uuid' }) public orderId!: string;
+  @ApiProperty({ type: String }) public orderNumber!: string;
   @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   public customerId!: string | null;
+  @ApiProperty({ type: () => VoucherUsageCustomerSummaryDto, nullable: true })
+  public customer!: VoucherUsageCustomerSummaryDto | null;
   @ApiProperty({ enum: ['RESERVED', 'CONSUMED', 'RELEASED'] })
   public status!: VoucherUsageStatus;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
@@ -85,6 +96,11 @@ export class VoucherUsageDto {
   public consumedAt!: Date | null;
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   public releasedAt!: Date | null;
+}
+
+export class VoucherUsageCustomerSummaryDto {
+  @ApiProperty({ type: String }) public name!: string;
+  @ApiProperty({ type: String, format: 'email' }) public email!: string;
 }
 
 export class VoucherUsageListResponse {

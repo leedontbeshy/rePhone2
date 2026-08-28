@@ -28,6 +28,8 @@ export class BackofficeVariantDto {
   @ApiPropertyOptional({ type: String, format: 'uuid', nullable: true })
   public warrantyPolicyId!: string | null;
   @ApiProperty({ enum: CATALOG_STATUSES }) public status!: CatalogStatus;
+  @ApiProperty({ type: () => [BackofficeMediaSummaryDto] })
+  public media!: BackofficeMediaSummaryDto[];
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
 }
@@ -41,6 +43,8 @@ export class BackofficeProductListItemDto {
   @ApiProperty({ enum: CATALOG_STATUSES }) public status!: CatalogStatus;
   @ApiPropertyOptional({ type: Number, nullable: true }) public releaseYear!: number | null;
   @ApiProperty({ type: Number }) public variantCount!: number;
+  @ApiProperty({ type: () => BackofficeMediaSummaryDto, nullable: true })
+  public primaryMedia!: BackofficeMediaSummaryDto | null;
   @ApiProperty({ type: String, format: 'date-time' }) public createdAt!: Date;
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
 }

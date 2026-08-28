@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { paths } from './schema.js';
 import { createApiClient } from './client.js';
+
+type ProductMediaUploadBody =
+  paths['/api/v1/backoffice/products/{id}/media']['post']['requestBody']['content']['multipart/form-data'];
 
 const accountPayload = {
   data: {
@@ -14,6 +18,14 @@ const accountPayload = {
 };
 
 describe('createApiClient', () => {
+  it('types product media uploads as binary data', () => {
+    const body: ProductMediaUploadBody = {
+      file: new Blob(['product image'], { type: 'image/webp' }),
+    };
+
+    expect(body.file).toBeInstanceOf(Blob);
+  });
+
   it('coordinates one refresh and replays concurrent requests once', async () => {
     let accessToken = 'expired-token';
     const fetchMock = vi.fn<typeof globalThis.fetch>((input, init) => {

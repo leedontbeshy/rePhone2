@@ -10,10 +10,18 @@ import type {
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
+const mediaOrderBy = [{ sortOrder: 'asc' as const }, { id: 'asc' as const }];
+const variantMediaInclude = {
+  media: { orderBy: mediaOrderBy },
+} satisfies Prisma.ProductVariantInclude;
+
 const productInclude = {
   _count: { select: { variants: true } },
-  media: { orderBy: [{ sortOrder: 'asc' as const }, { id: 'asc' as const }] },
-  variants: { orderBy: [{ displayName: 'asc' as const }, { id: 'asc' as const }] },
+  media: { orderBy: mediaOrderBy },
+  variants: {
+    orderBy: [{ displayName: 'asc' as const }, { id: 'asc' as const }],
+    include: variantMediaInclude,
+  },
 } satisfies Prisma.ProductInclude;
 
 export type BackofficeProductRecord = Prisma.ProductGetPayload<{
@@ -55,7 +63,10 @@ export class BackofficeCatalogRepository {
         orderBy: [orderBy, { id: 'asc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
-        include: { _count: { select: { variants: true } } },
+        include: {
+          _count: { select: { variants: true } },
+          media: { orderBy: mediaOrderBy, take: 1 },
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -104,6 +115,7 @@ export class BackofficeCatalogRepository {
       include: {
         product: true,
         _count: { select: { stockLevels: true, stockMovements: true, orderItems: true } },
+        ...variantMediaInclude,
       },
     });
   }
@@ -134,6 +146,7 @@ export class BackofficeCatalogRepository {
           ? {}
           : { warrantyPolicyId: input.warrantyPolicyId }),
       },
+      include: variantMediaInclude,
     });
   }
 
@@ -157,6 +170,19 @@ export class BackofficeCatalogRepository {
           ? {}
           : { warrantyPolicyId: input.warrantyPolicyId }),
       },
+      include: variantMediaInclude,
+    });
+  }
+
+  public updateVariantStatus(
+    id: string,
+    input: { status: 'ACTIVE' | 'ARCHIVED'; archivedAt?: Date },
+    client: DbClient,
+  ) {
+    return client.productVariant.update({
+      where: { id },
+      data: input,
+      include: variantMediaInclude,
     });
   }
 }

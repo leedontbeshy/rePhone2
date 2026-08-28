@@ -12,7 +12,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 
 const PRODUCT_TYPES = ['IPHONE', 'ACCESSORY'] as const;
 const CATALOG_STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'] as const;
@@ -123,7 +123,14 @@ export class CreateProductDto {
   public seoDescription?: string;
 }
 
-export class UpdateProductDto extends PartialType(CreateProductDto) {}
+export class UpdateProductDto extends PartialType(OmitType(CreateProductDto, ['brand'] as const)) {
+  @ApiPropertyOptional({ type: String, maxLength: 255 })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @Length(1, 255)
+  public brand?: string;
+}
 
 export class BackofficeProductListQueryDto {
   @ApiPropertyOptional({ type: String, maxLength: 100 })

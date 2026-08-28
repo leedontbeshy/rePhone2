@@ -10,6 +10,20 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+interface SchemaProperty {
+  $ref?: string;
+  allOf?: Array<{ $ref?: string }>;
+  default?: unknown;
+  items?: { $ref?: string };
+  nullable?: boolean;
+  type?: string;
+}
+
+interface Schema {
+  properties?: Record<string, SchemaProperty>;
+  required?: string[];
+}
+
 const SLICE_04_OPERATION_IDS = new Set([
   'activateBackofficeVariant',
   'adjustBackofficeStock',
@@ -56,7 +70,10 @@ const SLICE_04_OPERATION_IDS = new Set([
 describe('Slice 04 OpenAPI contract', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
-  ) as { paths: Record<string, Record<string, Operation>> };
+  ) as {
+    paths: Record<string, Record<string, Operation>>;
+    components: { schemas: Record<string, Schema> };
+  };
   const operations = Object.entries(document.paths).flatMap(([path, pathItem]) =>
     Object.entries(pathItem)
       .filter(([method]) => ['get', 'post', 'patch', 'delete'].includes(method))
@@ -101,5 +118,26 @@ describe('Slice 04 OpenAPI contract', () => {
       expect(operation.requestBody?.content).toHaveProperty('multipart/form-data');
       expect(operation.responses).toMatchObject({ '413': {}, '415': {}, '503': {} });
     }
+  });
+
+  it('projects reloadable variant media and keeps update brand optional', () => {
+    const productListItem = document.components.schemas['BackofficeProductListItemDto'];
+    expect(productListItem?.properties?.['primaryMedia']).toMatchObject({
+      nullable: true,
+      allOf: [{ $ref: '#/components/schemas/BackofficeMediaSummaryDto' }],
+    });
+    expect(productListItem?.required).toContain('primaryMedia');
+
+    const variant = document.components.schemas['BackofficeVariantDto'];
+    expect(variant?.properties?.['media']).toMatchObject({
+      type: 'array',
+      items: { $ref: '#/components/schemas/BackofficeMediaSummaryDto' },
+    });
+    expect(variant?.required).toContain('media');
+
+    const updateProduct = document.components.schemas['UpdateProductDto'];
+    expect(updateProduct?.properties?.['brand']).toBeDefined();
+    expect(updateProduct?.properties?.['brand']).not.toHaveProperty('default');
+    expect(updateProduct?.required ?? []).not.toContain('brand');
   });
 });

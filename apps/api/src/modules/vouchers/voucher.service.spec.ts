@@ -110,14 +110,27 @@ describe('VoucherService', () => {
         {
           id: 'usage-1',
           orderId: 'order-1',
-          customerId: null,
+          order: { orderNumber: 'RPH-20260828-ABC123' },
+          customerId: 'customer-1',
+          customer: { fullName: 'Khách hàng Demo', email: 'customer@rephone.local' },
           status: 'RESERVED',
           createdAt: new Date('2026-08-01T00:00:00.000Z'),
           consumedAt: null,
           releasedAt: null,
         },
+        {
+          id: 'usage-guest',
+          orderId: 'order-guest',
+          order: { orderNumber: 'RPH-20260828-GUEST1' },
+          customerId: null,
+          customer: null,
+          status: 'RELEASED',
+          createdAt: new Date('2026-07-31T00:00:00.000Z'),
+          consumedAt: null,
+          releasedAt: new Date('2026-08-02T00:00:00.000Z'),
+        },
       ],
-      totalItems: 1,
+      totalItems: 2,
     });
 
     const list = await fixture.service.listBackoffice({ page: 2, pageSize: 20 });
@@ -131,8 +144,21 @@ describe('VoucherService', () => {
       usageCounts: { reserved: 1, consumed: 1, released: 1 },
     });
     expect(usages).toMatchObject({
-      items: [{ id: 'usage-1', customerId: null, status: 'RESERVED' }],
-      pagination: { totalItems: 1, totalPages: 1 },
+      items: [
+        {
+          id: 'usage-1',
+          orderNumber: 'RPH-20260828-ABC123',
+          customer: { name: 'Khách hàng Demo', email: 'customer@rephone.local' },
+          status: 'RESERVED',
+        },
+        {
+          id: 'usage-guest',
+          orderNumber: 'RPH-20260828-GUEST1',
+          customer: null,
+          status: 'RELEASED',
+        },
+      ],
+      pagination: { totalItems: 2, totalPages: 1 },
     });
   });
 

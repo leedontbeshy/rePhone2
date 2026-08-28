@@ -14,7 +14,15 @@ interface Operation {
 
 interface OpenApiSchema {
   $ref?: string;
+  allOf?: OpenApiSchema[];
+  enum?: unknown[];
+  format?: string;
+  items?: OpenApiSchema;
+  nullable?: boolean;
+  oneOf?: OpenApiSchema[];
   properties?: Record<string, OpenApiSchema>;
+  required?: string[];
+  type?: string;
 }
 
 const EXPECTED_OPERATION_IDS = [
@@ -125,5 +133,44 @@ describe('Slice 05 OpenAPI contract', () => {
     expect(schemas?.['VoucherListMetaDto']?.properties?.['pagination']?.$ref).toBe(
       '#/components/schemas/PaginationDto',
     );
+  });
+
+  it('publishes typed voucher scopes and customer-friendly usage references', () => {
+    const schemas = document.components?.schemas;
+    const expectedScopeRefs = [
+      '#/components/schemas/VoucherProductTypeScopeConfigDto',
+      '#/components/schemas/VoucherProductsScopeConfigDto',
+      '#/components/schemas/VoucherVariantsScopeConfigDto',
+    ];
+
+    for (const schemaName of ['CreateVoucherDto', 'UpdateVoucherDto', 'BackofficeVoucherDto']) {
+      const scopeConfig = schemas?.[schemaName]?.properties?.['scopeConfig'];
+      expect(scopeConfig?.nullable).toBe(true);
+      expect(scopeConfig?.oneOf?.map(({ $ref }) => $ref)).toEqual(expectedScopeRefs);
+    }
+
+    expect(
+      schemas?.['VoucherProductTypeScopeConfigDto']?.properties?.['productType']?.enum,
+    ).toEqual(['IPHONE', 'ACCESSORY']);
+    expect(schemas?.['VoucherProductsScopeConfigDto']?.properties?.['productIds']).toMatchObject({
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+    });
+    expect(schemas?.['VoucherVariantsScopeConfigDto']?.properties?.['variantIds']).toMatchObject({
+      type: 'array',
+      items: { type: 'string', format: 'uuid' },
+    });
+
+    const usage = schemas?.['VoucherUsageDto'];
+    expect(usage?.required).toEqual(expect.arrayContaining(['orderNumber', 'customer']));
+    expect(usage?.properties?.['orderNumber']).toMatchObject({ type: 'string' });
+    expect(usage?.properties?.['customer']?.nullable).toBe(true);
+    expect(usage?.properties?.['customer']?.allOf?.map(({ $ref }) => $ref)).toEqual([
+      '#/components/schemas/VoucherUsageCustomerSummaryDto',
+    ]);
+    expect(schemas?.['VoucherUsageCustomerSummaryDto']?.properties).toMatchObject({
+      name: { type: 'string' },
+      email: { type: 'string', format: 'email' },
+    });
   });
 });

@@ -204,13 +204,26 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
     const productMedia = await uploadMedia(server, employee, `products/${productId}/media`);
     const variantMedia = await uploadMedia(server, employee, `variants/${variantId}/media`);
     const mediaId = stringProperty(successData(productMedia), 'id');
+    const variantMediaId = stringProperty(successData(variantMedia), 'id');
+    const reloaded = await request(server)
+      .get(`/api/v1/backoffice/products/${productId}`)
+      .set(bearer(employee))
+      .expect(200);
+    expect(successData(reloaded)).toMatchObject({
+      variants: [
+        expect.objectContaining({
+          id: variantId,
+          media: [expect.objectContaining({ id: variantMediaId, sortOrder: 0 })],
+        }),
+      ],
+    });
     await request(server)
       .patch(`/api/v1/backoffice/product-media/${mediaId}`)
       .set(bearer(employee))
       .send({ altText: 'Ảnh catalog đã sửa', sortOrder: 2 })
       .expect(200);
     await request(server)
-      .delete(`/api/v1/backoffice/product-media/${stringProperty(successData(variantMedia), 'id')}`)
+      .delete(`/api/v1/backoffice/product-media/${variantMediaId}`)
       .set(bearer(employee))
       .expect(204);
 
