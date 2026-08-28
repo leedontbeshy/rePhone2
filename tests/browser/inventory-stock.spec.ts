@@ -97,6 +97,13 @@ test.describe('FE-06 inventory and stock workspace', () => {
   test('filters the unit queue without reloading and blocks raw identifiers from URLs and GETs', async ({
     page,
   }) => {
+    const browserErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') browserErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => {
+      browserErrors.push(error.message);
+    });
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/units', { waitUntil: 'domcontentloaded' });
@@ -132,6 +139,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
         () => (window as Window & { __fe06NavigationMarker?: string }).__fe06NavigationMarker,
       ),
     ).toBe(marker);
+    expect(browserErrors).toEqual([]);
   });
 
   test('edits all 18 inspection items, saves a draft, then completes it', async ({ page }) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import {
@@ -30,6 +30,7 @@ export default function InventoryUnitsPage() {
   const canLoad =
     status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN');
   const [query, setQuery] = useState<InventoryUnitQueryState>(() => currentQuery());
+  const queryRef = useRef(query);
   const [units, setUnits] = useState<readonly InventoryUnitListRecord[]>([]);
   const [locations, setLocations] = useState<readonly InventoryLocation[]>([]);
   const [pagination, setPagination] = useState({
@@ -44,7 +45,9 @@ export default function InventoryUnitsPage() {
 
   useEffect(() => {
     const syncFromBrowser = () => {
-      setQuery(currentQuery());
+      const next = currentQuery();
+      queryRef.current = next;
+      setQuery(next);
     };
     syncFromBrowser();
     window.addEventListener('popstate', syncFromBrowser);
@@ -107,13 +110,12 @@ export default function InventoryUnitsPage() {
 
   const updateQuery = useCallback(
     (overrides: InventoryUnitQueryOverrides, options: { history?: 'push' | 'replace' } = {}) => {
-      setQuery((current) => {
-        const next = mergeQuery(current, overrides);
-        const href = buildInventoryUnitHref(next);
-        if (options.history === 'replace') window.history.replaceState(null, '', href);
-        else window.history.pushState(null, '', href);
-        return next;
-      });
+      const next = mergeQuery(queryRef.current, overrides);
+      queryRef.current = next;
+      setQuery(next);
+      const href = buildInventoryUnitHref(next);
+      if (options.history === 'replace') window.history.replaceState(null, '', href);
+      else window.history.pushState(null, '', href);
     },
     [],
   );
