@@ -149,7 +149,7 @@ describe('payment api adapter', () => {
     };
 
     await expect(getPaymentEvidenceUrl(client, PUBLIC_PAYMENT.id)).rejects.toThrow(
-      'Phản hồi signed URL không hợp lệ.',
+      'Không thể mở minh chứng lúc này.',
     );
     expect(
       paymentError(

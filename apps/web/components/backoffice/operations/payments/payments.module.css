@@ -1,0 +1,284 @@
+.queueMeta,
+.primaryCell,
+.secondaryCell,
+.statusCell {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.queueMeta {
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.primaryCell,
+.secondaryCell,
+.statusCell {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.primaryCell strong,
+.secondaryCell strong {
+  color: var(--color-ink);
+}
+
+.primaryCell small,
+.secondaryCell small,
+.statusCell small {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.rowAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.rowAction:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.rowAction:focus-visible {
+  border-radius: var(--radius-control);
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+.queueSkeleton {
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.queueSkeleton > div {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-bottom: var(--border-default);
+}
+
+.queueSkeleton > div:last-child {
+  border-bottom: 0;
+}
+
+.detailGrid,
+.contactGrid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.spec {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+}
+
+.spec dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.spec dd {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.evidenceCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-brand-soft);
+}
+
+.evidenceCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.evidenceCopy strong {
+  color: var(--color-ink);
+}
+
+.evidenceCopy span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.orderItems {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.orderItems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-bottom: var(--border-default);
+}
+
+.orderItems li:last-child {
+  border-bottom: 0;
+}
+
+.itemCopy,
+.itemPrice {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.itemCopy span,
+.itemPrice span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.itemPrice {
+  flex: 0 0 auto;
+  text-align: end;
+}
+
+.railComplete {
+  display: grid;
+  gap: var(--space-3);
+  color: var(--color-muted);
+}
+
+.railComplete p {
+  margin: 0;
+}
+
+.dialog {
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-floating);
+}
+
+.dialog::backdrop {
+  background: rgb(8 20 34 / 48%);
+}
+
+.dialogHeader,
+.dialogBody,
+.dialogActions {
+  padding: var(--space-5);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: var(--border-default);
+}
+
+.dialogHeader h2,
+.dialogHeader p,
+.dialogBody p {
+  margin: 0;
+}
+
+.dialogHeader p {
+  margin-top: var(--space-1);
+  color: var(--color-muted);
+}
+
+.dialogBody {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  border-top: var(--border-default);
+}
+
+.detailSkeleton {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(18rem, 0.78fr);
+  gap: var(--space-6);
+}
+
+.detailSkeleton > div {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.skeletonPanel {
+  display: grid;
+  min-height: 12rem;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+@media (max-width: 63.999rem) {
+  .detailSkeleton {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .queueSkeleton > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detailGrid,
+  .contactGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .evidenceCard,
+  .orderItems li,
+  .dialogHeader,
+  .dialogActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .evidenceCard > button,
+  .dialogActions > button {
+    width: 100%;
+  }
+
+  .itemPrice {
+    text-align: start;
+  }
+}
