@@ -62,7 +62,7 @@
 
 .pageHeading h1 {
   color: var(--color-ink);
-  font-size: var(--font-size-page-title);
+  font-size: clamp(var(--font-size-page-title), 2vw, 1.875rem);
   line-height: var(--line-height-page-title);
   letter-spacing: -0.035em;
 }
@@ -111,6 +111,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .statusAxis {
@@ -175,12 +176,17 @@
   inset-block-start: calc(var(--backoffice-topbar-height, 76px) + var(--space-6));
 }
 
+.detailRail .panel {
+  box-shadow: var(--shadow-floating);
+}
+
 .panel {
   min-width: 0;
   padding: var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .panelHeader {
@@ -189,7 +195,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-default);
 }
 
 .panelHeader h2,

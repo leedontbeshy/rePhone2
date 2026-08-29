@@ -76,6 +76,7 @@
   --border-strong: 1px solid var(--color-border-strong);
   --shadow-raised: 0 1px 2px rgb(12 23 40 / 6%);
   --shadow-hover: 0 8px 24px rgb(12 23 40 / 8%);
+  --shadow-floating: 0 10px 30px rgb(12 23 40 / 10%);
   --shadow-overlay: 0 20px 48px rgb(12 23 40 / 14%);
 
   /* Motion */

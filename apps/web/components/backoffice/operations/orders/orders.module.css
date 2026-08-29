@@ -43,6 +43,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .filterGrid,
@@ -141,6 +142,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .queue[data-updating='true'] .orderRows {
@@ -162,7 +164,7 @@
   padding: var(--space-3) var(--space-4);
   border-block-end: var(--border-default);
   color: var(--color-muted);
-  background: var(--color-surface-subtle);
+  background: color-mix(in srgb, var(--color-brand-soft) 45%, var(--color-surface));
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
@@ -241,6 +243,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .emptyState h2,
