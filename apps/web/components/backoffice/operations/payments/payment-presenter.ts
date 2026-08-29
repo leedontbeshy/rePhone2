@@ -88,7 +88,8 @@ export function paymentDateTime(value: string | null | undefined): string {
 }
 
 export function paymentQueryFromSearch(search: URLSearchParams): PaymentListQuery {
-  const status = paymentStatus(search.get('status'));
+  const rawStatus = search.get('status');
+  const status = paymentStatus(rawStatus);
   const purpose = paymentPurpose(search.get('purpose'));
   const method = paymentMethod(search.get('method'));
   const reviewOverdue = search.get('reviewOverdue');
@@ -96,7 +97,7 @@ export function paymentQueryFromSearch(search: URLSearchParams): PaymentListQuer
   const submittedFrom = validDate(search.get('submittedFrom'));
   const submittedTo = validDate(search.get('submittedTo'));
   return {
-    status: status ?? 'UNDER_REVIEW',
+    status: rawStatus === 'all' ? '' : (status ?? 'UNDER_REVIEW'),
     purpose: purpose ?? '',
     method: method ?? '',
     ...(reviewOverdue === 'true' || reviewOverdue === 'false'
@@ -114,7 +115,7 @@ export function paymentQueryFromSearch(search: URLSearchParams): PaymentListQuer
 
 export function paymentQueryHref(query: PaymentListQuery, page = query.page): string {
   const search = new URLSearchParams();
-  if (query.status) search.set('status', query.status);
+  search.set('status', query.status || 'all');
   if (query.purpose) search.set('purpose', query.purpose);
   if (query.method) search.set('method', query.method);
   if (query.reviewOverdue !== undefined) search.set('reviewOverdue', String(query.reviewOverdue));

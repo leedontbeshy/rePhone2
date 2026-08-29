@@ -3,7 +3,14 @@
 import { FileArrowUpIcon, XIcon } from '@phosphor-icons/react/ssr';
 import NextLink from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type SyntheticEvent,
+} from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   OperationsActionRail,
@@ -124,7 +131,7 @@ export function PaymentDetailView() {
     }
   }
 
-  async function submitDecision(event: FormEvent<HTMLFormElement>) {
+  async function submitDecision(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (decision === null || detail === null) return;
     const validation = validateDecision(
@@ -399,7 +406,9 @@ export function PaymentRecord({
                 canVerify ? (
                   <Button
                     disabled={busy !== null}
-                    onClick={(event) => onOpenDecision('verify', event.currentTarget)}
+                    onClick={(event) => {
+                      onOpenDecision('verify', event.currentTarget);
+                    }}
                   >
                     Xác nhận thanh toán
                   </Button>
@@ -407,7 +416,9 @@ export function PaymentRecord({
                   <Button
                     disabled={busy !== null}
                     variant="destructive"
-                    onClick={(event) => onOpenDecision('reject', event.currentTarget)}
+                    onClick={(event) => {
+                      onOpenDecision('reject', event.currentTarget);
+                    }}
                   >
                     Từ chối minh chứng
                   </Button>
@@ -419,7 +430,9 @@ export function PaymentRecord({
                     <Button
                       disabled={busy !== null}
                       variant="secondary"
-                      onClick={(event) => onOpenDecision('reject', event.currentTarget)}
+                      onClick={(event) => {
+                        onOpenDecision('reject', event.currentTarget);
+                      }}
                     >
                       Từ chối minh chứng
                     </Button>
@@ -483,7 +496,7 @@ function PaymentDecisionDialog({
   onClose: () => void;
   onReceivedAmount: (value: string) => void;
   onRejectReason: (value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => Promise<void>;
   onVerifyNote: (value: string) => void;
 }>) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -500,7 +513,11 @@ function PaymentDecisionDialog({
         if (!busy) onClose();
       }}
     >
-      <form onSubmit={onSubmit}>
+      <form
+        onSubmit={(event) => {
+          void onSubmit(event);
+        }}
+      >
         <header className={styles.dialogHeader}>
           <div>
             <h2 id="payment-decision-title">
@@ -532,7 +549,9 @@ function PaymentDecisionDialog({
                 maxLength={15}
                 required
                 value={receivedAmount}
-                onChange={(event) => onReceivedAmount(event.target.value.replace(/\D/g, ''))}
+                onChange={(event) => {
+                  onReceivedAmount(event.target.value.replace(/\D/g, ''));
+                }}
               />
               <Textarea
                 id="payment-review-note"
@@ -540,7 +559,9 @@ function PaymentDecisionDialog({
                 maxLength={500}
                 hint="Bắt buộc khi số tiền khác dự kiến."
                 value={verifyNote}
-                onChange={(event) => onVerifyNote(event.target.value)}
+                onChange={(event) => {
+                  onVerifyNote(event.target.value);
+                }}
               />
             </>
           ) : (
@@ -552,7 +573,9 @@ function PaymentDecisionDialog({
               maxLength={500}
               required
               value={rejectReason}
-              onChange={(event) => onRejectReason(event.target.value)}
+              onChange={(event) => {
+                onRejectReason(event.target.value);
+              }}
             />
           )}
         </div>

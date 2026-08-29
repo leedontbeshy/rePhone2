@@ -47,5 +47,12 @@ describe('FE-07 payment presenter', () => {
     expect(paymentQueryHref({ ...PAYMENT_DEFAULT_QUERY, page: 4 }, 2)).toBe(
       '/backoffice/payments?status=UNDER_REVIEW&page=2',
     );
+    expect(
+      paymentQueryFromSearch(
+        new URLSearchParams(
+          paymentQueryHref({ ...PAYMENT_DEFAULT_QUERY, status: '' }).split('?')[1],
+        ),
+      ),
+    ).toMatchObject({ status: '' });
   });
 });

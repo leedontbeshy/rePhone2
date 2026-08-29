@@ -3,7 +3,7 @@
 import { ArrowRightIcon, ClockCountdownIcon } from '@phosphor-icons/react/ssr';
 import NextLink from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   BackofficeDataBoard,
@@ -92,7 +92,7 @@ export function PaymentQueueView() {
     };
   }, [client, isStaff, query, refreshKey, status]);
 
-  function applyFilters(event: FormEvent<HTMLFormElement>) {
+  function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     router.replace(paymentQueryHref(queryFromDraft(draft), 1), { scroll: false });
   }
@@ -135,9 +135,9 @@ export function PaymentQueueView() {
           id="payment-status"
           label="Trạng thái"
           value={draft.status}
-          onChange={(event) =>
-            setDraft({ ...draft, status: event.target.value as PaymentFilterDraft['status'] })
-          }
+          onChange={(event) => {
+            setDraft({ ...draft, status: event.target.value as PaymentFilterDraft['status'] });
+          }}
         >
           <option value="">Tất cả</option>
           <option value="UNDER_REVIEW">Chờ kiểm tra</option>
@@ -151,9 +151,9 @@ export function PaymentQueueView() {
           id="payment-purpose"
           label="Nội dung thu"
           value={draft.purpose}
-          onChange={(event) =>
-            setDraft({ ...draft, purpose: event.target.value as PaymentFilterDraft['purpose'] })
-          }
+          onChange={(event) => {
+            setDraft({ ...draft, purpose: event.target.value as PaymentFilterDraft['purpose'] });
+          }}
         >
           <option value="">Tất cả</option>
           <option value="DEPOSIT">Đặt cọc</option>
@@ -164,9 +164,9 @@ export function PaymentQueueView() {
           id="payment-method"
           label="Phương thức"
           value={draft.method}
-          onChange={(event) =>
-            setDraft({ ...draft, method: event.target.value as PaymentFilterDraft['method'] })
-          }
+          onChange={(event) => {
+            setDraft({ ...draft, method: event.target.value as PaymentFilterDraft['method'] });
+          }}
         >
           <option value="">Tất cả</option>
           <option value="BANK_TRANSFER">Chuyển khoản</option>
@@ -178,12 +178,12 @@ export function PaymentQueueView() {
           id="payment-overdue"
           label="Thời hạn kiểm tra"
           value={draft.reviewOverdue}
-          onChange={(event) =>
+          onChange={(event) => {
             setDraft({
               ...draft,
               reviewOverdue: event.target.value as PaymentFilterDraft['reviewOverdue'],
-            })
-          }
+            });
+          }}
         >
           <option value="">Tất cả</option>
           <option value="true">Đã quá hạn</option>
@@ -194,21 +194,27 @@ export function PaymentQueueView() {
           label="Mã đơn"
           placeholder="Nhập mã đơn"
           value={draft.orderNumber}
-          onChange={(event) => setDraft({ ...draft, orderNumber: event.target.value })}
+          onChange={(event) => {
+            setDraft({ ...draft, orderNumber: event.target.value });
+          }}
         />
         <Input
           id="payment-submitted-from"
           label="Nộp từ"
           type="datetime-local"
           value={draft.submittedFrom}
-          onChange={(event) => setDraft({ ...draft, submittedFrom: event.target.value })}
+          onChange={(event) => {
+            setDraft({ ...draft, submittedFrom: event.target.value });
+          }}
         />
         <Input
           id="payment-submitted-to"
           label="Nộp đến"
           type="datetime-local"
           value={draft.submittedTo}
-          onChange={(event) => setDraft({ ...draft, submittedTo: event.target.value })}
+          onChange={(event) => {
+            setDraft({ ...draft, submittedTo: event.target.value });
+          }}
         />
         <Select
           id="payment-sort"
@@ -235,7 +241,9 @@ export function PaymentQueueView() {
           <Button
             size="compact"
             variant="secondary"
-            onClick={() => setRefreshKey((value) => value + 1)}
+            onClick={() => {
+              setRefreshKey((value) => value + 1);
+            }}
           >
             Thử lại
           </Button>

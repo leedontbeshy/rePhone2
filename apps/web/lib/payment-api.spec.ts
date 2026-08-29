@@ -109,6 +109,7 @@ describe('payment api adapter', () => {
           data: {
             payment: PUBLIC_PAYMENT,
             evidenceAvailable: true,
+            availableActions: ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'],
             order: {
               orderNumber: PUBLIC_PAYMENT.orderNumber,
               status: 'PLACED',
@@ -141,6 +142,7 @@ describe('payment api adapter', () => {
     expect(result.timeline).toEqual([
       { label: 'Đã nộp minh chứng', at: PUBLIC_PAYMENT.submittedAt },
     ]);
+    expect(result.availableActions).toEqual(['VERIFY', 'REJECT', 'VIEW_EVIDENCE']);
   });
 
   it('rejects non-http evidence URLs and maps stable payment errors', async () => {
