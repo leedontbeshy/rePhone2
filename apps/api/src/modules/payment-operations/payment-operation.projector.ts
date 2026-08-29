@@ -5,6 +5,7 @@ import type {
   PaymentPublicDto,
   PaymentReviewOrderProjectionDto,
 } from './payment-operation-response.dto.js';
+import { availablePaymentReviewActions } from './payment-review-policy.js';
 
 export interface PaymentProjectionRecord {
   id: string;
@@ -142,6 +143,7 @@ export function projectBackofficePaymentDetail(
   return {
     payment: projectPaymentPublic(payment, config, now),
     evidenceAvailable: payment.evidenceBucket !== null && payment.evidenceObjectPath !== null,
+    availableActions: availablePaymentReviewActions(payment),
     order: {
       id: payment.order.id,
       orderNumber: payment.order.orderNumber,

@@ -2461,6 +2461,17 @@
       },
       "BackofficePaymentDetailDto": {
         "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "VERIFY",
+                "REJECT",
+                "VIEW_EVIDENCE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "evidenceAvailable": {
             "type": "boolean"
           },
@@ -2492,6 +2503,7 @@
         "required": [
           "payment",
           "evidenceAvailable",
+          "availableActions",
           "order"
         ],
         "type": "object"
@@ -7343,6 +7355,17 @@
       },
       "PaymentReviewResultDto": {
         "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "VERIFY",
+                "REJECT",
+                "VIEW_EVIDENCE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "notificationDelivery": {
             "enum": [
               "SENT",
@@ -7361,6 +7384,7 @@
         "required": [
           "payment",
           "order",
+          "availableActions",
           "notificationDelivery"
         ],
         "type": "object"

@@ -26,7 +26,10 @@ const PAYMENT_OPERATION_IDS = [
 
 interface OpenApiSchema {
   $ref?: string;
+  items?: { enum?: string[]; type?: string };
   properties?: Record<string, OpenApiSchema>;
+  required?: string[];
+  type?: string;
 }
 
 describe('Slice 07 OpenAPI contract', () => {
@@ -133,5 +136,16 @@ describe('Slice 07 OpenAPI contract', () => {
     expect(schemas?.['BackofficePaymentListMetaDto']?.properties?.['pagination']?.$ref).toBe(
       '#/components/schemas/PaginationDto',
     );
+  });
+
+  it('publishes authoritative payment actions on detail and command responses', () => {
+    const schemas = document.components?.schemas;
+    for (const schemaName of ['BackofficePaymentDetailDto', 'PaymentReviewResultDto']) {
+      expect(schemas?.[schemaName]?.required).toContain('availableActions');
+      expect(schemas?.[schemaName]?.properties?.['availableActions']).toMatchObject({
+        type: 'array',
+        items: { type: 'string', enum: ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'] },
+      });
+    }
   });
 });

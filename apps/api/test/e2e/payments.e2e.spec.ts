@@ -137,7 +137,10 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
       .get(`/api/v1/backoffice/payments/${checkout.paymentId}`)
       .set('Authorization', `Bearer ${employee}`)
       .expect(200);
-    expect(data(detail.body)).toMatchObject({ evidenceAvailable: true });
+    expect(data(detail.body)).toMatchObject({
+      evidenceAvailable: true,
+      availableActions: ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'],
+    });
     expect(JSON.stringify(detail.body)).not.toMatch(
       /evidenceBucket|evidenceObjectPath|private-test/,
     );
@@ -171,6 +174,7 @@ describe('Slice 07 payment proof and review HTTP contract', () => {
     expect(data(verified.body)).toMatchObject({
       payment: { status: 'VERIFIED', receivedAmount: checkout.expectedAmount },
       order: { status: 'CONFIRMED', paidAmount: checkout.expectedAmount },
+      availableActions: ['VIEW_EVIDENCE'],
       notificationDelivery: 'SENT',
     });
     expect(

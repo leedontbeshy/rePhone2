@@ -106,7 +106,7 @@ export class RefundCommandService {
       );
       return refund.id;
     });
-    return this.detail(refundId);
+    return this.detail(refundId, auth);
   }
 
   public async start(
@@ -139,7 +139,7 @@ export class RefundCommandService {
       });
       return true;
     });
-    return this.detail(id);
+    return this.detail(id, auth);
   }
 
   public async completeCash(
@@ -167,7 +167,7 @@ export class RefundCommandService {
         return true;
       },
     );
-    const detail = await this.detail(id);
+    const detail = await this.detail(id, auth);
     if (changed) await this.notifyCompleted(id);
     return detail;
   }
@@ -184,7 +184,7 @@ export class RefundCommandService {
     if (beforeUpload === null) throw new ApiError('RESOURCE_NOT_FOUND');
     if (isExactBankReplay(beforeUpload, input.note, evidence.sha256)) {
       this.assertCompletionActor(beforeUpload, auth);
-      return projectRefundDetail(beforeUpload);
+      return projectRefundDetail(beforeUpload, auth);
     }
     this.assertCompletable(beforeUpload, 'BANK_TRANSFER', auth);
 
@@ -229,7 +229,7 @@ export class RefundCommandService {
       throw error;
     }
     if (!changed) await this.deleteBestEffort(id, stored.bucket, stored.objectPath, request);
-    const detail = await this.detail(id);
+    const detail = await this.detail(id, auth);
     if (changed) await this.notifyCompleted(id);
     return detail;
   }
@@ -296,7 +296,7 @@ export class RefundCommandService {
         return true;
       },
     );
-    return this.detail(id);
+    return this.detail(id, auth);
   }
 
   private async completeLocked(
@@ -430,10 +430,10 @@ export class RefundCommandService {
     );
   }
 
-  private async detail(id: string): Promise<RefundDetailDto> {
+  private async detail(id: string, auth: AuthContext): Promise<RefundDetailDto> {
     const refund = await this.refunds.findById(id);
     if (refund === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectRefundDetail(refund);
+    return projectRefundDetail(refund, auth);
   }
 
   private async notifyCompleted(id: string): Promise<void> {

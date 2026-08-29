@@ -1,5 +1,8 @@
+import type { AuthContext } from '../auth/auth-context.js';
 import type { RefundOperationsRecord } from './refund-operations.repository.js';
 import type { RefundAction, RefundDetailDto, RefundListItemDto } from './refund-response.dto.js';
+
+export type RefundActionViewer = Pick<AuthContext, 'userId' | 'role'>;
 
 export function projectRefundListItem(refund: RefundOperationsRecord): RefundListItemDto {
   return {
@@ -18,7 +21,10 @@ export function projectRefundListItem(refund: RefundOperationsRecord): RefundLis
   };
 }
 
-export function projectRefundDetail(refund: RefundOperationsRecord): RefundDetailDto {
+export function projectRefundDetail(
+  refund: RefundOperationsRecord,
+  viewer: RefundActionViewer,
+): RefundDetailDto {
   const listItem = projectRefundListItem(refund);
   return {
     id: listItem.id,
@@ -62,7 +68,7 @@ export function projectRefundDetail(refund: RefundOperationsRecord): RefundDetai
     processor: actor(refund.processedBy),
     terminalActor: actor(refund.terminalBy),
     terminalReason: refund.terminalReason,
-    availableActions: availableRefundActions(refund),
+    availableActions: availableRefundActions(refund, viewer),
   };
 }
 
@@ -71,19 +77,23 @@ export function availableRefundActions(
     RefundOperationsRecord,
     | 'status'
     | 'method'
+    | 'processedById'
     | 'evidenceBucket'
     | 'evidenceObjectPath'
     | 'evidenceMimeType'
     | 'evidenceFileSize'
     | 'evidenceSha256'
   >,
+  viewer: RefundActionViewer,
 ): RefundAction[] {
+  if (viewer.role !== 'EMPLOYEE' && viewer.role !== 'ADMIN') return [];
   if (refund.status === 'REQUESTED') {
     return refund.method === 'OTHER'
       ? ['REJECT', 'CANCEL']
       : ['START_PROCESSING', 'REJECT', 'CANCEL'];
   }
   if (refund.status === 'PROCESSING') {
+    if (refund.processedById !== viewer.userId && viewer.role !== 'ADMIN') return [];
     if (refund.method === 'BANK_TRANSFER') return ['COMPLETE_BANK_TRANSFER'];
     if (refund.method === 'CASH') return ['COMPLETE_CASH'];
     return [];

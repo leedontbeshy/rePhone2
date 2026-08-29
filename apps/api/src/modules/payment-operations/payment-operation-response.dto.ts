@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
+import { PAYMENT_REVIEW_ACTIONS, type PaymentReviewAction } from './payment-review-policy.js';
 
 const PAYMENT_STATUSES = [
   'AWAITING_PROOF',
@@ -105,6 +106,8 @@ export class BackofficePaymentOrderDto {
 export class BackofficePaymentDetailDto {
   @ApiProperty({ type: () => PaymentPublicDto }) public payment!: PaymentPublicDto;
   @ApiProperty({ type: Boolean }) public evidenceAvailable!: boolean;
+  @ApiProperty({ type: [String], enum: PAYMENT_REVIEW_ACTIONS })
+  public availableActions!: PaymentReviewAction[];
   @ApiProperty({ type: () => BackofficePaymentOrderDto }) public order!: BackofficePaymentOrderDto;
   @ApiPropertyOptional({ type: () => PaymentReviewerDto, nullable: true })
   public reviewer!: PaymentReviewerDto | null;
@@ -142,6 +145,8 @@ export class PaymentReviewResultDto {
   public payment!: PaymentPublicDto;
   @ApiProperty({ type: () => PaymentReviewOrderProjectionDto })
   public order!: PaymentReviewOrderProjectionDto;
+  @ApiProperty({ type: [String], enum: PAYMENT_REVIEW_ACTIONS })
+  public availableActions!: PaymentReviewAction[];
   @ApiProperty({ enum: ['SENT', 'FAILED', 'SKIPPED_REPLAY'] })
   public notificationDelivery!: 'SENT' | 'FAILED' | 'SKIPPED_REPLAY';
 }

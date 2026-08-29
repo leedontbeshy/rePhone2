@@ -2986,6 +2986,7 @@ export interface components {
             data: components["schemas"]["BackofficeOrderShipmentDto"];
         };
         BackofficePaymentDetailDto: {
+            availableActions: ("VERIFY" | "REJECT" | "VIEW_EVIDENCE")[];
             evidenceAvailable: boolean;
             order: components["schemas"]["BackofficePaymentOrderDto"];
             payment: components["schemas"]["PaymentPublicDto"];
@@ -4265,6 +4266,7 @@ export interface components {
             status: string;
         };
         PaymentReviewResultDto: {
+            availableActions: ("VERIFY" | "REJECT" | "VIEW_EVIDENCE")[];
             /** @enum {string} */
             notificationDelivery: "SENT" | "FAILED" | "SKIPPED_REPLAY";
             order: components["schemas"]["PaymentReviewOrderProjectionDto"];
