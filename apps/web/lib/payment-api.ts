@@ -222,7 +222,7 @@ export async function getPaymentEvidenceUrl(
   });
   const data = recordOrThrow(
     responseData(result, 'Không thể mở minh chứng thanh toán.'),
-    'Phản hồi signed URL không hợp lệ.',
+    'Phản hồi mở minh chứng không hợp lệ.',
   );
   const url = stringOrNull(data['url']);
   if (url === null) throw new Error('Không thể mở minh chứng lúc này.');
@@ -403,7 +403,7 @@ function parseBackofficeDetail(value: unknown): BackofficePaymentDetail {
 }
 
 function parseReviewResult(value: unknown): ReviewPaymentResult {
-  const input = recordOrThrow(value, 'Dữ liệu kết quả review không hợp lệ.');
+  const input = recordOrThrow(value, 'Dữ liệu kết quả kiểm tra không hợp lệ.');
   const payment = parsePayment(input['payment']);
   const delivery = input['notificationDelivery'];
   return {
@@ -487,7 +487,7 @@ function parseTimeline(value: unknown, payment: Record<string, unknown>): Paymen
   const candidates: Array<[string, unknown]> = [
     ['Được tạo', payment['createdAt']],
     ['Đã nộp minh chứng', payment['submittedAt']],
-    ['Đã review', payment['reviewedAt']],
+    ['Đã kiểm tra', payment['reviewedAt']],
   ];
   return candidates.flatMap(([label, at]) => {
     const parsed = stringOrNull(at);

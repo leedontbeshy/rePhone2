@@ -42,7 +42,7 @@ export function paymentOrderStatusLabel(value: string): string {
   const labels: Record<string, string> = {
     PLACED: 'Đã đặt hàng',
     CONFIRMED: 'Đã xác nhận',
-    PREPARING: 'Đang chuẩn bị',
+    PROCESSING: 'Đang xử lý',
     COMPLETED: 'Đã hoàn tất',
     CANCELLED: 'Đã hủy',
   };
@@ -53,8 +53,10 @@ export function paymentFulfillmentStatusLabel(value: string): string {
   const labels: Record<string, string> = {
     PENDING: 'Chưa bắt đầu',
     PREPARING: 'Đang chuẩn bị',
+    READY: 'Sẵn sàng bàn giao',
     READY_FOR_PICKUP: 'Sẵn sàng nhận máy',
     IN_TRANSIT: 'Đang giao hàng',
+    COMPLETED: 'Đã hoàn tất giao nhận',
     DELIVERED: 'Đã giao hàng',
     PICKED_UP: 'Đã nhận tại cửa hàng',
     FAILED: 'Giao hàng chưa thành công',
@@ -93,7 +95,7 @@ export function paymentQueryFromSearch(search: URLSearchParams): PaymentListQuer
   const purpose = paymentPurpose(search.get('purpose'));
   const method = paymentMethod(search.get('method'));
   const reviewOverdue = search.get('reviewOverdue');
-  const orderNumber = search.get('orderNumber')?.trim();
+  const orderNumber = search.get('orderNumber')?.trim().slice(0, 64);
   const submittedFrom = validDate(search.get('submittedFrom'));
   const submittedTo = validDate(search.get('submittedTo'));
   return {
@@ -166,6 +168,12 @@ function positiveInteger(value: string | null, fallback: number): number {
 }
 
 function validDate(value: string | null): string | undefined {
-  if (value === null || value.length === 0 || Number.isNaN(Date.parse(value))) return undefined;
+  if (
+    value === null ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})?$/.test(value) ||
+    Number.isNaN(Date.parse(value))
+  ) {
+    return undefined;
+  }
   return value;
 }

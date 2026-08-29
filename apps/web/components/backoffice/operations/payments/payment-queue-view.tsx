@@ -192,6 +192,7 @@ export function PaymentQueueView() {
         <Input
           id="payment-order-number"
           label="Mã đơn"
+          maxLength={64}
           placeholder="Nhập mã đơn"
           value={draft.orderNumber}
           onChange={(event) => {

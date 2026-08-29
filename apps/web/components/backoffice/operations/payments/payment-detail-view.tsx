@@ -514,6 +514,7 @@ function PaymentDecisionDialog({
       }}
     >
       <form
+        noValidate
         onSubmit={(event) => {
           void onSubmit(event);
         }}

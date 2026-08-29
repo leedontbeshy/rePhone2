@@ -17,6 +17,7 @@ describe('FE-07 payment presenter', () => {
     });
     expect(paymentMethodLabel('COD')).toBe('Thanh toán khi nhận hàng');
     expect(paymentFulfillmentStatusLabel('IN_TRANSIT')).toBe('Đang giao hàng');
+    expect(paymentFulfillmentStatusLabel('COMPLETED')).toBe('Đã hoàn tất giao nhận');
     expect(paymentOrderPaymentStatusLabel('PARTIALLY_PAID')).toBe('Đã thanh toán một phần');
   });
 
@@ -38,6 +39,11 @@ describe('FE-07 payment presenter', () => {
     expect(paymentQueryFromSearch(new URLSearchParams('status=RAW&page=-4'))).toMatchObject(
       PAYMENT_DEFAULT_QUERY,
     );
+    const sanitized = paymentQueryFromSearch(
+      new URLSearchParams(`orderNumber=${'R'.repeat(80)}&submittedFrom=August+29,+2026`),
+    );
+    expect(sanitized.orderNumber).toBe('R'.repeat(64));
+    expect(sanitized).not.toHaveProperty('submittedFrom');
   });
 
   it('builds a shareable filter URL without default noise', () => {
