@@ -1,0 +1,127 @@
+.surface {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+}
+
+.actor {
+  display: grid;
+  min-width: 0;
+  line-height: var(--line-height-small);
+}
+
+.actor strong,
+.actor span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actor strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-small);
+}
+
+.actor span {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.workspaceNavigation {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.workspaceNavigation ul {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin: 0;
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  list-style: none;
+}
+
+.workspaceNavigation a {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.workspaceNavigation a:hover {
+  background: var(--color-surface-subtle);
+}
+
+.workspaceNavigation a[aria-current='page'] {
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
+.content {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.accessState {
+  display: grid;
+  max-width: 42rem;
+  gap: var(--space-4);
+  justify-items: start;
+  padding: var(--space-8);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.accessState h1,
+.accessState p {
+  margin: 0;
+}
+
+.sessionNotice {
+  max-width: 48rem;
+}
+
+@media (min-width: 48rem) {
+  .workspaceNavigation ul {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .surface {
+    gap: var(--space-4);
+  }
+
+  .workspaceNavigation {
+    margin-inline: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+
+  .workspaceNavigation ul {
+    border-radius: var(--radius-control);
+  }
+
+  .accessState {
+    padding: var(--space-6);
+  }
+}
+
+@media (forced-colors: active) {
+  .workspaceNavigation a[aria-current='page'] {
+    border: 2px solid CanvasText;
+  }
+}

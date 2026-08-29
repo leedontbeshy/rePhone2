@@ -34,6 +34,37 @@ const afterSalesInput: ReturnStockDto = {
 };
 
 describe('StockService shipment return', () => {
+  it('projects product, variant, location and staff summaries for stock screens', async () => {
+    const repository = {
+      listLevels: vi.fn(async () => ({ items: [stockLevel()], totalItems: 1 })),
+      listMovements: vi.fn(async () => ({ items: [returnMovement()], totalItems: 1 })),
+    } as unknown as StockRepository;
+    const service = new StockService(repository, runnerFixture().runner, {
+      write: vi.fn(),
+    });
+
+    await expect(service.listLevels({ page: 1, pageSize: 20 })).resolves.toMatchObject({
+      items: [
+        {
+          product: { name: 'Ốp lưng MagSafe' },
+          variant: { displayName: 'Op lung den' },
+          location: { name: 'Kho HCM' },
+        },
+      ],
+    });
+    await expect(service.listMovements({ page: 1, pageSize: 20 })).resolves.toMatchObject({
+      items: [
+        {
+          product: { name: 'Ốp lưng MagSafe' },
+          variant: { displayName: 'Ốp lưng đen' },
+          fromLocation: null,
+          toLocation: { name: 'Kho HCM' },
+          createdBy: { fullName: 'Nhân viên Demo', employeeCode: 'NV-001' },
+        },
+      ],
+    });
+  });
+
   it('returns an exact replay without incrementing stock or duplicating audit', async () => {
     const updateLevel = vi.fn();
     const auditWrite = vi.fn();
@@ -284,6 +315,12 @@ function stockLevel(overrides: Record<string, unknown> = {}): StockLevelRecord {
       sku: 'CASE-001',
       displayName: 'Op lung den',
       status: 'ACTIVE',
+      product: {
+        id: cryptoId(7),
+        name: 'Ốp lưng MagSafe',
+        slug: 'op-lung-magsafe',
+        status: 'ACTIVE',
+      },
     },
     location: {
       id: LOCATION_ID,
@@ -308,6 +345,27 @@ function returnMovement(overrides: Record<string, unknown> = {}) {
     referenceId: SHIPMENT_ID,
     reason: input.reason,
     createdById: USER_ID,
+    variant: {
+      id: VARIANT_ID,
+      sku: 'CASE-001',
+      displayName: 'Ốp lưng đen',
+      status: 'ACTIVE',
+      product: {
+        id: cryptoId(7),
+        name: 'Ốp lưng MagSafe',
+        slug: 'op-lung-magsafe',
+        status: 'ACTIVE',
+      },
+    },
+    fromLocation: null,
+    toLocation: {
+      id: LOCATION_ID,
+      code: 'HCM-WH-01',
+      name: 'Kho HCM',
+      type: 'WAREHOUSE',
+      status: 'ACTIVE',
+    },
+    createdBy: { id: USER_ID, fullName: 'Nhân viên Demo', employeeCode: 'NV-001' },
     createdAt: new Date('2026-08-23T10:00:00.000Z'),
     ...overrides,
   };

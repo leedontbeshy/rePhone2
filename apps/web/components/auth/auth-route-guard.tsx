@@ -42,9 +42,7 @@ export function AnonymousAuthGate({
 }
 
 export function authDestination(role: AuthRole, returnTo?: string | null): string {
-  return (
-    safeAuthReturnTo(returnTo, role) ?? (role === 'CUSTOMER' ? '/account' : '/backoffice/orders')
-  );
+  return safeAuthReturnTo(returnTo, role) ?? (role === 'CUSTOMER' ? '/account' : '/backoffice');
 }
 
 const CUSTOMER_RETURN_PATHS = [

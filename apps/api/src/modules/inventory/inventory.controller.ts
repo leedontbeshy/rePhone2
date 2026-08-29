@@ -183,8 +183,8 @@ export class InventoryController {
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: InventoryUnitResponse })
   @ApiErrorResponses(...INVENTORY_ERRORS)
-  public get(@Param() params: InventoryResourceIdParamsDto) {
-    return this.service.getUnit(params.id);
+  public get(@Param() params: InventoryResourceIdParamsDto, @CurrentAuth() auth: AuthContext) {
+    return this.service.getUnit(params.id, auth.role);
   }
 
   @Patch(':id')

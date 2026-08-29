@@ -5281,11 +5281,6 @@
       },
       "IdentifierLookupDto": {
         "properties": {
-          "reason": {
-            "maxLength": 500,
-            "minLength": 5,
-            "type": "string"
-          },
           "type": {
             "enum": [
               "IMEI",
@@ -5299,9 +5294,65 @@
           }
         },
         "required": [
-          "reason",
           "type",
           "value"
+        ],
+        "type": "object"
+      },
+      "InspectionChecklistItemDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "order": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "DEGRADED",
+              "NOT_TESTED",
+              "NOT_APPLICABLE",
+              "UNKNOWN"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "order"
+        ],
+        "type": "object"
+      },
+      "InspectionChecklistProjectionDto": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InspectionChecklistItemDto"
+            },
+            "type": "array"
+          },
+          "schemaVersion": {
+            "enum": [
+              1
+            ],
+            "type": "number"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "items"
         ],
         "type": "object"
       },
@@ -5322,6 +5373,9 @@
               "UNKNOWN"
             ],
             "type": "string"
+          },
+          "checklist": {
+            "$ref": "#/components/schemas/InspectionChecklistProjectionDto"
           },
           "checks": {
             "type": "object"
@@ -5360,6 +5414,9 @@
               "PRE_SALE"
             ],
             "type": "string"
+          },
+          "inspector": {
+            "$ref": "#/components/schemas/InspectionInspectorDto"
           },
           "inspectorId": {
             "format": "uuid",
@@ -5425,6 +5482,26 @@
         ],
         "type": "object"
       },
+      "InspectionInspectorDto": {
+        "properties": {
+          "employeeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName"
+        ],
+        "type": "object"
+      },
       "InspectionListResponse": {
         "properties": {
           "data": {
@@ -5477,6 +5554,9 @@
               "PRE_SALE"
             ],
             "type": "string"
+          },
+          "inspector": {
+            "$ref": "#/components/schemas/InspectionInspectorDto"
           },
           "inspectorId": {
             "format": "uuid",
@@ -5590,6 +5670,36 @@
           "locationId",
           "simLockStatus",
           "simConfiguration"
+        ],
+        "type": "object"
+      },
+      "InventoryAvailabilityReadinessDto": {
+        "properties": {
+          "isReady": {
+            "type": "boolean"
+          },
+          "reasons": {
+            "items": {
+              "enum": [
+                "STATUS_NOT_INSPECTING",
+                "INSPECTION_REQUIRED",
+                "INSPECTION_NOT_PASSED",
+                "ACTIVE_RESERVATION",
+                "SALE_PRICE_REQUIRED",
+                "LOCATION_INACTIVE",
+                "VARIANT_INACTIVE",
+                "PRODUCT_INACTIVE",
+                "IDENTIFIER_REQUIRED",
+                "MEDIA_REQUIRED"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "isReady",
+          "reasons"
         ],
         "type": "object"
       },
@@ -5720,6 +5830,24 @@
           "activeReservationCount": {
             "type": "number"
           },
+          "availabilityReadiness": {
+            "$ref": "#/components/schemas/InventoryAvailabilityReadinessDto"
+          },
+          "availableActions": {
+            "items": {
+              "enum": [
+                "CREATE_INSPECTION",
+                "MAKE_AVAILABLE",
+                "SEND_TO_REPAIR",
+                "QUARANTINE",
+                "WRITE_OFF",
+                "TRANSFER",
+                "UPLOAD_MEDIA"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "carrierName": {
             "nullable": true,
             "type": "string"
@@ -5763,6 +5891,12 @@
           "maskedIdentifiers": {
             "items": {
               "$ref": "#/components/schemas/MaskedBackofficeIdentifierDto"
+            },
+            "type": "array"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/InventoryUnitMediaDto"
             },
             "type": "array"
           },
@@ -5965,6 +6099,57 @@
         "required": [
           "data",
           "meta"
+        ],
+        "type": "object"
+      },
+      "InventoryUnitMediaDto": {
+        "properties": {
+          "altText": {
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mimeType": {
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "url": {
+            "format": "uri",
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "mimeType",
+          "fileSize",
+          "width",
+          "height",
+          "sortOrder",
+          "createdAt"
         ],
         "type": "object"
       },
@@ -8357,6 +8542,26 @@
         },
         "type": "object"
       },
+      "StockActorDto": {
+        "properties": {
+          "employeeCode": {
+            "nullable": true,
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName"
+        ],
+        "type": "object"
+      },
       "StockCommandResponse": {
         "properties": {
           "data": {
@@ -8397,6 +8602,9 @@
           },
           "lowStock": {
             "type": "boolean"
+          },
+          "product": {
+            "$ref": "#/components/schemas/InventoryProductSummaryDto"
           },
           "quantityAvailable": {
             "type": "number"
@@ -8466,10 +8674,28 @@
             "format": "date-time",
             "type": "string"
           },
+          "createdBy": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StockActorDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "createdById": {
             "format": "uuid",
             "nullable": true,
             "type": "string"
+          },
+          "fromLocation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InventoryLocationDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
           },
           "fromLocationId": {
             "format": "uuid",
@@ -8479,6 +8705,9 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "product": {
+            "$ref": "#/components/schemas/InventoryProductSummaryDto"
           },
           "quantity": {
             "type": "number"
@@ -8496,6 +8725,15 @@
             "nullable": true,
             "type": "string"
           },
+          "toLocation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InventoryLocationDto"
+              }
+            ],
+            "nullable": true,
+            "type": "object"
+          },
           "toLocationId": {
             "format": "uuid",
             "nullable": true,
@@ -8512,6 +8750,9 @@
               "WRITE_OFF"
             ],
             "type": "string"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/InventoryVariantSummaryDto"
           },
           "variantId": {
             "format": "uuid",
@@ -8896,6 +9137,7 @@
           },
           "cosmeticNotes": {
             "maxLength": 2000,
+            "nullable": true,
             "type": "string"
           },
           "repairHistoryStatus": {
@@ -8908,6 +9150,7 @@
           },
           "repairNotes": {
             "maxLength": 2000,
+            "nullable": true,
             "type": "string"
           },
           "replacedParts": {

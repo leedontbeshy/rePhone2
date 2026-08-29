@@ -29,7 +29,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await page.goto('/backoffice/catalog/products');
     await expect(page.getByRole('heading', { level: 1, name: 'Danh mục sản phẩm' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: PRODUCT_NAME })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Sản phẩm', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Danh mục', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mã ưu đãi', exact: true })).toHaveCount(0);
 
     await page.goto('/backoffice/catalog/products/new');
@@ -59,9 +59,9 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await page.goto('/backoffice/catalog/products/new');
     await expect(page.getByRole('heading', { level: 1, name: 'Thêm sản phẩm' })).toBeVisible();
     await page.getByLabel('Tên sản phẩm').fill(PRODUCT_NAME);
-    await page.getByLabel('Mô tả', { exact: true }).fill('Mẫu máy dành cho kiểm thử FE-05.');
+    await page.getByRole('textbox', { name: /^Mô tả \*/ }).fill('Mẫu máy dành cho kiểm thử FE-05.');
     await page.getByLabel('Năm ra mắt').fill('2023');
-    await page.getByLabel('Dung lượng RAM').fill('8');
+    await page.getByLabel('Dung lượng RAM').selectOption('8');
     await page.getByLabel('Kích thước màn hình').fill('6.1');
     await page.getByLabel('Bộ xử lý').fill('Apple A17 Pro');
     await page.getByLabel('Chính sách bảo hành').selectOption(POLICY_ID);
@@ -103,7 +103,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
 
     await page.goto('/backoffice/vouchers/new');
     await expect(page.getByRole('heading', { level: 1, name: 'Tạo mã ưu đãi' })).toBeVisible();
-    await page.getByLabel('Mã ưu đãi').fill('fe05demo');
+    await page.getByRole('textbox', { name: /^Mã ưu đãi/ }).fill('fe05demo');
     await page.getByLabel('Tên chương trình').fill(VOUCHER_NAME);
     await page.getByLabel('Mô tả').fill('Ưu đãi dành cho sản phẩm đã chọn.');
     await page.getByLabel('Mức giảm (%)').fill('10');

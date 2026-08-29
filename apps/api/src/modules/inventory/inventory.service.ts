@@ -3,6 +3,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { InventoryLifecycleStatus, Prisma, UserRole } from '../../generated/prisma/client.js';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
+import { APP_CONFIG } from '../../config/app-config.module.js';
+import type { AppConfig } from '../../config/app-config.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuditActorContext } from '../audit/audit.types.js';
@@ -25,11 +27,14 @@ import { IdentifierProtectionService } from './identifier-protection.service.js'
 import {
   InventoryRepository,
   type IdentifierKey,
+  type InventoryUnitListRecord,
   type InventoryUnitRecord,
 } from './inventory.repository.js';
 import type {
+  AvailabilityReadinessReason,
   DecryptedIdentifiersDto,
   InventoryCostDto,
+  InventoryUnitAction,
   InventoryUnitDetailDto,
   InventoryUnitListItemDto,
 } from './inventory-response.dto.js';
@@ -67,6 +72,7 @@ export class InventoryService {
     @Inject(SerializableTransactionRunner)
     private readonly transactions: SerializableTransactionRunner,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   public async listUnits(query: InventoryUnitListQueryDto) {
@@ -79,10 +85,11 @@ export class InventoryService {
     });
   }
 
-  public async getUnit(id: string): Promise<InventoryUnitDetailDto> {
+  public async getUnit(id: string, role: UserRole = 'EMPLOYEE'): Promise<InventoryUnitDetailDto> {
     const unit = await this.repository.findUnit(id);
     if (unit === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return toDetail(unit);
+    const hasActiveTransferTarget = await this.repository.hasActiveTransferTarget(unit.locationId);
+    return toDetail(unit, this.config, role, hasActiveTransferTarget);
   }
 
   public async intake(
@@ -160,7 +167,7 @@ export class InventoryService {
         });
         return created;
       });
-      return toDetail(unit);
+      return toDetail(unit, this.config);
     } catch (error) {
       mapPersistenceError(error);
     }
@@ -253,7 +260,7 @@ export class InventoryService {
         });
         return updated;
       });
-      return toDetail(unit);
+      return toDetail(unit, this.config);
     } catch (error) {
       mapPersistenceError(error);
     }
@@ -271,15 +278,18 @@ export class InventoryService {
     }
     const unit = await this.transactions.run('inventory.identifier.lookup', async (transaction) => {
       const found = await this.repository.findByIdentifier(input.type, hmac, transaction);
-      if (found === null) throw new ApiError('RESOURCE_NOT_FOUND');
       await this.audit.write(transaction, actor, {
         action: 'inventory.identifier.lookup',
         resourceType: 'InventoryUnit',
-        resourceId: found.id,
-        metadata: { reason: input.reason, identifierType: input.type },
+        ...(found === null ? {} : { resourceId: found.id }),
+        metadata: {
+          identifierType: input.type,
+          outcome: found === null ? 'NOT_FOUND' : 'FOUND',
+        },
       });
       return found;
     });
+    if (unit === null) throw new ApiError('RESOURCE_NOT_FOUND');
     return toListItem(unit);
   }
 
@@ -379,7 +389,7 @@ export class InventoryService {
         return updated;
       },
     );
-    return toDetail(unit);
+    return toDetail(unit, this.config);
   }
 
   public sendToRepair(id: string, reason: string, actor: AuditActorContext) {
@@ -427,7 +437,7 @@ export class InventoryService {
       await this.auditLifecycle(transaction, actor, existing, updated, 'written_off', reason);
       return updated;
     });
-    return toDetail(unit);
+    return toDetail(unit, this.config, role);
   }
 
   public async transfer(id: string, input: TransferInventoryUnitDto, actor: AuditActorContext) {
@@ -462,7 +472,7 @@ export class InventoryService {
       });
       return updated;
     });
-    return toDetail(unit);
+    return toDetail(unit, this.config);
   }
 
   public listLocations() {
@@ -491,7 +501,7 @@ export class InventoryService {
       await this.auditLifecycle(transaction, actor, existing, updated, action, reason);
       return updated;
     });
-    return toDetail(unit);
+    return toDetail(unit, this.config);
   }
 
   private auditLifecycle(
@@ -602,7 +612,7 @@ function identifierKeys(input: ProtectedInput): IdentifierKey[] {
   ];
 }
 
-function toListItem(unit: InventoryUnitRecord): InventoryUnitListItemDto {
+function toListItem(unit: InventoryUnitListRecord | InventoryUnitRecord): InventoryUnitListItemDto {
   const current = unit.inspections[0];
   return {
     id: unit.id,
@@ -648,8 +658,14 @@ function toListItem(unit: InventoryUnitRecord): InventoryUnitListItemDto {
   };
 }
 
-function toDetail(unit: InventoryUnitRecord): InventoryUnitDetailDto {
+function toDetail(
+  unit: InventoryUnitRecord,
+  config: AppConfig,
+  role: UserRole = 'EMPLOYEE',
+  hasActiveTransferTarget = true,
+): InventoryUnitDetailDto {
   const listItem = toListItem(unit);
+  const readinessReasons = availabilityReadinessReasons(unit);
   return {
     id: listItem.id,
     inventoryCode: listItem.inventoryCode,
@@ -671,10 +687,94 @@ function toDetail(unit: InventoryUnitRecord): InventoryUnitDetailDto {
     carrierName: unit.carrierName,
     simConfiguration: unit.simConfiguration,
     warrantyDaysOverride: unit.warrantyDaysOverride,
+    media: unit.media.map((media) => ({
+      id: media.id,
+      url: publicMediaUrl(config, media.bucket, media.objectPath),
+      mimeType: media.mimeType,
+      fileSize: media.fileSize,
+      width: media.width ?? 0,
+      height: media.height ?? 0,
+      sortOrder: media.sortOrder,
+      altText: media.altText,
+      createdAt: media.createdAt,
+    })),
+    availableActions: availableActions(unit, readinessReasons, role, hasActiveTransferTarget),
+    availabilityReadiness: {
+      isReady: readinessReasons.length === 0,
+      reasons: readinessReasons,
+    },
   };
 }
 
-function maskedIdentifiers(unit: InventoryUnitRecord) {
+function availabilityReadinessReasons(unit: InventoryUnitRecord): AvailabilityReadinessReason[] {
+  const reasons: AvailabilityReadinessReason[] = [];
+  const inspection = unit.inspections[0];
+  if (unit.lifecycleStatus !== 'INSPECTING') reasons.push('STATUS_NOT_INSPECTING');
+  if (inspection === undefined) reasons.push('INSPECTION_REQUIRED');
+  else if (inspection.overallResult !== 'PASSED') reasons.push('INSPECTION_NOT_PASSED');
+  if (unit._count.reservations > 0) reasons.push('ACTIVE_RESERVATION');
+  if (unit.salePrice === null) reasons.push('SALE_PRICE_REQUIRED');
+  if (unit.location.status !== 'ACTIVE') reasons.push('LOCATION_INACTIVE');
+  if (unit.variant.status !== 'ACTIVE') reasons.push('VARIANT_INACTIVE');
+  if (unit.variant.product.status !== 'ACTIVE') reasons.push('PRODUCT_INACTIVE');
+  if (unit.imei1Hmac === null && unit.serialHmac === null) reasons.push('IDENTIFIER_REQUIRED');
+  if (unit._count.media < 1) reasons.push('MEDIA_REQUIRED');
+  return reasons;
+}
+
+function availableActions(
+  unit: InventoryUnitRecord,
+  readinessReasons: AvailabilityReadinessReason[],
+  role: UserRole,
+  hasActiveTransferTarget: boolean,
+): InventoryUnitAction[] {
+  const actions: InventoryUnitAction[] = [];
+  const hasActiveReservation = unit._count.reservations > 0;
+  const canInspect =
+    unit.variant.product.type === 'IPHONE' &&
+    unit.variant.inventoryMode === 'SERIALIZED' &&
+    ['RECEIVED', 'AVAILABLE', 'REPAIRING', 'QUARANTINED', 'INSPECTING'].includes(
+      unit.lifecycleStatus,
+    ) &&
+    !(unit.lifecycleStatus === 'AVAILABLE' && hasActiveReservation) &&
+    unit._count.inspections === 0;
+  if (canInspect) actions.push('CREATE_INSPECTION');
+  if (readinessReasons.length === 0) actions.push('MAKE_AVAILABLE');
+  if (['INSPECTING', 'QUARANTINED'].includes(unit.lifecycleStatus)) {
+    actions.push('SEND_TO_REPAIR');
+  }
+  if (['RECEIVED', 'INSPECTING', 'REPAIRING'].includes(unit.lifecycleStatus)) {
+    actions.push('QUARANTINE');
+  }
+  const hasCost = unit.acquisitionCost !== null || unit.additionalCost.toString() !== '0';
+  if (
+    ['RECEIVED', 'INSPECTING', 'AVAILABLE', 'REPAIRING', 'QUARANTINED'].includes(
+      unit.lifecycleStatus,
+    ) &&
+    !hasActiveReservation &&
+    (!hasCost || role === 'ADMIN')
+  ) {
+    actions.push('WRITE_OFF');
+  }
+  if (
+    !['IN_TRANSIT', 'SOLD', 'WRITTEN_OFF'].includes(unit.lifecycleStatus) &&
+    !hasActiveReservation &&
+    hasActiveTransferTarget
+  ) {
+    actions.push('TRANSFER');
+  }
+  if (!['SOLD', 'WRITTEN_OFF'].includes(unit.lifecycleStatus)) actions.push('UPLOAD_MEDIA');
+  return actions;
+}
+
+function publicMediaUrl(config: AppConfig, bucket: string, objectPath: string): string {
+  const encodedPath = objectPath.split('/').map(encodeURIComponent).join('/');
+  return `${config.storage.url.replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodedPath}`;
+}
+
+function maskedIdentifiers(
+  unit: Pick<InventoryUnitListRecord, 'imei1Suffix' | 'imei2Suffix' | 'serialSuffix' | 'eidSuffix'>,
+) {
   return [
     ...(unit.imei1Suffix === null
       ? []

@@ -71,6 +71,10 @@ describe('auth UI foundation', () => {
     expect(safeAuthReturnTo('//evil.example/account', 'CUSTOMER')).toBeNull();
     expect(safeAuthReturnTo('/account#token=secret', 'CUSTOMER')).toBeNull();
     expect(authDestination('CUSTOMER', 'https://evil.example')).toBe('/account');
-    expect(authDestination('ADMIN', '/account')).toBe('/backoffice/orders');
+    expect(authDestination('EMPLOYEE')).toBe('/backoffice');
+    expect(authDestination('ADMIN', '/account')).toBe('/backoffice');
+    expect(authDestination('ADMIN', '/backoffice/orders?status=PLACED')).toBe(
+      '/backoffice/orders?status=PLACED',
+    );
   });
 });

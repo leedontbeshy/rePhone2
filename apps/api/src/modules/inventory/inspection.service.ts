@@ -3,9 +3,15 @@ import type { Prisma, UserRole } from '../../generated/prisma/client.js';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import {
+  FUNCTIONAL_CHECK_STATUSES,
+  IPHONE_CHECKLIST_V1,
   inspectionResult,
   InspectionChecklistError,
   validateInspectionChecklist,
+} from '../../common/domain/iphone-inspection-checklist.js';
+import type {
+  FunctionalCheckStatus,
+  InspectionChecklistV1,
 } from '../../common/domain/iphone-inspection-checklist.js';
 import { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
 import { AuditWriter } from '../audit/audit-writer.service.js';
@@ -17,7 +23,7 @@ import type {
 } from './inventory.dto.js';
 import type { InspectionDetailDto, InspectionSummaryDto } from './inventory-response.dto.js';
 import { InventoryRepository } from './inventory.repository.js';
-import { InspectionRepository } from './inspection.repository.js';
+import { InspectionRepository, type InspectionRecord } from './inspection.repository.js';
 
 @Injectable()
 export class InspectionService {
@@ -245,6 +251,10 @@ function isJsonValue(value: unknown): value is Prisma.InputJsonValue {
   return Object.values(value as Record<string, unknown>).every(isJsonValue);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 function toInspectionSummary(inspection: {
   id: string;
   inspectionType: InspectionSummaryDto['inspectionType'];
@@ -252,6 +262,7 @@ function toInspectionSummary(inspection: {
   overallResult: InspectionSummaryDto['overallResult'];
   isCurrent: boolean;
   inspectorId: string;
+  inspector: InspectionRecord['inspector'];
   inspectedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -263,17 +274,18 @@ function toInspectionSummary(inspection: {
     overallResult: inspection.overallResult,
     isCurrent: inspection.isCurrent,
     inspectorId: inspection.inspectorId,
+    inspector: {
+      id: inspection.inspector.id,
+      fullName: inspection.inspector.fullName,
+      employeeCode: inspection.inspector.employeeCode,
+    },
     inspectedAt: inspection.inspectedAt,
     createdAt: inspection.createdAt,
     updatedAt: inspection.updatedAt,
   };
 }
 
-function toInspectionDetail(
-  inspection: Awaited<ReturnType<InspectionRepository['find']>> extends infer T
-    ? Exclude<T, null>
-    : never,
-): InspectionDetailDto {
+function toInspectionDetail(inspection: InspectionRecord): InspectionDetailDto {
   const summary = toInspectionSummary(inspection);
   return {
     id: summary.id,
@@ -282,6 +294,7 @@ function toInspectionDetail(
     overallResult: summary.overallResult,
     isCurrent: summary.isCurrent,
     inspectorId: summary.inspectorId,
+    inspector: summary.inspector,
     inspectedAt: summary.inspectedAt,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
@@ -292,10 +305,47 @@ function toInspectionDetail(
     conditionGrade: inspection.conditionGrade,
     cosmeticNotes: inspection.cosmeticNotes,
     checks: inspection.checks,
+    checklist: projectChecklist(inspection.checks),
     repairHistoryStatus: inspection.repairHistoryStatus,
     repairNotes: inspection.repairNotes,
     replacedParts: inspection.replacedParts,
   };
+}
+
+function projectChecklist(input: unknown): InspectionDetailDto['checklist'] {
+  const checklist = checklistInput(input);
+  return {
+    schemaVersion: 1,
+    items: IPHONE_CHECKLIST_V1.map(([key, label], index) => {
+      const item = checklist?.items[key];
+      return {
+        key,
+        label,
+        order: index + 1,
+        status: item?.status ?? null,
+        note: item?.note ?? null,
+      };
+    }),
+  };
+}
+
+function checklistInput(input: unknown): InspectionChecklistV1 | null {
+  if (!isRecord(input) || input['schemaVersion'] !== 1 || !isRecord(input['items'])) return null;
+  const items: InspectionChecklistV1['items'] = {};
+  for (const [key, value] of Object.entries(input['items'])) {
+    if (!isRecord(value) || !isFunctionalCheckStatus(value['status'])) continue;
+    items[key] = {
+      status: value['status'],
+      note: typeof value['note'] === 'string' ? value['note'] : null,
+    };
+  }
+  return { schemaVersion: 1, items };
+}
+
+function isFunctionalCheckStatus(value: unknown): value is FunctionalCheckStatus {
+  return (
+    typeof value === 'string' && (FUNCTIONAL_CHECK_STATUSES as readonly string[]).includes(value)
+  );
 }
 
 function validation(field: string, code: string): ApiError {

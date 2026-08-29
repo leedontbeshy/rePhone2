@@ -248,7 +248,7 @@ export class UpdateInventoryUnitDto {
   public reason?: string;
 }
 
-export class IdentifierLookupDto extends InventoryReasonDto {
+export class IdentifierLookupDto {
   @ApiProperty({ enum: IDENTIFIER_TYPES })
   @IsIn(IDENTIFIER_TYPES)
   public type!: (typeof IDENTIFIER_TYPES)[number];
@@ -328,12 +328,12 @@ export class UpdateInspectionDto {
   @IsIn(['A', 'B', 'C'])
   public conditionGrade?: 'A' | 'B' | 'C';
 
-  @ApiPropertyOptional({ type: String, maxLength: 2_000 })
+  @ApiPropertyOptional({ type: String, maxLength: 2_000, nullable: true })
   @IsOptional()
   @Transform(optionalTrim)
   @IsString()
   @MaxLength(2_000)
-  public cosmeticNotes?: string;
+  public cosmeticNotes?: string | null;
 
   @ApiPropertyOptional({
     type: Object,
@@ -348,12 +348,12 @@ export class UpdateInspectionDto {
   @IsIn(['NONE_KNOWN', 'KNOWN', 'UNKNOWN'])
   public repairHistoryStatus?: 'NONE_KNOWN' | 'KNOWN' | 'UNKNOWN';
 
-  @ApiPropertyOptional({ type: String, maxLength: 2_000 })
+  @ApiPropertyOptional({ type: String, maxLength: 2_000, nullable: true })
   @IsOptional()
   @Transform(optionalTrim)
   @IsString()
   @MaxLength(2_000)
-  public repairNotes?: string;
+  public repairNotes?: string | null;
 
   @ApiPropertyOptional({ type: Object, nullable: true })
   @IsOptional()

@@ -3,6 +3,8 @@ export type {
   BackofficeActionDialogProps,
   BackofficeActionDialogReason,
 } from './backoffice-action-dialog';
+export { BackofficeAccessGate } from './backoffice-access-gate';
+export type { BackofficeAccessGateProps } from './backoffice-access-gate';
 export {
   BackofficeDataBoard,
   BackofficeFilterToolbar,
@@ -27,3 +29,40 @@ export {
 export type { CatalogVoucherAccess } from './catalog-voucher-navigation';
 export { CatalogVoucherShell } from './catalog-voucher-shell';
 export type { CatalogVoucherShellProps } from './catalog-voucher-shell';
+export {
+  canAccessInventoryWorkspace,
+  canViewInventoryCost,
+  INVENTORY_INTAKE_ROOT,
+  INVENTORY_INSPECTIONS_ROOT,
+  INVENTORY_LOCATIONS_ROOT,
+  INVENTORY_LOOKUP_ROOT,
+  INVENTORY_STOCK_MOVEMENTS_ROOT,
+  INVENTORY_STOCK_ROOT,
+  INVENTORY_UNITS_ROOT,
+  inventoryNavigationForPath,
+} from './inventory/inventory-navigation';
+export type { InventoryNavigationItem } from './inventory/inventory-navigation';
+export {
+  inspectionCheckStatusLabel,
+  inspectionCheckStatusPresentation,
+  inspectionResultLabel,
+  inspectionResultPresentation,
+  inspectionStatusLabel,
+  inspectionStatusPresentation,
+  inspectionTypeLabel,
+  inventoryLifecycleLabel,
+  inventoryLifecyclePresentation,
+  stockLevelPresentation,
+  stockMovementLabel,
+} from './inventory/inventory-presenter';
+export type {
+  InventoryInspectionCheckStatus,
+  InventoryInspectionResult,
+  InventoryInspectionStatus,
+  InventoryInspectionType,
+  InventoryLifecycleStatus,
+  InventoryStatusPresentation,
+  InventoryStockMovementType,
+} from './inventory/inventory-presenter';
+export { InventoryShell } from './inventory/inventory-shell';
+export type { InventoryShellProps } from './inventory/inventory-shell';

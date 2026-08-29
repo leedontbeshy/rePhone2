@@ -1,102 +1,91 @@
-# Design QA — FE-05 quản trị danh mục và mã ưu đãi
+# Design QA — FE-06 kho hàng, kiểm định và tồn phụ kiện
 
-Date: 2026-08-28
+Ngày kiểm tra: 2026-08-28
 
-Preview: `http://localhost:3000/backoffice/catalog/products`
+Trang xem chính: `http://localhost:3000/backoffice/inventory/units`
 
-## Phạm vi và nguồn đối chiếu
+## Phạm vi
 
-- Phương án hình ảnh đã duyệt: catalog board cho sản phẩm và mã ưu đãi.
-- Mockup chuẩn: `docs/assets/ui/fe-05/`.
-- Sáu màn hình được đối chiếu:
-  - `/backoffice/catalog/products`
-  - `/backoffice/catalog/products/new`
-  - `/backoffice/catalog/products/[id]`
-  - `/backoffice/vouchers`
-  - `/backoffice/vouchers/new`
-  - `/backoffice/vouchers/[id]`
+Tám màn hình đã được kiểm tra:
+
+- `/backoffice/inventory/units`
+- `/backoffice/inventory/intake`
+- `/backoffice/inventory/lookup`
+- `/backoffice/inventory/units/[id]`
+- `/backoffice/inventory/inspections/[id]`
+- `/backoffice/inventory/locations`
+- `/backoffice/inventory/stock`
+- `/backoffice/inventory/stock/movements`
 
 ## Điều kiện kiểm tra
 
-| Nhóm | Viewport | Trạng thái |
-| --- | ---: | --- |
-| Desktop đối chiếu mockup | 1487 × 1058 | Quản trị viên đã đăng nhập, dữ liệu giả lập ổn định |
-| Desktop phổ biến | 1366 × 900 | Kiểm tra mật độ form và breakpoint rail |
-| Desktop hẹp | 1100 × 900 và 1185 × 900 | Kiểm tra biên chuyển cột catalog |
-| Tablet ngang | 1024 × 900 | Kiểm tra tràn ngang và chuyển cột |
-| Mobile | 360 × 800 | Kiểm tra điều hướng, form và modal biến thể |
+| Nhóm            |  Kích thước | Dữ liệu                                                        |
+| --------------- | ----------: | -------------------------------------------------------------- |
+| Desktop         | 1440 × 1000 | Quản trị viên, một máy iPhone và một dòng tồn phụ kiện         |
+| Mobile          |   360 × 800 | Cùng dữ liệu; kiểm tra cuộn ngang điều hướng và bố cục một cột |
+| Quyền nhân viên |     Desktop | Kiểm tra hồ sơ máy không gọi hoặc hiển thị giá vốn             |
 
-Ảnh triển khai được chụp bằng Chrome điều khiển tự động. Không dùng Playwright CLI.
+Kiểm tra trực tiếp trên cửa sổ trình duyệt localhost cho thấy API và cơ sở dữ liệu cục bộ
+không chạy. Bộ hành trình đầy đủ vì vậy dùng chính server web localhost với dữ liệu giả lập
+ổn định, không ghi thay đổi vào dữ liệu thật.
 
-## Bằng chứng đối chiếu desktop
+## Ảnh đối chiếu
 
-Mỗi ảnh dưới đây đặt mockup nguồn ở bên trái và bản triển khai ở bên phải:
+Desktop:
 
-- Danh sách sản phẩm:
-  `.local/product-design-audit/fe05-refinement/20-catalog-list-comparison.png`
-- Tạo sản phẩm:
-  `.local/product-design-audit/fe05-refinement/21-catalog-create-comparison.png`
-- Chi tiết sản phẩm:
-  `.local/product-design-audit/fe05-refinement/22-catalog-detail-comparison.png`
-- Danh sách mã ưu đãi:
-  `.local/product-design-audit/fe05-refinement/23-voucher-list-comparison.png`
-- Tạo mã ưu đãi:
-  `.local/product-design-audit/fe05-refinement/24-voucher-create-comparison.png`
-- Chi tiết mã ưu đãi:
-  `.local/product-design-audit/fe05-refinement/25-voucher-detail-comparison.png`
+- [Danh sách máy](docs/assets/ui/fe-06/units-1440.png)
+- [Nhập máy](docs/assets/ui/fe-06/intake-1440.png)
+- [Tra cứu mã](docs/assets/ui/fe-06/lookup-1440.png)
+- [Hồ sơ máy](docs/assets/ui/fe-06/unit-detail-1440.png)
+- [Phiếu kiểm định](docs/assets/ui/fe-06/inspection-1440.png)
+- [Địa điểm](docs/assets/ui/fe-06/locations-1440.png)
+- [Tồn phụ kiện](docs/assets/ui/fe-06/stock-1440.png)
+- [Lịch sử kho](docs/assets/ui/fe-06/movements-1440.png)
 
-Bằng chứng responsive và trạng thái tương tác:
+Mobile:
 
-- Catalog 1024 px sau khi sửa tràn ngang:
-  `.local/product-design-audit/fe05-refinement/34-catalog-1024-fixed.png`
-- Form mã ưu đãi 1366 px sau khi chuyển rail:
-  `.local/product-design-audit/fe05-refinement/35-voucher-create-1366-fixed.png`
-- Catalog mobile cuối:
-  `.local/product-design-audit/fe05-refinement/40-catalog-mobile-final.png`
-- Modal biến thể phụ kiện mobile:
-  `.local/product-design-audit/fe05-refinement/38-variant-mobile.png`
-- Trạng thái đang cập nhật danh sách mã ưu đãi:
-  `.local/product-design-audit/fe05-refinement/39-voucher-updating.png`
+- [Danh sách máy](docs/assets/ui/fe-06/units-360.png)
+- [Hồ sơ máy](docs/assets/ui/fe-06/unit-detail-360.png)
+- [Phiếu kiểm định](docs/assets/ui/fe-06/inspection-360.png)
+- [Tồn phụ kiện](docs/assets/ui/fe-06/stock-360.png)
 
 ## Kết quả trực quan
 
-- Sidebar rộng 272 px, phân cấp và mật độ gần mockup đã duyệt; điều hướng mobile cuộn
-  ngang nhưng không lộ thanh cuộn thô.
-- Catalog chuyển bộ lọc sang hai cột trước khi vùng nội dung bị bó; các mốc 1024 px,
-  1100 px và 1185 px đều không còn tràn ngang.
-- Form mã ưu đãi chuyển rail xuống sớm ở màn hình 1366 px, giữ các ô ngày giờ và giới
-  hạn đủ rộng, cùng hàng và cùng chiều cao.
-- Ở desktop, cặp mã ưu đãi/tên chương trình, ba ô mức giảm và bốn ô thời gian/giới hạn
-  đều có chiều cao 44 px và chung tọa độ dọc trong từng hàng.
-- Modal biến thể iPhone và phụ kiện có nhóm trường rõ ràng; bản mobile vừa khung và
-  cuộn trong modal.
-- Không còn P0, P1 hoặc P2 sau vòng sửa cuối. Sai khác P3 chấp nhận được chỉ đến từ dữ
-  liệu giả lập và việc sidebar được chủ động phóng lớn theo yêu cầu.
+- Tám màn hình dùng chung điều hướng kho hàng, nhịp lưới, card, bảng và trạng thái.
+- Nút “Nhập máy” giữ chữ và biểu tượng trắng trên nền xanh ở mọi trạng thái liên kết.
+- Trên mobile, tab hiện tại tự cuộn vào giữa sau khi xác nhận đăng nhập và luôn nằm trọn
+  trong khung điều hướng.
+- Bộ lọc xếp lại thành một cột trên mobile; bảng chuyển sang cách trình bày responsive mà
+  không làm tràn chiều ngang tài liệu.
+- Thanh thao tác kiểm định cố định không che nội dung cần nhập; toàn bộ 18 mục vẫn truy cập
+  được bằng bàn phím và có nhãn riêng.
+- Phần tra cứu bỏ các từ kỹ thuật như “URL” và “bộ nhớ trình duyệt”; giá nhập máy dùng đơn
+  vị “đồng”.
+- Không có lỗi console hoặc tràn ngang ở 1440 px và 360 px.
 
-## Tương tác đã kiểm tra
+## Hành trình đã kiểm tra
 
-- Catalog mặc định xếp năm ra mắt mới nhất trước; dữ liệu không có năm nằm cuối.
-- Tìm `iPhone 17` mở gợi ý gồm iPhone 17e, iPhone 17, iPhone 17 Pro và iPhone 17 Pro
-  Max; phím mũi tên và Escape hoạt động.
-- Bộ lọc catalog cập nhật URL và giữ card cũ kèm trạng thái “Đang cập nhật danh sách…”
-  trong lúc nhận dữ liệu mới, không tải trắng toàn trang.
-- Tìm mã `IPHONE5` cập nhật URL tại chỗ, hiển thị trạng thái đang cập nhật và kết thúc
-  với đúng một mã phù hợp. Card cũ được khóa nhất quán cho cả chuột và bàn phím trong
-  thời gian chờ.
-- Biểu mẫu phụ kiện thêm và xóa được dòng thông số; dữ liệu kỹ thuật ẩn được giữ lại,
-  nhưng giá trị người dùng nhập luôn được ưu tiên khi trùng tên.
-- Viewport 1366 × 900, 1024 × 900 và 360 × 800 đều có
-  `documentElement.scrollWidth <= innerWidth` trên các màn hình trọng yếu đã kiểm tra.
-- Console không có lỗi sau hành trình kiểm tra cuối.
+- Tài khoản nhân viên xem hồ sơ máy mà không phát sinh yêu cầu giá vốn.
+- IMEI đầy đủ chỉ gửi trong yêu cầu tra cứu có lý do, bị xóa khỏi ô nhập sau khi gửi và
+  không xuất hiện trong đường dẫn hoặc nội dung kết quả.
+- Tìm kiếm và bộ lọc danh sách máy cập nhật tại chỗ, không tải lại toàn trang; chuỗi giống
+  định danh đầy đủ bị chuyển sang trang tra cứu bảo vệ.
+- Phiếu kiểm định có đúng 18 mục, lưu được bản nháp rồi hoàn tất; bản hoàn tất chuyển sang
+  chỉ đọc.
+- Thao tác nhận hàng ghi vào lịch sử, tải lại số dư chính thức và hiển thị đúng dòng biến
+  động không thể sửa.
+- Cả tám route đều có đúng một vùng nội dung chính và tab hiện tại hiển thị đầy đủ trên
+  mobile.
 
-## Kiểm tra tự động
+## Cổng chất lượng
 
-- Web unit: 61/61 file, 269/269 test đạt.
-- Web lint: đạt, không có cảnh báo.
-- Web typecheck: đạt.
-- Production build: đạt; tạo đủ 36/36 trang.
-- API catalog backoffice: 4/4 file, 26/26 test đạt; API typecheck đạt.
-- Browser QA được thực hiện bằng Chrome điều khiển tự động; không chạy Playwright CLI
-  hoặc PostgreSQL/Docker integration trong lượt nghiệm thu này.
+- Web: 76/76 tệp, 324/324 bài kiểm tra đạt.
+- API: 107/107 tệp, 625/625 bài kiểm tra đạt.
+- API client: 7/7 bài kiểm tra; lint, typecheck và build đạt.
+- Accessibility contract: 15/15 đạt.
+- Browser FE-06: 6/6 đạt.
+- Production build: đạt, tạo đủ 41 trang.
+- OpenAPI và mã API client tạo lại không phát sinh chênh lệch.
+- PostgreSQL/Docker integration chưa chạy vì Docker Desktop đang tắt.
 
-final result: passed
+Kết quả cuối: **đạt**.

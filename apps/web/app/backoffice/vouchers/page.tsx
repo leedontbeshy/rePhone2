@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense } from 'react';
 import { CatalogVoucherShell } from '@/components/backoffice';
 import { VoucherListView } from '@/components/backoffice/vouchers/voucher-list-view';

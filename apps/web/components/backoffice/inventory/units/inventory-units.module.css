@@ -1,0 +1,232 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+}
+
+.header h1 {
+  color: var(--color-ink);
+  font-size: clamp(1.9rem, 3vw, 2.45rem);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0.25rem 0 0.45rem;
+}
+
+.header p {
+  color: var(--color-muted);
+  margin: 0;
+  max-width: 43rem;
+}
+
+.eyebrow {
+  color: var(--color-primary) !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.primaryAction,
+.secondaryAction,
+.detailLink {
+  align-items: center;
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  font-weight: 750;
+  gap: 0.45rem;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.95rem;
+  text-decoration: none;
+}
+
+.primaryAction,
+.primaryAction:link,
+.primaryAction:visited,
+.primaryAction:active {
+  background: var(--color-primary);
+  color: var(--color-on-primary) !important;
+}
+
+.primaryAction svg {
+  color: currentColor;
+}
+
+.secondaryAction {
+  background: var(--color-surface);
+  border: var(--border-default);
+  color: var(--color-ink);
+}
+
+.filters {
+  background: var(--color-surface);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(18rem, 1.6fr) repeat(3, minmax(9rem, 0.8fr));
+  padding: 1rem;
+}
+
+.filters select,
+.searchField {
+  background: var(--color-surface);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  min-height: 2.8rem;
+}
+
+.searchGroup {
+  display: grid;
+  gap: 0.35rem;
+  grid-column: span 2;
+}
+
+.searchPrivacyWarning {
+  color: var(--color-danger);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.searchPrivacyWarning a {
+  color: inherit;
+  font-weight: 700;
+}
+
+.filters select {
+  color: var(--color-body);
+  font: inherit;
+  min-width: 0;
+  padding: 0 0.75rem;
+}
+
+.searchField {
+  align-items: center;
+  color: var(--color-muted);
+  display: flex;
+  gap: 0.55rem;
+  padding: 0 0.8rem;
+}
+
+.searchField:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(0 117 148 / 12%);
+}
+
+.searchField input {
+  background: transparent;
+  border: 0;
+  color: var(--color-body);
+  font: inherit;
+  min-width: 0;
+  outline: 0;
+  width: 100%;
+}
+
+.resultSummary {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  margin: -0.45rem 0 -0.55rem;
+}
+
+.unitIdentity,
+.inspectionSummary {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.unitIdentity a {
+  color: var(--color-ink);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.unitIdentity span,
+.unitIdentity small,
+.inspectionSummary span,
+.muted {
+  color: var(--color-muted);
+}
+
+.unitIdentity small {
+  font-family: var(--font-mono);
+}
+
+.inspectionSummary strong {
+  color: var(--color-ink);
+  font-size: 0.9rem;
+}
+
+.inspectionSummary span {
+  font-size: 0.8rem;
+}
+
+.detailLink {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-primary);
+  min-height: var(--control-height);
+  padding: 0.35rem 0;
+  white-space: nowrap;
+}
+
+.errorBanner {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-control);
+  color: var(--color-danger);
+  padding: 0.85rem 1rem;
+}
+
+@media (max-width: 1180px) {
+  .filters {
+    grid-template-columns: minmax(16rem, 1.5fr) repeat(2, minmax(9rem, 1fr));
+  }
+
+  .filters select:last-child {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .header {
+    display: grid;
+  }
+
+  .headerActions {
+    justify-content: stretch;
+  }
+
+  .primaryAction,
+  .secondaryAction {
+    flex: 1;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .searchGroup {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .headerActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

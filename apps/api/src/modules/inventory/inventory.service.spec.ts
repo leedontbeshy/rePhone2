@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiError } from '../../common/errors/api-error.js';
 import type { SerializableTransactionRunner } from '../../database/serializable-transaction.runner.js';
+import type { AppConfig } from '../../config/app-config.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { AuditWriter } from '../audit/audit-writer.service.js';
 import type { AuditActorContext } from '../audit/audit.types.js';
@@ -71,14 +72,97 @@ describe('InventoryService projections and identifiers', () => {
     } satisfies Partial<ApiError>);
   });
 
-  it('looks up an identifier, audits only the reason/type, and returns the safe projection', async () => {
+  it('projects reloadable media, authoritative readiness and role-safe actions without secrets', async () => {
+    const unit = availableCandidate({
+      acquisitionCost: decimal('9000000'),
+      media: [
+        {
+          id: id(20),
+          bucket: 'rephone-public',
+          objectPath: `units/${UNIT_ID}/ảnh máy.webp`,
+          visibility: 'PUBLIC',
+          mimeType: 'image/webp',
+          fileSize: 2048,
+          width: 1200,
+          height: 900,
+          sortOrder: 0,
+          altText: 'Ảnh máy thực tế',
+          createdAt: new Date('2026-08-25T08:00:00.000Z'),
+        },
+      ],
+    });
+    const fixture = serviceFixture({ findUnit: vi.fn(async () => unit) });
+
+    const employeeProjection = await fixture.service.getUnit(UNIT_ID, 'EMPLOYEE');
+    expect(employeeProjection).toMatchObject({
+      media: [
+        {
+          id: id(20),
+          url: `https://storage.test/storage/v1/object/public/rephone-public/units/${UNIT_ID}/%E1%BA%A3nh%20m%C3%A1y.webp`,
+          altText: 'Ảnh máy thực tế',
+        },
+      ],
+      availabilityReadiness: { isReady: true, reasons: [] },
+      availableActions: expect.arrayContaining([
+        'CREATE_INSPECTION',
+        'MAKE_AVAILABLE',
+        'SEND_TO_REPAIR',
+        'QUARANTINE',
+        'TRANSFER',
+        'UPLOAD_MEDIA',
+      ]),
+    });
+    expect(employeeProjection.availableActions).not.toContain('WRITE_OFF');
+    expect((await fixture.service.getUnit(UNIT_ID, 'ADMIN')).availableActions).toContain(
+      'WRITE_OFF',
+    );
+    expect(JSON.stringify(employeeProjection)).not.toMatch(
+      /acquisitionCost|additionalCost|Encrypted|Hmac|identifierKeyVersion/,
+    );
+  });
+
+  it('explains every unmet make-available condition without exposing identifiers', async () => {
+    const fixture = serviceFixture({
+      findUnit: vi.fn(async () =>
+        unitRecord({
+          lifecycleStatus: 'RECEIVED',
+          inspections: [],
+          salePrice: null,
+          imei1Hmac: null,
+          serialHmac: null,
+          location: locationRecord({ status: 'INACTIVE' }),
+          variant: variantRecord({
+            status: 'ARCHIVED',
+            product: productRecord({ status: 'DRAFT' }),
+          }),
+          _count: { media: 0, reservations: 1, inspections: 1 },
+        }),
+      ),
+    });
+
+    await expect(fixture.service.getUnit(UNIT_ID)).resolves.toMatchObject({
+      availabilityReadiness: {
+        isReady: false,
+        reasons: [
+          'STATUS_NOT_INSPECTING',
+          'INSPECTION_REQUIRED',
+          'ACTIVE_RESERVATION',
+          'SALE_PRICE_REQUIRED',
+          'LOCATION_INACTIVE',
+          'VARIANT_INACTIVE',
+          'PRODUCT_INACTIVE',
+          'IDENTIFIER_REQUIRED',
+          'MEDIA_REQUIRED',
+        ],
+      },
+    });
+  });
+
+  it('looks up an identifier, audits the safe outcome, and returns the masked projection', async () => {
     const fixture = serviceFixture();
 
     await expect(
-      fixture.service.lookupIdentifier(
-        { type: 'SERIAL', value: 'ABC123', reason: 'Đối chiếu bảo hành' },
-        actor,
-      ),
+      fixture.service.lookupIdentifier({ type: 'SERIAL', value: 'ABC123' }, actor),
     ).resolves.toMatchObject({ id: UNIT_ID, maskedIdentifiers: [] });
     expect(fixture.identifiers.lookupHmac).toHaveBeenCalledWith('SERIAL', 'ABC123');
     expect(fixture.repository.findByIdentifier).toHaveBeenCalledWith(
@@ -91,9 +175,11 @@ describe('InventoryService projections and identifiers', () => {
       actor,
       expect.objectContaining({
         action: 'inventory.identifier.lookup',
-        metadata: { reason: 'Đối chiếu bảo hành', identifierType: 'SERIAL' },
+        resourceId: UNIT_ID,
+        metadata: { identifierType: 'SERIAL', outcome: 'FOUND' },
       }),
     );
+    expect(JSON.stringify(vi.mocked(fixture.audit.write).mock.calls)).not.toContain('ABC123');
   });
 
   it('maps invalid lookup input and missing lookup results safely', async () => {
@@ -103,10 +189,7 @@ describe('InventoryService projections and identifiers', () => {
       }),
     });
     await expect(
-      invalid.service.lookupIdentifier(
-        { type: 'IMEI', value: 'bad', reason: 'Kiểm tra máy' },
-        actor,
-      ),
+      invalid.service.lookupIdentifier({ type: 'IMEI', value: 'bad' }, actor),
     ).rejects.toMatchObject({
       code: 'VALIDATION_FAILED',
       details: [expect.objectContaining({ field: 'value', code: 'INVALID_IMEI' })],
@@ -114,11 +197,14 @@ describe('InventoryService projections and identifiers', () => {
 
     const missing = serviceFixture({ findByIdentifier: vi.fn(async () => null) });
     await expect(
-      missing.service.lookupIdentifier(
-        { type: 'SERIAL', value: 'ABC123', reason: 'Kiểm tra máy' },
-        actor,
-      ),
+      missing.service.lookupIdentifier({ type: 'SERIAL', value: 'ABC123' }, actor),
     ).rejects.toMatchObject({ code: 'RESOURCE_NOT_FOUND' });
+    expect(missing.audit.write).toHaveBeenCalledWith(expect.anything(), actor, {
+      action: 'inventory.identifier.lookup',
+      resourceType: 'InventoryUnit',
+      metadata: { identifierType: 'SERIAL', outcome: 'NOT_FOUND' },
+    });
+    expect(JSON.stringify(vi.mocked(missing.audit.write).mock.calls)).not.toContain('ABC123');
   });
 
   it('reveals only present encrypted identifiers after the audit is written', async () => {
@@ -518,7 +604,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'active reservation exists',
-      unit: availableCandidate({ _count: { media: 1, reservations: 1 } }),
+      unit: availableCandidate({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       error: 'INVENTORY_NOT_AVAILABLE',
     },
     {
@@ -550,7 +636,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'photo is missing',
-      unit: availableCandidate({ _count: { media: 0, reservations: 0 } }),
+      unit: availableCandidate({ _count: { media: 0, reservations: 0, inspections: 0 } }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
   ])('rejects make available when $name', async ({ unit, error }) => {
@@ -615,7 +701,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'reservation is active',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       role: 'ADMIN' as const,
       error: 'INVENTORY_NOT_AVAILABLE',
     },
@@ -664,7 +750,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     },
     {
       name: 'unit is reserved',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       location: locationRecord(),
       error: 'INVENTORY_NOT_AVAILABLE',
     },
@@ -739,13 +825,16 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
     {
       name: 'last available photo would be removed',
       method: 'delete',
-      unit: unitRecord({ lifecycleStatus: 'AVAILABLE', _count: { media: 1, reservations: 0 } }),
+      unit: unitRecord({
+        lifecycleStatus: 'AVAILABLE',
+        _count: { media: 1, reservations: 0, inspections: 0 },
+      }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
     {
       name: 'last reserved photo would be removed',
       method: 'delete',
-      unit: unitRecord({ _count: { media: 1, reservations: 1 } }),
+      unit: unitRecord({ _count: { media: 1, reservations: 1, inspections: 0 } }),
       error: 'INVENTORY_AVAILABILITY_REQUIREMENTS_NOT_MET',
     },
   ])('enforces media policy when $name', async ({ method, unit, error }) => {
@@ -758,7 +847,7 @@ describe('InventoryService cost, availability, lifecycle, transfer, and media po
   });
 
   it('allows media ownership and deletion when lifecycle requirements remain satisfied', async () => {
-    const unit = unitRecord({ _count: { media: 2, reservations: 1 } });
+    const unit = unitRecord({ _count: { media: 2, reservations: 1, inspections: 0 } });
     const fixture = serviceFixture({ findUnit: vi.fn(async () => unit) });
     await expect(fixture.service.assertUnitMediaOwner(UNIT_ID)).resolves.toBe(unit);
     await expect(
@@ -779,6 +868,7 @@ function serviceFixture(overrides: Record<string, unknown> = {}) {
     listLocations: vi.fn(async () => [locationRecord()]),
     lockIdentifierKeys: vi.fn(async () => undefined),
     findDuplicateIdentifier: vi.fn(async () => null),
+    hasActiveTransferTarget: vi.fn(async () => true),
     ...withoutFixtureOnlyOverrides(overrides),
   } as unknown as InventoryRepository;
   const identifiers = {
@@ -801,7 +891,9 @@ function serviceFixture(overrides: Record<string, unknown> = {}) {
   } as unknown as SerializableTransactionRunner;
   const audit = { write: vi.fn(async () => undefined) } as unknown as AuditWriter;
   return {
-    service: new InventoryService(repository, identifiers, transactions, audit),
+    service: new InventoryService(repository, identifiers, transactions, audit, {
+      storage: { url: 'https://storage.test' },
+    } as AppConfig),
     repository,
     identifiers,
     audit,
@@ -890,7 +982,8 @@ function unitRecord(overrides: Record<string, unknown> = {}): InventoryUnitRecor
     variant: variantRecord(),
     location: locationRecord({ id: LOCATION_ID }),
     inspections: [],
-    _count: { media: 1, reservations: 0 },
+    media: [],
+    _count: { media: 1, reservations: 0, inspections: 0 },
     ...overrides,
   } as unknown as InventoryUnitRecord;
 }
@@ -901,7 +994,7 @@ function availableCandidate(overrides: Record<string, unknown> = {}): InventoryU
     salePrice: decimal('100'),
     imei1Hmac: 'IMEI:sellable',
     inspections: [inspectionSummary()],
-    _count: { media: 1, reservations: 0 },
+    _count: { media: 1, reservations: 0, inspections: 0 },
     ...overrides,
   });
 }

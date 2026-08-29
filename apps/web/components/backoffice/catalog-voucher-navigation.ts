@@ -2,7 +2,8 @@ import type { AuthRole } from '@/app/auth-provider';
 import type { BackofficeNavigationGroup } from '@/components/shells';
 
 export const CATALOG_PRODUCTS_ROOT = '/backoffice/catalog/products';
-export const INVENTORY_ROOT = '/backoffice/inventory/intake';
+export const BACKOFFICE_ROOT = '/backoffice';
+export const INVENTORY_ROOT = '/backoffice/inventory/units';
 export const ORDERS_ROOT = '/backoffice/orders';
 export const VOUCHERS_ROOT = '/backoffice/vouchers';
 
@@ -19,10 +20,10 @@ export function catalogVoucherNavigationForRole(
       label: 'Vận hành',
       items: [
         {
-          href: '#',
+          href: BACKOFFICE_ROOT,
           label: 'Tổng quan',
           icon: 'overview',
-          isDisabled: true,
+          isCurrent: pathname === BACKOFFICE_ROOT,
         },
         {
           href: CATALOG_PRODUCTS_ROOT,

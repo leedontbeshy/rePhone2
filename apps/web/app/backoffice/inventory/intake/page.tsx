@@ -1,16 +1,15 @@
+'use client';
+
 import { Suspense } from 'react';
+import { InventoryShell } from '@/components/backoffice';
 import { InventoryIntakeWizard } from './wizard';
 
 export default function InventoryIntakePage() {
   return (
-    <Suspense
-      fallback={
-        <main className="backoffice-shell">
-          <div className="status">Đang mở quy trình nhập máy…</div>
-        </main>
-      }
-    >
-      <InventoryIntakeWizard />
-    </Suspense>
+    <InventoryShell breadcrumbs={[{ label: 'Kho hàng' }, { label: 'Nhập máy' }]}>
+      <Suspense fallback={<div className="status">Đang mở quy trình nhập máy…</div>}>
+        <InventoryIntakeWizard />
+      </Suspense>
+    </InventoryShell>
   );
 }

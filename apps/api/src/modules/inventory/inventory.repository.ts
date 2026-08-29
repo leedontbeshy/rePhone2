@@ -6,7 +6,7 @@ import type { InventoryUnitListQueryDto } from './inventory.dto.js';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
-const unitInclude = {
+const unitListInclude = {
   variant: { include: { product: true } },
   location: true,
   inspections: {
@@ -18,11 +18,25 @@ const unitInclude = {
     select: {
       media: true,
       reservations: { where: { status: 'ACTIVE' as const } },
+      inspections: { where: { status: 'DRAFT' as const } },
     },
   },
 } satisfies Prisma.InventoryUnitInclude;
 
-export type InventoryUnitRecord = Prisma.InventoryUnitGetPayload<{ include: typeof unitInclude }>;
+const unitDetailInclude = {
+  ...unitListInclude,
+  media: {
+    where: { visibility: 'PUBLIC' as const },
+    orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }, { id: 'asc' as const }],
+  },
+} satisfies Prisma.InventoryUnitInclude;
+
+export type InventoryUnitListRecord = Prisma.InventoryUnitGetPayload<{
+  include: typeof unitListInclude;
+}>;
+export type InventoryUnitRecord = Prisma.InventoryUnitGetPayload<{
+  include: typeof unitDetailInclude;
+}>;
 
 export interface IdentifierKey {
   type: IdentifierType;
@@ -81,7 +95,7 @@ export class InventoryRepository {
     const [items, totalItems] = await Promise.all([
       this.prisma.inventoryUnit.findMany({
         where,
-        include: unitInclude,
+        include: unitListInclude,
         orderBy: [orderBy, { id: 'asc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -92,7 +106,7 @@ export class InventoryRepository {
   }
 
   public findUnit(id: string, client: DbClient = this.prisma) {
-    return client.inventoryUnit.findUnique({ where: { id }, include: unitInclude });
+    return client.inventoryUnit.findUnique({ where: { id }, include: unitDetailInclude });
   }
 
   public findByIdentifier(type: IdentifierType, hmac: string, client: DbClient = this.prisma) {
@@ -103,20 +117,28 @@ export class InventoryRepository {
           : type === 'SERIAL'
             ? { serialHmac: hmac }
             : { eidHmac: hmac },
-      include: unitInclude,
+      include: unitListInclude,
     });
   }
 
   public createUnit(data: Prisma.InventoryUnitUncheckedCreateInput, client: DbClient) {
-    return client.inventoryUnit.create({ data, include: unitInclude });
+    return client.inventoryUnit.create({ data, include: unitDetailInclude });
   }
 
   public updateUnit(id: string, data: Prisma.InventoryUnitUncheckedUpdateInput, client: DbClient) {
-    return client.inventoryUnit.update({ where: { id }, data, include: unitInclude });
+    return client.inventoryUnit.update({ where: { id }, data, include: unitDetailInclude });
   }
 
   public listLocations() {
     return this.prisma.inventoryLocation.findMany({ orderBy: [{ type: 'asc' }, { code: 'asc' }] });
+  }
+
+  public async hasActiveTransferTarget(currentLocationId: string): Promise<boolean> {
+    return (
+      (await this.prisma.inventoryLocation.count({
+        where: { id: { not: currentLocationId }, status: 'ACTIVE' },
+      })) > 0
+    );
   }
 
   public async lockIdentifierKeys(keys: IdentifierKey[], client: Prisma.TransactionClient) {

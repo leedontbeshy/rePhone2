@@ -167,7 +167,7 @@ export function MobileNavigation() {
                   Tài khoản của bạn
                 </Link>
               ) : (
-                <Link href="/backoffice/orders" onClick={closeNavigation}>
+                <Link href="/backoffice" onClick={closeNavigation}>
                   Mở trang quản trị
                 </Link>
               )}
