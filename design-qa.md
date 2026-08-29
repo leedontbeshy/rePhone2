@@ -89,3 +89,38 @@ Mobile:
 - PostgreSQL/Docker integration chưa chạy vì Docker Desktop đang tắt.
 
 Kết quả cuối: **đạt**.
+
+---
+
+## Kiểm tra bổ sung — thiết kế lại màn nhập máy
+
+Ngày kiểm tra: 2026-08-29
+
+### Nguồn và trạng thái đối chiếu
+
+- Mockup đã chọn: phương án 1, ảnh gốc `1487 × 1059`, trạng thái bước 1.
+- Bản triển khai: `1280 × 720`, mật độ điểm ảnh `2`, tài khoản quản trị viên, dữ liệu thật từ môi trường Docker cục bộ.
+- Ảnh triển khai: [màn nhập máy sau thiết kế lại](docs/assets/ui/fe-06/intake-redesign-1280.png).
+- Ảnh hồi quy: [tra cứu IMEI sai nhưng hai trường vẫn thẳng hàng](docs/assets/ui/fe-06/lookup-error-1280.png).
+- Mockup và ảnh triển khai đã được chuẩn hóa về cùng chiều cao, đặt cạnh nhau trong một ảnh so sánh trước khi đánh giá.
+
+### Kết quả đối chiếu
+
+- Nhóm công cụ Kho hàng đã chuyển vào sidebar trái; không còn thanh điều hướng ngang lặp lại.
+- Sidebar chỉ có một mục `aria-current="page"`; “Nhập máy” được làm nổi bật đúng route.
+- Tiến độ 5 bước, form hai cột, các nhóm nghiệp vụ và khối tóm tắt bên phải giữ đúng hướng thiết kế của mockup, đồng thời dùng token và cỡ chữ hiện có của rePhone.
+- Tóm tắt máy cập nhật ngay theo dòng máy, nơi nhận, số mã nhận diện và giá bán; không gửi dữ liệu khi chỉ nhập thử.
+- Phiếu kiểm định không đạt hoặc chỉ đạt một phần vẫn dừng ở bước Kiểm định và hiển thị “Cần xử lý”, không chuyển nhầm sang bước mở bán.
+- Bước hiện tại có `aria-current="step"` và trạng thái ẩn dành cho trình đọc màn hình.
+- Trạng thái IMEI sai giữ hai control tại cùng tung độ `373 px`; chiều cao lần lượt `49,5 px` và `50 px`; không có tràn ngang.
+- Không có lỗi console sau khi tải trang, thay đổi dữ liệu form, chuyển route và kích hoạt trạng thái lỗi.
+
+### Cổng chất lượng của lượt sửa
+
+- Web lint: đạt.
+- Web typecheck: đạt.
+- Web test: `87/87` tệp, `390/390` bài kiểm tra đạt.
+- Production build: đạt, tạo đủ `42/42` trang.
+- Kiểm tra trực tiếp: nhập liệu tóm tắt, trạng thái lỗi, sidebar hiện tại và điều hướng đều đạt.
+
+final result: passed
