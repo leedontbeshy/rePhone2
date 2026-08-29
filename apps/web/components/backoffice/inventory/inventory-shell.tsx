@@ -5,12 +5,10 @@ import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
-import { catalogVoucherNavigationForRole } from '../catalog-voucher-navigation';
+import { backofficeNavigationForRole } from '../backoffice-navigation';
 import {
   canAccessInventoryWorkspace,
   canViewInventoryCost,
-  INVENTORY_UNITS_ROOT,
-  inventoryNavigationForPath,
 } from './inventory-navigation';
 import styles from './inventory.module.css';
 
@@ -36,19 +34,10 @@ export function InventoryShell({
   const { logout, logoutPending, status, user } = useAuth();
   const [logoutError, setLogoutError] = useState(false);
   const hasAccess = canAccessInventoryWorkspace(user?.role);
-  const localNavigation = inventoryNavigationForPath(activeNavigationPath ?? pathname).map(
-    (item) => ({
-      ...item,
-      href: navigationHrefOverrides?.[item.href] ?? item.href,
-    }),
-  );
-  const baseNavigation = catalogVoucherNavigationForRole(user?.role, pathname).map((group) => ({
-    ...group,
-    items: group.items.filter((item) => item.href !== INVENTORY_UNITS_ROOT),
-  }));
-  const navigationGroups = hasAccess
-    ? [...baseNavigation, { label: 'Kho hàng', items: localNavigation }]
-    : baseNavigation;
+  const navigationGroups = backofficeNavigationForRole(user?.role, pathname, {
+    activePath: activeNavigationPath,
+    hrefOverrides: navigationHrefOverrides,
+  });
 
   async function signOut() {
     setLogoutError(false);

@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
+import { canAccessBackofficeNavigation } from './backoffice-navigation';
 import {
   canAccessCatalogVoucherPath,
   catalogVoucherAccessForPath,
@@ -54,6 +55,7 @@ export function CatalogVoucherShell({
       }
       breadcrumbs={breadcrumbs}
       navigationGroups={navigationGroups}
+      showNavigationGroupLabels={canAccessBackofficeNavigation(user?.role)}
       topbarActions={
         status === 'authenticated' ? (
           <Button

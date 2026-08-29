@@ -105,9 +105,18 @@ export function BackofficeShell({
         aria-label="Điều hướng backoffice"
       >
         <nav aria-label="Các khu vực vận hành" ref={navigationRef}>
-          {navigationGroups.map((group) => (
-            <section className={styles.navigationGroup} key={group.label}>
-              <h2 className={styles.navigationGroupLabel}>{group.label}</h2>
+          {navigationGroups.map((group, index) => (
+            <section
+              aria-labelledby={`backoffice-navigation-group-${String(index)}`}
+              className={styles.navigationGroup}
+              key={group.label}
+            >
+              <h2
+                className={styles.navigationGroupLabel}
+                id={`backoffice-navigation-group-${String(index)}`}
+              >
+                {group.label}
+              </h2>
               <NavigationList items={group.items} className={styles.backofficeNavigationList} />
             </section>
           ))}

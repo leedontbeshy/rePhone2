@@ -12,41 +12,19 @@ describe('FE-05 backoffice navigation', () => {
       '/backoffice/catalog/products/product-id',
     );
 
-    expect(groups).toHaveLength(1);
-    expect(groups[0]?.items).toEqual([
-      {
-        href: '/backoffice',
-        label: 'Tổng quan',
-        icon: 'overview',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/catalog/products',
-        label: 'Danh mục',
-        icon: 'catalog',
-        isCurrent: true,
-      },
-      {
-        href: '/backoffice/inventory/units',
-        label: 'Kho hàng',
-        icon: 'inventory',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/orders',
-        label: 'Đơn hàng',
-        icon: 'orders',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/vouchers',
-        label: 'Mã ưu đãi',
-        icon: 'vouchers',
-        isCurrent: false,
-        isDisabled: true,
-        isSeparated: true,
-      },
+    expect(groups.map((group) => group.label)).toEqual([
+      'Vận hành',
+      'Kho hàng',
+      'Đơn hàng',
+      'Sau mua',
     ]);
+    expect(groups.flatMap((group) => group.items)).toHaveLength(15);
+    expect(
+      groups.flatMap((group) => group.items).find((item) => item.label === 'Danh mục'),
+    ).toMatchObject({ href: '/backoffice/catalog/products', isCurrent: true });
+    expect(
+      groups.flatMap((group) => group.items).find((item) => item.label === 'Mã ưu đãi'),
+    ).toMatchObject({ href: '/backoffice/vouchers', isDisabled: true });
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/catalog/products/new')).toBe(true);
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/vouchers')).toBe(false);
   });
@@ -54,40 +32,13 @@ describe('FE-05 backoffice navigation', () => {
   it('enables voucher administration for admins and marks nested routes current', () => {
     const groups = catalogVoucherNavigationForRole('ADMIN', '/backoffice/vouchers/voucher-id');
 
-    expect(groups[0]?.items).toEqual([
-      {
-        href: '/backoffice',
-        label: 'Tổng quan',
-        icon: 'overview',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/catalog/products',
-        label: 'Danh mục',
-        icon: 'catalog',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/inventory/units',
-        label: 'Kho hàng',
-        icon: 'inventory',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/orders',
-        label: 'Đơn hàng',
-        icon: 'orders',
-        isCurrent: false,
-      },
-      {
-        href: '/backoffice/vouchers',
-        label: 'Mã ưu đãi',
-        icon: 'vouchers',
-        isCurrent: true,
-        isDisabled: false,
-        isSeparated: true,
-      },
-    ]);
+    const items = groups.flatMap((group) => group.items);
+    expect(items.filter((item) => item.isCurrent)).toHaveLength(1);
+    expect(items.find((item) => item.label === 'Mã ưu đãi')).toMatchObject({
+      href: '/backoffice/vouchers',
+      isCurrent: true,
+      isDisabled: false,
+    });
     expect(catalogVoucherAccessForPath('/backoffice/vouchers/new')).toBe('admin');
     expect(canAccessCatalogVoucherPath('ADMIN', '/backoffice/vouchers/new')).toBe(true);
   });

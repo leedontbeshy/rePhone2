@@ -14,15 +14,25 @@ describe('FE-07 operations navigation', () => {
   it('groups the approved Vietnamese destinations in a stable order', () => {
     const groups = operationsNavigationForRole('ADMIN', OPERATIONS_ORDERS_ROOT);
 
-    expect(groups.map((group) => group.label)).toEqual(['Vận hành', 'Tài chính', 'Sau mua']);
+    expect(groups.map((group) => group.label)).toEqual([
+      'Vận hành',
+      'Kho hàng',
+      'Đơn hàng',
+      'Sau mua',
+    ]);
     expect(
       groups.flatMap((group) => group.items).map(({ href, label }) => ({ href, label })),
     ).toEqual([
       { href: '/backoffice', label: 'Tổng quan' },
       { href: '/backoffice/catalog/products', label: 'Danh mục' },
-      { href: '/backoffice/inventory/units', label: 'Kho hàng' },
-      { href: OPERATIONS_ORDERS_ROOT, label: 'Đơn hàng' },
       { href: '/backoffice/vouchers', label: 'Mã ưu đãi' },
+      { href: '/backoffice/inventory/units', label: 'Máy vật lý' },
+      { href: '/backoffice/inventory/intake', label: 'Nhập máy' },
+      { href: '/backoffice/inventory/lookup', label: 'Tra cứu mã' },
+      { href: '/backoffice/inventory/stock', label: 'Tồn phụ kiện' },
+      { href: '/backoffice/inventory/stock/movements', label: 'Lịch sử kho' },
+      { href: '/backoffice/inventory/locations', label: 'Địa điểm' },
+      { href: OPERATIONS_ORDERS_ROOT, label: 'Danh sách đơn hàng' },
       { href: OPERATIONS_PAYMENTS_ROOT, label: 'Duyệt thanh toán' },
       { href: OPERATIONS_REFUNDS_ROOT, label: 'Hoàn tiền' },
       { href: OPERATIONS_AFTER_SALES_ROOT, label: 'Hỗ trợ sau mua' },
@@ -38,6 +48,7 @@ describe('FE-07 operations navigation', () => {
       .find((item) => item.href === OPERATIONS_REFUNDS_ROOT);
 
     expect(refund?.isCurrent).toBe(true);
+    expect(groups.flatMap((group) => group.items).filter((item) => item.isCurrent)).toHaveLength(1);
   });
 
   it('keeps voucher management visible but unavailable to employees', () => {

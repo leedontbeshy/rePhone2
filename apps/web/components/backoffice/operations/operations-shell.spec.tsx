@@ -33,7 +33,8 @@ describe('FE-07 OperationsShell', () => {
     );
 
     expect(markup).toContain('aria-label="Điều hướng backoffice"');
-    expect(markup).toContain('Tài chính');
+    expect(markup).toContain('Kho hàng');
+    expect(markup).toContain('Đơn hàng');
     expect(markup).toContain('Sau mua');
     expect(markup).toContain('aria-current="page" href="/backoffice/orders"');
     expect(markup).toContain('Chi tiết đơn hàng');
