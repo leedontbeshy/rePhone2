@@ -227,6 +227,22 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
       .set(bearer(employee))
       .expect(204);
 
+    const replacementVariant = await request(server)
+      .post(`/api/v1/backoffice/products/${productId}/variants`)
+      .set(bearer(employee))
+      .send({
+        sku: 'IPH-SLICE04-256-BLK',
+        displayName: '256 GB Black',
+        storageCapacityGb: 256,
+        colorName: 'Black',
+      })
+      .expect(201);
+    const replacementVariantId = stringProperty(successData(replacementVariant), 'id');
+    await request(server)
+      .post(`/api/v1/backoffice/variants/${replacementVariantId}/activate`)
+      .set(bearer(employee))
+      .expect(200);
+
     await request(server)
       .post(`/api/v1/backoffice/variants/${variantId}/archive`)
       .set(bearer(employee))
