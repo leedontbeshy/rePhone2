@@ -1,6 +1,12 @@
 import {
+  ArrowsLeftRightIcon,
   CubeIcon,
+  DeviceMobileIcon,
   HouseIcon,
+  MapPinIcon,
+  PackageIcon,
+  PlusIcon,
+  ScanIcon,
   ShoppingBagIcon,
   TagIcon,
   TicketIcon,
@@ -90,7 +96,13 @@ function NavigationIcon({ name }: Readonly<{ name: NonNullable<ShellNavigationIt
   if (name === 'catalog') return <TagIcon {...iconProps} />;
   if (name === 'inventory') return <CubeIcon {...iconProps} />;
   if (name === 'orders') return <ShoppingBagIcon {...iconProps} />;
-  return <TicketIcon {...iconProps} />;
+  if (name === 'vouchers') return <TicketIcon {...iconProps} />;
+  if (name === 'devices') return <DeviceMobileIcon {...iconProps} />;
+  if (name === 'intake') return <PlusIcon {...iconProps} />;
+  if (name === 'lookup') return <ScanIcon {...iconProps} />;
+  if (name === 'stock') return <PackageIcon {...iconProps} />;
+  if (name === 'movements') return <ArrowsLeftRightIcon {...iconProps} />;
+  return <MapPinIcon {...iconProps} />;
 }
 
 export function MainLandmark({

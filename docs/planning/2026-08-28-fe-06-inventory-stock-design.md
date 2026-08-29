@@ -170,3 +170,17 @@ Ngày 2026-08-28, chủ dự án duyệt thêm bốn điều chỉnh cho thao t�
 - Điều hướng con của Kho hàng được căn giữa trên màn hình rộng; màn hình hẹp tiếp tục cuộn ngang và không ép các mục co nhỏ.
 
 Các điều chỉnh không thay đổi state machine, quyền giá vốn, điều kiện đưa máy lên bán, bộ đếm tồn kho hoặc chính sách không lưu mã định danh gốc.
+
+## 12. Bổ sung luồng nhập máy và bàn giao kiểm định
+
+Ngày 2026-08-29, chủ dự án duyệt phương án tách rõ từng bước và đồng bộ giao diện kiểm định với màn nhập máy:
+
+- Mỗi thời điểm chỉ hiển thị nội dung của bước đang làm; khi mở lại hồ sơ, giữ skeleton tiến độ cho đến khi xác định đúng bước, không render thoáng qua form tiếp nhận mới.
+- Bước ảnh dùng bộ chọn tệp tùy biến bằng tiếng Việt, hiển thị tên và dung lượng ảnh; không dùng giao diện chọn tệp mặc định của trình duyệt.
+- Nút “Tạo phiếu kiểm định” mở thẳng trình soạn phiếu mới. Nút “Tiếp tục kiểm định” chỉ dành cho phiếu nháp đã tồn tại.
+- Đường dẫn từ kiểm định về nhập máy luôn giữ `unitId` và `inspectionId`; tham số `source=intake` chỉ có hiệu lực với phiếu loại `INTAKE`.
+- Trước khi hoàn tất, kỹ thuật viên phải xem trang tổng quan và xác nhận. Sau khi xác nhận, phiếu chuyển sang chỉ đọc rồi quay về đúng hồ sơ nhập máy.
+- Kết quả đạt chuyển sang bước “Đưa máy lên bán”. Kết quả chưa đạt ở lại bước kiểm định và cho phép tạo một phiếu kiểm định mới; không tự đưa máy lên bán.
+- Thanh tiến độ trên màn hình hẹp tự đưa bước hiện tại vào vùng nhìn thấy; luồng xem lại trả tiêu điểm về nút hoàn tất khi quay lại chỉnh sửa.
+
+Các quyết định này chỉ thay đổi trình bày, điều hướng và khả năng tiếp tục công việc; API vẫn là nguồn quyết định trạng thái và kết quả kiểm định.

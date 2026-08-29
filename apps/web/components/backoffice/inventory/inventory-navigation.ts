@@ -1,4 +1,5 @@
 import type { AuthRole } from '@/app/auth-provider';
+import type { ShellNavigationItem } from '@/components/shells';
 
 export const INVENTORY_UNITS_ROOT = '/backoffice/inventory/units';
 export const INVENTORY_INTAKE_ROOT = '/backoffice/inventory/intake';
@@ -10,17 +11,18 @@ export const INVENTORY_STOCK_MOVEMENTS_ROOT = '/backoffice/inventory/stock/movem
 
 export interface InventoryNavigationItem {
   readonly href: string;
+  readonly icon: NonNullable<ShellNavigationItem['icon']>;
   readonly isCurrent: boolean;
   readonly label: string;
 }
 
 const INVENTORY_NAVIGATION = [
-  { href: INVENTORY_UNITS_ROOT, label: 'Máy vật lý' },
-  { href: INVENTORY_INTAKE_ROOT, label: 'Nhập máy' },
-  { href: INVENTORY_LOOKUP_ROOT, label: 'Tra cứu mã' },
-  { href: INVENTORY_STOCK_ROOT, label: 'Tồn phụ kiện' },
-  { href: INVENTORY_STOCK_MOVEMENTS_ROOT, label: 'Lịch sử kho' },
-  { href: INVENTORY_LOCATIONS_ROOT, label: 'Địa điểm' },
+  { href: INVENTORY_UNITS_ROOT, icon: 'devices', label: 'Máy vật lý' },
+  { href: INVENTORY_INTAKE_ROOT, icon: 'intake', label: 'Nhập máy' },
+  { href: INVENTORY_LOOKUP_ROOT, icon: 'lookup', label: 'Tra cứu mã' },
+  { href: INVENTORY_STOCK_ROOT, icon: 'stock', label: 'Tồn phụ kiện' },
+  { href: INVENTORY_STOCK_MOVEMENTS_ROOT, icon: 'movements', label: 'Lịch sử kho' },
+  { href: INVENTORY_LOCATIONS_ROOT, icon: 'locations', label: 'Địa điểm' },
 ] as const;
 
 export function inventoryNavigationForPath(pathname: string): readonly InventoryNavigationItem[] {

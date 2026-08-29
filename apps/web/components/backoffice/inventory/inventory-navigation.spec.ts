@@ -11,12 +11,16 @@ import {
 describe('FE-06 inventory navigation', () => {
   it('provides the six Vietnamese workspace destinations in their agreed order', () => {
     expect(inventoryNavigationForPath(INVENTORY_UNITS_ROOT)).toMatchObject([
-      { label: 'Máy vật lý', href: '/backoffice/inventory/units' },
-      { label: 'Nhập máy', href: '/backoffice/inventory/intake' },
-      { label: 'Tra cứu mã', href: '/backoffice/inventory/lookup' },
-      { label: 'Tồn phụ kiện', href: '/backoffice/inventory/stock' },
-      { label: 'Lịch sử kho', href: '/backoffice/inventory/stock/movements' },
-      { label: 'Địa điểm', href: '/backoffice/inventory/locations' },
+      { label: 'Máy vật lý', href: '/backoffice/inventory/units', icon: 'devices' },
+      { label: 'Nhập máy', href: '/backoffice/inventory/intake', icon: 'intake' },
+      { label: 'Tra cứu mã', href: '/backoffice/inventory/lookup', icon: 'lookup' },
+      { label: 'Tồn phụ kiện', href: '/backoffice/inventory/stock', icon: 'stock' },
+      {
+        label: 'Lịch sử kho',
+        href: '/backoffice/inventory/stock/movements',
+        icon: 'movements',
+      },
+      { label: 'Địa điểm', href: '/backoffice/inventory/locations', icon: 'locations' },
     ]);
   });
 

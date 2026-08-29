@@ -16,6 +16,13 @@ const ACCESSORY_NAME = 'Củ sạc USB-C 20W';
 
 type StaffRole = 'ADMIN' | 'EMPLOYEE';
 type InspectionStatus = 'DRAFT' | 'COMPLETED';
+type InspectionType = 'INTAKE' | 'PRE_SALE' | 'WARRANTY' | 'RETURN';
+
+interface Fe06ApiOptions {
+  readonly inspectionType?: InspectionType;
+  readonly mediaCount?: number;
+  readonly resumeDelayMs?: number;
+}
 
 interface MovementFixture {
   readonly createdAt: string;
@@ -30,8 +37,10 @@ interface Fe06Probe {
   inspectionCompleteRequests: number;
   inspectionPatchBodies: Array<Record<string, unknown>>;
   inspectionStatus: InspectionStatus;
+  inspectionType: InspectionType;
   inspectionValues: Record<string, unknown>;
   lookupBody: Record<string, unknown> | null;
+  mediaCount: number;
   movements: MovementFixture[];
   stockCommandBodies: Array<{ body: Record<string, unknown>; path: string }>;
   stockLevelRequests: number;
@@ -142,10 +151,12 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(browserErrors).toEqual([]);
   });
 
-  test('edits all 18 inspection items, saves a draft, then completes it', async ({ page }) => {
-    const probe = await installFe06Api(page, 'EMPLOYEE');
+  test('reviews all 18 inspection items, confirms completion, then returns to intake', async ({
+    page,
+  }) => {
+    const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
 
-    await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}`, {
+    await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}?source=intake`, {
       waitUntil: 'domcontentloaded',
     });
     await expect(
@@ -183,6 +194,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     ).toBeLessThanOrEqual(1);
     expect(
       Math.abs((resultControlHeights[0] ?? 0) - (summaryControlHeights[0] ?? 0)),
+      `Chiều cao tổng quan ${JSON.stringify(summaryControlHeights)}, checklist ${JSON.stringify(resultControlHeights)}`,
     ).toBeLessThanOrEqual(1);
     for (const field of resultFields) await field.selectOption('PASS');
     await page.getByLabel('Tình trạng pin (%)').fill('94');
@@ -193,16 +205,127 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.inspectionPatchBodies).toHaveLength(1);
     expect(checkItemCount(probe.inspectionPatchBodies[0])).toBe(18);
 
-    await page.getByRole('button', { name: 'Hoàn tất kiểm định', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: 'Hoàn tất phiếu kiểm định?' });
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Hoàn tất kiểm định', exact: true }).click();
+    const completeButton = page.getByRole('button', {
+      name: 'Hoàn tất kiểm định',
+      exact: true,
+    });
+    await completeButton.click();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Xem lại tổng quan kiểm định' }),
+    ).toBeVisible();
+    await expect(page.getByText('Bạn sẽ chuyển sang bước Đưa máy lên bán.')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Quay lại chỉnh sửa', exact: true }).click();
+    await expect(completeButton).toBeFocused();
+    await completeButton.click();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Xem lại tổng quan kiểm định' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Xác nhận hoàn tất', exact: true }).click();
 
-    await expect(page.getByText('Đã hoàn tất phiếu kiểm định.', { exact: true })).toBeVisible();
-    await expect(page.getByText('Phiếu đã hoàn tất và không thể chỉnh sửa.')).toBeVisible();
+    await expect(page).toHaveURL(
+      `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+    );
+    await expect(page.getByRole('heading', { level: 2, name: 'Đưa máy lên bán' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
     expect(probe.inspectionCompleteRequests).toBe(1);
     expect(probe.inspectionPatchBodies).toHaveLength(2);
     expect(probe.inspectionStatus).toBe('COMPLETED');
+  });
+
+  test('restores an existing intake without flashing step one and uploads through the custom picker', async ({
+    page,
+  }) => {
+    const probe = await installFe06Api(page, 'EMPLOYEE', {
+      mediaCount: 0,
+      resumeDelayMs: 400,
+    });
+
+    await page.goto(
+      `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
+    await expect(page.getByLabel('Sản phẩm iPhone')).toHaveCount(0);
+    await expect(page.getByText('Đang mở lại tiến độ nhập máy…')).toBeAttached();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
+    ).toBeVisible();
+
+    const fileInput = page.locator('#inventory-media-file');
+    await expect(fileInput).toHaveCSS('width', '1px');
+    await expect(fileInput).toHaveCSS('height', '1px');
+    const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
+    await expect(uploadButton).toBeDisabled();
+    await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
+    await expect(page.getByText('intake-1440.png', { exact: true })).toBeVisible();
+    await expect(uploadButton).toBeEnabled();
+    await uploadButton.click();
+
+    await expect(page.getByText('Đã tải ảnh thực tế của máy lên thành công.')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Kiểm định 18 hạng mục' }),
+    ).toBeVisible();
+    expect(probe.mediaCount).toBe(1);
+    await expectSingleMainAndNoOverflow(page);
+  });
+
+  test('keeps step four visible inside the mobile progress scroller after resume', async ({
+    page,
+  }) => {
+    const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
+    probe.inspectionStatus = 'COMPLETED';
+    probe.inspectionValues = passingInspectionValues();
+    await page.setViewportSize({ width: 360, height: 800 });
+
+    await page.goto(
+      `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    await expect(page.getByRole('heading', { level: 2, name: 'Đưa máy lên bán' })).toBeVisible();
+
+    const progress = page.getByLabel('Tiến độ nhập máy');
+    const currentStep = progress.locator('[aria-current="step"]');
+    await expect(currentStep).toHaveCount(1);
+    await expect(currentStep).toContainText('Sẵn sàng bán');
+    await expect
+      .poll(() =>
+        currentStep.evaluate((element) => {
+          const item = element.getBoundingClientRect();
+          const scroller = element.closest('ol')?.getBoundingClientRect();
+          return (
+            scroller !== undefined && item.left >= scroller.left && item.right <= scroller.right
+          );
+        }),
+      )
+      .toBe(true);
+    await expectSingleMainAndNoOverflow(page);
+  });
+
+  test('does not trust an intake source marker for another inspection type', async ({ page }) => {
+    const probe = await installFe06Api(page, 'EMPLOYEE', { inspectionType: 'WARRANTY' });
+    probe.inspectionValues = passingInspectionValues();
+
+    await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}?source=intake`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Phiếu kiểm định iPhone' }),
+    ).toBeVisible();
+    await expect(page.getByLabel('Tiến độ nhập máy')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Hoàn tất kiểm định', exact: true }).click();
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Xem lại tổng quan kiểm định' }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Xác nhận hoàn tất', exact: true }).click();
+
+    await expect(page).toHaveURL(
+      `/backoffice/inventory/inspections/${INSPECTION_ID}?source=intake`,
+    );
+    await expect(page.getByRole('heading', { level: 2, name: 'Tổng hợp kiểm định' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Quay lại quy trình nhập máy' })).toHaveCount(0);
+    expect(probe.inspectionCompleteRequests).toBe(1);
   });
 
   test('records a stock command, reconciles levels and exposes the immutable ledger', async ({
@@ -327,7 +450,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
         await expectSingleMainAndNoOverflow(page);
         if (viewport.width === 360) {
           const currentNavigationItem = page
-            .getByRole('navigation', { name: 'Các mục quản lý kho' })
+            .getByRole('navigation', { name: 'Các khu vực vận hành' })
             .locator('a[aria-current="page"]');
           await expect
             .poll(() =>
@@ -358,14 +481,21 @@ test.describe('FE-06 inventory and stock workspace', () => {
   });
 });
 
-async function installFe06Api(page: Page, role: StaffRole): Promise<Fe06Probe> {
+async function installFe06Api(
+  page: Page,
+  role: StaffRole,
+  options: Fe06ApiOptions = {},
+): Promise<Fe06Probe> {
+  const resumeDelayMs = Math.max(0, options.resumeDelayMs ?? 0);
   const probe: Fe06Probe = {
     costRequests: 0,
     inspectionCompleteRequests: 0,
     inspectionPatchBodies: [],
     inspectionStatus: 'DRAFT',
+    inspectionType: options.inspectionType ?? 'INTAKE',
     inspectionValues: {},
     lookupBody: null,
+    mediaCount: Math.max(0, options.mediaCount ?? 0),
     movements: [
       {
         createdAt: '2026-08-28T06:30:00.000Z',
@@ -411,7 +541,7 @@ async function installFe06Api(page: Page, role: StaffRole): Promise<Fe06Probe> {
     }
     if (pathname.endsWith('/backoffice/inventory-units/lookup-identifier') && method === 'POST') {
       probe.lookupBody = requestJson(route);
-      await fulfillJson(route, { data: inventoryUnit() });
+      await fulfillJson(route, { data: inventoryUnit(probe) });
       return;
     }
     if (pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}/cost`) && method === 'GET') {
@@ -425,18 +555,25 @@ async function installFe06Api(page: Page, role: StaffRole): Promise<Fe06Probe> {
       pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}/inspections`) &&
       method === 'GET'
     ) {
+      await delay(resumeDelayMs);
       await fulfillJson(route, paged([inspectionSummary(probe)], 50));
       return;
     }
+    if (pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}/media`) && method === 'POST') {
+      probe.mediaCount += 1;
+      await fulfillJson(route, { data: inventoryMedia(probe.mediaCount - 1) }, 201);
+      return;
+    }
     if (pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}`) && method === 'GET') {
-      await fulfillJson(route, { data: inventoryUnit() });
+      await delay(resumeDelayMs);
+      await fulfillJson(route, { data: inventoryUnit(probe) });
       return;
     }
     if (pathname.endsWith('/backoffice/inventory-units') && method === 'GET') {
       probe.unitListQueries.push(url.searchParams.toString());
       await fulfillJson(
         route,
-        paged([inventoryUnit()], Number(url.searchParams.get('pageSize')) || 20),
+        paged([inventoryUnit(probe)], Number(url.searchParams.get('pageSize')) || 20),
       );
       return;
     }
@@ -457,6 +594,7 @@ async function installFe06Api(page: Page, role: StaffRole): Promise<Fe06Probe> {
       return;
     }
     if (pathname.endsWith(`/backoffice/inspections/${INSPECTION_ID}`) && method === 'GET') {
+      await delay(resumeDelayMs);
       await fulfillJson(route, { data: inspectionDetail(probe) });
       return;
     }
@@ -537,7 +675,8 @@ function inventoryLocations() {
   ] as const;
 }
 
-function inventoryUnit() {
+function inventoryUnit(probe: Fe06Probe) {
+  const completed = probe.inspectionStatus === 'COMPLETED';
   return {
     activeReservationCount: 0,
     availabilityReadiness: { isReady: false, reasons: ['INSPECTION_REQUIRED'] },
@@ -552,19 +691,21 @@ function inventoryUnit() {
     carrierName: null,
     compareAtPrice: '13900000',
     currentInspection: {
-      batteryHealthPercent: null,
-      conditionGrade: null,
+      batteryHealthPercent: completed
+        ? numberField(probe.inspectionValues, 'batteryHealthPercent')
+        : null,
+      conditionGrade: completed ? stringField(probe.inspectionValues, 'conditionGrade') : null,
       id: INSPECTION_ID,
-      inspectedAt: null,
-      overallResult: 'INCOMPLETE',
+      inspectedAt: completed ? '2026-08-28T08:10:00.000Z' : null,
+      overallResult: completed ? 'PASSED' : 'INCOMPLETE',
     },
     id: UNIT_ID,
     inventoryCode: 'RPH-FE06-0001',
     lifecycleStatus: 'INSPECTING',
     location: inventoryLocations()[0],
     maskedIdentifiers: [{ maskedValue: '***********7518', type: 'IMEI_1' }],
-    media: [],
-    mediaCount: 0,
+    media: Array.from({ length: probe.mediaCount }, (_, index) => inventoryMedia(index)),
+    mediaCount: probe.mediaCount,
     modelNumber: 'A2848',
     product: { id: PRODUCT_ID, name: PRODUCT_NAME, slug: 'iphone-15-pro', status: 'ACTIVE' },
     receivedAt: '2026-08-28T06:00:00.000Z',
@@ -583,12 +724,26 @@ function inventoryUnit() {
   } as const;
 }
 
+function inventoryMedia(index: number) {
+  return {
+    altText: `Ảnh thực tế kiểm thử FE06 ${String(index + 1)}`,
+    createdAt: '2026-08-28T07:05:00.000Z',
+    fileSize: 71_752,
+    height: 760,
+    id: `0199d006-0000-7000-8000-${String(index + 20).padStart(12, '0')}`,
+    mimeType: 'image/png',
+    sortOrder: index,
+    url: '/fe06-inventory-media.png',
+    width: 2_560,
+  } as const;
+}
+
 function inspectionSummary(probe: Fe06Probe) {
   return {
     createdAt: '2026-08-28T06:15:00.000Z',
     id: INSPECTION_ID,
     inspectedAt: probe.inspectionStatus === 'COMPLETED' ? '2026-08-28T08:10:00.000Z' : null,
-    inspectionType: 'PRE_SALE',
+    inspectionType: probe.inspectionType,
     inspector: { employeeCode: 'NV-FE06', fullName: 'Nhân viên kho FE06', id: STAFF_ID },
     inspectorId: STAFF_ID,
     isCurrent: probe.inspectionStatus === 'COMPLETED',
@@ -777,6 +932,28 @@ function checkItemCount(body: Record<string, unknown> | undefined): number {
   return items === null ? 0 : Object.keys(items).length;
 }
 
+function passingInspectionValues(): Record<string, unknown> {
+  return {
+    batteryHealthPercent: 94,
+    batteryReplacementStatus: 'ORIGINAL',
+    checks: {
+      items: Object.fromEntries(CHECKS.map(([key]) => [key, { note: null, status: 'PASS' }])),
+      schemaVersion: 1,
+    },
+    conditionGrade: 'A',
+    cosmeticNotes: null,
+    repairHistoryStatus: 'NONE_KNOWN',
+    repairNotes: null,
+  };
+}
+
+async function delay(milliseconds: number): Promise<void> {
+  if (milliseconds <= 0) return;
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
 async function fulfillPreflight(route: Route): Promise<void> {
   await route.fulfill({ status: 204, headers: corsHeaders(route) });
 }
@@ -813,9 +990,43 @@ async function expectNaturalVietnameseMain(page: Page): Promise<void> {
 
 async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
   await expect(page.locator('main')).toHaveCount(1);
-  const dimensions = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-  }));
-  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+  const dimensions = await page.evaluate(() => {
+    const clientWidth = document.documentElement.clientWidth;
+    const shell = document.querySelector('[class*="backofficeShell"]');
+    const shellRect = shell?.getBoundingClientRect();
+    return {
+      clientWidth,
+      overflowingElements: Array.from(document.querySelectorAll('body *'))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            className: element.className,
+            right: Math.round(rect.right),
+            tagName: element.tagName,
+          };
+        })
+        .filter((element) => element.right > clientWidth + 1)
+        .slice(0, 8),
+      shell:
+        shell === null
+          ? null
+          : {
+              overflowX: getComputedStyle(shell).overflowX,
+              rect:
+                shellRect === undefined
+                  ? null
+                  : {
+                      left: shellRect.left,
+                      right: shellRect.right,
+                      width: shellRect.width,
+                    },
+              scrollWidth: shell.scrollWidth,
+            },
+      scrollWidth: document.documentElement.scrollWidth,
+    };
+  });
+  expect(
+    dimensions.scrollWidth,
+    `Shell: ${JSON.stringify(dimensions.shell)}; phần tử tràn: ${JSON.stringify(dimensions.overflowingElements)}`,
+  ).toBeLessThanOrEqual(dimensions.clientWidth);
 }

@@ -32,8 +32,10 @@ describe('FE-06 InventoryShell', () => {
       </InventoryShell>,
     );
 
-    expect(markup).toContain('aria-label="Các mục quản lý kho"');
+    expect(markup).toContain('aria-label="Điều hướng backoffice"');
+    expect(markup).toContain('Kho hàng');
     expect(markup).toContain('Máy vật lý');
+    expect(markup).not.toContain('>Kho hàng</span>');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('Danh sách máy');
     expect(markup).not.toContain('Giá vốn bí mật');
@@ -50,6 +52,37 @@ describe('FE-06 InventoryShell', () => {
 
     expect(markup).toContain('Hồ sơ máy');
     expect(markup).toContain('Giá vốn bí mật');
+  });
+
+  it('keeps intake navigation active while the workflow opens an inspection page', () => {
+    mockUseAuth.mockReturnValue(authState('ADMIN'));
+
+    const markup = renderToStaticMarkup(
+      <InventoryShell activeNavigationPath="/backoffice/inventory/intake">
+        <h1>Phiếu kiểm định</h1>
+      </InventoryShell>,
+    );
+
+    expect(markup).toContain('aria-current="page" href="/backoffice/inventory/intake"');
+  });
+
+  it('can keep an active workflow link attached to its exact resume URL', () => {
+    mockUseAuth.mockReturnValue(authState('ADMIN'));
+
+    const resumeHref = '/backoffice/inventory/intake?unitId=unit-id&amp;inspectionId=inspection-id';
+    const markup = renderToStaticMarkup(
+      <InventoryShell
+        activeNavigationPath="/backoffice/inventory/intake"
+        navigationHrefOverrides={{
+          '/backoffice/inventory/intake':
+            '/backoffice/inventory/intake?unitId=unit-id&inspectionId=inspection-id',
+        }}
+      >
+        <h1>Phiếu kiểm định</h1>
+      </InventoryShell>,
+    );
+
+    expect(markup).toContain(`aria-current="page" href="${resumeHref}"`);
   });
 
   it('does not mount workspace content for customer accounts', () => {

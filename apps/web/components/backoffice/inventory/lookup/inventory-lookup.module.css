@@ -84,6 +84,7 @@
 }
 
 .fieldGrid {
+  align-items: start;
   display: grid;
   gap: var(--space-4);
   grid-template-columns: minmax(10rem, 0.6fr) minmax(0, 1.4fr);

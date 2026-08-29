@@ -311,6 +311,8 @@
   --backoffice-topbar-height: 76px;
 
   display: grid;
+  min-inline-size: 0;
+  inline-size: 100%;
   grid-template-areas:
     'brand topbar'
     'sidebar sidebar'
@@ -419,10 +421,12 @@
 
 .backofficeSidebar {
   grid-area: sidebar;
+  min-inline-size: 0;
+  max-inline-size: 100vw;
   padding: 12px 16px;
   border-block-end: 1px solid var(--color-border, #dce4ea);
   background: var(--color-surface, #fff);
-  overflow-x: auto;
+  overflow-x: hidden;
   scrollbar-width: none;
 }
 
@@ -432,10 +436,18 @@
 
 .backofficeSidebar nav {
   display: flex;
+  min-inline-size: 0;
   gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.backofficeSidebar nav::-webkit-scrollbar {
+  display: none;
 }
 
 .navigationGroup {
+  position: relative;
   flex: 0 0 auto;
 }
 
@@ -618,6 +630,21 @@
 
   .backofficeSidebar nav {
     display: block;
+  }
+
+  .backofficeSidebarWithLabels .navigationGroupLabel {
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    margin: 0 12px 8px;
+    overflow: visible;
+    clip: auto;
+    color: var(--color-muted, #667486);
+    font-size: var(--font-size-label, 13px);
+    font-weight: var(--font-weight-bold, 700);
+    letter-spacing: 0.08em;
+    line-height: var(--line-height-label, 18px);
+    text-transform: uppercase;
   }
 
   .navigationGroup + .navigationGroup {
