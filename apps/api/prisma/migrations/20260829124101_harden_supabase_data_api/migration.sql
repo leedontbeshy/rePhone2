@@ -20,12 +20,37 @@ $$;
 ALTER ROLE rephone_app WITH
   NOLOGIN
   NOINHERIT
-  NOSUPERUSER
   NOCREATEDB
   NOCREATEROLE
   NOREPLICATION
   NOBYPASSRLS
   CONNECTION LIMIT -1;
+
+-- Supabase's managed postgres role has CREATEROLE but is not a superuser.
+-- PostgreSQL only lets a superuser change the SUPERUSER attribute, even when
+-- the requested state is NOSUPERUSER. Normalize every attribute the managed
+-- role may change, then verify rolsuper separately and fail closed on drift.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_roles
+    WHERE rolname = 'rephone_app'
+      AND (
+        rolcanlogin OR
+        rolinherit OR
+        rolsuper OR
+        rolcreatedb OR
+        rolcreaterole OR
+        rolreplication OR
+        rolbypassrls OR
+        rolconnlimit <> -1
+      )
+  ) THEN
+    RAISE EXCEPTION 'rephone_app has unsafe role attributes';
+  END IF;
+END
+$$;
 
 -- A pre-existing group role must not inherit privileges from another role, and
 -- no Data API role may already inherit application DML through it.
@@ -47,9 +72,25 @@ BEGIN
     JOIN pg_roles AS member ON member.oid = membership.member
     JOIN pg_roles AS parent ON parent.oid = membership.roleid
     WHERE parent.rolname = 'rephone_app'
-      AND member.rolname <> 'rephone_runtime'
+      AND member.rolname NOT IN ('rephone_runtime', current_user)
   ) THEN
     RAISE EXCEPTION 'rephone_app has an unexpected member role';
+  END IF;
+
+  -- Supabase automatically gives its managed postgres role ADMIN OPTION on
+  -- roles that it creates. That administrative membership is expected, but it
+  -- must never inherit the application's DML privileges or be allowed to SET
+  -- ROLE into rephone_app.
+  IF EXISTS (
+    SELECT 1
+    FROM pg_auth_members AS membership
+    JOIN pg_roles AS member ON member.oid = membership.member
+    JOIN pg_roles AS parent ON parent.oid = membership.roleid
+    WHERE parent.rolname = 'rephone_app'
+      AND member.rolname = current_user
+      AND (membership.inherit_option OR membership.set_option)
+  ) THEN
+    RAISE EXCEPTION 'rephone_app has an unsafe administrative membership';
   END IF;
 END
 $$;

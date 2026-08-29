@@ -59,8 +59,9 @@ try {
         RAISE EXCEPTION 'Runtime role password is unavailable';
       END IF;
       EXECUTE format(
-        'ALTER ROLE ${RUNTIME_ROLE} WITH LOGIN INHERIT NOSUPERUSER NOCREATEDB '
-        'NOCREATEROLE NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 20 PASSWORD %L',
+        'ALTER ROLE ${RUNTIME_ROLE} WITH LOGIN INHERIT '
+        'NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS '
+        'CONNECTION LIMIT 20 PASSWORD %L',
         runtime_password
       );
     END
@@ -144,6 +145,7 @@ try {
     bypassRls: boolean;
     parentCount: number;
     unexpectedMemberCount: number;
+    unsafeAdministrativeMemberCount: number;
   }>(`
     SELECT
       role.rolcanlogin AS "canLogin",
@@ -163,8 +165,16 @@ try {
         FROM pg_auth_members AS membership
         JOIN pg_roles AS member ON member.oid = membership.member
         WHERE membership.roleid = role.oid
-          AND member.rolname <> '${RUNTIME_ROLE}'
-      ) AS "unexpectedMemberCount"
+          AND member.rolname NOT IN ('${RUNTIME_ROLE}', current_user)
+      ) AS "unexpectedMemberCount",
+      (
+        SELECT COUNT(*)::integer
+        FROM pg_auth_members AS membership
+        JOIN pg_roles AS member ON member.oid = membership.member
+        WHERE membership.roleid = role.oid
+          AND member.rolname = current_user
+          AND (membership.inherit_option OR membership.set_option)
+      ) AS "unsafeAdministrativeMemberCount"
     FROM pg_roles AS role
     WHERE role.rolname = '${PRIVILEGE_ROLE}'
   `);
@@ -179,7 +189,8 @@ try {
     privilegeRoleVerification.canReplicate ||
     privilegeRoleVerification.bypassRls ||
     privilegeRoleVerification.parentCount !== 0 ||
-    privilegeRoleVerification.unexpectedMemberCount !== 0
+    privilegeRoleVerification.unexpectedMemberCount !== 0 ||
+    privilegeRoleVerification.unsafeAdministrativeMemberCount !== 0
   ) {
     throw new Error('Application privilege role has unsafe attributes or memberships');
   }
