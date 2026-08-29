@@ -1,76 +1,16 @@
+import type { components } from '@rephone/api-client';
+import { assertSafeEvidenceUrl } from './evidence-url';
 import { apiError } from './order-access';
 
-export type RefundStatus = 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
-export type RefundMethod = 'BANK_TRANSFER' | 'CASH' | 'OTHER';
-export type RefundRequesterType = 'CUSTOMER' | 'STAFF' | 'SYSTEM';
-export type RefundAction =
-  | 'START_PROCESSING'
-  | 'COMPLETE_BANK_TRANSFER'
-  | 'COMPLETE_CASH'
-  | 'REJECT'
-  | 'CANCEL'
-  | 'VIEW_EVIDENCE';
-
-export interface RefundActorSummary {
-  id: string;
-  fullName: string;
-  employeeCode: string | null;
-}
-
-export interface RefundListItem {
-  id: string;
-  orderId: string;
-  orderNumber: string;
-  amount: string;
-  method: RefundMethod;
-  status: RefundStatus;
-  reason: string;
-  requesterType: RefundRequesterType;
-  requester: RefundActorSummary | null;
-  createdAt: string;
-  processingAt: string | null;
-  completedAt: string | null;
-  terminalAt: string | null;
-  evidenceAvailable: boolean;
-}
-
-export interface RefundPaymentSummary {
-  id: string;
-  purpose: string;
-  method: string;
-  status: string;
-  expectedAmount: string;
-  receivedAmount: string | null;
-}
-
-export interface RefundOrderSummary {
-  id: string;
-  orderNumber: string;
-  status: string;
-  fulfillmentStatus: string;
-  paymentStatus: string;
-  fulfillmentType: string;
-  contactName: string | null;
-  paidAmount: string;
-  refundedAmount: string;
-  refundableAmount: string | null;
-}
-
-export interface RefundTimelineItem {
-  label: string;
-  at: string;
-}
-
-export interface RefundDetail extends RefundListItem {
-  note: string | null;
-  terminalReason: string | null;
-  processor: RefundActorSummary | null;
-  terminalActor: RefundActorSummary | null;
-  payment: RefundPaymentSummary | null;
-  order: RefundOrderSummary;
-  timeline: RefundTimelineItem[];
-  availableActions: RefundAction[];
-}
+export type RefundStatus = components['schemas']['RefundListItemDto']['status'];
+export type RefundMethod = components['schemas']['RefundListItemDto']['method'];
+export type RefundRequesterType = components['schemas']['RefundListItemDto']['requestedByType'];
+export type RefundAction = components['schemas']['RefundDetailDto']['availableActions'][number];
+export type RefundActorSummary = components['schemas']['RefundActorDto'];
+export type RefundListItem = components['schemas']['RefundListItemDto'];
+export type RefundPaymentSummary = components['schemas']['RefundPaymentSourceDto'];
+export type RefundOrderSummary = components['schemas']['RefundOrderSummaryDto'];
+export type RefundDetail = components['schemas']['RefundDetailDto'];
 
 export interface RefundListQuery {
   status?: RefundStatus | '';
@@ -94,6 +34,28 @@ export interface RefundListResult {
   };
 }
 
+export const REFUND_EVIDENCE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+] as const;
+export const REFUND_EVIDENCE_MAX_BYTES = 10 * 1024 * 1024;
+
+export class RefundCommandError extends Error {
+  public constructor(
+    message: string,
+    public readonly code: string | undefined,
+  ) {
+    super(message);
+    this.name = 'RefundCommandError';
+  }
+
+  public get requiresRefetch(): boolean {
+    return this.code === 'INVALID_STATE_TRANSITION' || this.code === 'CONCURRENT_MODIFICATION';
+  }
+}
+
 interface RuntimeApiResult {
   data?: unknown;
   error?: unknown;
@@ -104,6 +66,19 @@ interface RuntimeApiClient {
   POST(path: string, options?: unknown): Promise<RuntimeApiResult>;
 }
 
+export function validateRefundEvidenceFile(file: File): string | null {
+  if (file.size === 0) return 'Tệp minh chứng đang trống.';
+  if (file.size > REFUND_EVIDENCE_MAX_BYTES) return 'Tệp vượt quá giới hạn 10 MB.';
+  if (!(REFUND_EVIDENCE_TYPES as readonly string[]).includes(file.type)) {
+    return 'Chỉ nhận tệp JPEG, PNG, WebP hoặc PDF.';
+  }
+  return null;
+}
+
+export function shouldRefetchRefund(value: unknown): boolean {
+  return value instanceof RefundCommandError && value.requiresRefetch;
+}
+
 export async function listBackofficeRefunds(
   client: unknown,
   query: RefundListQuery,
@@ -111,7 +86,7 @@ export async function listBackofficeRefunds(
   const result = await runtimeClient(client).GET('/api/v1/backoffice/refunds', {
     params: { query: compactQuery(query) },
   });
-  const envelope = responseEnvelope(result, 'Không thể tải hàng chờ hoàn tiền.');
+  const envelope = responseEnvelope(result, 'Không thể tải danh sách hoàn tiền.');
   const rows = Array.isArray(envelope['data']) ? envelope['data'] : [];
   const pagination = recordOrEmpty(recordOrEmpty(envelope['meta'])['pagination']);
   return {
@@ -132,7 +107,7 @@ export async function getBackofficeRefund(
   const result = await runtimeClient(client).GET('/api/v1/backoffice/refunds/{id}', {
     params: { path: { id: refundId } },
   });
-  return parseDetail(responseData(result, 'Không thể tải chi tiết hoàn tiền.'));
+  return parseDetail(responseData(result, 'Không thể tải hồ sơ hoàn tiền.'));
 }
 
 export async function createRefund(
@@ -149,7 +124,7 @@ export async function createRefund(
     params: { path: { id: orderId } },
     body: input,
   });
-  return parseDetail(responseData(result, 'Không thể tạo yêu cầu hoàn tiền.'));
+  return commandData(result, 'Không thể tạo yêu cầu hoàn tiền.');
 }
 
 export function startRefundProcessing(client: unknown, refundId: string, note?: string) {
@@ -189,7 +164,7 @@ export async function completeBankTransferRefund(
       bodySerializer: () => formData,
     },
   );
-  return parseDetail(responseData(result, 'Không thể hoàn tất chuyển khoản hoàn tiền.'));
+  return commandData(result, 'Không thể hoàn tất chuyển khoản hoàn tiền.');
 }
 
 export function rejectRefund(client: unknown, refundId: string, reason: string) {
@@ -209,38 +184,39 @@ export function cancelRefund(client: unknown, refundId: string, reason: string) 
 export async function getRefundEvidenceUrl(
   client: unknown,
   refundId: string,
-): Promise<{ url: string; expiresAt: string | null }> {
+): Promise<{ url: string; expiresAt: string }> {
   const result = await runtimeClient(client).GET('/api/v1/backoffice/refunds/{id}/evidence-url', {
     params: { path: { id: refundId } },
   });
   const data = recordOrThrow(
     responseData(result, 'Không thể mở minh chứng hoàn tiền.'),
-    'Phản hồi signed URL không hợp lệ.',
+    'Không thể mở minh chứng lúc này.',
   );
-  const url = stringOrNull(data['url']);
-  if (url === null || !isSafeHttpUrl(url)) {
-    throw new Error('Phản hồi signed URL không hợp lệ.');
-  }
-  return { url, expiresAt: stringOrNull(data['expiresAt']) };
+  const url = requiredString(data['url'], 'Không thể mở minh chứng lúc này.');
+  assertSafeEvidenceUrl(url);
+  return {
+    url,
+    expiresAt: requiredString(data['expiresAt'], 'Không thể mở minh chứng lúc này.'),
+  };
 }
 
 export function refundError(value: unknown, fallback: string): string {
   const code = errorCode(value);
   if (code === 'REFUND_AMOUNT_EXCEEDS_PAID') {
-    return 'Số tiền hoàn vượt quá khoản đã thu còn có thể hoàn.';
+    return 'Số tiền hoàn vượt quá khoản đã thu của đơn hàng.';
   }
   if (code === 'INVALID_STATE_TRANSITION') {
-    return 'Yêu cầu hoàn tiền không còn ở trạng thái cho phép. Hãy tải lại.';
+    return 'Yêu cầu đã chuyển sang bước khác. Hồ sơ mới nhất đang được tải lại.';
   }
   if (code === 'CONCURRENT_MODIFICATION') {
-    return 'Dữ liệu vừa được xử lý ở phiên khác. Hãy tải lại.';
+    return 'Hồ sơ vừa được người khác cập nhật. Dữ liệu mới nhất đang được tải lại.';
   }
   if (code === 'EVIDENCE_REQUIRED' || code === 'EVIDENCE_INVALID') {
-    return 'Minh chứng hoàn tiền không hợp lệ hoặc đã hỏng.';
+    return 'Minh chứng hoàn tiền không hợp lệ. Hãy chọn lại tệp.';
   }
-  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MiB.';
-  if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.';
-  if (code === 'STORAGE_UNAVAILABLE') return 'Kho minh chứng tạm thời không sẵn sàng.';
+  if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MB.';
+  if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận tệp JPEG, PNG, WebP hoặc PDF.';
+  if (code === 'STORAGE_UNAVAILABLE') return 'Hiện chưa thể lưu minh chứng. Vui lòng thử lại sau.';
   if (code === 'RESOURCE_NOT_FOUND') return 'Không tìm thấy yêu cầu hoàn tiền.';
   if (code === 'RATE_LIMITED') return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau.';
   return apiError(value, fallback);
@@ -257,109 +233,95 @@ async function runJsonCommand(
     params: { path: { id: refundId } },
     body,
   });
+  return commandData(result, fallback);
+}
+
+function commandData(result: RuntimeApiResult, fallback: string): RefundDetail {
+  if (result.data === undefined) {
+    throw new RefundCommandError(refundError(result.error, fallback), errorCode(result.error));
+  }
   return parseDetail(responseData(result, fallback));
 }
 
 function parseListItem(value: unknown): RefundListItem {
   const input = recordOrThrow(value, 'Dữ liệu hoàn tiền không hợp lệ.');
-  const refund = isRecord(input['refund']) ? input['refund'] : input;
-  const order = recordOrEmpty(input['order'] ?? refund['order']);
-  const requester = parseActor(input['requester'] ?? refund['requestedBy']);
   return {
-    id: stringOr(refund['id']),
-    orderId: stringOrNull(refund['orderId']) ?? stringOr(order['id']),
-    orderNumber: stringOrNull(refund['orderNumber']) ?? stringOrNull(order['orderNumber']) ?? '—',
-    amount: moneyOrZero(refund['amount']),
-    method: refundMethod(refund['method']),
-    status: refundStatus(refund['status']),
-    reason: stringOr(refund['reason']),
-    requesterType: requesterType(refund['requestedByType'] ?? refund['requesterType']),
-    requester,
-    createdAt: stringOr(refund['createdAt']),
-    processingAt: stringOrNull(refund['processingAt']),
-    completedAt: stringOrNull(refund['completedAt']),
-    terminalAt: stringOrNull(refund['terminalAt']),
-    evidenceAvailable: input['evidenceAvailable'] === true || refund['evidenceAvailable'] === true,
+    id: requiredString(input['id'], 'Dữ liệu hoàn tiền không hợp lệ.'),
+    orderNumber: requiredString(input['orderNumber'], 'Dữ liệu hoàn tiền không hợp lệ.'),
+    amount: money(input['amount']),
+    method: refundMethod(input['method']),
+    status: refundStatus(input['status']),
+    requestedByType: requesterType(input['requestedByType']),
+    requester: parseActor(input['requester']),
+    evidenceAvailable: input['evidenceAvailable'] === true,
+    processingAt: optionalString(input['processingAt']),
+    completedAt: optionalString(input['completedAt']),
+    terminalAt: optionalString(input['terminalAt']),
+    createdAt: requiredString(input['createdAt'], 'Dữ liệu hoàn tiền không hợp lệ.'),
   };
 }
 
 function parseDetail(value: unknown): RefundDetail {
-  const input = recordOrThrow(value, 'Dữ liệu chi tiết hoàn tiền không hợp lệ.');
-  const refund = isRecord(input['refund']) ? input['refund'] : input;
+  const input = recordOrThrow(value, 'Dữ liệu hồ sơ hoàn tiền không hợp lệ.');
   const base = parseListItem(input);
-  const order = recordOrEmpty(input['order'] ?? refund['order']);
-  const pricing = recordOrEmpty(order['pricing']);
-  const payment = parsePayment(input['payment'] ?? refund['payment']);
+  const order = recordOrThrow(input['order'], 'Dữ liệu đơn hàng không hợp lệ.');
   return {
     ...base,
-    note: stringOrNull(refund['note']),
-    terminalReason: stringOrNull(refund['terminalReason']),
-    processor: parseActor(input['processor'] ?? refund['processedBy']),
-    terminalActor: parseActor(input['terminalActor'] ?? refund['terminalBy']),
-    payment,
+    reason: requiredString(input['reason'], 'Dữ liệu hồ sơ hoàn tiền không hợp lệ.'),
+    note: optionalString(input['note']),
+    processor: parseActor(input['processor']),
+    terminalActor: parseActor(input['terminalActor']),
+    terminalReason: optionalString(input['terminalReason']),
+    availableActions: refundActions(input['availableActions']),
+    payment: parsePayment(input['payment']),
     order: {
-      id: stringOrNull(order['id']) ?? base.orderId,
-      orderNumber: stringOrNull(order['orderNumber']) ?? base.orderNumber,
-      status: stringOr(order['status']),
-      fulfillmentStatus: stringOr(order['fulfillmentStatus']),
-      paymentStatus: stringOr(order['paymentStatus']),
-      fulfillmentType: stringOr(order['fulfillmentType']),
-      contactName:
-        stringOrNull(order['customerName']) ??
-        stringOrNull(recordOrEmpty(order['contact'])['fullName']),
-      paidAmount: moneyFrom(order, pricing, 'paidAmount'),
-      refundedAmount: moneyFrom(order, pricing, 'refundedAmount'),
-      refundableAmount:
-        moneyOrNull(order['refundableAmount']) ?? moneyOrNull(pricing['refundableAmount']),
+      id: requiredString(order['id'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      orderNumber: requiredString(order['orderNumber'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      status: requiredString(order['status'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      fulfillmentStatus: requiredString(
+        order['fulfillmentStatus'],
+        'Dữ liệu đơn hàng không hợp lệ.',
+      ),
+      paymentStatus: requiredString(order['paymentStatus'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      customerName: requiredString(order['customerName'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      customerEmail: requiredString(order['customerEmail'], 'Dữ liệu đơn hàng không hợp lệ.'),
+      grandTotal: money(order['grandTotal']),
+      paidAmount: money(order['paidAmount']),
+      refundedAmount: money(order['refundedAmount']),
+      balanceDue: money(order['balanceDue']),
     },
-    timeline: parseTimeline(input['timeline'], refund),
-    availableActions: refundActions(input['availableActions'] ?? refund['availableActions']),
   };
 }
 
 function parsePayment(value: unknown): RefundPaymentSummary | null {
-  if (!isRecord(value)) return null;
-  const id = stringOrNull(value['id']);
-  if (id === null) return null;
+  if (value === null || value === undefined) return null;
+  const input = recordOrThrow(value, 'Dữ liệu khoản thanh toán không hợp lệ.');
+  const purpose = input['purpose'];
+  const method = input['method'];
+  if (purpose !== 'DEPOSIT' && purpose !== 'BALANCE' && purpose !== 'FULL_PAYMENT') {
+    throw new Error('Dữ liệu khoản thanh toán không hợp lệ.');
+  }
+  if (method !== 'BANK_TRANSFER' && method !== 'CASH' && method !== 'COD' && method !== 'OTHER') {
+    throw new Error('Dữ liệu khoản thanh toán không hợp lệ.');
+  }
   return {
-    id,
-    purpose: stringOr(value['purpose']),
-    method: stringOr(value['method']),
-    status: stringOr(value['status']),
-    expectedAmount: moneyOrZero(value['expectedAmount']),
-    receivedAmount: moneyOrNull(value['receivedAmount']),
+    id: requiredString(input['id'], 'Dữ liệu khoản thanh toán không hợp lệ.'),
+    purpose,
+    method,
+    status: requiredString(input['status'], 'Dữ liệu khoản thanh toán không hợp lệ.'),
+    expectedAmount: money(input['expectedAmount']),
+    receivedAmount: optionalMoney(input['receivedAmount']),
   };
 }
 
 function parseActor(value: unknown): RefundActorSummary | null {
-  if (!isRecord(value)) return null;
-  const id = stringOrNull(value['id']);
-  const fullName = stringOrNull(value['fullName']);
-  if (id === null || fullName === null) return null;
-  return { id, fullName, employeeCode: stringOrNull(value['employeeCode']) };
-}
-
-function parseTimeline(value: unknown, refund: Record<string, unknown>): RefundTimelineItem[] {
-  if (Array.isArray(value)) {
-    return value.flatMap((row) => {
-      if (!isRecord(row)) return [];
-      const label = stringOrNull(row['label']);
-      const at = stringOrNull(row['at']);
-      return label === null || at === null ? [] : [{ label, at }];
-    });
-  }
-  const terminalLabel =
-    refundStatus(refund['status']) === 'REJECTED' ? 'Đã từ chối' : 'Đã hủy yêu cầu';
-  const candidates: Array<[string, unknown]> = [
-    ['Đã tạo yêu cầu', refund['createdAt']],
-    ['Bắt đầu xử lý', refund['processingAt']],
-    ['Hoàn tất', refund['completedAt']],
-    [terminalLabel, refund['terminalAt']],
-  ];
-  return candidates.flatMap(([label, at]) => {
-    const timestamp = stringOrNull(at);
-    return timestamp === null ? [] : [{ label, at: timestamp }];
-  });
+  if (value === null || value === undefined) return null;
+  const input = recordOrThrow(value, 'Dữ liệu người xử lý không hợp lệ.');
+  return {
+    id: requiredString(input['id'], 'Dữ liệu người xử lý không hợp lệ.'),
+    fullName: requiredString(input['fullName'], 'Dữ liệu người xử lý không hợp lệ.'),
+    employeeCode: optionalString(input['employeeCode']),
+  };
 }
 
 function refundActions(value: unknown): RefundAction[] {
@@ -406,11 +368,13 @@ function errorCode(value: unknown): string | undefined {
 }
 
 function refundMethod(value: unknown): RefundMethod {
-  return value === 'BANK_TRANSFER' || value === 'CASH' ? value : 'OTHER';
+  if (value === 'BANK_TRANSFER' || value === 'CASH' || value === 'OTHER') return value;
+  throw new Error('Dữ liệu phương thức hoàn tiền không hợp lệ.');
 }
 
 function refundStatus(value: unknown): RefundStatus {
   if (
+    value === 'REQUESTED' ||
     value === 'PROCESSING' ||
     value === 'COMPLETED' ||
     value === 'REJECTED' ||
@@ -418,52 +382,35 @@ function refundStatus(value: unknown): RefundStatus {
   ) {
     return value;
   }
-  return 'REQUESTED';
+  throw new Error('Dữ liệu trạng thái hoàn tiền không hợp lệ.');
 }
 
 function requesterType(value: unknown): RefundRequesterType {
-  return value === 'STAFF' || value === 'SYSTEM' ? value : 'CUSTOMER';
+  if (value === 'CUSTOMER' || value === 'STAFF' || value === 'SYSTEM') return value;
+  throw new Error('Dữ liệu người yêu cầu không hợp lệ.');
 }
 
-function moneyFrom(
-  direct: Record<string, unknown>,
-  nested: Record<string, unknown>,
-  key: string,
-): string {
-  return moneyOrNull(direct[key]) ?? moneyOrZero(nested[key]);
+function money(value: unknown): string {
+  if (typeof value === 'string' && /^\d+$/.test(value)) return value;
+  throw new Error('Dữ liệu số tiền không hợp lệ.');
 }
 
-function moneyOrNull(value: unknown): string | null {
-  return typeof value === 'string' && /^\d+$/.test(value) ? value : null;
+function optionalMoney(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return money(value);
 }
 
-function moneyOrZero(value: unknown): string {
-  return moneyOrNull(value) ?? '0';
+function requiredString(value: unknown, message: string): string {
+  if (typeof value !== 'string' || value.length === 0) throw new Error(message);
+  return value;
 }
 
-function stringOr(value: unknown): string {
-  return typeof value === 'string' ? value : '';
-}
-
-function stringOrNull(value: unknown): string | null {
+function optionalString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function isSafeHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      (url.protocol === 'https:' || url.protocol === 'http:') &&
-      url.username === '' &&
-      url.password === ''
-    );
-  } catch {
-    return false;
-  }
 }
 
 function recordOrEmpty(value: unknown): Record<string, unknown> {

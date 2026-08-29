@@ -1,75 +1,71 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   completeBankTransferRefund,
-  createRefund,
   getBackofficeRefund,
   getRefundEvidenceUrl,
   listBackofficeRefunds,
-  refundError,
+  RefundCommandError,
+  shouldRefetchRefund,
   startRefundProcessing,
+  validateRefundEvidenceFile,
 } from './refund-api';
 
-const REFUND = {
+const LIST_ITEM = {
   id: '0198f1e4-9051-7af4-a157-c15223562e10',
-  orderId: '0198f1e4-9051-7af4-a157-c15223562e11',
+  orderNumber: 'RPH-20260824-ABC23456',
   amount: '1000000',
   method: 'BANK_TRANSFER',
   status: 'REQUESTED',
-  reason: 'Hoàn cọc cho đơn hàng hoàn về',
   requestedByType: 'STAFF',
-  requestedBy: {
+  requester: {
     id: '0198f1e4-9051-7af4-a157-c15223562e12',
     fullName: 'Nhân viên Demo',
     employeeCode: 'EMP001',
   },
+  evidenceAvailable: false,
   processingAt: null,
   completedAt: null,
   terminalAt: null,
   createdAt: '2026-08-24T08:00:00.000Z',
-};
+} as const;
 
 const DETAIL = {
-  refund: REFUND,
+  ...LIST_ITEM,
+  reason: 'Hoàn cọc cho đơn hàng đã hủy',
+  note: null,
+  processor: null,
+  terminalActor: null,
+  terminalReason: null,
+  availableActions: ['START_PROCESSING', 'REJECT', 'CANCEL'],
   order: {
-    id: REFUND.orderId,
-    orderNumber: 'RPH-20260824-ABC23456',
+    id: '0198f1e4-9051-7af4-a157-c15223562e11',
+    orderNumber: LIST_ITEM.orderNumber,
     status: 'CANCELLED',
     fulfillmentStatus: 'CANCELLED',
     paymentStatus: 'PAID',
-    fulfillmentType: 'SHIPPING',
     customerName: 'Khách hoàn tiền',
-    pricing: {
-      paidAmount: '1000000',
-      refundedAmount: '0',
-      refundableAmount: '1000000',
-    },
+    customerEmail: 'khach@example.com',
+    grandTotal: '12000000',
+    paidAmount: '3000000',
+    refundedAmount: '0',
+    balanceDue: '9000000',
   },
   payment: {
     id: '0198f1e4-9051-7af4-a157-c15223562e13',
     purpose: 'DEPOSIT',
     method: 'BANK_TRANSFER',
     status: 'VERIFIED',
-    expectedAmount: '1000000',
-    receivedAmount: '1000000',
+    expectedAmount: '3000000',
+    receivedAmount: '3000000',
   },
-  availableActions: ['START_PROCESSING', 'REJECT', 'CANCEL'],
-  evidenceAvailable: false,
-};
+} as const;
 
 describe('refund api adapter', () => {
-  it('maps a safe paginated queue and removes private evidence metadata', async () => {
+  it('maps the generated flat queue DTO and drops unknown private fields', async () => {
     const client = {
       GET: vi.fn().mockResolvedValue({
         data: {
-          data: [
-            {
-              ...REFUND,
-              orderNumber: 'RPH-20260824-ABC23456',
-              evidenceBucket: 'must-not-be-read',
-              evidenceObjectPath: 'must-not-be-read',
-              evidenceSha256: 'must-not-be-read',
-            },
-          ],
+          data: [{ ...LIST_ITEM, evidenceObjectPath: 'must-not-leak' }],
           meta: { pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } },
         },
       }),
@@ -95,89 +91,111 @@ describe('refund api adapter', () => {
         },
       },
     });
-    expect(result.data[0]).toMatchObject({
-      amount: '1000000',
-      requester: { fullName: 'Nhân viên Demo' },
-    });
-    expect(result.data[0]).not.toHaveProperty('evidenceBucket');
+    expect(result.data[0]).toEqual(LIST_ITEM);
+    expect(result.data[0]).not.toHaveProperty('orderId');
+    expect(result.data[0]).not.toHaveProperty('reason');
     expect(result.data[0]).not.toHaveProperty('evidenceObjectPath');
-    expect(result.data[0]).not.toHaveProperty('evidenceSha256');
   });
 
-  it('maps detail, finance summary, timeline and authoritative actions', async () => {
-    const client = { GET: vi.fn().mockResolvedValue({ data: { data: DETAIL } }) };
-
-    const result = await getBackofficeRefund(client, REFUND.id);
-
-    expect(result.order).toMatchObject({
-      orderNumber: 'RPH-20260824-ABC23456',
-      refundableAmount: '1000000',
-    });
-    expect(result.payment).toMatchObject({ status: 'VERIFIED', receivedAmount: '1000000' });
-    expect(result.availableActions).toEqual(['START_PROCESSING', 'REJECT', 'CANCEL']);
-    expect(result.timeline).toEqual([{ label: 'Đã tạo yêu cầu', at: '2026-08-24T08:00:00.000Z' }]);
-  });
-
-  it('uses the create and start-processing contracts', async () => {
-    const client = { POST: vi.fn().mockResolvedValue({ data: { data: DETAIL } }) };
-
-    await createRefund(client, REFUND.orderId, {
-      amount: '1000000',
-      method: 'BANK_TRANSFER',
-      reason: 'Hoàn cọc cho đơn hàng hoàn về',
-    });
-    await startRefundProcessing(client, REFUND.id, 'Đã đối chiếu tài khoản nhận');
-
-    expect(client.POST.mock.calls[0]).toEqual([
-      '/api/v1/backoffice/orders/{id}/refunds',
-      {
-        params: { path: { id: REFUND.orderId } },
-        body: {
-          amount: '1000000',
-          method: 'BANK_TRANSFER',
-          reason: 'Hoàn cọc cho đơn hàng hoàn về',
+  it('maps the generated flat detail and does not invent finance fields', async () => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            ...DETAIL,
+            order: {
+              ...DETAIL.order,
+              refundableAmount: 'must-not-be-read',
+              fulfillmentType: 'must-not-be-read',
+            },
+          },
         },
-      },
-    ]);
-    expect(client.POST.mock.calls[1]).toEqual([
-      '/api/v1/backoffice/refunds/{id}/start-processing',
-      {
-        params: { path: { id: REFUND.id } },
-        body: { note: 'Đã đối chiếu tài khoản nhận' },
-      },
-    ]);
+      }),
+    };
+
+    const result = await getBackofficeRefund(client, LIST_ITEM.id);
+
+    expect(result.order).toEqual(DETAIL.order);
+    expect(result.availableActions).toEqual(['START_PROCESSING', 'REJECT', 'CANCEL']);
+    expect(result.order).not.toHaveProperty('refundableAmount');
+    expect(result.order).not.toHaveProperty('fulfillmentType');
   });
 
-  it('serializes bank evidence as multipart and never puts bytes in JSON', async () => {
+  it('uses the command contract and preserves authoritative actions', async () => {
     const client = { POST: vi.fn().mockResolvedValue({ data: { data: DETAIL } }) };
-    const file = new File(['proof'], 'refund.pdf', { type: 'application/pdf' });
 
-    await completeBankTransferRefund(client, REFUND.id, file, 'Đã chuyển khoản thành công');
+    const result = await startRefundProcessing(
+      client,
+      LIST_ITEM.id,
+      'Đã đối chiếu thông tin nhận tiền',
+    );
+
+    expect(client.POST).toHaveBeenCalledWith('/api/v1/backoffice/refunds/{id}/start-processing', {
+      params: { path: { id: LIST_ITEM.id } },
+      body: { note: 'Đã đối chiếu thông tin nhận tiền' },
+    });
+    expect(result.availableActions).toEqual(['START_PROCESSING', 'REJECT', 'CANCEL']);
+  });
+
+  it('serializes bank evidence as multipart without putting bytes into JSON', async () => {
+    const client = { POST: vi.fn().mockResolvedValue({ data: { data: DETAIL } }) };
+    const file = new File(['proof'], 'hoan-tien.pdf', { type: 'application/pdf' });
+
+    await completeBankTransferRefund(client, LIST_ITEM.id, file, 'Đã chuyển khoản thành công');
 
     const options = client.POST.mock.calls[0]?.[1] as {
       body: unknown;
       bodySerializer: () => FormData;
     };
     expect(options.body).toEqual({ file, note: 'Đã chuyển khoản thành công' });
-    expect(options.bodySerializer()).toBeInstanceOf(FormData);
-    expect(options.bodySerializer().get('file')).toBeInstanceOf(File);
+    expect(options.bodySerializer().get('file')).toBe(file);
+    expect(options.bodySerializer().get('note')).toBe('Đã chuyển khoản thành công');
   });
 
-  it('rejects credential-bearing evidence URLs and maps stable finance errors', async () => {
+  it('validates evidence type and size before upload', () => {
+    expect(
+      validateRefundEvidenceFile(new File(['proof'], 'hoan-tien.pdf', { type: 'application/pdf' })),
+    ).toBeNull();
+    expect(validateRefundEvidenceFile(new File([], 'trong.pdf', { type: 'application/pdf' }))).toBe(
+      'Tệp minh chứng đang trống.',
+    );
+    expect(
+      validateRefundEvidenceFile(new File(['x'], 'hoan-tien.txt', { type: 'text/plain' })),
+    ).toBe('Chỉ nhận tệp JPEG, PNG, WebP hoặc PDF.');
+  });
+
+  it('keeps conflict codes so the detail view can refetch authoritatively', async () => {
     const client = {
-      GET: vi.fn().mockResolvedValue({
-        data: { data: { url: 'https://user:password@storage.example/refund' } },
+      POST: vi.fn().mockResolvedValue({
+        error: { error: { code: 'CONCURRENT_MODIFICATION', message: 'unsafe' } },
       }),
     };
 
-    await expect(getRefundEvidenceUrl(client, REFUND.id)).rejects.toThrow(
-      'Phản hồi signed URL không hợp lệ.',
+    const caught = await startRefundProcessing(client, LIST_ITEM.id).catch(
+      (error: unknown) => error,
     );
-    expect(
-      refundError(
-        { error: { code: 'REFUND_AMOUNT_EXCEEDS_PAID', message: 'unsafe detail' } },
-        'fallback',
-      ),
-    ).toBe('Số tiền hoàn vượt quá khoản đã thu còn có thể hoàn.');
+
+    expect(caught).toBeInstanceOf(RefundCommandError);
+    expect(shouldRefetchRefund(caught)).toBe(true);
+    expect((caught as Error).message).not.toContain('unsafe');
+  });
+
+  it('requests a fresh safe evidence URL', async () => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            url: 'https://storage.example.test/refund.pdf',
+            expiresAt: '2026-08-29T10:05:00.000Z',
+          },
+        },
+      }),
+    };
+
+    await expect(getRefundEvidenceUrl(client, LIST_ITEM.id)).resolves.toEqual({
+      url: 'https://storage.example.test/refund.pdf',
+      expiresAt: '2026-08-29T10:05:00.000Z',
+    });
+    expect(client.GET).toHaveBeenCalledTimes(1);
   });
 });
