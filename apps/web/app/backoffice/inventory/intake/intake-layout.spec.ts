@@ -23,4 +23,15 @@ describe('inventory intake form layout', () => {
   gap: 0;
 }`);
   });
+
+  it('renders only the workflow stage selected by the progress bar', () => {
+    const wizardPath = fileURLToPath(new URL('./wizard.tsx', import.meta.url));
+    const wizard = readFileSync(wizardPath, 'utf8');
+
+    for (const step of [2, 3, 4, 5]) {
+      expect(wizard).toMatch(
+        new RegExp(`\\{activeStep === ${String(step)} \\? \\(\\s*<WorkflowStage`),
+      );
+    }
+  });
 });

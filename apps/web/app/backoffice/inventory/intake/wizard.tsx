@@ -756,116 +756,119 @@ export function InventoryIntakeWizard() {
 
       {unit === null ? null : (
         <div className={styles.workflowStages} aria-label="Các bước hoàn tất hồ sơ máy">
-          <WorkflowStage
-            current={activeStep === 2}
-            done={unit.mediaCount > 0}
-            icon={<ImageSquareIcon aria-hidden="true" size={23} />}
-            number={2}
-            title="Ảnh thực tế của máy"
-            description="Thêm tối thiểu một ảnh rõ nét của đúng chiếc máy."
-          >
-            <form className="wizard-inline" onSubmit={submitUpload}>
-              <label>
-                Ảnh JPEG, PNG hoặc WebP (tối đa 8 MiB)
-                <input
-                  key={file?.name ?? 'empty'}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(event) => {
-                    setFile(event.target.files?.[0] ?? null);
-                  }}
-                  required
-                />
-              </label>
-              <button className="button primary" disabled={busy !== null} type="submit">
-                {busy === 'upload' ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
-              </button>
-              <span>{unit.mediaCount} ảnh đã gắn</span>
-            </form>
-          </WorkflowStage>
+          {activeStep === 2 ? (
+            <WorkflowStage
+              current
+              done={false}
+              icon={<ImageSquareIcon aria-hidden="true" size={23} />}
+              number={2}
+              title="Ảnh thực tế của máy"
+              description="Thêm tối thiểu một ảnh rõ nét của đúng chiếc máy."
+            >
+              <form className="wizard-inline" onSubmit={submitUpload}>
+                <label>
+                  Ảnh JPEG, PNG hoặc WebP (tối đa 8 MiB)
+                  <input
+                    key={file?.name ?? 'empty'}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => {
+                      setFile(event.target.files?.[0] ?? null);
+                    }}
+                    required
+                  />
+                </label>
+                <button className="button primary" disabled={busy !== null} type="submit">
+                  {busy === 'upload' ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
+                </button>
+                <span>{unit.mediaCount} ảnh đã gắn</span>
+              </form>
+            </WorkflowStage>
+          ) : null}
 
-          <WorkflowStage
-            current={activeStep === 3}
-            done={completedPassed}
-            attention={inspectionNeedsAttention}
-            icon={<ShieldCheckIcon aria-hidden="true" size={23} />}
-            number={3}
-            title="Kiểm định 18 hạng mục"
-            description="Ghi nhận pin, ngoại hình và đầy đủ kết quả kỹ thuật."
-          >
-            {inspection === null ? (
+          {activeStep === 3 ? (
+            <WorkflowStage
+              current
+              done={false}
+              attention={inspectionNeedsAttention}
+              icon={<ShieldCheckIcon aria-hidden="true" size={23} />}
+              number={3}
+              title="Kiểm định 18 hạng mục"
+              description="Ghi nhận pin, ngoại hình và đầy đủ kết quả kỹ thuật."
+            >
+              {inspection === null ? (
+                <button
+                  className="button primary"
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => void createInspection()}
+                >
+                  {busy === 'inspection-create' ? 'Đang tạo…' : 'Tạo phiếu kiểm định'}
+                </button>
+              ) : null}
+              {inspection?.status === 'DRAFT' ? (
+                <div className="wizard-actions">
+                  <p>Phiếu đang chờ kỹ thuật viên ghi nhận đủ 18 hạng mục.</p>
+                  <Link
+                    className="button primary"
+                    href={`/backoffice/inventory/inspections/${inspection.id}`}
+                  >
+                    Tiếp tục kiểm định
+                  </Link>
+                </div>
+              ) : null}
+              {inspection?.status === 'COMPLETED' ? (
+                <div className="wizard-actions">
+                  <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
+                    Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
+                  </p>
+                  <Link
+                    className="button"
+                    href={`/backoffice/inventory/inspections/${inspection.id}`}
+                  >
+                    Xem phiếu kiểm định
+                  </Link>
+                </div>
+              ) : null}
+            </WorkflowStage>
+          ) : null}
+
+          {activeStep === 4 ? (
+            <WorkflowStage
+              current
+              done={false}
+              icon={<StorefrontIcon aria-hidden="true" size={23} />}
+              number={4}
+              title="Đưa máy lên bán"
+              description="Mở bán sau khi máy có ảnh và kết quả kiểm định đạt."
+            >
               <button
                 className="button primary"
                 type="button"
                 disabled={busy !== null}
-                onClick={() => void createInspection()}
-              >
-                {busy === 'inspection-create' ? 'Đang tạo…' : 'Tạo phiếu kiểm định'}
-              </button>
-            ) : null}
-            {inspection?.status === 'DRAFT' ? (
-              <div className="wizard-actions">
-                <p>Phiếu đang chờ kỹ thuật viên ghi nhận đủ 18 hạng mục.</p>
-                <Link
-                  className="button primary"
-                  href={`/backoffice/inventory/inspections/${inspection.id}`}
-                >
-                  Tiếp tục kiểm định
-                </Link>
-              </div>
-            ) : null}
-            {inspection?.status === 'COMPLETED' ? (
-              <div className="wizard-actions">
-                <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
-                  Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
-                </p>
-                <Link
-                  className="button"
-                  href={`/backoffice/inventory/inspections/${inspection.id}`}
-                >
-                  Xem phiếu kiểm định
-                </Link>
-              </div>
-            ) : null}
-          </WorkflowStage>
-
-          <WorkflowStage
-            current={activeStep === 4}
-            done={unit.lifecycleStatus === 'AVAILABLE'}
-            icon={<StorefrontIcon aria-hidden="true" size={23} />}
-            number={4}
-            title="Đưa máy lên bán"
-            description="Mở bán sau khi máy có ảnh và kết quả kiểm định đạt."
-          >
-            {unit.lifecycleStatus !== 'AVAILABLE' ? (
-              <button
-                className="button primary"
-                type="button"
-                disabled={busy !== null || !completedPassed || unit.mediaCount < 1}
                 onClick={() => void makeAvailable()}
               >
                 {busy === 'make-available' ? 'Đang cập nhật…' : 'Đưa máy lên bán'}
               </button>
-            ) : null}
-            {!completedPassed ? <p>Chỉ mở sau khi kiểm định hoàn tất với kết quả đạt.</p> : null}
-          </WorkflowStage>
+            </WorkflowStage>
+          ) : null}
 
-          <WorkflowStage
-            current={activeStep === 5}
-            done={unit.lifecycleStatus === 'AVAILABLE'}
-            icon={<DeviceMobileIcon aria-hidden="true" size={23} />}
-            number={5}
-            title="Trang sản phẩm"
-            description="Kiểm tra cách chiếc máy xuất hiện tại cửa hàng."
-          >
-            {unit.lifecycleStatus === 'AVAILABLE' && publicHref !== null ? (
-              <Link className="button primary" href={publicHref}>
-                Xem trang sản phẩm
-              </Link>
-            ) : (
-              <p>Máy sẽ xuất hiện tại cửa hàng sau khi đáp ứng đủ điều kiện bán.</p>
-            )}
-          </WorkflowStage>
+          {activeStep === 5 ? (
+            <WorkflowStage
+              current
+              done={unit.lifecycleStatus === 'AVAILABLE'}
+              icon={<DeviceMobileIcon aria-hidden="true" size={23} />}
+              number={5}
+              title="Trang sản phẩm"
+              description="Kiểm tra cách chiếc máy xuất hiện tại cửa hàng."
+            >
+              {publicHref === null ? null : (
+                <Link className="button primary" href={publicHref}>
+                  Xem trang sản phẩm
+                </Link>
+              )}
+            </WorkflowStage>
+          ) : null}
         </div>
       )}
     </div>
