@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
+import { databaseUrlSecurityIssue } from './database-url-security.js';
 
 const integerString = (minimum: number, maximum?: number) => {
   let schema = z.coerce.number().int().min(minimum);
@@ -130,13 +131,24 @@ export const environmentSchema = z
       }
 
       for (const field of ['JWT_ACCESS_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'] as const) {
-        if (/placeholder|change-me|local|test/i.test(environment[field])) {
+        if (/placeholder|change-me|replace-with|local|test/i.test(environment[field])) {
           context.addIssue({
             code: 'custom',
             path: [field],
             message: 'production secrets must not use placeholder values',
           });
         }
+      }
+
+      const databaseUrlIssue = databaseUrlSecurityIssue(environment.DATABASE_URL, {
+        allowUnencryptedLoopback: false,
+      });
+      if (databaseUrlIssue !== undefined) {
+        context.addIssue({
+          code: 'custom',
+          path: ['DATABASE_URL'],
+          message: databaseUrlIssue,
+        });
       }
 
       for (const [field, value, placeholder] of [
