@@ -99,6 +99,13 @@ export class BackofficeCatalogService {
           throw validation('type', 'PRODUCT_TYPE_IMMUTABLE');
         }
         assertProductShape(nextType, input);
+        await this.assertUsablePolicyAfterActiveUpdate(
+          existing.status,
+          existing.warrantyPolicyId,
+          input.warrantyPolicyId,
+          null,
+          transaction,
+        );
         const updated = await this.repository.updateProduct(
           id,
           {
@@ -242,6 +249,13 @@ export class BackofficeCatalogService {
             ? existing.compareAtPrice?.toString()
             : (input.compareAtPrice ?? undefined),
         );
+        await this.assertUsablePolicyAfterActiveUpdate(
+          existing.status,
+          existing.warrantyPolicyId,
+          input.warrantyPolicyId,
+          existing.product.warrantyPolicyId,
+          transaction,
+        );
         const updated = await this.repository.updateVariant(id, input, transaction);
         await this.audit.write(transaction, actor, {
           action: 'catalog.variant.updated',
@@ -349,6 +363,23 @@ export class BackofficeCatalogService {
     if ((await this.warrantyPolicies.findUsableById(policyId, transaction)) === null) {
       throw validation('warrantyPolicyId', 'WARRANTY_POLICY_NOT_ACTIVE');
     }
+  }
+
+  private async assertUsablePolicyAfterActiveUpdate(
+    status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED',
+    currentPolicyId: string | null,
+    requestedPolicyId: string | null | undefined,
+    fallbackPolicyId: string | null,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (
+      status !== 'ACTIVE' ||
+      requestedPolicyId === undefined ||
+      requestedPolicyId === currentPolicyId
+    ) {
+      return;
+    }
+    await this.assertUsableWarrantyPolicy(requestedPolicyId ?? fallbackPolicyId, transaction);
   }
 
   private toProductDetail(product: BackofficeProductRecord): BackofficeProductDetailDto {
