@@ -6,7 +6,9 @@
 :80 {
 	encode zstd gzip
 
-	respond /__gateway_health "ok" 200
+	handle /__gateway_health {
+		respond "ok" 200
+	}
 
 	@api path /api/v1 /api/v1/* /health /health/* /docs /docs/*
 	handle @api {
