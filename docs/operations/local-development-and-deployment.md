@@ -1,147 +1,216 @@
-# Local development, demo deployment và runbook
+# Chạy rePhone bằng Docker và triển khai VPS
 
-Luồng mặc định cho Windows/Linux/macOS: ứng dụng chạy trên host để hot reload nhanh; Docker Compose chạy PostgreSQL và Mailpit. Profile `demo` có thể build/chạy cả web/API trong container để trình diễn production-like.
+Docker đóng gói Web, API, gateway và công cụ migration. Supabase vẫn là PostgreSQL và Storage chính; PostgreSQL 17 trong Compose chỉ phục vụ kiểm thử. Không có bước khởi động nào tự seed, reset hoặc migrate dữ liệu thật.
 
-## 1. Prerequisites
+## 1. Kiến trúc chạy
 
-- Git 2.5x+, Node 24.18.0, Corepack và Docker Desktop/Engine + Compose.
-- pnpm không cài global bắt buộc: `corepack enable`, sau đó root `packageManager` chọn 10.18.3.
-- Tài khoản/project Supabase với ba bucket theo configuration; nếu chưa có, các test dùng fake storage nhưng upload demo thật cần credential.
-- Port mặc định trống: web 3000, API 4000, PostgreSQL 5432, SMTP 1025, Mailpit UI 8025.
+| Môi trường | Thành phần | Cổng công khai | Dữ liệu |
+| --- | --- | --- | --- |
+| `dev` | Caddy, Next dev, Nest watch, Mailpit | Web/API chung `localhost:3000`; Mailpit `localhost:8025` | Supabase |
+| `demo` | Caddy, image Next standalone, Nest đã build, Mailpit | Web/API chung `localhost:3000` | Supabase |
+| `test` | API operations + PostgreSQL 17.6 | PostgreSQL test chỉ bind `127.0.0.1:5433` | Volume test riêng |
+| `prod` | Caddy HTTPS, Next standalone, Nest runtime | Chỉ 80/443 | Supabase |
 
-## 2. Compose topology
+Caddy giữ cùng origin: browser gọi `/api/v1`, còn Next server gọi `http://api:4000/api/v1`. API và Web không publish cổng trực tiếp. API có thêm mạng outbound để kết nối Supabase/SMTP; mạng nội bộ vẫn tách khỏi Internet inbound.
 
-Default services:
+Các file chính:
 
-| Service | Image/port | Volume/health |
-|---|---|---|
-| `postgres` | `postgres:18.4-alpine`, `5432`, DB `rephone_dev` | named volume `rephone_pgdata`; `pg_isready` |
-| `mailpit` | `axllent/mailpit:v1.30.6`, `1025/8025` | no persistent mail required |
+- `compose.yaml`: network, volume và PostgreSQL test.
+- `compose.dev.yaml`: hot reload bằng Compose Watch.
+- `compose.demo.yaml`: image bất biến chạy local HTTP.
+- `compose.test.yaml`: unit, integration và E2E trong Linux.
+- `compose.prod.yaml`: image registry, Caddy HTTPS và giới hạn một API replica.
+- `infra/docker/api.Dockerfile`: development, operations, demo và runtime API.
+- `infra/docker/web.Dockerfile`: development, build và Next standalone runtime.
 
-Profile `test` thêm `postgres-test` cùng PostgreSQL image, host port 5433, database `rephone_test` và volume riêng/disposable; test scripts không bao giờ trỏ vào `rephone_dev`.
+## 2. Chuẩn bị
 
-Optional `demo` profile:
-
-- `api`: multi-stage Node 24-alpine image, port 4000, depends on healthy PostgreSQL, runs migration deploy before start through explicit entrypoint.
-- `web`: multi-stage Next standalone image, port 3000, depends on ready API.
-
-Database credential trong Compose chỉ dành local. Không dùng cùng password cho hosted demo.
-
-Host `.env` dùng `localhost` (`DATABASE_URL ...@localhost:5432`, API URL `localhost:4000`). Service `api` trong profile demo override DB host thành `postgres`; service `web` dùng internal `http://api:4000/api/v1` cho server-side call và public browser URL `http://localhost:4000/api/v1`. Không dùng `localhost` để container gọi container khác.
-
-## 3. First run
+Yêu cầu Docker Desktop/Engine có Compose mới, Git và Node 24.18 nếu chạy lệnh ngoài container.
 
 ```powershell
 corepack enable
 pnpm install --frozen-lockfile
-Copy-Item .env.example .env
-docker compose up -d postgres mailpit
-pnpm db:deploy
-pnpm db:seed
-pnpm dev
+Copy-Item .env.docker.example .env.docker
 ```
 
-Kiểm tra:
-
-- Web `http://localhost:3000`.
-- API ready `http://localhost:4000/health/ready`.
-- OpenAPI UI `http://localhost:4000/docs` chỉ bật development; JSON artifact được generate riêng.
-- Mailpit `http://localhost:8025`.
-
-Nếu máy đã có PostgreSQL container chiếm 5432, đổi host port Compose và local `DATABASE_URL`; container port vẫn 5432. Không cần cài `psql` trên host vì có thể chạy qua `docker compose exec postgres psql`.
-
-## 4. Day-to-day commands
-
-| Việc | Command |
-|---|---|
-| Start infra | `docker compose up -d postgres mailpit` |
-| Stop infra, giữ data | `docker compose stop` |
-| Xem log infra | `docker compose logs -f postgres mailpit` |
-| Create migration | `pnpm db:migrate -- --name <name>` |
-| Deploy existing migration | `pnpm db:deploy` |
-| Seed/reseed idempotent | `pnpm db:seed` |
-| Slice 10 invariant preflight | `pnpm preflight:slice10` |
-| Slice 10 smoke mặc định (read-only) | `pnpm smoke:slice10` |
-| Verify toàn repo | `pnpm verify` |
-| Full demo containers | `docker compose --profile demo up --build` |
-
-Không dùng `docker compose down -v` trong script thường ngày vì xóa database volume. Khi thật sự cần reset local, dùng command riêng có guard database name và ghi rõ mất dữ liệu.
-
-## 5. Database backup/restore
-
-Backup local từ service:
-
-```powershell
-docker compose exec -T postgres pg_dump -U rephone -d rephone_dev --format=custom > rephone-dev.dump
-```
-
-Restore phải vào database mới/rỗng, không overwrite mặc định:
-
-```powershell
-docker compose exec -T postgres createdb -U rephone rephone_restore
-Get-Content -AsByteStream rephone-dev.dump | docker compose exec -T postgres pg_restore -U rephone -d rephone_restore --no-owner --no-privileges
-```
-
-Sau restore, trỏ temporary URL vào `rephone_restore`, chạy readiness + smoke query + kiểm tra count/order total. File dump có PII/secret-like token hash nên không commit hoặc gửi công khai.
-
-Supabase object cần backup/export riêng nếu demo phụ thuộc file; database chỉ lưu metadata path.
-
-## 6. Hosted demo topology
-
-Mục tiêu tối giản:
+Điền `.env.docker` nhưng không commit file này. Hai URL database dùng Supavisor session port 5432 khi máy không có IPv6:
 
 ```text
-HTTPS reverse proxy/platform
-├── Next.js web (1 instance)
-└── NestJS API (1 instance + scheduler)
-      ├── PostgreSQL 18 (managed/Supabase hoặc container private)
-      ├── Supabase Storage
-      └── SMTP provider
+DATABASE_URL=postgresql://rephone_runtime.<project-ref>:<runtime-password>@<pooler>:5432/postgres?uselibpqcompat=true&sslmode=require
+DIRECT_URL=postgresql://postgres.<project-ref>:<admin-password>@<pooler>:5432/postgres?uselibpqcompat=true&sslmode=require
 ```
 
-- Một API replica là deployment invariant P0.
-- Database không public; TLS required với managed DB.
-- Migration là release step một lần trước khi API mới nhận traffic.
-- API/web images chạy non-root, production dependency only, healthcheck và restart policy.
-- Next build nhận public API URL; server runtime nhận internal/public URL đúng môi trường.
-- Không bật Swagger UI public ở production; có thể giữ static OpenAPI artifact trong repository.
+- `DATABASE_URL` là tài khoản ít quyền của API.
+- `DIRECT_URL` chỉ được truyền vào job migration/provision, không vào API đang chạy.
+- `REPHONE_RUNTIME_DB_PASSWORD` phải trùng password đã URL-encode trong `DATABASE_URL` và dài ít nhất 24 ký tự.
+- `sslmode` phải xuất hiện đúng một lần. Job từ chối URL remote không yêu cầu TLS trước khi gửi credential.
+- `sslmode=require` mã hóa đường truyền nhưng không xác thực CA. Production dùng `verify-full` theo mục 7.
+- Database hiện có phải giữ nguyên hai `IDENTIFIER_*`; đổi trực tiếp sẽ làm IMEI/số sê-ri/EID cũ không đọc hoặc tìm được.
 
-## 7. Release checklist
+Các script `docker:*` truyền rõ `--env-file .env.docker`; file này phải tự chứa đủ cấu hình Docker và không phụ thuộc `.env` chạy host. API chỉ nhận allow-list cấu hình runtime; Web không nhận database, JWT, SMTP password hay Supabase service-role key. `DIRECT_URL`, password cấp role và password seed không được truyền vào API/schema-check.
 
-1. `pnpm install --frozen-lockfile && pnpm verify` qua trên clean checkout.
-2. Migration từ database rỗng và trên bản backup staging qua.
-3. Backup hiện tại; xác nhận `DIRECT_URL` đúng target.
-4. Deploy migration, API rồi web.
-5. Check live/ready, login, public catalog, một checkout sandbox/demo, Mail/Storage.
-6. Kiểm tra logs không lộ secret và scheduler chỉ chạy một instance.
-7. Gắn release/commit SHA; ghi migration đã chạy.
+## 3. Khởi tạo quyền database một lần
 
-## 8. Rollback và sự cố
+Đây là thay đổi có chủ ý trên Supabase, không chạy tự động khi `up`.
 
-- Code-only failure: rollback image về commit trước nếu schema tương thích.
-- Migration additive được thiết kế backward-compatible trong một release; không tự down migration.
-- Destructive/data migration: restore vào database mới rồi đổi connection chỉ sau xác minh; không chạy lệnh xóa trong hoảng loạn.
-- Storage/SMTP down: API core vẫn ready; upload/mail use case trả/log lỗi rõ, business transaction đã commit không bị âm thầm rollback.
-- Database down: readiness 503, dừng mutation; khôi phục DB rồi chạy smoke/invariant query.
-- Suspected secret leak: rotate credential/key ngay; refresh/session revoke; encryption key rotation cần giữ old version để decrypt dữ liệu cũ.
-
-## 9. Demo reset
-
-Demo rehearsal dùng database riêng `rephone_demo`, seed idempotent và scenario script. Không reset database đang dùng cho đánh giá nếu chưa backup. Credential demo được truyền bằng environment và đổi sau buổi demo nếu domain public.
-
-`pnpm smoke:slice10` mặc định chỉ kiểm tra API readiness và các invariant Refund, không tạo dữ liệu. Full mode tạo hai pickup Order terminal, tiêu thụ hai phụ kiện và giữ lịch sử Payment/Refund; chỉ chạy sau backup và xác nhận đúng target:
+1. Backup database và Storage cần thiết.
+2. Trong Supabase Dashboard, tắt Data API hoặc loại schema `public` khỏi exposed schemas. Bước này bắt buộc vì ứng dụng chỉ truy cập dữ liệu nghiệp vụ qua NestJS/Prisma.
+3. Điền URL TLS và password runtime trong `.env.docker`.
+4. Chạy migration bằng tài khoản quản trị.
+5. Tạo/cập nhật tài khoản runtime và kiểm chứng quyền bằng chính tài khoản đó.
+6. Chạy schema gate bằng tài khoản runtime.
 
 ```powershell
-$env:SLICE10_SMOKE_MODE='smoke'
-$env:SLICE10_SMOKE_CONFIRM='consume-two-accessories-and-create-refunds'
-pnpm smoke:slice10
+pnpm docker:db:migrate
+pnpm docker:db:provision-runtime
+pnpm docker:db:check
 ```
 
-Không dùng SQL để đổi business state hoặc xóa lịch sử sau smoke. Nếu script báo còn Refund `PROCESSING` từ lần chạy trước, resolve nó qua backoffice API/UI rồi mới chạy lại.
+Migration thu hồi quyền bảng, sequence và function của `anon`, `authenticated`, `service_role`; role `rephone_app` chỉ có DML nghiệp vụ và chỉ đọc `_prisma_migrations`. Provision sẽ dừng nếu role có membership/thuộc tính lạ, nếu runtime có thể tạo bảng, sửa lịch sử migration, hoặc nếu quyền mặc định của function còn hở.
+
+Sau đó gọi REST/Data API bằng anon key để xác nhận bảng `public` bị từ chối, rồi smoke Supabase Storage riêng qua API. Migration chỉ sửa default ACL của owner đang migrate; tắt Data API vẫn là lớp bảo vệ bắt buộc cho object tương lai do `supabase_admin` tạo.
+
+## 4. Phát triển hằng ngày
+
+```powershell
+pnpm docker:dev
+```
+
+Truy cập:
+
+- rePhone: `http://localhost:3000`
+- API readiness qua gateway: `http://localhost:3000/health/ready`
+- Swagger local: `http://localhost:3000/docs`
+- Mailpit: `http://localhost:8025`
+
+Compose Watch đồng bộ source và rebuild khi manifest, lockfile, Prisma hoặc package dùng chung đổi. Khi đổi `.env`/`.env.docker`, dừng và tạo lại container vì restart không nạp lại environment:
+
+```powershell
+pnpm docker:dev:down
+pnpm docker:dev
+```
+
+Không dùng `down -v`; volume PostgreSQL test và dữ liệu Caddy được giữ mặc định.
+
+## 5. Bản demo bất biến
+
+```powershell
+pnpm docker:demo
+pnpm docker:demo:logs
+```
+
+Demo build hoàn toàn trong Debian Linux nên không nạp file Argon2 bị Windows Application Control chặn. Demo vẫn chạy `NODE_ENV=development` để dùng HTTP/cookie local, nhưng chạy mã Nest đã compile và Next standalone, không mount source.
+
+Dừng mà không xóa volume:
+
+```powershell
+pnpm docker:demo:down
+```
+
+API chỉ khởi động sau khi `schema-check` so đủ tên và SHA-256 của mọi `migration.sql`. Schema pending, migration lỗi, file migration bị sửa hoặc database có migration lạ đều chặn startup.
+
+## 6. Kiểm thử Linux/PostgreSQL 17
+
+```powershell
+pnpm docker:test
+```
+
+Job tạo lại riêng schema `rephone_test`, deploy toàn bộ migration rồi chạy unit, integration và E2E trong image operations. `TEST_DATABASE_URL` trỏ tới `postgres-test:5432`; job không gọi Docker lồng bên trong container và không thể reset Supabase.
+
+Các kiểm tra host vẫn dùng được:
+
+```powershell
+pnpm test:db:prepare
+pnpm verify
+```
+
+## 7. Build image và triển khai VPS
+
+Build ba image từ đúng commit/tag:
+
+```powershell
+docker build -f infra/docker/api.Dockerfile --target api-runtime -t <registry>/rephone-api:<tag> .
+docker build -f infra/docker/api.Dockerfile --target api-operations -t <registry>/rephone-api-ops:<tag> .
+docker build -f infra/docker/web.Dockerfile --target web-runtime -t <registry>/rephone-web:<tag> .
+```
+
+Khi build Web, truyền các `NEXT_PUBLIC_*` bằng `--build-arg` nếu khác mặc định. Không truyền secret bằng build arg. Push cả ba image rồi tạo file environment production ngoài repository với `API_IMAGE`, `API_OPS_IMAGE`, `WEB_IMAGE` cùng tag bất biến.
+
+Production bắt buộc có file CA Supabase trên VPS. Compose mount file do `SUPABASE_DB_CA_FILE` chỉ định vào `/run/secrets/supabase-db-ca.crt`; cả hai URL trong container dùng:
+
+```text
+sslmode=verify-full&sslrootcert=/run/secrets/supabase-db-ca.crt
+```
+
+Kiểm tra cấu hình trước khi thay đổi database:
+
+```powershell
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml config --quiet
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml pull
+```
+
+Thứ tự release:
+
+```powershell
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml --profile tools run --rm migrate
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml --profile tools run --rm provision-runtime
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml run --rm schema-check
+docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml up -d --wait
+```
+
+Production chỉ publish 80/443, Caddy tự cấp HTTPS, Swagger không được route công khai, container chạy non-root và `DIRECT_URL` không tồn tại trong API runtime. Giữ đúng một API replica vì scheduler hiện chưa có distributed lock.
+
+## 8. Smoke sau release
+
+Tối thiểu kiểm tra:
+
+1. `/api/health` trả 204 từ Web và `/health/ready` trả thành công từ API.
+2. Trang chủ/cửa hàng render server-side, asset tải đủ và client gọi cùng origin `/api/v1`.
+3. Đăng nhập, refresh cookie, đăng xuất và chặn trang backoffice cho khách.
+4. Đọc catalog, một thao tác giỏ hàng an toàn, upload/download một fixture Storage có thể xóa.
+5. Gửi email thử qua provider hoặc Mailpit.
+6. REST/Data API với anon key không đọc được bảng nghiệp vụ.
+7. Log/image history/client bundle không chứa URL nội bộ hoặc secret.
+8. Chỉ một API instance phát log scheduler.
+
+## 9. Backup và khôi phục
+
+Database backup không chứa Supabase Storage object. Export database và object/manifest Storage thành hai phần, mã hóa file backup và không commit.
+
+`rephone_app` và `rephone_runtime` là cluster role, không đi theo `pg_dump` database thông thường. Quy trình khôi phục khuyến nghị vào Supabase project mới:
+
+1. Tắt Data API/exposed `public` trên target.
+2. Dùng image/schema cùng phiên bản backup, chạy migration trên database rỗng để bootstrap role và schema.
+3. Chạy `provision-runtime`.
+4. Restore **data-only**, loại dữ liệu bảng `_prisma_migrations` để giữ lịch sử vừa được tạo trên target.
+5. Restore Storage object/manifest riêng.
+6. Chạy `schema-check`, invariant test, đối chiếu count/tổng tiền và smoke bằng runtime role.
+7. Chỉ đổi DNS/connection sau khi mọi kiểm tra qua.
+
+Không restore full dump vào cluster mới trước khi tạo cluster roles; ACL trong dump có thể tham chiếu role chưa tồn tại. Nếu backup thuộc schema cũ, khôi phục vào staging với image cùng phiên bản trước, sau đó mới chạy forward migration.
+
+## 10. Rollback và xử lý sự cố
+
+- Lỗi code, schema vẫn tương thích: quay lại cả API/Web image tag trước.
+- Migration forward-only: không tự chạy down migration. Khi có lỗi dữ liệu, restore vào database mới rồi smoke trước khi chuyển kết nối.
+- Schema gate lỗi: không bỏ qua gate hoặc cấp DDL cho runtime; xem `pending`, `incomplete`, `unknownApplied`, `checksumMismatch` rồi xử lý bằng job operations.
+- Database/Storage/SMTP lỗi: giữ readiness và log rõ; không reset/seed để “thử lại”.
+- Lộ runtime password: đổi bằng `provision-runtime`, cập nhật `DATABASE_URL`, recreate API/schema-check.
+- Lộ JWT secret: rotate và chấp nhận revoke phiên hiện tại.
+- Lộ identifier key: cần keyring/rotation dữ liệu; không thay thẳng environment.
+
+## 11. Gate còn lại trước production thật
+
+Tại ngày 2026-08-29, môi trường hiện có còn ba điều kiện cần hoàn tất trước go-live:
+
+- URL Supabase trong `.env` host chưa yêu cầu TLS; Docker guard sẽ từ chối cho tới khi `.env.docker` có cấu hình mã hóa.
+- Migration hardening và thay đổi Data API chưa được áp lên project Supabase thật; phải backup, tắt Data API, migrate/provision và smoke theo mục 3.
+- 105 identifier hiện có dùng key mẫu `key_version=1`. Production cố ý từ chối key mẫu; cần triển khai keyring hoặc migration giải mã–mã hóa lại trước khi bật `NODE_ENV=production`. Demo local vẫn phải giữ key cũ để đọc dữ liệu.
 
 ## Liên kết
 
 - [Configuration](../architecture/configuration.md)
-- [Observability](../architecture/observability.md)
 - [Database implementation](../architecture/database-implementation.md)
-- [Seed/demo scenarios](../planning/seed-and-demo-scenarios.md)
+- [Docker architecture decision](../planning/2026-08-29-dockerization-plan.md)
+- [Supabase database connections](https://supabase.com/docs/guides/database/connecting-to-postgres)
+- [Supabase Data API security](https://supabase.com/docs/guides/api/securing-your-api)
