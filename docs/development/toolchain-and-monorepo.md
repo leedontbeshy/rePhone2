@@ -14,7 +14,7 @@ Tài liệu này là baseline triển khai tại ngày 2026-08-18. Khi scaffold,
 | React / React DOM | `19.2.8` | Pin cùng version; tương thích peer range của Next baseline |
 | NestJS | `11.2.1` | REST trên Express adapter |
 | Prisma ORM | `7.9.1` | ESM, `prisma-client`, `@prisma/adapter-pg` và `pg` |
-| PostgreSQL | `18.4` | Local image `postgres:18.4-alpine`; database UTF-8, timezone UTC |
+| PostgreSQL | `17.6` test / Supabase 17 | Test image `postgres:17.6-alpine`; database UTF-8, timezone UTC |
 | Vitest | `4.1.10` | Unit/integration/API e2e |
 | Playwright | `1.62.1` | Chỉ thêm khi bắt đầu browser smoke test |
 
@@ -168,6 +168,6 @@ Nâng patch/minor chỉ khi `pnpm verify` và migration test qua. Nâng Node, Ne
 - [NestJS 11 migration guide](https://docs.nestjs.com/migration-guide)
 - [Prisma ORM 7 upgrade guide](https://www.prisma.io/docs/guides/upgrade-prisma-orm/v7)
 - [Prisma system requirements](https://docs.prisma.io/docs/orm/reference/system-requirements)
-- [PostgreSQL 18 release notes](https://www.postgresql.org/docs/18/release.html)
+- [PostgreSQL 17 release notes](https://www.postgresql.org/docs/17/release.html)
 - [pnpm installation/Corepack](https://pnpm.io/installation)
 - [Turborepo installation](https://turborepo.com/docs/getting-started/installation)

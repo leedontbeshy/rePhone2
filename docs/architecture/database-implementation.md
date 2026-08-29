@@ -4,9 +4,9 @@ Tài liệu này chuyển data dictionary 28 bảng thành quy tắc triển kha
 
 ## 1. Baseline
 
-- PostgreSQL 18.4, schema `public`, encoding UTF-8, server timezone UTC.
+- Supabase PostgreSQL 17, schema `public`, encoding UTF-8, server timezone UTC; test container pin PostgreSQL 17.6.
 - Prisma ORM 7 ESM với provider `postgresql`, generator `prisma-client`, output `apps/api/src/generated/prisma`.
-- Runtime `PrismaPg` nhận `DATABASE_URL`; Prisma CLI trong `prisma.config.ts` dùng `DIRECT_URL`.
+- Runtime `PrismaPg` nhận `DATABASE_URL` của role `rephone_runtime`; Prisma CLI trong `prisma.config.ts` dùng `DIRECT_URL` quản trị. API runtime không nhận `DIRECT_URL`.
 - ID là PostgreSQL `uuid`; Prisma field dùng `String @id @default(uuid(7)) @db.Uuid`. Prisma sinh UUIDv7 ở ORM layer, nên không phụ thuộc database có hàm `uuidv7()`; test có thể truyền ID có chủ đích.
 - Timestamp là `timestamptz(3)`; money là `numeric(15,0)` và đi qua API dưới dạng chuỗi.
 - Tên Prisma camelCase, bảng/cột SQL snake_case qua `@@map`/`@map` để migration và query dễ đọc.
@@ -16,7 +16,7 @@ Tài liệu này chuyển data dictionary 28 bảng thành quy tắc triển kha
 1. Sửa data dictionary nếu thay đổi business field/invariant.
 2. Sửa `schema.prisma`.
 3. Local chạy `prisma migrate dev --name <verb_noun>` để sinh migration.
-4. Chỉnh file SQL vừa sinh để thêm constraint/index không diễn tả được.
+4. Chỉnh file SQL vừa sinh để thêm constraint/index không diễn tả được; không sửa migration đã chia sẻ/deploy.
 5. Chạy migration từ database rỗng, seed, integration/concurrency tests.
 6. Commit schema, toàn bộ migration và generated client liên quan.
 7. Demo/production chỉ chạy `prisma migrate deploy`; không chạy `db push`.
@@ -103,7 +103,7 @@ Chỉ thêm index mới khi endpoint/query plan cho thấy cần; kiểm tra b�
 ## 6. Seed và reset
 
 - Seed là idempotent bằng stable business key (`normalizedEmail`, `sku`, `inventoryCode`, `code`, settings key), không dựa ID cố định trừ fixture test có chủ đích.
-- Local reset được phép bằng `prisma migrate reset` chỉ trên database tên `rephone_dev`/`rephone_test`; script phải từ chối URL khác.
+- Local reset chỉ được phép trên database tên `rephone_dev`/`rephone_test`; script phải từ chối URL khác. Docker chỉ tự reset `rephone_test`, không reset Supabase.
 - Seed không upload file thật; dùng object path demo hợp lệ hoặc adapter fake/local fixture theo [seed scenarios](../planning/seed-and-demo-scenarios.md).
 
 ## 7. Backup và portability
@@ -115,7 +115,7 @@ Chỉ thêm index mới khi endpoint/query plan cho thấy cần; kiểm tra b�
 ## 8. Definition of done schema
 
 - 28 model đúng data dictionary, relations/FK/delete behavior explicit.
-- Migration từ database rỗng chạy thành công trên PostgreSQL 18.4.
+- Migration từ database rỗng chạy thành công trên PostgreSQL 17.6.
 - Constraint tests chứng minh case sai bị từ chối.
 - Concurrency tests chứng minh không double-sell/oversell/quota overflow.
 - Seed chạy hai lần không nhân đôi dữ liệu.

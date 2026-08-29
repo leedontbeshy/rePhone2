@@ -42,7 +42,7 @@ Ngày chốt: 2026-08-29
 - API và Web có Dockerfile nhiều stage gồm dependency, development, build và runtime.
 - Build context loại `.env`, Git, `node_modules`, `.next`, `dist`, cache, log và dump.
 - Runtime image chạy non-root, có init, healthcheck và dừng mềm.
-- Caddy nhận request bên ngoài; `/api/v1`, `/health`, `/docs` sang API, phần còn lại sang Web.
+- Caddy nhận request bên ngoài; `/api/v1`, `/health` sang API, phần còn lại sang Web. `/docs` chỉ route ở local, không công khai ở production.
 - Demo chỉ công khai `localhost:3000`; production chỉ công khai 80/443.
 
 ### Môi trường
@@ -50,7 +50,7 @@ Ngày chốt: 2026-08-29
 - `dev`: Compose Watch đồng bộ source, rebuild khi manifest/lockfile đổi, Mailpit cho email.
 - `demo`: production build, không mount source, local HTTP, restart policy và schema gate.
 - `test`: PostgreSQL 17, scheduler tắt, credential giả/in-memory Storage; không nhận Supabase URL/key thật.
-- `prod`: image bất biến, Caddy HTTPS/domain, secret ngoài repo, một API replica.
+- `prod`: image bất biến, Caddy HTTPS/domain, secret ngoài repo, CA Supabase mount read-only, một API replica.
 
 ### Dữ liệu và migration
 
@@ -69,4 +69,3 @@ Ngày chốt: 2026-08-29
 - Image history, environment và client bundle không chứa secret hoặc URL Docker nội bộ.
 - API chạy non-root, healthcheck đúng, dừng mềm và chỉ một scheduler phát log.
 - Vai trò Data API công khai không còn truy cập được bảng nghiệp vụ.
-
