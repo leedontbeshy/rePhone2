@@ -1,0 +1,23 @@
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode zstd gzip
+
+	handle /__gateway_health {
+		respond "ok" 200
+	}
+
+	@api path /api/v1 /api/v1/* /health /health/* /docs /docs/*
+	handle @api {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+
+	header -Server
+}

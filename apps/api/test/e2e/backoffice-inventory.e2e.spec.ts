@@ -24,7 +24,7 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
     setTestEnvironment();
     const { createApplication } = await import('../../src/application.js');
     app = await createApplication({ enableSwagger: false });
-    await app.init();
+    await app.listen(0, '127.0.0.1');
     server = app.getHttpServer() as Server;
     prisma = createTestPrisma();
   });
@@ -226,6 +226,22 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
       .delete(`/api/v1/backoffice/product-media/${variantMediaId}`)
       .set(bearer(employee))
       .expect(204);
+
+    const replacementVariant = await request(server)
+      .post(`/api/v1/backoffice/products/${productId}/variants`)
+      .set(bearer(employee))
+      .send({
+        sku: 'IPH-SLICE04-256-BLK',
+        displayName: '256 GB Black',
+        storageCapacityGb: 256,
+        colorName: 'Black',
+      })
+      .expect(201);
+    const replacementVariantId = stringProperty(successData(replacementVariant), 'id');
+    await request(server)
+      .post(`/api/v1/backoffice/variants/${replacementVariantId}/activate`)
+      .set(bearer(employee))
+      .expect(200);
 
     await request(server)
       .post(`/api/v1/backoffice/variants/${variantId}/archive`)

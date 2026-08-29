@@ -11,7 +11,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { apiBaseUrl } from '../lib/api';
+import { browserApiBaseUrl } from '../lib/api';
 
 export type AuthUser = components['schemas']['AuthUserDto'];
 export type AuthRole = AuthUser['role'];
@@ -235,7 +235,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const client = useMemo(
     () =>
       createApiClient({
-        baseUrl: apiBaseUrl,
+        baseUrl: browserApiBaseUrl,
         getAccessToken: memory.getAccessToken,
         refreshAccessToken,
         onUnauthorized: clearSession,
@@ -367,7 +367,7 @@ export async function requestCookieAuthEndpoint(
 ): Promise<unknown> {
   let response: Response;
   try {
-    response = await fetcher(`${apiBaseUrl.replace(/\/$/, '')}/auth/${endpoint}`, {
+    response = await fetcher(`${browserApiBaseUrl}/auth/${endpoint}`, {
       method: 'POST',
       credentials: 'include',
       headers: {

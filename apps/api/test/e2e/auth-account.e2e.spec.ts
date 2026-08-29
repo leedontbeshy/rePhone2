@@ -24,7 +24,7 @@ describe('auth and account HTTP contract', () => {
     setTestEnvironment();
     const { createApplication } = await import('../../src/application.js');
     app = await createApplication({ enableSwagger: false });
-    await app.init();
+    await app.listen(0, '127.0.0.1');
     server = app.getHttpServer() as Server;
     prisma = createTestPrisma();
   });

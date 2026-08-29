@@ -10,8 +10,10 @@ apps/api/src/generated/prisma/
 .env.*
 !.env.example
 !.env.test.example
+!.env.docker.example
 
 .local/
+/secrets/
 *.dump
 *.log
 docs.7z

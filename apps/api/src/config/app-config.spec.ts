@@ -43,6 +43,13 @@ describe('loadConfig', () => {
     expect(config.storage.url).toBe('https://example.supabase.co');
   });
 
+  it('does not require the migration-only DIRECT_URL at API runtime', () => {
+    const environment = validEnvironment();
+    delete environment.DIRECT_URL;
+
+    expect(() => loadConfig(environment)).not.toThrow();
+  });
+
   it('reports variable names without exposing secret values', () => {
     const environment = validEnvironment();
     environment.JWT_ACCESS_SECRET = 'short-secret';
@@ -82,5 +89,27 @@ describe('loadConfig', () => {
     environment.SUPABASE_SERVICE_ROLE_KEY = 'production-placeholder-service-role-key';
 
     expect(() => loadConfig(environment)).toThrow(/SUPABASE_SERVICE_ROLE_KEY/);
+  });
+
+  it('rejects replace-with secret markers in production', () => {
+    const environment = validEnvironment();
+    environment.NODE_ENV = 'production';
+    environment.API_PUBLIC_URL = 'https://api.rephone.vn';
+    environment.WEB_PUBLIC_URL = 'https://rephone.vn';
+    environment.WEB_ORIGIN = 'https://rephone.vn';
+    environment.JWT_ACCESS_SECRET = 'replace-with-at-least-32-random-characters';
+
+    expect(() => loadConfig(environment)).toThrow(/JWT_ACCESS_SECRET/);
+  });
+
+  it('rejects an unencrypted production database connection', () => {
+    const environment = validEnvironment();
+    environment.NODE_ENV = 'production';
+    environment.API_PUBLIC_URL = 'https://api.rephone.vn';
+    environment.WEB_PUBLIC_URL = 'https://rephone.vn';
+    environment.WEB_ORIGIN = 'https://rephone.vn';
+    environment.SUPABASE_SERVICE_ROLE_KEY = 'production-service-role-key-without-placeholders';
+
+    expect(() => loadConfig(environment)).toThrow(/DATABASE_URL/);
   });
 });

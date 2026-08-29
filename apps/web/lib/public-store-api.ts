@@ -1,10 +1,12 @@
+import 'server-only';
+
 import { createApiClient, type components } from '@rephone/api-client';
-import { apiBaseUrl } from './api';
+import { serverApiBaseUrl } from './server-api';
 
 const noStoreFetch: typeof globalThis.fetch = (input, init) =>
   fetch(input, { ...init, cache: 'no-store' });
 
-const publicStoreClient = createApiClient({ baseUrl: apiBaseUrl, fetch: noStoreFetch });
+const publicStoreClient = createApiClient({ baseUrl: serverApiBaseUrl, fetch: noStoreFetch });
 
 export type PublicStore = components['schemas']['PublicStoreDto'];
 

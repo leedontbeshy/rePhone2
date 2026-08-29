@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
+import { databaseUrlSecurityIssue } from './database-url-security.js';
 
 const integerString = (minimum: number, maximum?: number) => {
   let schema = z.coerce.number().int().min(minimum);
@@ -41,7 +42,6 @@ export const environmentSchema = z
     WEB_PUBLIC_URL: z.url(),
     WEB_ORIGIN: z.url(),
     DATABASE_URL: z.string().min(1),
-    DIRECT_URL: z.string().min(1),
     DB_POOL_MAX: integerString(1, 100).default(10),
     DB_CONNECTION_TIMEOUT_MS: integerString(1).default(5_000),
     DB_IDLE_TIMEOUT_MS: integerString(1).default(10_000),
@@ -114,6 +114,19 @@ export const environmentSchema = z
       });
     }
 
+    const databaseUrlIssue = databaseUrlSecurityIssue(environment.DATABASE_URL, {
+      allowUnencryptedLoopback: environment.NODE_ENV !== 'production',
+      allowUnencryptedHostnames: environment.NODE_ENV === 'test' ? ['postgres-test'] : [],
+      requireCertificateVerification: environment.NODE_ENV === 'production',
+    });
+    if (databaseUrlIssue !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message: databaseUrlIssue,
+      });
+    }
+
     if (environment.NODE_ENV === 'production') {
       for (const field of [
         'API_PUBLIC_URL',
@@ -131,7 +144,7 @@ export const environmentSchema = z
       }
 
       for (const field of ['JWT_ACCESS_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'] as const) {
-        if (/placeholder|change-me|local|test/i.test(environment[field])) {
+        if (/placeholder|change-me|replace-with|local|test/i.test(environment[field])) {
           context.addIssue({
             code: 'custom',
             path: [field],
@@ -180,7 +193,6 @@ export interface AppConfig {
   };
   database: {
     url: string;
-    directUrl: string;
     poolMax: number;
     connectionTimeoutMs: number;
     idleTimeoutMs: number;
@@ -260,7 +272,6 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
     },
     database: {
       url: environment.DATABASE_URL,
-      directUrl: environment.DIRECT_URL,
       poolMax: environment.DB_POOL_MAX,
       connectionTimeoutMs: environment.DB_CONNECTION_TIMEOUT_MS,
       idleTimeoutMs: environment.DB_IDLE_TIMEOUT_MS,

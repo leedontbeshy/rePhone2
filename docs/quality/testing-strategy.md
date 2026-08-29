@@ -7,7 +7,7 @@ Mục tiêu kiểm thử P0 là chứng minh các invariant quan trọng của �
 | Layer | Tool | Dependency | Phạm vi |
 |---|---|---|---|
 | Unit | Vitest | Không network/DB | Policy, pricing, voucher, state transition, serializer, config schema |
-| Integration | Vitest + PostgreSQL 18 | DB test thật | Prisma repository, SQL constraint/index, transaction, migration |
+| Integration | Vitest + PostgreSQL 17 | DB test thật | Prisma repository, SQL constraint/index, transaction, migration |
 | API e2e | Vitest + Supertest | Nest app + DB test; fake Storage/Mail mặc định | Auth/authorization/validation/envelope và vertical flows |
 | Contract | OpenAPI generation/validation | Nest metadata | Route coverage, operationId, generated client drift |
 | Browser smoke | Playwright, thêm khi UI có | Full stack local | Critical happy paths; không thay API e2e |
@@ -16,7 +16,7 @@ Test file đặt gần source cho unit (`*.spec.ts`), integration/e2e trong `app
 
 ## 2. Test environment
 
-- Compose profile `test` chạy PostgreSQL 18.4 riêng tại host port 5433/database `rephone_test`; không dùng database dev.
+- Compose profile `test` chạy PostgreSQL 17.6 riêng tại host port 5433/database `rephone_test`; không dùng Supabase.
 - Script test từ chối chạy nếu database name không kết thúc `_test`.
 - Trước suite: deploy migration từ đầu. Giữa test: truncate 28 bảng theo dependency với identity reset không cần thiết vì UUID.
 - Database integration/e2e chạy tuần tự ở P0 để fixture đơn giản; unit test được chạy song song.

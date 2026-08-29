@@ -6,6 +6,7 @@ Mọi cấu hình kỹ thuật lấy từ environment và được validate ngay
 
 - Root commit `.env.example` với placeholder an toàn, không commit `.env`, `.env.local`, `.env.test` hoặc secret thật.
 - Local developer copy `.env.example` thành `.env`; Turbo truyền các biến đã allow-list cho app.
+- Docker developer copy `.env.docker.example` thành `.env.docker`; các lệnh `docker:*` chọn rõ file này bằng `--env-file`, không phụ thuộc `.env` chạy host và không commit bản sao.
 - Test dùng `.env.test` do developer/CI tạo từ secret store.
 - Production/demo hosted dùng environment của platform, không copy file secret vào image.
 - API gọi `loadConfig()` một lần và export typed config; module không gọi `process.env` trực tiếp.
@@ -20,8 +21,8 @@ Mọi cấu hình kỹ thuật lấy từ environment và được validate ngay
 | `API_PUBLIC_URL` | `http://localhost:4000` | Absolute URL |
 | `WEB_PUBLIC_URL` | `http://localhost:3000` | Absolute URL, dùng link email |
 | `WEB_ORIGIN` | `http://localhost:3000` | Một origin P0; CORS exact match |
-| `DATABASE_URL` | `postgresql://rephone:rephone@localhost:5432/rephone_dev` | Runtime URL; bắt buộc |
-| `DIRECT_URL` | giống `DATABASE_URL` | CLI migration URL; bắt buộc, local có thể giống runtime |
+| `DATABASE_URL` | Supavisor session URL của `rephone_runtime.<project-ref>` | Runtime URL ít quyền; bắt buộc |
+| `DIRECT_URL` | Supavisor session/direct URL của `postgres.<project-ref>` | Chỉ CLI migration/provision; không truyền vào API runtime |
 | `JWT_ACCESS_SECRET` | placeholder | Random >= 32 bytes; không dùng default ngoài test |
 | `IDENTIFIER_ENCRYPTION_KEY` | base64 placeholder | Decode đúng 32 bytes cho AES-256-GCM |
 | `IDENTIFIER_HMAC_KEY` | base64 placeholder khác | Decode >= 32 bytes; không trùng encryption key |
@@ -37,14 +38,14 @@ Mọi cấu hình kỹ thuật lấy từ environment và được validate ngay
 
 SMTP auth có điều kiện: `SMTP_USER` và `SMTP_PASSWORD` cùng null ở Mailpit local hoặc cùng tồn tại ở hosted provider; không cho chỉ có một biến. `SMTP_REQUIRE_TLS=true` ở hosted khi provider dùng STARTTLS; local default false.
 
-Nếu dùng Supabase PostgreSQL sau này: API persistent ưu tiên direct URL khi host có IPv6 hoặc Supavisor session-mode port 5432 khi cần IPv4; `DIRECT_URL` cho Prisma CLI/migration ưu tiên direct URL, nhưng có thể dùng session-mode nếu môi trường không có IPv6. Transaction-mode port 6543 chỉ dành serverless/short-lived runtime, không phải topology P0 mặc định. Chưa có URL thật không cản scaffold local; thay URL chỉ qua environment.
+API persistent ưu tiên direct URL khi host có IPv6 hoặc Supavisor session-mode port 5432 khi cần IPv4. `DIRECT_URL` cho Prisma CLI ưu tiên direct URL, nhưng có thể dùng session mode. Transaction-mode 6543 không dùng cho migration hoặc topology P0. URL remote phải có đúng một `sslmode`; local/demo tối thiểu `uselibpqcompat=true&sslmode=require`, production dùng `sslmode=verify-full` với CA Supabase mount read-only.
 
 ## 3. API environment có default
 
 | Biến | Default | Ý nghĩa |
 |---|---:|---|
 | `LOG_LEVEL` | `debug` dev, `info` production | `trace`..`fatal` |
-| `DB_POOL_MAX` | `10` | Pool `pg`; test `5` |
+| `DB_POOL_MAX` | `10` | Pool `pg`; Docker/Supavisor và test dùng `5` |
 | `DB_CONNECTION_TIMEOUT_MS` | `5000` | Không giữ default vô hạn của `pg` |
 | `DB_IDLE_TIMEOUT_MS` | `10000` | Idle connection timeout |
 | `JWT_ACCESS_TTL_SECONDS` | `900` | 15 phút; khớp token contract |
@@ -70,8 +71,8 @@ Timeout nghiệp vụ như phí ship, số tiền cọc, pickup hold, proof/revi
 
 | Biến | Ví dụ | Quy tắc |
 |---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:4000/api/v1` | Public, absolute URL |
-| `API_INTERNAL_BASE_URL` | `http://localhost:4000/api/v1` | Server-side Next; không prefix `NEXT_PUBLIC_` |
+| `NEXT_PUBLIC_API_BASE_URL` | `/api/v1` | Browser same-origin qua Caddy; mặc định relative |
+| `API_INTERNAL_BASE_URL` | `http://api:4000/api/v1` | Server-side Next trong Docker; không prefix `NEXT_PUBLIC_` |
 
 Web không có database URL, service-role key, SMTP, JWT secret, encryption/HMAC key. Public Supabase URL cũng không cần trong P0 vì upload đi qua NestJS.
 
@@ -109,7 +110,7 @@ Store phone/address và ba bank field lấy từ các biến `SEED_STORE_*`/`SEE
 
 ## 7. Startup validation
 
-API fail-fast với message chỉ nêu tên biến/lý do, không in value. Production từ chối chạy nếu secret là placeholder, origin không HTTPS, `SMTP_SECURE`/port vô lý hoặc storage bucket trùng public/private. Readiness chỉ thành công sau khi config hợp lệ, Prisma kết nối và migration đã được deploy.
+API fail-fast với message chỉ nêu tên biến/lý do, không in value. Production từ chối chạy nếu secret là placeholder, database không yêu cầu TLS, origin không HTTPS, `SMTP_SECURE`/port vô lý hoặc storage bucket trùng public/private. `DIRECT_URL` không thuộc runtime schema. Readiness chỉ thành công sau khi config hợp lệ, Prisma kết nối và migration đã được deploy.
 
 ## Liên kết
 
