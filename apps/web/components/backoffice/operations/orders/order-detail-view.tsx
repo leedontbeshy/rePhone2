@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeftIcon } from '@phosphor-icons/react';
 import NextLink from 'next/link';
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
@@ -504,6 +505,12 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
         {detail === null ? null : (
           <>
             <OperationsPageHeader
+              actions={
+                <NextLink className={styles.backLink} href="/backoffice/orders">
+                  <ArrowLeftIcon aria-hidden="true" size={18} />
+                  Quay lại danh sách
+                </NextLink>
+              }
               description={
                 detail.fulfillmentType === 'PICKUP' ? 'Đơn nhận tại cửa hàng' : 'Đơn giao tận nơi'
               }
@@ -513,7 +520,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                   <span>{detail.contact.fullName}</span>
                 </div>
               }
-              title={detail.orderNumber}
+              title={`Đơn hàng ${detail.orderNumber}`}
             />
             <OperationsStatusAxes
               axes={orderStatusAxes(detail)}

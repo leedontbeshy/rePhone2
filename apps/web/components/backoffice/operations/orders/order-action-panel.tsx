@@ -6,7 +6,7 @@ import type {
   FulfillmentAction,
 } from '@/lib/fulfillment-api';
 import { OperationsActionRail } from '../operations-primitives';
-import { orderActionDescription, orderActionLabel, primaryOrderAction } from './order-presenter';
+import { orderActionDescription, orderActionLabel } from './order-presenter';
 import {
   ActionFields,
   type OrderActionSetters,
@@ -95,22 +95,16 @@ export function OrderActionChoices({
   onSelect(action: FulfillmentAction): void;
   selectedAction: FulfillmentAction | null;
 }>) {
-  const primary = primaryOrderAction(actions);
   return (
     <div className={styles.actionTabs} role="group" aria-label="Thao tác đang được phép">
       {actions.map((action) => (
         <Button
           aria-pressed={selectedAction === action}
+          data-tone={action === 'CANCEL_ORDER' ? 'danger' : undefined}
           disabled={disabled}
           key={action}
           size="compact"
-          variant={
-            action === 'CANCEL_ORDER'
-              ? 'destructive'
-              : selectedAction === action || action === primary
-                ? 'primary'
-                : 'secondary'
-          }
+          variant="secondary"
           onClick={() => {
             onSelect(action);
           }}
