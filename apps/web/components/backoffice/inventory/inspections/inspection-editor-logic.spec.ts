@@ -6,6 +6,7 @@ import {
   inspectionCheckRequiresNote,
   inspectionDraftFrom,
   inspectionDraftProgress,
+  inspectionDraftResult,
   validateInspectionDraft,
 } from './inspection-editor-logic';
 
@@ -131,6 +132,22 @@ describe('FE-06 inspection editor logic', () => {
       batteryCycleCount: 'Chỉ nhập số nguyên không âm.',
       batteryHealthPercent: 'Giá trị phải từ 0 đến 100.',
     });
+  });
+
+  it('previews the same overall result policy as completion', () => {
+    const draft = inspectionDraftFrom(inspection());
+    const withStatus = (status: 'PASS' | 'FAIL' | 'DEGRADED' | 'NOT_APPLICABLE') => ({
+      ...draft,
+      checks: Object.fromEntries(
+        INSPECTION_CHECKS.map((check) => [check.key, { status, note: '' }]),
+      ) as typeof draft.checks,
+    });
+
+    expect(inspectionDraftResult(draft)).toBe('INCOMPLETE');
+    expect(inspectionDraftResult(withStatus('PASS'))).toBe('PASSED');
+    expect(inspectionDraftResult(withStatus('NOT_APPLICABLE'))).toBe('PASSED');
+    expect(inspectionDraftResult(withStatus('DEGRADED'))).toBe('PARTIAL');
+    expect(inspectionDraftResult(withStatus('FAIL'))).toBe('FAILED');
   });
 
   it('clears old notes explicitly when staff removes their content', () => {

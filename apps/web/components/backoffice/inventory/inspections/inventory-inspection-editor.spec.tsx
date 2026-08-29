@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { InventoryInspectionDetail } from '@/lib/backoffice-inventory-api';
-import { InventoryInspectionEditor } from './inventory-inspection-editor';
-import { INSPECTION_CHECKS } from './inspection-editor-logic';
+import {
+  InspectionCompletionReview,
+  InventoryInspectionEditor,
+} from './inventory-inspection-editor';
+import { INSPECTION_CHECKS, inspectionDraftFrom } from './inspection-editor-logic';
 
 describe('FE-06 InventoryInspectionEditor', () => {
   it('renders all 18 grouped controls for a draft inspection', () => {
@@ -113,6 +116,57 @@ describe('FE-06 InventoryInspectionEditor', () => {
     expect(markup).toContain('Nhân viên Demo');
     expect(markup).not.toContain('Lưu bản nháp');
     expect(markup).not.toContain('<select');
+  });
+
+  it('keeps the intake progress visible and offers a direct return for completed work', () => {
+    const items = Object.fromEntries(
+      INSPECTION_CHECKS.map((check) => [check.key, { status: 'PASS' as const, note: null }]),
+    );
+    const markup = renderToStaticMarkup(
+      <InventoryInspectionEditor
+        inspection={inspection({
+          checks: { schemaVersion: 1, items },
+          overallResult: 'PASSED',
+          status: 'COMPLETED',
+        })}
+        returnToIntakeHref="/backoffice/inventory/intake?unitId=unit-id"
+        showIntakeWorkflow
+        onComplete={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain('aria-label="Tiến độ nhập máy"');
+    expect(markup).toContain('aria-current="step"');
+    expect(markup).toContain('Kết quả hiện tại');
+    expect(markup).toContain('Quay lại quy trình nhập máy');
+  });
+
+  it('shows a full review before the irreversible completion command', () => {
+    const base = inspectionDraftFrom(inspection());
+    const draft = {
+      ...base,
+      batteryHealthPercent: '91',
+      checks: Object.fromEntries(
+        INSPECTION_CHECKS.map((check) => [check.key, { status: 'PASS' as const, note: '' }]),
+      ) as typeof base.checks,
+      conditionGrade: 'A' as const,
+    };
+    const markup = renderToStaticMarkup(
+      <InspectionCompletionReview
+        busy={false}
+        checklistLabels={new Map()}
+        draft={draft}
+        onBack={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain('Xem lại tổng quan kiểm định');
+    expect(markup).toContain('Kết quả dự kiến');
+    expect(markup).toContain('Bạn sẽ chuyển sang bước Đưa máy lên bán.');
+    expect(markup).toContain('Quay lại chỉnh sửa');
+    expect(markup).toContain('Xác nhận hoàn tất');
   });
 });
 

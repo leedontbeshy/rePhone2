@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { BackofficeActionDialog } from '@/components/backoffice';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  InventoryWorkflowProgress,
+  type InventoryWorkflowStep,
+} from '@/components/backoffice/inventory/inventory-workflow-progress';
 import { Button, InlineAlert, Input, Select, StatusChip, Textarea } from '@/components/ui';
 import type {
   InventoryCheckStatus,
@@ -17,9 +20,11 @@ import {
 } from '../inventory-presenter';
 import {
   INSPECTION_CHECK_GROUPS,
+  INSPECTION_CHECKS,
   inspectionCheckRequiresNote,
   inspectionDraftFrom,
   inspectionDraftProgress,
+  inspectionDraftResult,
   type InspectionEditorDraft,
   type InspectionEditorFieldErrors,
   type InventoryInspectionCheckKey,
@@ -48,6 +53,8 @@ export interface InventoryInspectionEditorProps {
   readonly onComplete: (input: UpdateInventoryInspectionInput) => void;
   readonly onReload?: () => void;
   readonly onSave: (input: UpdateInventoryInspectionInput) => void;
+  readonly returnToIntakeHref?: string;
+  readonly showIntakeWorkflow?: boolean;
   readonly unitSummary?: {
     readonly inventoryCode: string;
     readonly maskedIdentifiers: readonly string[];
@@ -65,6 +72,8 @@ export function InventoryInspectionEditor({
   onComplete,
   onReload,
   onSave,
+  returnToIntakeHref,
+  showIntakeWorkflow = false,
   unitSummary = null,
 }: InventoryInspectionEditorProps) {
   const [draft, setDraft] = useState(() => inspectionDraftFrom(inspection));
@@ -79,6 +88,13 @@ export function InventoryInspectionEditor({
     setCompletionInput(null);
   }, [inspection]);
 
+  useEffect(() => {
+    if (completionInput === null || typeof document === 'undefined') return;
+    globalThis.setTimeout(() => {
+      document.getElementById('inspection-review-title')?.focus();
+    }, 0);
+  }, [completionInput]);
+
   const progress = useMemo(() => inspectionDraftProgress(draft), [draft]);
   const checklistLabels = useMemo(
     () =>
@@ -88,6 +104,8 @@ export function InventoryInspectionEditor({
   const readonly = inspection.status === 'COMPLETED' || !editable;
   const statusPresentation = inspectionStatusPresentation(inspection.status);
   const resultPresentation = inspectionResultPresentation(inspection.overallResult);
+  const workflowCompletedSteps: readonly InventoryWorkflowStep[] =
+    inspection.status === 'COMPLETED' && inspection.overallResult === 'PASSED' ? [1, 2, 3] : [1, 2];
 
   function updateField<Key extends Exclude<keyof InspectionEditorDraft, 'checks'>>(
     field: Key,
@@ -148,26 +166,37 @@ export function InventoryInspectionEditor({
               Mở hồ sơ máy
             </Link>
           </p>
-          {unitSummary === null ? null : (
-            <div className={styles.unitContext}>
-              <strong>{unitSummary.inventoryCode}</strong>
-              <span>
-                {unitSummary.productName} · {unitSummary.variantName}
-              </span>
-              <small>{unitSummary.maskedIdentifiers.join(' · ') || 'Chưa có mã định danh'}</small>
-            </div>
-          )}
-          <p>
-            Kỹ thuật viên: {inspection.inspector?.fullName ?? 'Chưa có thông tin'}
-            {inspection.inspector?.employeeCode ? ` · ${inspection.inspector.employeeCode}` : ''}
-          </p>
-        </div>
-        <div className={styles.headerSummary}>
-          <span>Kết quả hiện tại</span>
-          <StatusChip label={resultPresentation.label} tone={resultPresentation.tone} />
-          <small>Cập nhật {formatInventoryDateTime(inspection.updatedAt)}</small>
         </div>
       </header>
+
+      {showIntakeWorkflow ? (
+        <InventoryWorkflowProgress completedSteps={workflowCompletedSteps} currentStep={3} />
+      ) : null}
+
+      <dl className={styles.contextGrid} aria-label="Thông tin máy và phiếu kiểm định">
+        {unitSummary === null ? null : (
+          <>
+            <ContextItem label="Mã máy">{unitSummary.inventoryCode}</ContextItem>
+            <ContextItem label="Thiết bị">
+              <span>{unitSummary.productName}</span>
+              <small>{unitSummary.variantName}</small>
+            </ContextItem>
+            <ContextItem label="Định danh">
+              {unitSummary.maskedIdentifiers.join(' · ') || 'Chưa có mã định danh'}
+            </ContextItem>
+          </>
+        )}
+        <ContextItem label="Kỹ thuật viên">
+          <span>{inspection.inspector?.fullName ?? 'Chưa có thông tin'}</span>
+          {inspection.inspector?.employeeCode ? (
+            <small>{inspection.inspector.employeeCode}</small>
+          ) : null}
+        </ContextItem>
+        <ContextItem label="Kết quả hiện tại">
+          <StatusChip label={resultPresentation.label} tone={resultPresentation.tone} />
+          <small>Cập nhật {formatInventoryDateTime(inspection.updatedAt)}</small>
+        </ContextItem>
+      </dl>
 
       {error === null ? null : (
         <InlineAlert title="Chưa thể cập nhật phiếu kiểm định" tone="danger">
@@ -195,6 +224,24 @@ export function InventoryInspectionEditor({
           checklistLabels={checklistLabels}
           inspection={inspection}
           draft={draft}
+          {...(returnToIntakeHref === undefined ? {} : { returnToIntakeHref })}
+        />
+      ) : completionInput !== null ? (
+        <InspectionCompletionReview
+          busy={busyAction === 'complete'}
+          checklistLabels={checklistLabels}
+          draft={draft}
+          onBack={() => {
+            if (busyAction === null) {
+              setCompletionInput(null);
+              globalThis.setTimeout(() => {
+                document.getElementById('inspection-complete-trigger')?.focus();
+              }, 0);
+            }
+          }}
+          onConfirm={() => {
+            onComplete(completionInput);
+          }}
         />
       ) : (
         <form
@@ -451,6 +498,7 @@ export function InventoryInspectionEditor({
               </Button>
               <Button
                 disabled={busyAction !== null}
+                id="inspection-complete-trigger"
                 onClick={() => {
                   submit('complete');
                 }}
@@ -461,22 +509,148 @@ export function InventoryInspectionEditor({
           </div>
         </form>
       )}
-
-      <BackofficeActionDialog
-        confirmLabel="Hoàn tất kiểm định"
-        description="Phiếu sẽ được khóa và dùng làm kết quả kiểm định hiện tại của máy. Nếu cần sửa, nhân viên phải tạo phiếu mới."
-        error={completionInput === null ? undefined : (error ?? undefined)}
-        open={completionInput !== null}
-        pending={busyAction === 'complete'}
-        title="Hoàn tất phiếu kiểm định?"
-        onCancel={() => {
-          if (busyAction === null) setCompletionInput(null);
-        }}
-        onConfirm={() => {
-          if (completionInput !== null) onComplete(completionInput);
-        }}
-      />
     </div>
+  );
+}
+
+export function InspectionCompletionReview({
+  busy,
+  checklistLabels,
+  draft,
+  onBack,
+  onConfirm,
+}: Readonly<{
+  busy: boolean;
+  checklistLabels: ReadonlyMap<string, string>;
+  draft: InspectionEditorDraft;
+  onBack: () => void;
+  onConfirm: () => void;
+}>) {
+  const result = inspectionDraftResult(draft);
+  const resultPresentation = inspectionResultPresentation(result);
+  const progress = inspectionDraftProgress(draft);
+  const attentionChecks = INSPECTION_CHECKS.filter((check) => {
+    const status = draft.checks[check.key].status;
+    return status !== 'PASS' && status !== 'NOT_APPLICABLE';
+  });
+
+  return (
+    <section className={styles.reviewPanel} aria-labelledby="inspection-review-title">
+      <div className={styles.reviewHeading}>
+        <div>
+          <p className={styles.eyebrow}>Bước xác nhận cuối</p>
+          <h2 id="inspection-review-title" tabIndex={-1}>
+            Xem lại tổng quan kiểm định
+          </h2>
+          <p>Kiểm tra lần cuối trước khi khóa phiếu và ghi nhận kết quả cho máy.</p>
+        </div>
+        <div className={styles.reviewResult}>
+          <span>Kết quả dự kiến</span>
+          <StatusChip label={resultPresentation.label} tone={resultPresentation.tone} />
+          <small>
+            {result === 'PASSED'
+              ? 'Bạn sẽ chuyển sang bước Đưa máy lên bán.'
+              : 'Máy sẽ quay lại bước Kiểm định để tiếp tục xử lý.'}
+          </small>
+        </div>
+      </div>
+
+      <dl className={styles.reviewSummary}>
+        <SummaryItem
+          label="Tình trạng pin"
+          value={
+            draft.batteryHealthPercent === '' ? 'Chưa ghi nhận' : `${draft.batteryHealthPercent}%`
+          }
+        />
+        <SummaryItem
+          label="Số chu kỳ sạc"
+          value={draft.batteryCycleCount === '' ? 'Chưa ghi nhận' : draft.batteryCycleCount}
+        />
+        <SummaryItem
+          label="Nguồn gốc pin"
+          value={batteryReplacementLabel(draft.batteryReplacementStatus)}
+        />
+        <SummaryItem
+          label="Ngoại hình"
+          value={draft.conditionGrade === '' ? 'Chưa xếp loại' : `Loại ${draft.conditionGrade}`}
+        />
+        <SummaryItem
+          label="Lịch sử sửa chữa"
+          value={repairHistoryLabel(draft.repairHistoryStatus)}
+        />
+        <SummaryItem
+          label="Hạng mục đã kiểm tra"
+          value={`${String(progress.completed)}/${String(progress.total)} mục`}
+        />
+      </dl>
+
+      {draft.cosmeticNotes === '' && draft.repairNotes === '' ? null : (
+        <div className={styles.reviewNotes}>
+          {draft.cosmeticNotes === '' ? null : (
+            <div>
+              <strong>Ghi chú ngoại hình</strong>
+              <p>{draft.cosmeticNotes}</p>
+            </div>
+          )}
+          {draft.repairNotes === '' ? null : (
+            <div>
+              <strong>Ghi chú sửa chữa</strong>
+              <p>{draft.repairNotes}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={styles.reviewChecks}>
+        <div>
+          <h3>Hạng mục cần lưu ý</h3>
+          <p>
+            {attentionChecks.length === 0
+              ? 'Không có hạng mục lỗi hoặc cần theo dõi thêm.'
+              : `${String(attentionChecks.length)} hạng mục không ở trạng thái đạt.`}
+          </p>
+        </div>
+        {attentionChecks.length === 0 ? (
+          <InlineAlert title="Đủ điều kiện chuyển bước" tone="success">
+            Tất cả hạng mục đã đạt hoặc được xác nhận là không áp dụng.
+          </InlineAlert>
+        ) : (
+          <div className={styles.reviewCheckList}>
+            {attentionChecks.map((check) => {
+              const value = draft.checks[check.key];
+              const presentation =
+                value.status === ''
+                  ? { label: 'Chưa ghi nhận', tone: 'neutral' as const }
+                  : inspectionCheckStatusPresentation(value.status);
+              return (
+                <article key={check.key}>
+                  <div>
+                    <strong>{checklistLabels.get(check.key) ?? check.label}</strong>
+                    {value.note === '' ? null : <p>{value.note}</p>}
+                  </div>
+                  <StatusChip label={presentation.label} tone={presentation.tone} />
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className={styles.reviewActions}>
+        <div>
+          <strong>Thông tin sẽ chuyển sang chế độ chỉ đọc sau khi xác nhận.</strong>
+          <span>Bạn vẫn có thể quay lại chỉnh sửa trước khi hoàn tất.</span>
+        </div>
+        <div>
+          <Button disabled={busy} variant="secondary" onClick={onBack}>
+            Quay lại chỉnh sửa
+          </Button>
+          <Button loading={busy} loadingLabel="Đang hoàn tất kiểm định" onClick={onConfirm}>
+            Xác nhận hoàn tất
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -484,10 +658,12 @@ function CompletedInspection({
   checklistLabels,
   draft,
   inspection,
+  returnToIntakeHref,
 }: Readonly<{
   checklistLabels: ReadonlyMap<string, string>;
   draft: InspectionEditorDraft;
   inspection: InventoryInspectionDetail;
+  returnToIntakeHref?: string;
 }>) {
   return (
     <div className={styles.readonlyLayout}>
@@ -552,6 +728,13 @@ function CompletedInspection({
             <p>{inspection.repairNotes}</p>
           </div>
         )}
+        {returnToIntakeHref === undefined ? null : (
+          <div className={styles.completedActions}>
+            <Link className="button primary" href={returnToIntakeHref}>
+              Quay lại quy trình nhập máy
+            </Link>
+          </div>
+        )}
       </section>
 
       <section className={styles.checklistSection} aria-labelledby="completed-checklist-title">
@@ -590,6 +773,15 @@ function CompletedInspection({
           ))}
         </div>
       </section>
+    </div>
+  );
+}
+
+function ContextItem({ children, label }: Readonly<{ children: ReactNode; label: string }>) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{children}</dd>
     </div>
   );
 }

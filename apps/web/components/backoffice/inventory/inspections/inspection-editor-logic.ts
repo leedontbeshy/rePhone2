@@ -1,6 +1,7 @@
 import type {
   InventoryCheckStatus,
   InventoryInspectionDetail,
+  InventoryInspectionResult,
   InventoryInspectionChecksInput,
   UpdateInventoryInspectionInput,
 } from '@/lib/backoffice-inventory-api';
@@ -299,6 +300,20 @@ export function inspectionDraftProgress(draft: InspectionEditorDraft): {
     completed: INSPECTION_CHECKS.filter((check) => draft.checks[check.key].status !== '').length,
     total: INSPECTION_CHECKS.length,
   };
+}
+
+export function inspectionDraftResult(draft: InspectionEditorDraft): InventoryInspectionResult {
+  const statuses = INSPECTION_CHECKS.map((check) => draft.checks[check.key].status);
+  if (statuses.includes('')) return 'INCOMPLETE';
+  if (statuses.includes('FAIL')) return 'FAILED';
+  if (
+    statuses.some(
+      (status) => status === 'DEGRADED' || status === 'NOT_TESTED' || status === 'UNKNOWN',
+    )
+  ) {
+    return 'PARTIAL';
+  }
+  return 'PASSED';
 }
 
 function optionalNumber(value: number | null): string {
