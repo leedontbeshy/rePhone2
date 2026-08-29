@@ -43,6 +43,13 @@ describe('loadConfig', () => {
     expect(config.storage.url).toBe('https://example.supabase.co');
   });
 
+  it('does not require the migration-only DIRECT_URL at API runtime', () => {
+    const environment = validEnvironment();
+    delete environment.DIRECT_URL;
+
+    expect(() => loadConfig(environment)).not.toThrow();
+  });
+
   it('reports variable names without exposing secret values', () => {
     const environment = validEnvironment();
     environment.JWT_ACCESS_SECRET = 'short-secret';

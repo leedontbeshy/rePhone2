@@ -41,7 +41,6 @@ export const environmentSchema = z
     WEB_PUBLIC_URL: z.url(),
     WEB_ORIGIN: z.url(),
     DATABASE_URL: z.string().min(1),
-    DIRECT_URL: z.string().min(1),
     DB_POOL_MAX: integerString(1, 100).default(10),
     DB_CONNECTION_TIMEOUT_MS: integerString(1).default(5_000),
     DB_IDLE_TIMEOUT_MS: integerString(1).default(10_000),
@@ -180,7 +179,6 @@ export interface AppConfig {
   };
   database: {
     url: string;
-    directUrl: string;
     poolMax: number;
     connectionTimeoutMs: number;
     idleTimeoutMs: number;
@@ -260,7 +258,6 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
     },
     database: {
       url: environment.DATABASE_URL,
-      directUrl: environment.DIRECT_URL,
       poolMax: environment.DB_POOL_MAX,
       connectionTimeoutMs: environment.DB_CONNECTION_TIMEOUT_MS,
       idleTimeoutMs: environment.DB_IDLE_TIMEOUT_MS,

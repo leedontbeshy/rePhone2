@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage",
     "test:db:prepare": "tsx prisma/scripts/prepare-test-database.ts",
     "db:generate": "prisma generate --config prisma.config.ts",
+    "db:check": "tsx prisma/scripts/preflight-release.ts",
     "db:migrate": "prisma migrate dev --config prisma.config.ts",
     "db:deploy": "prisma migrate deploy --config prisma.config.ts",
     "db:seed": "prisma db seed --config prisma.config.ts",
