@@ -3,17 +3,18 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 describe('FE-06 inventory navigation layout', () => {
-  it('centers the workspace navigation on desktop while preserving mobile overflow', () => {
-    const stylesheetPath = fileURLToPath(new URL('./inventory.module.css', import.meta.url));
-    const stylesheet = readFileSync(stylesheetPath, 'utf8');
+  it('uses the main desktop sidebar instead of a second horizontal navigation bar', () => {
+    const inventoryStylesheetPath = fileURLToPath(
+      new URL('./inventory.module.css', import.meta.url),
+    );
+    const shellStylesheetPath = fileURLToPath(
+      new URL('../../shells/shells.module.css', import.meta.url),
+    );
+    const inventoryStylesheet = readFileSync(inventoryStylesheetPath, 'utf8');
+    const shellStylesheet = readFileSync(shellStylesheetPath, 'utf8');
 
-    expect(stylesheet).toContain(`@media (min-width: 48rem) {
-  .workspaceNavigation ul {
-    justify-content: center;
-  }
-}`);
-    expect(stylesheet).toContain('overflow-x: auto;');
-    expect(stylesheet).toContain('width: max-content;');
-    expect(stylesheet).toContain('white-space: nowrap;');
+    expect(inventoryStylesheet).not.toContain('.workspaceNavigation');
+    expect(shellStylesheet).toContain('.backofficeSidebarWithLabels .navigationGroupLabel');
+    expect(shellStylesheet).toContain('text-transform: uppercase;');
   });
 });
