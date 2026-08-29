@@ -23,6 +23,20 @@ describe('FE-06 InventoryInspectionEditor', () => {
     expect(markup).toContain('Hoàn tất kiểm định');
   });
 
+  it('uses a section heading when embedded in another detail screen', () => {
+    const markup = renderToStaticMarkup(
+      <InventoryInspectionEditor
+        embedded
+        inspection={inspection()}
+        onComplete={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain('<h2>Phiếu kiểm định iPhone</h2>');
+    expect(markup).not.toContain('<h1>Phiếu kiểm định iPhone</h1>');
+  });
+
   it('marks non-pass notes required while keeping pass notes optional', () => {
     const items = Object.fromEntries(
       INSPECTION_CHECKS.map((check, index) => [

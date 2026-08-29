@@ -378,6 +378,7 @@ function DetailContent({
                   <InspectionLoadFailure error={inspectionError} onRetry={onInspectionReload} />
                 ) : inspection === null ? null : (
                   <InventoryInspectionEditor
+                    embedded
                     busyAction={inspectionBusy}
                     editable={inspectionEditable}
                     error={inspectionError}

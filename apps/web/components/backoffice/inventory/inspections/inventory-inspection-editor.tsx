@@ -47,6 +47,7 @@ const CHECK_STATUS_OPTIONS: ReadonlyArray<{
 export interface InventoryInspectionEditorProps {
   readonly busyAction?: 'save' | 'complete' | null;
   readonly editable?: boolean;
+  readonly embedded?: boolean;
   readonly error?: string | null;
   readonly inspection: InventoryInspectionDetail;
   readonly notice?: string | null;
@@ -66,6 +67,7 @@ export interface InventoryInspectionEditorProps {
 export function InventoryInspectionEditor({
   busyAction = null,
   editable = true,
+  embedded = false,
   error = null,
   inspection,
   notice = null,
@@ -157,7 +159,7 @@ export function InventoryInspectionEditor({
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Kho hàng · Kiểm định máy</p>
           <div className={styles.titleLine}>
-            <h1>Phiếu kiểm định iPhone</h1>
+            {embedded ? <h2>Phiếu kiểm định iPhone</h2> : <h1>Phiếu kiểm định iPhone</h1>}
             <StatusChip label={statusPresentation.label} tone={statusPresentation.tone} />
           </div>
           <p>
