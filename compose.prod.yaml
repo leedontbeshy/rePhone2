@@ -1,0 +1,194 @@
+x-api-production-environment: &api-production-environment
+  NODE_ENV: production
+  API_PORT: '4000'
+  API_PUBLIC_URL: https://${SITE_DOMAIN:?SITE_DOMAIN is required}
+  WEB_PUBLIC_URL: https://${SITE_DOMAIN:?SITE_DOMAIN is required}
+  WEB_ORIGIN: https://${SITE_DOMAIN:?SITE_DOMAIN is required}
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  DB_POOL_MAX: ${DB_POOL_MAX:-5}
+  DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-5000}
+  DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-10000}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+  JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+  JWT_ISSUER: ${JWT_ISSUER:-rephone-api}
+  JWT_AUDIENCE: ${JWT_AUDIENCE:-rephone-web}
+  AUTH_REFRESH_TTL_DAYS: ${AUTH_REFRESH_TTL_DAYS:-7}
+  ARGON2_MEMORY_KIB: ${ARGON2_MEMORY_KIB:-65536}
+  ARGON2_TIME_COST: ${ARGON2_TIME_COST:-3}
+  ARGON2_PARALLELISM: ${ARGON2_PARALLELISM:-1}
+  PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-30}
+  EMPLOYEE_INVITE_TTL_HOURS: ${EMPLOYEE_INVITE_TTL_HOURS:-24}
+  GUEST_CART_TTL_DAYS: ${GUEST_CART_TTL_DAYS:-30}
+  IDENTIFIER_ENCRYPTION_KEY: ${IDENTIFIER_ENCRYPTION_KEY:?IDENTIFIER_ENCRYPTION_KEY is required}
+  IDENTIFIER_HMAC_KEY: ${IDENTIFIER_HMAC_KEY:?IDENTIFIER_HMAC_KEY is required}
+  SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
+  SUPABASE_PUBLIC_BUCKET: ${SUPABASE_PUBLIC_BUCKET:-rephone-public}
+  SUPABASE_PRIVATE_BUCKET: ${SUPABASE_PRIVATE_BUCKET:-rephone-private}
+  SUPABASE_STORE_BUCKET: ${SUPABASE_STORE_BUCKET:-rephone-store-assets}
+  SIGNED_URL_TTL_SECONDS: ${SIGNED_URL_TTL_SECONDS:-300}
+  SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  SCHEDULER_ENABLED: 'true'
+  SCHEDULER_BATCH_SIZE: ${SCHEDULER_BATCH_SIZE:-100}
+  SCHEDULER_GUEST_CART_BATCH_SIZE: ${SCHEDULER_GUEST_CART_BATCH_SIZE:-200}
+  SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: ${SCHEDULER_AUTH_CLEANUP_BATCH_SIZE:-500}
+  REQUEST_BODY_LIMIT: ${REQUEST_BODY_LIMIT:-1mb}
+  TRUST_PROXY: 'true'
+  APP_VERSION: ${APP_VERSION:-latest}
+
+x-database-ca-volume: &database-ca-volume
+  type: bind
+  source: ${SUPABASE_DB_CA_FILE:?SUPABASE_DB_CA_FILE is required}
+  target: /run/secrets/supabase-db-ca.crt
+  read_only: true
+
+x-service-security: &service-security
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+
+x-service-logging: &service-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: '5'
+
+services:
+  schema-check:
+    image: ${API_OPS_IMAGE:?API_OPS_IMAGE is required}
+    pull_policy: ${PULL_POLICY:-missing}
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+    command: [pnpm, --filter, '@rephone/api', db:check]
+    volumes: [*database-ca-volume]
+    restart: 'no'
+    networks: [backend, egress]
+    <<: [*service-security, *service-logging]
+
+  migrate:
+    image: ${API_OPS_IMAGE:?API_OPS_IMAGE is required}
+    pull_policy: ${PULL_POLICY:-missing}
+    profiles: [tools]
+    environment:
+      NODE_ENV: production
+      DIRECT_URL: ${DIRECT_URL:?DIRECT_URL is required}
+    command: [pnpm, --filter, '@rephone/api', db:deploy]
+    volumes: [*database-ca-volume]
+    restart: 'no'
+    networks: [backend, egress]
+    <<: [*service-security, *service-logging]
+
+  provision-runtime:
+    image: ${API_OPS_IMAGE:?API_OPS_IMAGE is required}
+    pull_policy: ${PULL_POLICY:-missing}
+    profiles: [tools]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DIRECT_URL: ${DIRECT_URL:?DIRECT_URL is required}
+      REPHONE_RUNTIME_DB_PASSWORD: ${REPHONE_RUNTIME_DB_PASSWORD:?REPHONE_RUNTIME_DB_PASSWORD is required}
+    command: [pnpm, --filter, '@rephone/api', db:provision-runtime]
+    volumes: [*database-ca-volume]
+    restart: 'no'
+    networks: [backend, egress]
+    <<: [*service-security, *service-logging]
+
+  api:
+    image: ${API_IMAGE:?API_IMAGE is required}
+    pull_policy: ${PULL_POLICY:-missing}
+    environment: *api-production-environment
+    depends_on:
+      schema-check:
+        condition: service_completed_successfully
+    expose: ['4000']
+    volumes: [*database-ca-volume]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    networks: [backend, egress]
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: ${API_MEMORY_LIMIT:-1G}
+    <<: [*service-security, *service-logging]
+
+  web:
+    image: ${WEB_IMAGE:?WEB_IMAGE is required}
+    pull_policy: ${PULL_POLICY:-missing}
+    environment:
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_BASE_URL: http://api:4000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+    expose: ['3000']
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(r.status!==204)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    networks: [backend]
+    deploy:
+      resources:
+        limits:
+          memory: ${WEB_MEMORY_LIMIT:-768M}
+    <<: [*service-security, *service-logging]
+
+  gateway:
+    image: caddy:2.10.2-alpine
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN is required}
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL:?CADDY_ACME_EMAIL is required}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./infra/docker/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:2019/config/']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+    networks: [frontend, backend]
+    <<: *service-logging
