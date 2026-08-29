@@ -5,6 +5,8 @@ const TLS_MODES = new Set(['require', 'verify-ca', 'verify-full']);
 
 export interface DatabaseUrlSecurityOptions {
   allowUnencryptedLoopback: boolean;
+  allowUnencryptedHostnames?: readonly string[];
+  requireCertificateVerification?: boolean;
 }
 
 export function databaseUrlSecurityIssue(
@@ -25,10 +27,20 @@ export function databaseUrlSecurityIssue(
   if (options.allowUnencryptedLoopback && isLoopbackHost(url.hostname)) {
     return undefined;
   }
+  if (
+    options.allowUnencryptedHostnames?.some(
+      (hostname) => hostname.toLowerCase() === url.hostname.toLowerCase(),
+    ) === true
+  ) {
+    return undefined;
+  }
 
   const sslModes = url.searchParams.getAll('sslmode');
   if (sslModes.length !== 1 || !TLS_MODES.has(sslModes[0] ?? '')) {
     return 'must require TLS with sslmode=require, verify-ca or verify-full';
+  }
+  if (options.requireCertificateVerification === true && sslModes[0] !== 'verify-full') {
+    return 'must verify the database certificate and hostname with sslmode=verify-full';
   }
 
   return undefined;

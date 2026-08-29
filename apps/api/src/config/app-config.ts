@@ -114,6 +114,19 @@ export const environmentSchema = z
       });
     }
 
+    const databaseUrlIssue = databaseUrlSecurityIssue(environment.DATABASE_URL, {
+      allowUnencryptedLoopback: environment.NODE_ENV !== 'production',
+      allowUnencryptedHostnames: environment.NODE_ENV === 'test' ? ['postgres-test'] : [],
+      requireCertificateVerification: environment.NODE_ENV === 'production',
+    });
+    if (databaseUrlIssue !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message: databaseUrlIssue,
+      });
+    }
+
     if (environment.NODE_ENV === 'production') {
       for (const field of [
         'API_PUBLIC_URL',
@@ -138,17 +151,6 @@ export const environmentSchema = z
             message: 'production secrets must not use placeholder values',
           });
         }
-      }
-
-      const databaseUrlIssue = databaseUrlSecurityIssue(environment.DATABASE_URL, {
-        allowUnencryptedLoopback: false,
-      });
-      if (databaseUrlIssue !== undefined) {
-        context.addIssue({
-          code: 'custom',
-          path: ['DATABASE_URL'],
-          message: databaseUrlIssue,
-        });
       }
 
       for (const [field, value, placeholder] of [

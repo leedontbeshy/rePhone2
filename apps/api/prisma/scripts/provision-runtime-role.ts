@@ -341,6 +341,8 @@ function isPostgresError(error: unknown): error is { code: string } {
 function assertSecureProvisioningUrl(name: string, connectionString: string): void {
   const issue = databaseUrlSecurityIssue(connectionString, {
     allowUnencryptedLoopback: true,
+    allowUnencryptedHostnames: process.env.NODE_ENV === 'test' ? ['postgres-test'] : [],
+    requireCertificateVerification: process.env.NODE_ENV === 'production',
   });
   if (issue !== undefined) {
     throw new Error(`${name} ${issue}; remote provisioning is blocked before credentials are sent`);

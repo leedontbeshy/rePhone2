@@ -11,6 +11,15 @@ describe('databaseUrlSecurityIssue', () => {
     ).toBeUndefined();
   });
 
+  it('requires hostname and certificate verification when requested', () => {
+    expect(
+      databaseUrlSecurityIssue(
+        'postgresql://runtime:secret@pooler.example.com:5432/postgres?uselibpqcompat=true&sslmode=require',
+        { allowUnencryptedLoopback: false, requireCertificateVerification: true },
+      ),
+    ).toMatch(/verify-full/);
+  });
+
   it('rejects a remote URL without an explicit TLS mode', () => {
     expect(
       databaseUrlSecurityIssue('postgresql://runtime:secret@pooler.example.com:5432/postgres', {
@@ -45,6 +54,15 @@ describe('databaseUrlSecurityIssue', () => {
         allowUnencryptedLoopback: true,
       }),
     ).toMatch(/TLS/);
+  });
+
+  it('allows an exact explicitly trusted test-container hostname', () => {
+    expect(
+      databaseUrlSecurityIssue('postgresql://rephone:rephone@postgres-test:5432/rephone_test', {
+        allowUnencryptedLoopback: true,
+        allowUnencryptedHostnames: ['postgres-test'],
+      }),
+    ).toBeUndefined();
   });
 
   it('rejects a non-PostgreSQL URL even if it carries an sslmode parameter', () => {
