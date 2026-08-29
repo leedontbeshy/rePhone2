@@ -49,7 +49,7 @@
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
   min-width: 0;
-  align-items: center;
+  align-items: start;
   padding-block: var(--space-4);
   border-bottom: var(--border-default);
 }
@@ -192,33 +192,20 @@
   }
 }
 
-@media (max-width: 58rem) {
+@media (max-width: 72rem) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-@media (max-width: 47.999rem) {
-  .filters,
-  .detailGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .filterActions,
-  .filterActions > * {
-    width: 100%;
-  }
 
   .queueList {
-    grid-template-columns: minmax(0, 1fr);
-    column-gap: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, auto);
+    column-gap: var(--space-3);
   }
 
   .queueItem {
-    grid-column: 1;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: var(--space-3);
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    row-gap: var(--space-3);
   }
 
   .queueItem > :nth-child(2),
@@ -236,6 +223,18 @@
   .queueLabel {
     display: inline;
   }
+}
+
+@media (max-width: 47.999rem) {
+  .filters,
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions,
+  .filterActions > * {
+    width: 100%;
+  }
 
   .pagination {
     justify-content: space-between;
@@ -243,13 +242,20 @@
 }
 
 @media (max-width: 22rem) {
+  .queueList {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+
   .queueItem {
+    grid-column: 1;
     grid-template-columns: minmax(0, 1fr);
   }
 
   .queueItem > :last-child {
-    width: 100%;
+    width: fit-content;
     grid-column: 1;
     grid-row: auto;
+    justify-self: start;
   }
 }

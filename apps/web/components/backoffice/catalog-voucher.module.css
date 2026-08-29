@@ -127,6 +127,7 @@
 .dataBoard td {
   color: var(--color-body);
   font-size: var(--font-size-small);
+  vertical-align: top;
 }
 
 .dataBoard th[data-align='end'],
