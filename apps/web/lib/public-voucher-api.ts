@@ -1,10 +1,12 @@
+import 'server-only';
+
 import { createApiClient, type components, type paths } from '@rephone/api-client';
-import { apiBaseUrl } from './api';
+import { serverApiBaseUrl } from './server-api';
 
 const noStoreFetch: typeof globalThis.fetch = (input, init) =>
   fetch(input, { ...init, cache: 'no-store' });
 
-const publicVoucherClient = createApiClient({ baseUrl: apiBaseUrl, fetch: noStoreFetch });
+const publicVoucherClient = createApiClient({ baseUrl: serverApiBaseUrl, fetch: noStoreFetch });
 
 export type PublicVoucher = components['schemas']['PublicVoucherDto'];
 export type PublicVoucherListResponse = components['schemas']['PublicVoucherListResponse'];

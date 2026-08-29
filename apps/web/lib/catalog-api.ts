@@ -1,11 +1,13 @@
+import 'server-only';
+
 import { createApiClient, type components } from '@rephone/api-client';
-import { apiBaseUrl } from './api';
 import type { CatalogListQuery } from './catalog-query';
+import { serverApiBaseUrl } from './server-api';
 
 const noStoreFetch: typeof globalThis.fetch = (input, init) =>
   fetch(input, { ...init, cache: 'no-store' });
 
-const catalogClient = createApiClient({ baseUrl: apiBaseUrl, fetch: noStoreFetch });
+const catalogClient = createApiClient({ baseUrl: serverApiBaseUrl, fetch: noStoreFetch });
 
 export type ProductListItem = components['schemas']['ProductListItemDto'];
 export type ProductDetail = components['schemas']['ProductDetailDto'];
