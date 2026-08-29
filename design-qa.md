@@ -195,3 +195,61 @@ Mười một màn hình đã được kiểm tra:
 - Phạm vi FE-07: `53/53` thao tác được đánh dấu hoàn tất.
 
 final result: passed
+
+---
+
+## Kiểm tra bổ sung — độ thẳng hàng, chiều sâu và điều hướng FE-07
+
+Ngày kiểm tra: 2026-08-29
+
+### Phạm vi phản hồi
+
+- Cố định lưới của danh sách hỗ trợ sau mua và bảo hành để nhãn trạng thái dài hoặc ngắn
+  không làm xô lệch các cột còn lại.
+- Căn nội dung của danh sách đơn hàng, thanh toán và hoàn tiền theo mép trên khi một ô có
+  nhiều dòng hơn ô bên cạnh.
+- Tăng phân cấp thị giác bằng bóng đổ nhẹ, nền phân tầng và đường phân cách nhất quán.
+- Giữ mở sẵn bốn nhóm điều hướng trên mọi màn hình vận hành: Vận hành, Kho hàng, Đơn hàng
+  và Sau mua.
+
+### Ảnh kiểm tra
+
+- [Đối chiếu phản hồi và bản hoàn thiện](docs/assets/ui/fe-07/qa/after-sales-reference-comparison.png).
+- [Hỗ trợ sau mua — desktop](docs/assets/ui/fe-07/qa/after-sales-list-aligned-1440.png).
+- [Hỗ trợ sau mua — mobile](docs/assets/ui/fe-07/qa/after-sales-list-aligned-390.png).
+- [Bảo hành — desktop](docs/assets/ui/fe-07/qa/warranties-list-aligned-1440.png).
+- [Bảo hành — tablet](docs/assets/ui/fe-07/qa/warranties-list-aligned-1024.png).
+- [Bảo hành — mobile](docs/assets/ui/fe-07/qa/warranties-list-aligned-390.png).
+- [Bảo hành — nhãn dài ở cuối danh sách](docs/assets/ui/fe-07/qa/warranties-long-status-1440.png).
+- [Điều hướng mở sẵn tại Hỗ trợ sau mua](docs/assets/ui/fe-07/qa/navigation-expanded-after-sales-1440.png).
+- [Điều hướng mở sẵn tại Danh mục](docs/assets/ui/fe-07/qa/navigation-expanded-catalog-1440.png).
+
+### Kết quả đo trực tiếp trong trình duyệt
+
+| Chiều rộng | Hỗ trợ sau mua | Bảo hành | Tràn ngang | Chồng hàng |
+| ---------: | :------------: | :------: | :---------: | :---------: |
+|    1440 px |      Đạt       |   Đạt   |    Không    |    Không    |
+|    1024 px |      Đạt       |   Đạt   |    Không    |    Không    |
+|     768 px |      Đạt       |   Đạt   |    Không    |    Không    |
+|     390 px |      Đạt       |   Đạt   |    Không    |    Không    |
+|     320 px |      Đạt       |   Đạt   |    Không    |    Không    |
+
+- Trên desktop, mọi nhãn trạng thái trong từng danh sách dùng chung một mép phải; nhãn
+  “Còn hiệu lực” và “Không còn hiệu lực” đều cao `28 px`.
+- Ở 1024 px, bộ lọc bảo hành chuyển thành hai cột nên nút thao tác không bị cắt và tài liệu
+  không phát sinh thanh cuộn ngang.
+- Ở 320 px, trạng thái chuyển xuống một hàng riêng; từ 390 px trở lên vẫn giữ một cột trạng
+  thái dùng chung cho toàn danh sách.
+- Danh sách đơn hàng, duyệt thanh toán và hoàn tiền không tràn ngang; nội dung nhiều dòng
+  không làm các ô kế bên bị căn giữa lệch nhịp.
+- Điều hướng dùng chung có đủ `4` nhóm và `15` mục tại các khu vực vận hành, danh mục và kho.
+
+### Cổng chất lượng của lượt sửa
+
+- Web test: `108/108` tệp, `489/489` bài kiểm tra đạt.
+- Web lint: đạt, không có cảnh báo.
+- Web typecheck: đạt.
+- Production build: đạt, tạo đủ `42/42` trang.
+- Kiểm tra khoảng trắng của thay đổi: đạt.
+
+final result: passed
