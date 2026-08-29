@@ -158,7 +158,7 @@ export class WarrantyCommandService {
       return this.repository.findById(id, transaction);
     });
     if (warranty === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectBackofficeWarrantyDetail(warranty, now);
+    return projectBackofficeWarrantyDetail(warranty, now, 'ADMIN');
   }
 
   private async transitionPolicy(

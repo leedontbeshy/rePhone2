@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { PolicyStatus, WarrantyStatus } from '../../generated/prisma/enums.js';
 import { PaginationDto } from '../catalog/catalog-response.dto.js';
+import {
+  BACKOFFICE_WARRANTY_ACTIONS,
+  BACKOFFICE_WARRANTY_POLICY_ACTIONS,
+  WARRANTY_POLICY_ARCHIVE_BLOCKED_REASONS,
+  type BackofficeWarrantyAction,
+  type BackofficeWarrantyPolicyAction,
+  type WarrantyPolicyArchiveBlockedReason,
+} from './warranty-actions.js';
 
 export class WarrantyListMetaDto {
   @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
@@ -22,6 +30,18 @@ export class WarrantyPolicyDto {
 
 export class WarrantyPolicyResponse {
   @ApiProperty({ type: () => WarrantyPolicyDto }) public data!: WarrantyPolicyDto;
+}
+
+export class BackofficeWarrantyPolicyDetailDto extends WarrantyPolicyDto {
+  @ApiProperty({ type: [String], enum: BACKOFFICE_WARRANTY_POLICY_ACTIONS })
+  public availableActions!: BackofficeWarrantyPolicyAction[];
+  @ApiProperty({ enum: WARRANTY_POLICY_ARCHIVE_BLOCKED_REASONS, nullable: true })
+  public archiveBlockedReason!: WarrantyPolicyArchiveBlockedReason | null;
+}
+
+export class BackofficeWarrantyPolicyDetailResponse {
+  @ApiProperty({ type: () => BackofficeWarrantyPolicyDetailDto })
+  public data!: BackofficeWarrantyPolicyDetailDto;
 }
 
 export class WarrantyPolicyListResponse {
@@ -99,6 +119,8 @@ export class BackofficeWarrantyDetailDto extends BackofficeWarrantyListItemDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   public voidedAt!: Date | null;
   @ApiProperty({ type: String, format: 'date-time' }) public updatedAt!: Date;
+  @ApiProperty({ type: [String], enum: BACKOFFICE_WARRANTY_ACTIONS })
+  public availableActions!: BackofficeWarrantyAction[];
 }
 
 export class BackofficeWarrantyListResponse {

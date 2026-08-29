@@ -53,6 +53,7 @@ import { WarrantyQueryService } from './warranty-query.service.js';
 import {
   BackofficeWarrantyDetailResponse,
   BackofficeWarrantyListResponse,
+  BackofficeWarrantyPolicyDetailResponse,
   WarrantyDetailResponse,
   WarrantyListResponse,
   WarrantyPolicyListResponse,
@@ -156,10 +157,10 @@ export class BackofficeWarrantyPoliciesController {
   @Get(':id')
   @ApiOperation({ operationId: 'getBackofficeWarrantyPolicy', summary: 'Get a warranty policy' })
   @ApiUuidParam()
-  @ApiOkResponse({ type: WarrantyPolicyResponse })
+  @ApiOkResponse({ type: BackofficeWarrantyPolicyDetailResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
-  public detail(@Param() params: WarrantyPolicyIdParamsDto) {
-    return this.queries.getPolicy(params.id);
+  public detail(@Param() params: WarrantyPolicyIdParamsDto, @CurrentAuth() auth: AuthContext) {
+    return this.queries.getPolicy(params.id, auth.role);
   }
 
   @Patch(':id')
@@ -260,8 +261,8 @@ export class BackofficeWarrantiesController {
   @ApiUuidParam()
   @ApiOkResponse({ type: BackofficeWarrantyDetailResponse })
   @ApiErrorResponses(...BACKOFFICE_ERRORS)
-  public detail(@Param() params: WarrantyIdParamsDto) {
-    return this.queries.getBackoffice(params.id);
+  public detail(@Param() params: WarrantyIdParamsDto, @CurrentAuth() auth: AuthContext) {
+    return this.queries.getBackoffice(params.id, auth.role);
   }
 
   @Post(':id/void')

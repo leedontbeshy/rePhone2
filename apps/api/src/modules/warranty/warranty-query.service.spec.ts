@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../common/errors/api-error.js';
 import { WarrantyQueryService } from './warranty-query.service.js';
 import type { WarrantyOperationsRecord } from './warranty-operations.repository.js';
+import type { WarrantyPolicyRecord } from './warranty-operations.repository.js';
 
 describe('WarrantyQueryService', () => {
   it('uses the end-exclusive interval for customer warranty projections', async () => {
@@ -44,6 +45,44 @@ describe('WarrantyQueryService', () => {
     expect(result).not.toHaveProperty('customerId');
     expect(result).not.toHaveProperty('voidedById');
   });
+
+  it('returns warranty actions from the authenticated staff role', async () => {
+    const fixture = createFixture(new Date('2026-08-25T12:00:00.000Z'));
+    fixture.repository.findById.mockResolvedValue(warranty());
+
+    await expect(
+      fixture.service.getBackoffice('0199b354-d818-7f7c-b966-3932599978cf', 'ADMIN'),
+    ).resolves.toMatchObject({ availableActions: ['VOID'] });
+    await expect(
+      fixture.service.getBackoffice('0199b354-d818-7f7c-b966-3932599978cf', 'EMPLOYEE'),
+    ).resolves.toMatchObject({ availableActions: [] });
+  });
+
+  it('blocks policy archive when the active catalog still references it', async () => {
+    const fixture = createFixture(new Date('2026-08-25T12:00:00.000Z'));
+    fixture.policies.findById.mockResolvedValue(policy({ status: 'ACTIVE' }));
+    fixture.catalog.hasActiveReferences.mockResolvedValue(true);
+
+    const result = await fixture.service.getPolicy('0199b354-d818-7f7c-b966-3932599978cf', 'ADMIN');
+
+    expect(result).toMatchObject({
+      archiveBlockedReason: 'ACTIVE_CATALOG_REFERENCES',
+      availableActions: ['EDIT', 'DEACTIVATE'],
+    });
+  });
+
+  it('does not expose policy commands to employees', async () => {
+    const fixture = createFixture(new Date('2026-08-25T12:00:00.000Z'));
+    fixture.policies.findById.mockResolvedValue(policy());
+    fixture.catalog.hasActiveReferences.mockResolvedValue(false);
+
+    const result = await fixture.service.getPolicy(
+      '0199b354-d818-7f7c-b966-3932599978cf',
+      'EMPLOYEE',
+    );
+
+    expect(result).toMatchObject({ archiveBlockedReason: null, availableActions: [] });
+  });
 });
 
 function createFixture(now: Date) {
@@ -55,17 +94,36 @@ function createFixture(now: Date) {
     findById: vi.fn(),
   };
   const policies = { findById: vi.fn() };
+  const catalog = { hasActiveReferences: vi.fn() };
   const ownership = { assertAccess: vi.fn() };
   const clock = { now: vi.fn(() => now) };
   return {
     repository,
+    policies,
+    catalog,
     ownership,
     service: new WarrantyQueryService(
       repository as never,
       policies as never,
+      catalog as never,
       ownership as never,
       clock,
     ),
+  };
+}
+
+function policy(overrides: Partial<WarrantyPolicyRecord> = {}): WarrantyPolicyRecord {
+  return {
+    id: '0199b354-d818-7f7c-b966-3932599978cf',
+    code: 'IPHONE-90',
+    name: 'iPhone 90 ngày',
+    defaultDays: 90,
+    terms: 'Terms',
+    status: 'INACTIVE',
+    archivedAt: null,
+    createdAt: new Date('2026-08-25T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-25T00:00:00.000Z'),
+    ...overrides,
   };
 }
 

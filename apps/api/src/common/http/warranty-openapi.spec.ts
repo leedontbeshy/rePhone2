@@ -26,6 +26,19 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+interface ContractSchema {
+  properties?: Record<
+    string,
+    {
+      enum?: string[];
+      items?: { enum?: string[]; type?: string };
+      nullable?: boolean;
+      type?: string;
+    }
+  >;
+  required?: string[];
+}
+
 const WARRANTY_OPERATION_IDS = [
   'listCustomerWarranties',
   'getCustomerWarranty',
@@ -45,6 +58,7 @@ describe('Slice 11 Warranty Operations OpenAPI contract', () => {
   let app: INestApplication;
   let operations: Operation[];
   let byId: Map<string | undefined, Operation>;
+  let schemas: Record<string, ContractSchema>;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
@@ -70,6 +84,7 @@ describe('Slice 11 Warranty Operations OpenAPI contract', () => {
     app = module.createNestApplication();
     app.setGlobalPrefix('api/v1');
     const document = createOpenApiDocument(app);
+    schemas = (document.components?.schemas ?? {}) as unknown as Record<string, ContractSchema>;
     operations = Object.values(document.paths).flatMap((pathItem) =>
       Object.entries(pathItem)
         .filter(([method]) => ['get', 'post', 'patch'].includes(method))
@@ -137,5 +152,31 @@ describe('Slice 11 Warranty Operations OpenAPI contract', () => {
         '429': {},
       });
     }
+  });
+
+  it('publishes authoritative detail actions and policy archive readiness', () => {
+    expect(schemas['BackofficeWarrantyDetailDto']).toMatchObject({
+      properties: {
+        availableActions: { items: { enum: ['VOID'], type: 'string' }, type: 'array' },
+      },
+    });
+    expect(schemas['BackofficeWarrantyDetailDto']?.required).toContain('availableActions');
+    expect(schemas['BackofficeWarrantyPolicyDetailDto']).toMatchObject({
+      properties: {
+        archiveBlockedReason: {
+          enum: ['ACTIVE_CATALOG_REFERENCES'],
+          nullable: true,
+          type: 'string',
+        },
+        availableActions: {
+          items: { enum: ['EDIT', 'ACTIVATE', 'DEACTIVATE', 'ARCHIVE'], type: 'string' },
+          type: 'array',
+        },
+      },
+    });
+    expect(schemas['BackofficeWarrantyPolicyDetailDto']?.required).toContain('availableActions');
+    expect(schemas['BackofficeWarrantyPolicyDetailDto']?.required).toContain(
+      'archiveBlockedReason',
+    );
   });
 });

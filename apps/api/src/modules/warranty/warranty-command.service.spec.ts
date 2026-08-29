@@ -77,6 +77,7 @@ describe('WarrantyCommandService', () => {
     );
 
     expect(result.status).toBe('VOIDED');
+    expect(result.availableActions).toEqual([]);
     expect(fixture.gateway.voidActive).not.toHaveBeenCalled();
     expect(fixture.audit.write).not.toHaveBeenCalled();
   });

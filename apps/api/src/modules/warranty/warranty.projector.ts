@@ -1,13 +1,20 @@
 import {
   BackofficeWarrantyDetailDto,
   BackofficeWarrantyListItemDto,
+  BackofficeWarrantyPolicyDetailDto,
   WarrantyDetailDto,
 } from './warranty-response.dto.js';
+import type { UserRole } from '../../generated/prisma/enums.js';
 import type { WarrantyListItemDto, WarrantyPolicyDto } from './warranty-response.dto.js';
 import type {
   WarrantyOperationsRecord,
   WarrantyPolicyRecord,
 } from './warranty-operations.repository.js';
+import {
+  backofficeWarrantyActions,
+  backofficeWarrantyPolicyActions,
+  type WarrantyPolicyArchiveBlockedReason,
+} from './warranty-actions.js';
 
 export function projectWarrantyPolicy(policy: WarrantyPolicyRecord): WarrantyPolicyDto {
   return {
@@ -22,6 +29,17 @@ export function projectWarrantyPolicy(policy: WarrantyPolicyRecord): WarrantyPol
     createdAt: policy.createdAt,
     updatedAt: policy.updatedAt,
   };
+}
+
+export function projectBackofficeWarrantyPolicyDetail(
+  policy: WarrantyPolicyRecord,
+  role: UserRole,
+  archiveBlockedReason: WarrantyPolicyArchiveBlockedReason | null,
+): BackofficeWarrantyPolicyDetailDto {
+  return Object.assign(new BackofficeWarrantyPolicyDetailDto(), projectWarrantyPolicy(policy), {
+    availableActions: backofficeWarrantyPolicyActions(policy, role, archiveBlockedReason),
+    archiveBlockedReason,
+  });
 }
 
 export function projectWarrantyListItem(
@@ -88,6 +106,7 @@ export function projectBackofficeWarrantyListItem(
 export function projectBackofficeWarrantyDetail(
   warranty: WarrantyOperationsRecord,
   now: Date,
+  role: UserRole,
 ): BackofficeWarrantyDetailDto {
   return Object.assign(
     new BackofficeWarrantyDetailDto(),
@@ -104,6 +123,7 @@ export function projectBackofficeWarrantyDetail(
           : { id: warranty.voidedBy.id, fullName: warranty.voidedBy.fullName },
       voidedAt: warranty.voidedAt,
       updatedAt: warranty.updatedAt,
+      availableActions: backofficeWarrantyActions(warranty.status, role),
     },
   );
 }

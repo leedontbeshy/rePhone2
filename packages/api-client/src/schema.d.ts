@@ -3216,6 +3216,7 @@ export interface components {
             data: components["schemas"]["BackofficeVoucherDto"];
         };
         BackofficeWarrantyDetailDto: {
+            availableActions: "VOID"[];
             /** Format: date-time */
             createdAt: string;
             customer: components["schemas"]["WarrantyCustomerSummaryDto"];
@@ -3287,6 +3288,29 @@ export interface components {
         BackofficeWarrantyListResponse: {
             data: components["schemas"]["BackofficeWarrantyListItemDto"][];
             meta: components["schemas"]["WarrantyListMetaDto"];
+        };
+        BackofficeWarrantyPolicyDetailDto: {
+            /** @enum {string|null} */
+            archiveBlockedReason: "ACTIVE_CATALOG_REFERENCES" | null;
+            /** Format: date-time */
+            archivedAt?: string | null;
+            availableActions: ("EDIT" | "ACTIVATE" | "DEACTIVATE" | "ARCHIVE")[];
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+            defaultDays: number;
+            /** Format: uuid */
+            id: string;
+            isArchived: boolean;
+            name: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            terms: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BackofficeWarrantyPolicyDetailResponse: {
+            data: components["schemas"]["BackofficeWarrantyPolicyDetailDto"];
         };
         BankTransferInstructionsDto: {
             accountHolder: string;
@@ -16719,7 +16743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WarrantyPolicyResponse"];
+                    "application/json": components["schemas"]["BackofficeWarrantyPolicyDetailResponse"];
                 };
             };
             /** @description VALIDATION_FAILED or MALFORMED_JSON */
