@@ -43,25 +43,30 @@ export function BackofficeShell({
 
   useEffect(() => {
     const navigation = navigationRef.current;
-    const current = navigation?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (
-      navigation === null ||
-      current === null ||
-      current === undefined ||
-      navigation.scrollWidth <= navigation.clientWidth
-    )
-      return;
-    const navigationRect = navigation.getBoundingClientRect();
-    const currentRect = current.getBoundingClientRect();
-    const targetLeft =
-      navigation.scrollLeft +
-      currentRect.left -
-      navigationRect.left -
-      (navigationRect.width - currentRect.width) / 2;
-    navigation.scrollTo({
-      behavior: 'auto',
-      left: Math.max(0, Math.min(targetLeft, navigation.scrollWidth - navigation.clientWidth)),
-    });
+    if (navigation === null) return;
+
+    const centerCurrentNavigation = () => {
+      const current = navigation.querySelector<HTMLElement>('[aria-current="page"]');
+      if (current === null || navigation.scrollWidth <= navigation.clientWidth) return;
+      const navigationRect = navigation.getBoundingClientRect();
+      const currentRect = current.getBoundingClientRect();
+      const targetLeft =
+        navigation.scrollLeft +
+        currentRect.left -
+        navigationRect.left -
+        (navigationRect.width - currentRect.width) / 2;
+      navigation.scrollTo({
+        behavior: 'auto',
+        left: Math.max(0, Math.min(targetLeft, navigation.scrollWidth - navigation.clientWidth)),
+      });
+    };
+
+    centerCurrentNavigation();
+    const resizeObserver = new ResizeObserver(centerCurrentNavigation);
+    resizeObserver.observe(navigation);
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [currentNavigationHref]);
 
   return (
