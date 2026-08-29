@@ -1,0 +1,359 @@
+.page {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.7fr) repeat(3, minmax(10rem, 0.75fr)) auto;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.advancedFilters {
+  grid-column: 1 / -1;
+  padding-top: var(--space-2);
+  border-top: var(--border-default);
+}
+
+.advancedFilters summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.advancedFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 15rem));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.queueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.queueMeta p {
+  margin: 0;
+}
+
+.queueList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-default);
+  list-style: none;
+}
+
+.queueItem {
+  display: grid;
+  grid-template-columns:
+    minmax(12rem, 1.35fr) minmax(12rem, 1.3fr) minmax(9rem, 0.8fr) minmax(9rem, 0.8fr)
+    auto;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-bottom: var(--border-default);
+}
+
+.queueItem:last-child {
+  border-bottom: 0;
+}
+
+.queuePrimary,
+.queueCell {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.queuePrimary a,
+.queuePrimary strong,
+.queueCell strong,
+.queueCell span {
+  overflow-wrap: anywhere;
+}
+
+.queuePrimary a {
+  color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.queuePrimary a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.queuePrimary span,
+.queueCell span,
+.queueLabel,
+.secondary {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.queueLabel {
+  display: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pagination span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.emptyState,
+.loadingState {
+  display: grid;
+  min-height: 14rem;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.emptyState h2,
+.emptyState p {
+  margin: 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.detailGrid > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-background-subtle, var(--color-canvas));
+}
+
+.detailGrid dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.detailGrid dd {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+.issueCopy {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.evidenceList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.evidenceItem {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.evidenceItem p,
+.evidenceItem small {
+  margin: 0;
+}
+
+.evidenceItem strong {
+  overflow-wrap: anywhere;
+}
+
+.actionForm,
+.actionStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.actionStack p,
+.actionForm p {
+  margin: 0;
+}
+
+.supportingButtons {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.readonlySummary {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.readonlySummary p {
+  margin: 0;
+}
+
+.inspectionWrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.inspectionWrap > * {
+  min-width: 0;
+}
+
+.inspectionState {
+  display: grid;
+  min-height: 12rem;
+  align-content: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.inspectionState > button {
+  justify-self: start;
+}
+
+.blockedChoice {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-muted);
+  background: var(--color-brand-soft);
+}
+
+.blockedChoice p {
+  margin: 0;
+}
+
+.inlineLink {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.skeletonRows {
+  display: grid;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+@media (max-width: 74rem) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterActions {
+    align-self: end;
+  }
+
+  .queueItem {
+    grid-template-columns: minmax(12rem, 1.25fr) minmax(12rem, 1fr) minmax(9rem, 0.75fr) auto;
+  }
+
+  .queueItem > :nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .filters,
+  .detailGrid,
+  .advancedFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions,
+  .filterActions > * {
+    width: 100%;
+  }
+
+  .queueItem {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .queueItem > :nth-child(2),
+  .queueItem > :nth-child(3) {
+    grid-column: 1;
+  }
+
+  .queueItem > :nth-child(4) {
+    display: grid;
+    grid-column: 1;
+  }
+
+  .queueItem > :last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .queueLabel {
+    display: inline;
+  }
+
+  .pagination {
+    justify-content: space-between;
+  }
+
+  .evidenceList {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 22rem) {
+  .queueItem {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .queueItem > :last-child {
+    width: 100%;
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
