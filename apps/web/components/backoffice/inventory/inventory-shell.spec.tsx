@@ -32,8 +32,10 @@ describe('FE-06 InventoryShell', () => {
       </InventoryShell>,
     );
 
-    expect(markup).toContain('aria-label="Các mục quản lý kho"');
+    expect(markup).toContain('aria-label="Điều hướng backoffice"');
+    expect(markup).toContain('Kho hàng');
     expect(markup).toContain('Máy vật lý');
+    expect(markup).not.toContain('>Kho hàng</span>');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('Danh sách máy');
     expect(markup).not.toContain('Giá vốn bí mật');

@@ -18,6 +18,7 @@ interface BackofficeShellProps extends SharedShellProps {
   readonly breadcrumbs?: readonly ShellBreadcrumb[];
   readonly contextHref?: string;
   readonly contextLabel?: string;
+  readonly showNavigationGroupLabels?: boolean;
 }
 
 export function BackofficeShell({
@@ -29,6 +30,7 @@ export function BackofficeShell({
   breadcrumbs = [],
   contextHref = '/',
   contextLabel = 'Về cửa hàng',
+  showNavigationGroupLabels = false,
   mainId = DEFAULT_MAIN_ID,
   mainClassName,
 }: Readonly<BackofficeShellProps>) {
@@ -60,7 +62,13 @@ export function BackofficeShell({
           )}
         </div>
       </header>
-      <aside className={styles.backofficeSidebar} aria-label="Điều hướng backoffice">
+      <aside
+        className={joinClassNames(
+          styles.backofficeSidebar,
+          showNavigationGroupLabels ? styles.backofficeSidebarWithLabels : undefined,
+        )}
+        aria-label="Điều hướng backoffice"
+      >
         <nav aria-label="Các khu vực vận hành">
           {navigationGroups.map((group) => (
             <section className={styles.navigationGroup} key={group.label}>

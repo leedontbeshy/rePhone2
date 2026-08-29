@@ -1,8 +1,7 @@
 'use client';
 
-import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
@@ -10,6 +9,7 @@ import { catalogVoucherNavigationForRole } from '../catalog-voucher-navigation';
 import {
   canAccessInventoryWorkspace,
   canViewInventoryCost,
+  INVENTORY_UNITS_ROOT,
   inventoryNavigationForPath,
 } from './inventory-navigation';
 import styles from './inventory.module.css';
@@ -31,15 +31,15 @@ export function InventoryShell({
   const router = useRouter();
   const { logout, logoutPending, status, user } = useAuth();
   const [logoutError, setLogoutError] = useState(false);
-  const navigationRef = useRef<HTMLElement>(null);
   const hasAccess = canAccessInventoryWorkspace(user?.role);
   const localNavigation = inventoryNavigationForPath(pathname);
-
-  useEffect(() => {
-    navigationRef.current
-      ?.querySelector('[aria-current="page"]')
-      ?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-  }, [pathname, status]);
+  const baseNavigation = catalogVoucherNavigationForRole(user?.role, pathname).map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.href !== INVENTORY_UNITS_ROOT),
+  }));
+  const navigationGroups = hasAccess
+    ? [...baseNavigation, { label: 'Kho hàng', items: localNavigation }]
+    : baseNavigation;
 
   async function signOut() {
     setLogoutError(false);
@@ -63,7 +63,8 @@ export function InventoryShell({
         ) : undefined
       }
       breadcrumbs={breadcrumbs}
-      navigationGroups={catalogVoucherNavigationForRole(user?.role, pathname)}
+      navigationGroups={navigationGroups}
+      showNavigationGroupLabels={hasAccess}
       topbarActions={
         status === 'authenticated' ? (
           <Button
@@ -96,21 +97,6 @@ export function InventoryShell({
         {status === 'authenticated' && !hasAccess ? <InventoryForbiddenState /> : null}
         {status === 'authenticated' && user !== null && hasAccess ? (
           <>
-            <nav
-              className={styles.workspaceNavigation}
-              aria-label="Các mục quản lý kho"
-              ref={navigationRef}
-            >
-              <ul>
-                {localNavigation.map((item) => (
-                  <li key={item.href}>
-                    <NextLink aria-current={item.isCurrent ? 'page' : undefined} href={item.href}>
-                      {item.label}
-                    </NextLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
             {pageActions}
             <div className={styles.content}>
               {children}
