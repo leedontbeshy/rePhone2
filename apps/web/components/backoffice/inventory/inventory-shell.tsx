@@ -15,16 +15,20 @@ import {
 import styles from './inventory.module.css';
 
 export interface InventoryShellProps {
+  readonly activeNavigationPath?: string;
   readonly adminContent?: ReactNode;
   readonly breadcrumbs?: readonly ShellBreadcrumb[];
   readonly children: ReactNode;
+  readonly navigationHrefOverrides?: Readonly<Record<string, string>>;
   readonly pageActions?: ReactNode;
 }
 
 export function InventoryShell({
+  activeNavigationPath,
   adminContent,
   breadcrumbs = [],
   children,
+  navigationHrefOverrides,
   pageActions,
 }: InventoryShellProps) {
   const pathname = usePathname();
@@ -32,7 +36,12 @@ export function InventoryShell({
   const { logout, logoutPending, status, user } = useAuth();
   const [logoutError, setLogoutError] = useState(false);
   const hasAccess = canAccessInventoryWorkspace(user?.role);
-  const localNavigation = inventoryNavigationForPath(pathname);
+  const localNavigation = inventoryNavigationForPath(activeNavigationPath ?? pathname).map(
+    (item) => ({
+      ...item,
+      href: navigationHrefOverrides?.[item.href] ?? item.href,
+    }),
+  );
   const baseNavigation = catalogVoucherNavigationForRole(user?.role, pathname).map((group) => ({
     ...group,
     items: group.items.filter((item) => item.href !== INVENTORY_UNITS_ROOT),
