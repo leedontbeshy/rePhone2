@@ -359,7 +359,7 @@ Contract chung cho mọi phase:
 
 | Thuộc tính        | Nội dung                                                                                                                                                        |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **NOT STARTED**                                                                                                                                                 |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                                 |
 | Mục tiêu          | Chuẩn hóa toàn bộ operational backoffice hiện có trên queue/detail/action/timeline/evidence primitives và tách page nguyên khối.                                |
 | Non-goal          | Không đổi transaction/state machine, không carrier/payment gateway và không action do UI tự suy diễn.                                                           |
 | Dependency        | FE-4 + FE-6.                                                                                                                                                    |
@@ -506,6 +506,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-28 | FE-5              | DONE                   | Khóa sáu route quản trị catalog, biến thể, media và mã ưu đãi                                      | Code đến SHA `b734ff9`; 22/22 operation `DONE`; web `257/257`, API unit `612/612`; browser QA thủ công bằng in-app browser trên desktop/mobile đạt. Không chạy Playwright CLI; PostgreSQL/Docker integration chưa chạy.                              |
 | 2026-08-28 | FE-6              | IN PROGRESS            | Bắt đầu workspace máy vật lý, kiểm định và tồn phụ kiện                                            | Branch `feat/fe-6-inventory-stock`; record `docs/planning/2026-08-28-fe-06-inventory-stock-design.md`; phương án workspace tám route đã duyệt; 26 operation giữ `NOT STARTED` đến khi có evidence theo lát cắt                                       |
 | 2026-08-28 | FE-6              | DONE                   | Khóa tám route máy vật lý, kiểm định, địa điểm và tồn phụ kiện                                     | Code đến SHA `c9ca675`; 26/26 operation `DONE`; web `324/324`, API `625/625`, browser FE-6 `6/6`; lint/typecheck/build/OpenAPI/client/a11y xanh; QA 1440/360 không tràn ngang, console sạch; Docker integration chưa chạy vì Docker Desktop đang tắt |
+| 2026-08-29 | FE-7              | IN PROGRESS            | Bắt đầu workspace vận hành đơn hàng, tài chính, bảo hành và hỗ trợ sau mua                         | Branch `feat/fe-7-operations`; record `docs/planning/2026-08-29-fe-07-operations-workspace-design.md`; mockup order detail phương án 1 đã duyệt với rail `Xử lý đơn hàng`; 53 operation giữ `NOT STARTED` đến khi có evidence theo lát cắt           |
 
 ## 12. Operation coverage ledger — 160/160
 
