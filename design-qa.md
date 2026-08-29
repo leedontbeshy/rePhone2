@@ -124,3 +124,74 @@ Ngày kiểm tra: 2026-08-29
 - Kiểm tra trực tiếp: nhập liệu tóm tắt, trạng thái lỗi, sidebar hiện tại và điều hướng đều đạt.
 
 final result: passed
+
+---
+
+# Design QA — FE-07 vận hành đơn hàng và hậu mãi
+
+Ngày kiểm tra: 2026-08-29
+
+Trang xem chính: `http://localhost:3000/backoffice/orders/01a02a39-3b79-7434-8b82-4c116e08b526`
+
+## Phạm vi
+
+Mười một màn hình đã được kiểm tra:
+
+- Danh sách và chi tiết đơn hàng.
+- Danh sách và chi tiết thanh toán.
+- Danh sách và chi tiết hoàn tiền.
+- Danh sách và chi tiết hỗ trợ sau mua.
+- Danh sách và chi tiết bảo hành.
+- Danh sách và chi tiết chính sách bảo hành trong cùng một workspace.
+
+## Nguồn và điều kiện đối chiếu
+
+- Mockup được duyệt: [chi tiết đơn hàng — phương án 1](docs/assets/ui/fe-07/order-detail-selected.png).
+- Bản chạy thực tế dùng tài khoản Admin Demo, API và dữ liệu Supabase trong môi trường Docker cục bộ.
+- Trạng thái đối chiếu là đơn hàng đang hoạt động; quá trình QA không xác nhận thao tác làm thay đổi nghiệp vụ thật.
+- Bản triển khai đã được đặt cạnh mockup ở cùng kích thước trước khi đánh giá bố cục.
+
+## Ảnh kiểm tra
+
+- [Chi tiết đơn hàng — phần đầu desktop](docs/assets/ui/fe-07/qa/order-detail-1440.png).
+- [Chi tiết đơn hàng — phần cuối desktop](docs/assets/ui/fe-07/qa/order-detail-1440-bottom.png).
+- [Chi tiết đơn hàng — mobile](docs/assets/ui/fe-07/qa/order-detail-390.png).
+- [Chi tiết hỗ trợ sau mua](docs/assets/ui/fe-07/qa/after-sales-detail-1440.png).
+- [Chính sách bảo hành](docs/assets/ui/fe-07/qa/warranty-policies-1440.png).
+
+## Kết quả trực quan và tương tác
+
+- Workspace giữ đúng hướng mockup: tiêu đề đơn hàng rõ ràng, liên kết quay lại, ba trục trạng thái, vùng nội dung chính và thanh “Xử lý đơn hàng”.
+- Các lựa chọn trong thanh xử lý là control nhẹ; chỉ nút xác nhận hành động là nút chính, tránh tạo nhiều điểm nhấn cạnh tranh.
+- Tab hiện tại tự căn vào vùng nhìn thấy khi tải trực tiếp hoặc đổi kích thước từ desktop sang mobile.
+- Danh sách chính sách bảo hành không còn chồng lên thanh thao tác ở desktop; trên mobile, các trường và nút được xếp thành từng hàng riêng.
+- Phiếu kiểm định nhúng trong hồ sơ hỗ trợ dùng tiêu đề cấp hai, không tạo thêm tiêu đề trang hoặc vùng nội dung chính lồng nhau.
+- Bộ lọc đơn hàng cập nhật tại chỗ, không làm trắng hoặc tải lại toàn trang; chuyển chính sách và lựa chọn hành động cập nhật đúng trạng thái đã chọn.
+- Không thấy nội dung kỹ thuật dành cho lập trình viên trong giao diện khách hàng hoặc nhân viên.
+
+## Ma trận responsive
+
+| Chiều rộng | Tràn ngang | Vùng nội dung chính | Tiêu đề trang | Nút xác nhận |
+| ---------: | :--------: | :-----------------: | :------------: | :-----------: |
+|    1440 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+|    1024 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+|     768 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+|     390 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+|     320 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+
+## Quyền truy cập và độ tin cậy
+
+- Cổng quyền của khu vực vận hành giữ nguyên nguyên tắc chặn trước khi hiển thị nội dung quản trị.
+- Các thao tác tài chính, bảo hành và hậu mãi dùng kết quả chính thức từ máy chủ; lỗi, xung đột và thao tác lặp được xử lý trong bộ kiểm thử.
+- Chính sách bảo hành đang được áp dụng không thể bị lưu đè làm thay đổi ngược các bảo hành đã phát hành.
+
+## Cổng chất lượng
+
+- Web: lint và typecheck đạt; production build đạt, tạo đủ `42/42` trang.
+- Web test: `108/108` tệp, `489/489` bài kiểm tra đạt.
+- API test: `109/109` tệp, `666/666` bài kiểm tra đạt.
+- API client: `7/7` bài kiểm tra đạt; lint, typecheck và build đạt.
+- API E2E trọng điểm: `5/5` đạt; kiểm thử tích hợp: `7/7` đạt.
+- Phạm vi FE-07: `53/53` thao tác được đánh dấu hoàn tất.
+
+final result: passed

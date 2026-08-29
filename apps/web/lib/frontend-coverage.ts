@@ -11,7 +11,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-4': 'DONE',
   'FE-5': 'DONE',
   'FE-6': 'DONE',
-  'FE-7': 'NOT STARTED',
+  'FE-7': 'DONE',
   'FE-8': 'NOT STARTED',
   'FE-9': 'NOT STARTED',
 } as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
@@ -271,7 +271,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeAfterSalesRequest',
@@ -282,7 +282,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'approveAfterSalesRequest',
@@ -293,7 +293,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command approveAfterSalesRequest; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'assignAfterSalesRequest',
@@ -304,7 +304,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command assignAfterSalesRequest; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeAfterSalesAttachmentUrl',
@@ -315,7 +315,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Mở signed URL; pending, expired, forbidden, provider error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'receiveAfterSalesRequest',
@@ -326,7 +326,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command receiveAfterSalesRequest; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'recordAfterSalesInspectionSummary',
@@ -337,7 +337,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command recordAfterSalesInspectionSummary; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'rejectAfterSalesRequest',
@@ -348,7 +348,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action rejectAfterSalesRequest; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resolveAfterSalesOther',
@@ -359,7 +359,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resolveAfterSalesOther; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resolveAfterSalesRefunded',
@@ -370,7 +370,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resolveAfterSalesRefunded; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resolveAfterSalesRepaired',
@@ -381,7 +381,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resolveAfterSalesRepaired; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resolveAfterSalesReplaced',
@@ -392,7 +392,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resolveAfterSalesReplaced; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resolveAfterSalesReturnedUnchanged',
@@ -403,7 +403,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resolveAfterSalesReturnedUnchanged; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'startAfterSalesInspection',
@@ -414,7 +414,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command startAfterSalesInspection; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeAuditLogs',
@@ -788,7 +788,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeOrder',
@@ -799,7 +799,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'cancelBackofficeOrder',
@@ -810,7 +810,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action cancelBackofficeOrder; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'completePickup',
@@ -821,7 +821,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command completePickup; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'confirmPickupOrder',
@@ -832,7 +832,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command confirmPickupOrder; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'extendPickupHold',
@@ -843,7 +843,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command extendPickupHold; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeOrderInternalNote',
@@ -854,7 +854,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeOrderInternalNote; dirty, validation, pending, conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'markPickupReady',
@@ -865,7 +865,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command markPickupReady; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'overrideShippingFee',
@@ -876,7 +876,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command overrideShippingFee; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createRefund',
@@ -887,7 +887,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createRefund; validation, pending, success, conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createShipment',
@@ -898,7 +898,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createShipment; validation, pending, success, conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'startPreparingOrder',
@@ -909,7 +909,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command startPreparingOrder; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficePayments',
@@ -920,7 +920,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficePayment',
@@ -931,7 +931,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getPaymentEvidenceUrl',
@@ -942,7 +942,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Mở signed URL; pending, expired, forbidden, provider error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'rejectPayment',
@@ -953,7 +953,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action rejectPayment; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'verifyPayment',
@@ -964,7 +964,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command verifyPayment; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'deleteBackofficeProductMedia',
@@ -1085,7 +1085,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeRefund',
@@ -1096,7 +1096,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'cancelRefund',
@@ -1107,7 +1107,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action cancelRefund; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'completeBankTransferRefund',
@@ -1118,7 +1118,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command completeBankTransferRefund; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'completeCashRefund',
@@ -1129,7 +1129,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command completeCashRefund; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getRefundEvidenceUrl',
@@ -1140,7 +1140,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Mở signed URL; pending, expired, forbidden, provider error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'rejectRefund',
@@ -1151,7 +1151,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action rejectRefund; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'startRefundProcessing',
@@ -1162,7 +1162,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command startRefundProcessing; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeSettings',
@@ -1206,7 +1206,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command handOverShipment; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'markShipmentDelivered',
@@ -1217,7 +1217,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command markShipmentDelivered; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'markShipmentFailed',
@@ -1228,7 +1228,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command markShipmentFailed; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'markShipmentReturned',
@@ -1239,7 +1239,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command markShipmentReturned; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeStockLevels',
@@ -1448,7 +1448,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeWarranty',
@@ -1459,7 +1459,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'voidWarranty',
@@ -1470,7 +1470,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action voidWarranty; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeWarrantyPolicies',
@@ -1481,7 +1481,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createWarrantyPolicy',
@@ -1492,7 +1492,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createWarrantyPolicy; validation, pending, success, conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeWarrantyPolicy',
@@ -1503,7 +1503,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateWarrantyPolicy',
@@ -1514,7 +1514,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateWarrantyPolicy; dirty, validation, pending, conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'activateWarrantyPolicy',
@@ -1525,7 +1525,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command activateWarrantyPolicy; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'archiveWarrantyPolicy',
@@ -1536,7 +1536,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action archiveWarrantyPolicy; confirm/reason, pending, success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'deactivateWarrantyPolicy',
@@ -1547,7 +1547,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command deactivateWarrantyPolicy; pending, authoritative success, replay/conflict',
     'FE-7',
     'browser:operations-lifecycle',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getCart',
