@@ -31,6 +31,7 @@ describe('Voucher usage backoffice projection', () => {
       select: { id: true },
     });
     const orderNumber = `RPH-INT-${suffix.slice(0, 12)}`;
+    const placedAt = new Date();
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -42,9 +43,11 @@ describe('Voucher usage backoffice projection', () => {
         fulfillmentType: 'PICKUP',
         fulfillmentLocationId: location.id,
         pickupLocationId: location.id,
+        pickupHoldUntil: new Date(placedAt.getTime() + 86_400_000),
         subtotal: 0,
         grandTotal: 0,
         balanceDue: 0,
+        placedAt,
       },
       select: { id: true },
     });
