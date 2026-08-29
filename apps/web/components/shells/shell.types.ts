@@ -16,7 +16,12 @@ export interface ShellNavigationItem {
     | 'lookup'
     | 'stock'
     | 'movements'
-    | 'locations';
+    | 'locations'
+    | 'payments'
+    | 'refunds'
+    | 'after-sales'
+    | 'warranties'
+    | 'warranty-policies';
   readonly isDisabled?: boolean;
   readonly isSeparated?: boolean;
 }

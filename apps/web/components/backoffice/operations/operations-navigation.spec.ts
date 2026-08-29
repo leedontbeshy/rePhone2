@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import {
+  canAccessOperationsWorkspace,
+  OPERATIONS_AFTER_SALES_ROOT,
+  OPERATIONS_ORDERS_ROOT,
+  OPERATIONS_PAYMENTS_ROOT,
+  OPERATIONS_REFUNDS_ROOT,
+  OPERATIONS_WARRANTIES_ROOT,
+  OPERATIONS_WARRANTY_POLICIES_ROOT,
+  operationsNavigationForRole,
+} from './operations-navigation';
+
+describe('FE-07 operations navigation', () => {
+  it('groups the approved Vietnamese destinations in a stable order', () => {
+    const groups = operationsNavigationForRole('ADMIN', OPERATIONS_ORDERS_ROOT);
+
+    expect(groups.map((group) => group.label)).toEqual(['Vận hành', 'Tài chính', 'Sau mua']);
+    expect(
+      groups.flatMap((group) => group.items).map(({ href, label }) => ({ href, label })),
+    ).toEqual([
+      { href: '/backoffice', label: 'Tổng quan' },
+      { href: '/backoffice/catalog/products', label: 'Danh mục' },
+      { href: '/backoffice/inventory/units', label: 'Kho hàng' },
+      { href: OPERATIONS_ORDERS_ROOT, label: 'Đơn hàng' },
+      { href: '/backoffice/vouchers', label: 'Mã ưu đãi' },
+      { href: OPERATIONS_PAYMENTS_ROOT, label: 'Duyệt thanh toán' },
+      { href: OPERATIONS_REFUNDS_ROOT, label: 'Hoàn tiền' },
+      { href: OPERATIONS_AFTER_SALES_ROOT, label: 'Hỗ trợ sau mua' },
+      { href: OPERATIONS_WARRANTIES_ROOT, label: 'Bảo hành' },
+      { href: OPERATIONS_WARRANTY_POLICIES_ROOT, label: 'Chính sách bảo hành' },
+    ]);
+  });
+
+  it('keeps a detail route attached to its owning destination', () => {
+    const groups = operationsNavigationForRole('EMPLOYEE', `${OPERATIONS_REFUNDS_ROOT}/refund-id`);
+    const refund = groups
+      .flatMap((group) => group.items)
+      .find((item) => item.href === OPERATIONS_REFUNDS_ROOT);
+
+    expect(refund?.isCurrent).toBe(true);
+  });
+
+  it('keeps voucher management visible but unavailable to employees', () => {
+    const groups = operationsNavigationForRole('EMPLOYEE', OPERATIONS_ORDERS_ROOT);
+    const voucher = groups
+      .flatMap((group) => group.items)
+      .find((item) => item.href === '/backoffice/vouchers');
+
+    expect(voucher?.isDisabled).toBe(true);
+  });
+
+  it('allows employees and administrators while rejecting customer and anonymous roles', () => {
+    expect(canAccessOperationsWorkspace('EMPLOYEE')).toBe(true);
+    expect(canAccessOperationsWorkspace('ADMIN')).toBe(true);
+    expect(canAccessOperationsWorkspace('CUSTOMER')).toBe(false);
+    expect(canAccessOperationsWorkspace(null)).toBe(false);
+  });
+});
