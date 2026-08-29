@@ -1,6 +1,8 @@
 -- rePhone accesses business data through NestJS/Prisma, not Supabase Data API.
 -- Keep the runtime role separate from the login role so credentials never enter
 -- migration history and can be rotated independently.
+BEGIN;
+
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rephone_app') THEN
@@ -178,3 +180,5 @@ BEGIN
   );
 END
 $$;
+
+COMMIT;
