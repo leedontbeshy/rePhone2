@@ -11,9 +11,14 @@ import {
   ShieldCheckIcon,
   StorefrontIcon,
   TagIcon,
+  UploadSimpleIcon,
 } from '@phosphor-icons/react/ssr';
-import { ErrorSummary, Input, Select } from '@/components/ui';
+import { ErrorSummary, Input, Select, Skeleton } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
+import {
+  InventoryWorkflowProgress,
+  type InventoryWorkflowStep,
+} from '@/components/backoffice/inventory/inventory-workflow-progress';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
@@ -23,6 +28,7 @@ import {
   inventoryErrorRequiresRefetch,
   validateInventoryMediaFile,
 } from '../../../../lib/backoffice-inventory-api';
+import { intakeInspectionHref } from '../../../../lib/inventory-workflow-routes';
 import {
   INTAKE_FIELD_ORDER,
   firstInventoryIntakeErrorField,
@@ -32,6 +38,7 @@ import {
   type IntakeField,
   type IntakeFieldErrors,
 } from './intake-form-model';
+import { resolveIntakeInspectionResume } from './intake-inspection-resume';
 import { orderIphoneProducts, orderIphoneVariants } from './intake-option-order';
 import { resolveIntakeStep } from './intake-progress';
 import styles from './intake.module.css';
@@ -81,13 +88,14 @@ export function InventoryIntakeWizard() {
   const [intakeErrors, setIntakeErrors] = useState<IntakeFieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (error !== null) errorRef.current?.focus();
   }, [error]);
 
   useEffect(() => {
-    if (status !== 'authenticated' || !isStaff) return;
+    if (status !== 'authenticated' || !isStaff || unitId !== null) return;
     let active = true;
     setLoading(true);
     setError(null);
@@ -129,10 +137,10 @@ export function InventoryIntakeWizard() {
     return () => {
       active = false;
     };
-  }, [client, isStaff, status]);
+  }, [client, isStaff, status, unitId]);
 
   useEffect(() => {
-    if (!isStaff || intake.productId === '') return;
+    if (!isStaff || unitId !== null || intake.productId === '') return;
     let active = true;
     void client
       .GET('/api/v1/backoffice/products/{id}', {
@@ -158,7 +166,7 @@ export function InventoryIntakeWizard() {
     return () => {
       active = false;
     };
-  }, [client, intake.productId, isStaff]);
+  }, [client, intake.productId, isStaff, unitId]);
 
   useEffect(() => {
     if (!isStaff || unitId === null) {
@@ -168,6 +176,7 @@ export function InventoryIntakeWizard() {
     }
     let active = true;
     setLoading(true);
+    setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/inventory-units/{id}', {
         params: { path: { id: unitId } },
@@ -181,23 +190,18 @@ export function InventoryIntakeWizard() {
         if (unitResult.data === undefined) throw apiRequestError(unitResult.error);
         if (listResult.data === undefined) throw apiRequestError(listResult.error);
         const nextUnit = unitResult.data.data;
-        setUnit(nextUnit);
-        const requestedInspection =
-          inspectionId === null
-            ? undefined
-            : listResult.data.data.find((item) => item.id === inspectionId);
-        if (inspectionId !== null && requestedInspection === undefined) {
-          setInspection(null);
+        const { requestedInspectionWasIgnored, resumeId } = resolveIntakeInspectionResume({
+          currentInspectionId: nextUnit.currentInspection?.id,
+          inspections: listResult.data.data,
+          requestedInspectionId: inspectionId,
+        });
+        if (requestedInspectionWasIgnored) {
           setNotice('Đường dẫn cũ không khớp với máy này. Đã mở lại dữ liệu an toàn.');
-          replaceQuery(nextUnit.id);
-          return;
         }
-        const resumeId =
-          requestedInspection?.id ??
-          listResult.data.data.find((item) => item.status === 'DRAFT')?.id ??
-          nextUnit.currentInspection?.id;
         if (resumeId === undefined) {
           setInspection(null);
+          setUnit(nextUnit);
+          if (inspectionId !== null) replaceQuery(nextUnit.id);
           return;
         }
         const detail = await client.GET('/api/v1/backoffice/inspections/{id}', {
@@ -205,7 +209,8 @@ export function InventoryIntakeWizard() {
         });
         if (detail.data === undefined) throw apiRequestError(detail.error);
         acceptInspection(detail.data.data);
-        if (inspectionId === null) replaceQuery(nextUnit.id, resumeId);
+        setUnit(nextUnit);
+        if (inspectionId !== resumeId) replaceQuery(nextUnit.id, resumeId);
       })
       .catch((cause: unknown) => {
         if (active) setError(messageOf(cause));
@@ -334,24 +339,37 @@ export function InventoryIntakeWizard() {
       if (result.data === undefined) throw apiRequestError(result.error);
       await refreshUnit(unit.id);
       setFile(null);
+      if (fileInputRef.current !== null) fileInputRef.current.value = '';
       setNotice('Đã tải ảnh thực tế của máy lên thành công.');
     });
   }
 
   async function createInspection() {
-    await runAction('inspection-create', async () => {
-      if (unit === null) throw new Error('Chưa có máy để kiểm định.');
+    if (unit === null) {
+      setError('Chưa có máy để kiểm định.');
+      return;
+    }
+    setBusy('inspection-create');
+    setError(null);
+    setNotice(null);
+    try {
       const result = await client.POST('/api/v1/backoffice/inventory-units/{id}/inspections', {
         params: { path: { id: unit.id } },
         body: { inspectionType: 'INTAKE' },
       });
       if (result.data === undefined) throw apiRequestError(result.error);
-      acceptInspection(result.data.data);
-      replaceQuery(unit.id, result.data.data.id);
-      await refreshUnit(unit.id);
-      setNotice('Đã tạo bản kiểm định nháp.');
-      router.push(`/backoffice/inventory/inspections/${result.data.data.id}`);
-    });
+      router.push(intakeInspectionHref(result.data.data.id));
+    } catch (cause) {
+      if (inventoryErrorRequiresRefetch(cause)) {
+        try {
+          await refreshCurrentState();
+        } catch {
+          // Giữ thông báo tạo phiếu để người dùng biết thao tác chưa được xác nhận.
+        }
+      }
+      setBusy(null);
+      setError(messageOf(cause));
+    }
   }
 
   async function makeAvailable() {
@@ -429,6 +447,15 @@ export function InventoryIntakeWizard() {
   const selectedVariant = variants.find((item) => item.id === intake.variantId);
   const selectedLocationName =
     locations.find((item) => item.id === intake.locationId)?.name ?? 'Chưa chọn nơi nhận';
+  const hasRequestedExistingUnit =
+    unitId !== null &&
+    (unit?.id !== unitId || (inspectionId !== null && inspection?.id !== inspectionId));
+  const isRestoringExistingUnit = hasRequestedExistingUnit && error === null;
+  const completedWorkflowSteps: InventoryWorkflowStep[] = [];
+  if (unit !== null) completedWorkflowSteps.push(1);
+  if ((unit?.mediaCount ?? 0) > 0) completedWorkflowSteps.push(2);
+  if (completedPassed) completedWorkflowSteps.push(3);
+  if (unit?.lifecycleStatus === 'AVAILABLE') completedWorkflowSteps.push(4, 5);
 
   return (
     <div className={styles.workspace}>
@@ -443,28 +470,16 @@ export function InventoryIntakeWizard() {
         </Link>
       </header>
 
-      <ol className={styles.progress} aria-label="Tiến độ nhập máy">
-        <Progress number={1} label="Tiếp nhận" done={unit !== null} current={activeStep === 1} />
-        <Progress
-          number={2}
-          label="Ảnh thực tế"
-          done={(unit?.mediaCount ?? 0) > 0}
-          current={activeStep === 2}
+      {hasRequestedExistingUnit ? (
+        isRestoringExistingUnit ? (
+          <Skeleton height="6.75rem" width="100%" />
+        ) : null
+      ) : (
+        <InventoryWorkflowProgress
+          completedSteps={completedWorkflowSteps}
+          currentStep={activeStep}
         />
-        <Progress number={3} label="Kiểm định" done={completedPassed} current={activeStep === 3} />
-        <Progress
-          number={4}
-          label="Sẵn sàng bán"
-          done={unit?.lifecycleStatus === 'AVAILABLE'}
-          current={activeStep === 4}
-        />
-        <Progress
-          number={5}
-          label="Trang sản phẩm"
-          done={unit?.lifecycleStatus === 'AVAILABLE'}
-          current={activeStep === 5}
-        />
-      </ol>
+      )}
 
       {error !== null ? (
         <div className="wizard-alert error" ref={errorRef} role="alert" tabIndex={-1}>
@@ -476,9 +491,13 @@ export function InventoryIntakeWizard() {
           {notice}
         </div>
       ) : null}
-      {loading ? <div className="status">Đang tải dữ liệu tiếp nhận máy…</div> : null}
+      {loading && !isRestoringExistingUnit ? (
+        <div className="status">Đang tải dữ liệu tiếp nhận máy…</div>
+      ) : null}
 
-      {unit === null ? (
+      {hasRequestedExistingUnit ? (
+        <ExistingUnitLoadingState failed={error !== null} />
+      ) : unit === null ? (
         <div className={styles.intakeWorkbench}>
           <section className={styles.intakePanel} aria-labelledby="intake-title">
             <PanelHeading
@@ -765,23 +784,51 @@ export function InventoryIntakeWizard() {
               title="Ảnh thực tế của máy"
               description="Thêm tối thiểu một ảnh rõ nét của đúng chiếc máy."
             >
-              <form className="wizard-inline" onSubmit={submitUpload}>
-                <label>
-                  Ảnh JPEG, PNG hoặc WebP (tối đa 8 MiB)
-                  <input
-                    key={file?.name ?? 'empty'}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => {
-                      setFile(event.target.files?.[0] ?? null);
-                    }}
-                    required
-                  />
+              <form className={styles.uploadForm} onSubmit={submitUpload}>
+                <input
+                  aria-describedby="inventory-media-file-help"
+                  className={styles.fileInput}
+                  disabled={busy === 'upload'}
+                  id="inventory-media-file"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    setFile(event.target.files?.[0] ?? null);
+                  }}
+                  required
+                />
+                <label
+                  aria-disabled={busy === 'upload'}
+                  className={styles.filePicker}
+                  htmlFor="inventory-media-file"
+                >
+                  <span className={styles.filePickerIcon}>
+                    <ImageSquareIcon aria-hidden="true" size={28} weight="duotone" />
+                  </span>
+                  <span className={styles.filePickerCopy}>
+                    <strong>{file?.name ?? 'Chọn ảnh thực tế của máy'}</strong>
+                    <small id="inventory-media-file-help">
+                      {file === null
+                        ? 'JPEG, PNG hoặc WebP · tối đa 8 MiB'
+                        : `${formatFileSize(file.size)} · nhấn để chọn ảnh khác`}
+                    </small>
+                  </span>
+                  <span className={styles.filePickerAction}>
+                    {file === null ? 'Chọn ảnh' : 'Đổi ảnh'}
+                  </span>
                 </label>
-                <button className="button primary" disabled={busy !== null} type="submit">
-                  {busy === 'upload' ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
-                </button>
-                <span>{unit.mediaCount} ảnh đã gắn</span>
+                <div className={styles.uploadActions}>
+                  <span>{unit.mediaCount} ảnh đã gắn với máy này</span>
+                  <button
+                    className="button primary"
+                    disabled={busy !== null || file === null}
+                    type="submit"
+                  >
+                    <UploadSimpleIcon aria-hidden="true" size={19} />
+                    {busy === 'upload' ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
+                  </button>
+                </div>
               </form>
             </WorkflowStage>
           ) : null}
@@ -809,10 +856,7 @@ export function InventoryIntakeWizard() {
               {inspection?.status === 'DRAFT' ? (
                 <div className="wizard-actions">
                   <p>Phiếu đang chờ kỹ thuật viên ghi nhận đủ 18 hạng mục.</p>
-                  <Link
-                    className="button primary"
-                    href={`/backoffice/inventory/inspections/${inspection.id}`}
-                  >
+                  <Link className="button primary" href={intakeInspectionHref(inspection.id)}>
                     Tiếp tục kiểm định
                   </Link>
                 </div>
@@ -822,12 +866,23 @@ export function InventoryIntakeWizard() {
                   <p className={`inspection-result ${inspection.overallResult.toLowerCase()}`}>
                     Kết quả: <strong>{inspectionResultLabel(inspection.overallResult)}</strong>
                   </p>
-                  <Link
-                    className="button"
-                    href={`/backoffice/inventory/inspections/${inspection.id}`}
-                  >
-                    Xem phiếu kiểm định
-                  </Link>
+                  <div className={styles.inspectionActions}>
+                    <Link className="button" href={intakeInspectionHref(inspection.id)}>
+                      Xem phiếu kiểm định
+                    </Link>
+                    {inspection.overallResult === 'PASSED' ? null : (
+                      <button
+                        className="button primary"
+                        type="button"
+                        disabled={busy !== null}
+                        onClick={() => void createInspection()}
+                      >
+                        {busy === 'inspection-create'
+                          ? 'Đang tạo phiếu mới…'
+                          : 'Tạo phiếu kiểm định lại'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : null}
             </WorkflowStage>
@@ -872,31 +927,6 @@ export function InventoryIntakeWizard() {
         </div>
       )}
     </div>
-  );
-}
-
-function Progress({
-  number,
-  label,
-  done,
-  current,
-}: {
-  number: number;
-  label: string;
-  done: boolean;
-  current: boolean;
-}) {
-  return (
-    <li
-      className={classNames(done && styles.progressDone, current && styles.progressCurrent)}
-      aria-current={current ? 'step' : undefined}
-    >
-      <span aria-hidden="true">{done ? <CheckCircleIcon size={22} weight="fill" /> : number}</span>
-      <strong>{label}</strong>
-      <span className="rp-visually-hidden">
-        {done ? 'Đã hoàn tất' : current ? 'Bước hiện tại' : 'Chưa hoàn tất'}
-      </span>
-    </li>
   );
 }
 
@@ -1060,8 +1090,12 @@ function WorkflowStage({
 }
 
 function UnitSummary({ unit }: { unit: Unit }) {
+  const identifiers = unit.maskedIdentifiers
+    .map((item) => `${identifierLabel(item.type)}: ${item.maskedValue}`)
+    .join(' · ');
+
   return (
-    <dl className="unit-resume">
+    <dl className={styles.unitSummary}>
       <div>
         <dt>Mã máy</dt>
         <dd>{unit.inventoryCode}</dd>
@@ -1080,13 +1114,38 @@ function UnitSummary({ unit }: { unit: Unit }) {
       </div>
       <div>
         <dt>Định danh</dt>
-        <dd>
-          {unit.maskedIdentifiers
-            .map((item) => `${identifierLabel(item.type)}: ${item.maskedValue}`)
-            .join(' · ')}
-        </dd>
+        <dd>{identifiers || 'Chưa có mã định danh'}</dd>
       </div>
     </dl>
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1_024 * 1_024) {
+    return `${String(Math.max(1, Math.round(bytes / 1_024)))} KB`;
+  }
+  return `${(bytes / (1_024 * 1_024)).toFixed(1).replace('.0', '')} MB`;
+}
+
+function ExistingUnitLoadingState({ failed }: { failed: boolean }) {
+  return (
+    <section className={styles.resumeState} aria-live="polite" role={failed ? undefined : 'status'}>
+      {failed ? (
+        <>
+          <h2>Chưa thể mở tiến độ của máy</h2>
+          <p>Hãy quay lại danh sách máy và thử mở lại hồ sơ này.</p>
+          <Link className="button" href="/backoffice/inventory/units">
+            Về danh sách máy
+          </Link>
+        </>
+      ) : (
+        <>
+          <Skeleton height="2.5rem" width="min(100%, 24rem)" />
+          <Skeleton height="8rem" width="100%" />
+          <span className="rp-visually-hidden">Đang mở lại tiến độ nhập máy…</span>
+        </>
+      )}
+    </section>
   );
 }
 

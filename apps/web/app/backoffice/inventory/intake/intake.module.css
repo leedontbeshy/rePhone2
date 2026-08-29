@@ -39,85 +39,6 @@
   white-space: nowrap;
 }
 
-.progress {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-  padding: var(--space-4) var(--space-5);
-  border: var(--border-default);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
-  list-style: none;
-}
-
-.progress li {
-  position: relative;
-  display: grid;
-  min-width: 0;
-  gap: var(--space-2);
-  justify-items: center;
-  color: var(--color-muted);
-  font-size: var(--font-size-label);
-  line-height: var(--line-height-label);
-  text-align: center;
-}
-
-.progress li:not(:last-child)::after {
-  position: absolute;
-  z-index: 0;
-  inset-block-start: 17px;
-  inset-inline-start: calc(50% + 25px);
-  inline-size: calc(100% - 50px);
-  border-block-start: 1px dashed var(--color-border-strong);
-  content: '';
-}
-
-.progress li > span {
-  z-index: 1;
-  display: grid;
-  inline-size: 34px;
-  block-size: 34px;
-  place-items: center;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-pill);
-  color: var(--color-muted);
-  background: var(--color-surface);
-  font-weight: var(--font-weight-bold);
-}
-
-.progress li > strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.progress .progressCurrent {
-  color: var(--color-primary-hover);
-}
-
-.progress .progressCurrent > span {
-  border-color: var(--color-primary);
-  color: var(--color-on-primary);
-  background: var(--color-primary);
-  box-shadow: 0 0 0 5px var(--color-brand-soft);
-}
-
-.progress .progressDone {
-  color: var(--color-success);
-}
-
-.progress .progressDone > span {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  background: var(--color-success-soft);
-}
-
-.progress .progressDone::after {
-  border-color: var(--color-success);
-}
-
 .workspace :global(.wizard-alert) {
   margin: 0;
 }
@@ -377,13 +298,62 @@
   overflow: hidden;
 }
 
-.receivedSummary :global(.unit-resume) {
+.unitSummary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
   padding: 0 var(--space-5) var(--space-5);
 }
 
-.receivedSummary :global(.unit-resume div) {
+.unitSummary > div {
+  display: grid;
+  min-width: 0;
+  min-height: 6.75rem;
+  gap: var(--space-2);
+  align-content: start;
+  padding: var(--space-4);
   border: var(--border-default);
+  border-radius: var(--radius-control);
   background: var(--color-surface-subtle);
+}
+
+.unitSummary dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.unitSummary dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
+  overflow-wrap: anywhere;
+}
+
+.resumeState {
+  display: grid;
+  max-width: 54rem;
+  gap: var(--space-4);
+  justify-items: start;
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: calc(var(--radius-card) + 4px);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.resumeState h2,
+.resumeState p {
+  margin: 0;
+}
+
+.resumeState p {
+  color: var(--color-muted);
 }
 
 .workflowStages {
@@ -492,7 +462,6 @@
   margin: 0;
 }
 
-.workspace :global(.wizard-inline),
 .workspace :global(.wizard-actions) {
   display: flex;
   flex-wrap: wrap;
@@ -500,28 +469,115 @@
   gap: var(--space-3);
 }
 
-.workspace :global(.wizard-inline label) {
-  display: grid;
-  min-width: min(100%, 28rem);
-  gap: var(--space-2);
-  color: var(--color-body);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-semibold);
+.inspectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
 }
 
-.workspace :global(.wizard-inline input) {
-  width: 100%;
-  min-height: var(--control-height);
-  padding: var(--space-2) var(--space-3);
+.uploadForm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.fileInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.filePicker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  min-height: 7.5rem;
+  padding: var(--space-5);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.filePicker:hover {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.filePicker[aria-disabled='true'] {
+  color: var(--color-muted);
+  background: var(--color-surface-subtle);
+  cursor: wait;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.fileInput:focus-visible + .filePicker {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.filePickerIcon {
+  display: grid;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+}
+
+.filePickerCopy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.filePickerCopy strong,
+.filePickerCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePickerCopy strong {
+  color: var(--color-ink);
+}
+
+.filePickerCopy small,
+.uploadActions > span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.filePickerAction {
+  padding: var(--space-2) var(--space-4);
   border: var(--border-strong);
   border-radius: var(--radius-control);
-  color: var(--color-body);
+  color: var(--color-primary-hover);
   background: var(--color-surface);
-  font: inherit;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
 }
 
-.workspace :global(.wizard-inline input:focus-visible) {
-  border-color: var(--color-primary);
+.uploadActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.uploadActions :global(.button) {
+  gap: var(--space-2);
 }
 
 @media (max-width: 79.999rem) {
@@ -548,27 +604,23 @@
   .summaryFacts dd {
     text-align: start;
   }
+
+  .unitSummary {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .unitSummary > div {
+    grid-column: span 2;
+  }
+
+  .unitSummary > div:nth-child(n + 4) {
+    grid-column: span 3;
+  }
 }
 
 @media (max-width: 49.999rem) {
   .workspace {
     gap: var(--space-5);
-  }
-
-  .progress {
-    display: flex;
-    overflow-x: auto;
-    padding: var(--space-3);
-    scrollbar-width: thin;
-  }
-
-  .progress li {
-    flex: 0 0 7.5rem;
-  }
-
-  .progress li:not(:last-child)::after {
-    inset-inline-start: calc(50% + 22px);
-    inline-size: calc(100% - 44px);
   }
 
   .sectionFields,
@@ -597,6 +649,37 @@
     grid-column: 2;
     justify-self: start;
   }
+
+  .unitSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .unitSummary > div,
+  .unitSummary > div:nth-child(n + 4) {
+    grid-column: span 1;
+  }
+
+  .unitSummary > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .filePicker {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .filePickerAction {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .uploadActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .uploadActions :global(.button) {
+    width: 100%;
+  }
 }
 
 @media (max-width: 35rem) {
@@ -613,13 +696,17 @@
     padding-inline: var(--space-4);
   }
 
-  .receivedSummary :global(.unit-resume) {
+  .unitSummary {
+    grid-template-columns: 1fr;
     padding-inline: var(--space-4);
+  }
+
+  .unitSummary > div:last-child {
+    grid-column: span 1;
   }
 }
 
 @media (forced-colors: active) {
-  .progressCurrent > span,
   .workflowStageCurrent {
     border: 2px solid CanvasText;
   }
