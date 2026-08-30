@@ -1,4 +1,4 @@
-import { Controller, Get, Header, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
 import { BackofficeRateLimitGuard } from '../auth/backoffice-rate-limit.guard.js';
@@ -17,7 +17,6 @@ export class OperationsOverviewController {
   public constructor(private readonly overview: OperationsOverviewService) {}
 
   @Get()
-  @Header('Cache-Control', 'private, no-store')
   @ApiOperation({
     operationId: 'getBackofficeOperationsOverview',
     summary: 'Get the current operations overview snapshot',
