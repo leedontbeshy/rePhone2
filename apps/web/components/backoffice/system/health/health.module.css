@@ -1,0 +1,217 @@
+.page {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.pageHeader > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.pageHeader h1,
+.pageHeader p,
+.statusPanel h2,
+.statusPanel h3,
+.statusPanel p,
+.emptyState h2,
+.emptyState p {
+  margin: 0;
+}
+
+.pageHeader h1 {
+  color: var(--color-ink);
+  font-size: clamp(var(--font-size-page-title), 2vw, 1.875rem);
+  line-height: var(--line-height-page-title);
+}
+
+.pageHeader > div > p:last-child {
+  max-width: var(--content-reading-max);
+  color: var(--color-muted);
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  line-height: var(--line-height-label);
+  text-transform: uppercase;
+}
+
+.statusPanel,
+.loadingState,
+.emptyState {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  padding-bottom: var(--space-5);
+  border-bottom: var(--border-default);
+}
+
+.summaryIcon,
+.probeIcon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.summaryIcon {
+  inline-size: 3rem;
+  block-size: 3rem;
+}
+
+.statusPanel[data-tone='success'] .summaryIcon {
+  color: var(--color-success);
+  background: var(--color-success-soft);
+}
+
+.statusPanel[data-tone='warning'] .summaryIcon {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.statusPanel[data-tone='danger'] .summaryIcon {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.summary h2 {
+  color: var(--color-ink);
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
+}
+
+.summary p,
+.probeCopy p,
+.probeCopy small,
+.checkedAt,
+.updating,
+.emptyState p {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.updating {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.probeList {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.probeRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  align-items: center;
+  min-block-size: 5.5rem;
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.probeIcon {
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.probeRow[data-state='degraded'] .probeIcon {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.probeRow[data-state='unavailable'] .probeIcon {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.probeCopy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.probeCopy h3 {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.probeCopy small {
+  display: block;
+}
+
+.checkedAt {
+  padding-top: var(--space-4);
+  border-top: var(--border-default);
+}
+
+.checkedAt time {
+  color: var(--color-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.emptyState {
+  justify-items: start;
+}
+
+@media (max-width: 47.99rem) {
+  .pageHeader {
+    display: grid;
+  }
+
+  .pageHeader > button {
+    inline-size: 100%;
+  }
+
+  .statusPanel,
+  .loadingState,
+  .emptyState {
+    padding: var(--space-4);
+  }
+
+  .summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .updating {
+    grid-column: 1 / -1;
+  }
+
+  .probeRow {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+
+  .probeRow > :last-child {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
