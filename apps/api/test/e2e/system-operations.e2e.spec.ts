@@ -94,6 +94,25 @@ describe('Slice 12 store, settings and audit HTTP contract', () => {
     expect(await prisma.auditLog.count({ where: { action: 'settings.updated' } })).toBe(1);
   });
 
+  it('rejects money values that exceed the database precision', async () => {
+    const admin = await login(server, 'ADMIN');
+
+    const response = await request(server)
+      .patch('/api/v1/backoffice/settings')
+      .set(bearer(admin))
+      .send({
+        expectedVersion: 1,
+        defaultShippingFee: '1000000000000000',
+        shippingDepositAmount: '1000000000000000',
+      })
+      .expect(400);
+
+    expectNoStore(response);
+    expect(await prisma.storeSettings.findFirstOrThrow()).toMatchObject({
+      version: 1,
+    });
+  });
+
   it('validates and attaches bank QR with the same settings CAS boundary', async () => {
     const admin = await login(server, 'ADMIN');
     const png = await sharp({
