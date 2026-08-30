@@ -155,6 +155,25 @@ export function validateQrFile(file: File): string | undefined {
   return undefined;
 }
 
+export function formatSettingsMoney(value: string): string {
+  if (!/^\d+$/.test(value)) return value;
+  return `${new Intl.NumberFormat('vi-VN').format(BigInt(value))} đ`;
+}
+
+export function formatSettingsDuration(minutes: number): string {
+  if (minutes >= 1_440 && minutes % 1_440 === 0) {
+    return `${new Intl.NumberFormat('vi-VN').format(minutes / 1_440)} ngày`;
+  }
+  if (minutes >= 60 && minutes % 60 === 0) {
+    return `${new Intl.NumberFormat('vi-VN').format(minutes / 60)} giờ`;
+  }
+  return `${new Intl.NumberFormat('vi-VN').format(minutes)} phút`;
+}
+
+export function formatSettingsDays(days: number): string {
+  return `${new Intl.NumberFormat('vi-VN').format(days)} ngày`;
+}
+
 function normalizedText(draft: SettingsDraft, errors: SettingsErrors): SettingsDraft {
   const normalized: SettingsDraft = {
     bankAccountHolder: draft.bankAccountHolder.trim(),

@@ -3,10 +3,17 @@
 import {
   ArrowSquareOutIcon,
   ArrowsClockwiseIcon,
+  BankIcon,
   CheckCircleIcon,
+  ClockIcon,
   FloppyDiskIcon,
   ImageSquareIcon,
+  PencilSimpleIcon,
+  ShieldCheckIcon,
+  StorefrontIcon,
+  TruckIcon,
   UploadSimpleIcon,
+  WarningCircleIcon,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
@@ -21,6 +28,9 @@ import {
 } from '@/lib/system-admin-api';
 import {
   changedSettingsFields,
+  formatSettingsDays,
+  formatSettingsDuration,
+  formatSettingsMoney,
   hasSettingsChanges,
   settingsToDraft,
   validateQrFile,
@@ -298,6 +308,8 @@ export function SettingsView() {
           <ErrorSummary errors={summaryErrors} />
           <SettingsSection
             description="Thông tin khách hàng nhìn thấy khi cần liên hệ hoặc đến nhận máy."
+            icon={<StorefrontIcon size={22} />}
+            index="01"
             title="Thông tin cửa hàng"
           >
             <div className={styles.twoColumns}>
@@ -341,6 +353,8 @@ export function SettingsView() {
 
           <SettingsSection
             description="Các giá trị mặc định áp dụng khi khách đặt hoặc nhận máy."
+            icon={<TruckIcon size={22} />}
+            index="02"
             title="Giao nhận và thanh toán"
           >
             <div className={styles.twoColumns}>
@@ -400,8 +414,10 @@ export function SettingsView() {
           </SettingsSection>
 
           <SettingsSection
-            description="Thông tin mặc định hiển thị trên đơn mới và chính sách sau mua."
-            title="Bảo hành và tài khoản nhận tiền"
+            description="Thời hạn và điều khoản mặc định hiển thị trên đơn mới và chính sách sau mua."
+            icon={<ShieldCheckIcon size={22} />}
+            index="03"
+            title="Chính sách bảo hành"
           >
             <div className={styles.twoColumns}>
               <SettingInput
@@ -428,6 +444,16 @@ export function SettingsView() {
                   changeDraft('defaultWarrantyTerms', event.target.value);
                 }}
               />
+            </div>
+          </SettingsSection>
+
+          <SettingsSection
+            description="Thông tin chuyển khoản dùng khi khách thanh toán đơn hàng."
+            icon={<BankIcon size={22} />}
+            index="04"
+            title="Tài khoản nhận tiền"
+          >
+            <div className={styles.twoColumns}>
               <SettingInput
                 draft={draft}
                 disabled={busy !== undefined}
@@ -464,13 +490,7 @@ export function SettingsView() {
           </SettingsSection>
 
           <div className={styles.formFooter}>
-            <span>
-              {conflict
-                ? 'Chọn cách xử lý dữ liệu mới trước khi lưu'
-                : dirty
-                  ? 'Có thay đổi chưa lưu'
-                  : 'Mọi thay đổi đã được lưu'}
-            </span>
+            <SaveStatus busy={busy} conflict={conflict} dirty={dirty} />
             <Button
               disabled={!dirty || conflict || busy !== undefined}
               iconLeading={<FloppyDiskIcon aria-hidden="true" size={18} />}
@@ -485,13 +505,41 @@ export function SettingsView() {
 
         <aside className={styles.rail}>
           <section className={styles.summaryCard}>
-            <div className={styles.summaryIcon} aria-hidden="true">
-              <CheckCircleIcon size={24} weight="fill" />
+            <div className={styles.summaryHeading}>
+              <div className={styles.summaryIcon} aria-hidden="true">
+                <CheckCircleIcon size={24} weight="fill" />
+              </div>
+              <div>
+                <p className={styles.summaryEyebrow}>Đang áp dụng</p>
+                <h2>Tóm tắt cấu hình</h2>
+              </div>
             </div>
-            <div>
-              <h2>Thông tin đang áp dụng</h2>
-              <p>Cập nhật {formatDateTime(settings.updatedAt)}</p>
-              <p>Bởi {settings.updatedBy?.fullName ?? 'Hệ thống'}</p>
+            <dl className={styles.summaryMetrics}>
+              <div>
+                <dt>
+                  <TruckIcon aria-hidden="true" size={20} />
+                  Phí giao hàng
+                </dt>
+                <dd>{formatSettingsMoney(settings.defaultShippingFee)}</dd>
+              </div>
+              <div>
+                <dt>
+                  <ClockIcon aria-hidden="true" size={20} />
+                  Giữ máy tại cửa hàng
+                </dt>
+                <dd>{formatSettingsDuration(settings.pickupHoldMinutes)}</dd>
+              </div>
+              <div>
+                <dt>
+                  <ShieldCheckIcon aria-hidden="true" size={20} />
+                  Bảo hành mặc định
+                </dt>
+                <dd>{formatSettingsDays(settings.defaultWarrantyDays)}</dd>
+              </div>
+            </dl>
+            <div className={styles.summaryMeta}>
+              <span>Cập nhật {formatDateTime(settings.updatedAt)}</span>
+              <span>Bởi {settings.updatedBy?.fullName ?? 'Hệ thống'}</span>
             </div>
           </section>
 
@@ -589,16 +637,83 @@ export function SettingsView() {
 function SettingsSection({
   children,
   description,
+  icon,
+  index,
   title,
-}: Readonly<{ children: React.ReactNode; description: string; title: string }>) {
+}: Readonly<{
+  children: React.ReactNode;
+  description: string;
+  icon: React.ReactNode;
+  index: string;
+  title: string;
+}>) {
   return (
     <section className={styles.section}>
-      <header>
-        <h2>{title}</h2>
-        <p>{description}</p>
+      <header className={styles.sectionHeader}>
+        <span className={styles.sectionIcon} aria-hidden="true">
+          {icon}
+        </span>
+        <span className={styles.sectionHeading}>
+          <span className={styles.sectionIndex}>Nhóm {index}</span>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </span>
       </header>
       {children}
     </section>
+  );
+}
+
+function SaveStatus({
+  busy,
+  conflict,
+  dirty,
+}: Readonly<{
+  busy: 'save' | 'qr' | 'reload' | undefined;
+  conflict: boolean;
+  dirty: boolean;
+}>) {
+  if (busy === 'save') {
+    return (
+      <div className={styles.saveStatus} data-state="saving" role="status">
+        <FloppyDiskIcon aria-hidden="true" size={20} />
+        <span>
+          <strong>Đang lưu thay đổi</strong>
+          <small>Vui lòng giữ nguyên trang trong giây lát.</small>
+        </span>
+      </div>
+    );
+  }
+  if (conflict) {
+    return (
+      <div className={styles.saveStatus} data-state="conflict" role="status">
+        <WarningCircleIcon aria-hidden="true" size={20} weight="fill" />
+        <span>
+          <strong>Cần xử lý dữ liệu mới hơn</strong>
+          <small>Chọn một phương án trong thông báo phía trên.</small>
+        </span>
+      </div>
+    );
+  }
+  if (dirty) {
+    return (
+      <div className={styles.saveStatus} data-state="dirty" role="status">
+        <PencilSimpleIcon aria-hidden="true" size={20} />
+        <span>
+          <strong>Có thay đổi chưa lưu</strong>
+          <small>Lưu để áp dụng các giá trị mới cho đơn tiếp theo.</small>
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.saveStatus} data-state="saved" role="status">
+      <CheckCircleIcon aria-hidden="true" size={20} weight="fill" />
+      <span>
+        <strong>Cấu hình đã được lưu</strong>
+        <small>Các giá trị đang đồng bộ với dữ liệu áp dụng.</small>
+      </span>
+    </div>
   );
 }
 

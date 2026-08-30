@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { StoreSettings } from '@/lib/system-admin-api';
 import {
   changedSettingsFields,
+  formatSettingsDays,
+  formatSettingsDuration,
+  formatSettingsMoney,
   hasSettingsChanges,
   settingsToDraft,
   validateQrFile,
@@ -120,5 +123,15 @@ describe('settings model', () => {
         }),
       ),
     ).toContain('5 MiB');
+  });
+
+  it('formats applied values for the settings summary without changing source data', () => {
+    expect(formatSettingsMoney('30000')).toBe('30.000 đ');
+    expect(formatSettingsMoney('100000000000000')).toBe('100.000.000.000.000 đ');
+    expect(formatSettingsDuration(30)).toBe('30 phút');
+    expect(formatSettingsDuration(120)).toBe('2 giờ');
+    expect(formatSettingsDuration(2_880)).toBe('2 ngày');
+    expect(formatSettingsDays(0)).toBe('0 ngày');
+    expect(formatSettingsDays(180)).toBe('180 ngày');
   });
 });
