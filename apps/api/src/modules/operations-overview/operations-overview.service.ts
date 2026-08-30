@@ -12,7 +12,7 @@ export class OperationsOverviewService {
     private readonly repository: OperationsOverviewRepository,
   ) {}
 
-  public async get(now = new Date()): Promise<{ data: OperationsOverviewDto }> {
+  public async get(now = new Date()): Promise<OperationsOverviewDto> {
     const { aggregates, recentOrders } = await this.repository.read(now);
     const priorities: OperationsOverviewPriorityDto[] = [
       {
@@ -42,26 +42,24 @@ export class OperationsOverviewService {
     ];
 
     return {
-      data: {
-        generatedAt: now.toISOString(),
-        metrics: {
-          activeOrders: aggregates.activeOrders,
-          paymentsUnderReview: aggregates.paymentsUnderReview,
-          openAfterSales: aggregates.openAfterSales,
-          lowStockLevels: aggregates.lowStockLevels,
-        },
-        priorities,
-        recentOrders: recentOrders.map((order) => ({
-          id: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customerName,
-          status: order.status,
-          fulfillmentStatus: order.fulfillmentStatus,
-          paymentStatus: order.paymentStatus,
-          grandTotal: order.grandTotal.toString(),
-          placedAt: order.placedAt.toISOString(),
-        })),
+      generatedAt: now.toISOString(),
+      metrics: {
+        activeOrders: aggregates.activeOrders,
+        paymentsUnderReview: aggregates.paymentsUnderReview,
+        openAfterSales: aggregates.openAfterSales,
+        lowStockLevels: aggregates.lowStockLevels,
       },
+      priorities,
+      recentOrders: recentOrders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customerName,
+        status: order.status,
+        fulfillmentStatus: order.fulfillmentStatus,
+        paymentStatus: order.paymentStatus,
+        grandTotal: order.grandTotal.toString(),
+        placedAt: order.placedAt.toISOString(),
+      })),
     };
   }
 }

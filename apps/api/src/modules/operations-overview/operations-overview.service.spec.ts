@@ -42,14 +42,14 @@ describe('OperationsOverviewService', () => {
       repository as unknown as OperationsOverviewRepository,
     ).get(NOW);
 
-    expect(result.data.generatedAt).toBe(NOW.toISOString());
-    expect(result.data.metrics).toEqual({
+    expect(result.generatedAt).toBe(NOW.toISOString());
+    expect(result.metrics).toEqual({
       activeOrders: 7,
       paymentsUnderReview: 3,
       openAfterSales: 2,
       lowStockLevels: 4,
     });
-    expect(result.data.priorities).toEqual(
+    expect(result.priorities).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           key: 'PAYMENT_REVIEW_OVERDUE',
@@ -59,7 +59,7 @@ describe('OperationsOverviewService', () => {
         expect.objectContaining({ key: 'PICKUP_OVERDUE', count: 0, oldestAt: null }),
       ]),
     );
-    expect(result.data.recentOrders).toEqual([
+    expect(result.recentOrders).toEqual([
       expect.objectContaining({
         orderNumber: 'RPH-20260830-ABC123',
         grandTotal: '12300000',
