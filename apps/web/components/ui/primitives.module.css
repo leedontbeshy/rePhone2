@@ -138,6 +138,10 @@
   height: var(--control-height);
 }
 
+select.control {
+  padding-block: var(--space-2);
+}
+
 .control::placeholder {
   color: var(--color-muted);
   opacity: 1;
