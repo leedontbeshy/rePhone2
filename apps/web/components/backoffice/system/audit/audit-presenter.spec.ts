@@ -4,6 +4,7 @@ import {
   DEFAULT_AUDIT_QUERY,
   auditActionLabel,
   auditDraftFromQuery,
+  auditListQueryKey,
   auditQueryFromDraft,
   auditWorkspaceHref,
   humanizeAuditPayload,
@@ -38,8 +39,17 @@ describe('audit query presentation', () => {
       resourceType: 'StoreSettings',
       sortOrder: 'asc',
     });
-    expect(auditWorkspaceHref(query, 'audit/id')).toContain('/backoffice/audit-logs/audit%2Fid?');
+    expect(auditWorkspaceHref(query, 'audit/id')).toContain('/backoffice/audit-logs?');
+    expect(auditWorkspaceHref(query, 'audit/id')).toContain('selected=audit%2Fid');
     expect(auditWorkspaceHref(query, 'audit/id')).toContain('action=settings.*');
+  });
+
+  it('keeps detail selection out of the list request key', () => {
+    const first = auditListQueryKey(new URLSearchParams('page=2&selected=audit-1'));
+    const second = auditListQueryKey(new URLSearchParams('page=2&selected=audit-2'));
+
+    expect(first).toBe('page=2');
+    expect(second).toBe(first);
   });
 
   it('rejects an inverted date range before making a request', () => {

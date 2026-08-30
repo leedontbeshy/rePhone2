@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   OperationsActionRail,
@@ -40,9 +40,12 @@ export function WarrantyPolicyView() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchKey = searchParams.toString();
-  const filters = useMemo(() => filtersFromParams(searchParams), [searchKey, searchParams]);
-  const query = useMemo(() => queryFromParams(searchParams), [searchKey, searchParams]);
+  const listQueryKey = warrantyPolicyListQueryKey(searchParams);
+  const filters = useMemo(
+    () => filtersFromParams(new URLSearchParams(listQueryKey)),
+    [listQueryKey],
+  );
+  const query = useMemo(() => queryFromParams(new URLSearchParams(listQueryKey)), [listQueryKey]);
   const selectedKey = searchParams.get('policy');
   const [draft, setDraft] = useState(filters);
   const [items, setItems] = useState<WarrantyPolicy[]>([]);
@@ -56,8 +59,9 @@ export function WarrantyPolicyView() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
+  const foregroundListLoading = useRef(false);
+  const listRequest = useRef(0);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
 
@@ -69,27 +73,40 @@ export function WarrantyPolicyView() {
     if (error !== null) errorRef.current?.focus();
   }, [error]);
 
-  useEffect(() => {
-    if (authStatus !== 'authenticated' || !isStaff) return;
-    let active = true;
-    setLoading(true);
-    setError(null);
-    void listWarrantyPolicies(client, query)
-      .then((result) => {
-        if (!active) return;
+  const loadPolicies = useCallback(
+    async (background = false) => {
+      if (background && foregroundListLoading.current) return;
+      const request = ++listRequest.current;
+      if (!background) {
+        foregroundListLoading.current = true;
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const result = await listWarrantyPolicies(client, query);
+        if (request !== listRequest.current) return;
         setItems(result.data);
         setPagination(result.pagination);
-      })
-      .catch((caught: unknown) => {
-        if (active) setError(messageFrom(caught, 'Không thể tải chính sách bảo hành.'));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      } catch (caught) {
+        if (request !== listRequest.current) return;
+        setError(messageFrom(caught, 'Không thể tải chính sách bảo hành.'));
+      } finally {
+        if (!background && request === listRequest.current) {
+          foregroundListLoading.current = false;
+          setLoading(false);
+        }
+      }
+    },
+    [client, query],
+  );
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !isStaff) return;
+    void loadPolicies();
     return () => {
-      active = false;
+      listRequest.current += 1;
     };
-  }, [authStatus, client, isStaff, query, refreshToken]);
+  }, [authStatus, isStaff, loadPolicies]);
 
   useEffect(() => {
     if (selectedKey === null || selectedKey === 'new') {
@@ -141,7 +158,7 @@ export function WarrantyPolicyView() {
         ? current.map((item) => (item.id === policy.id ? policy : item))
         : [policy, ...current];
     });
-    setRefreshToken((value) => value + 1);
+    void loadPolicies(true);
     selectPolicy(policy.id);
     return policy;
   }
@@ -433,6 +450,12 @@ function paramsFromFilters(filters: PolicyFilters, page: number): URLSearchParam
   if (filters.archived !== 'false') params.set('archived', filters.archived);
   if (page > 1) params.set('page', String(page));
   return params;
+}
+
+export function warrantyPolicyListQueryKey(params: Pick<URLSearchParams, 'toString'>): string {
+  const listParams = new URLSearchParams(params.toString());
+  listParams.delete('policy');
+  return listParams.toString();
 }
 
 function messageFrom(value: unknown, fallback: string): string {

@@ -17,14 +17,14 @@ describe('audit master-detail presentation', () => {
     const markup = renderToStaticMarkup(
       <AuditLogList
         activeId={row.id}
-        buildHref={(id) => `/backoffice/audit-logs/${id}`}
+        buildHref={(id) => `/backoffice/audit-logs?selected=${id}`}
         rows={[row]}
       />,
     );
 
     expect(markup).toContain('Đã vô hiệu hóa nhân viên');
     expect(markup).toContain('Đang chọn');
-    expect(markup).toContain('/backoffice/audit-logs/audit-1');
+    expect(markup).toContain('/backoffice/audit-logs?selected=audit-1');
     expect(markup).not.toContain('employee.disabled');
     expect(markup).not.toContain('list-secret-sentinel');
     expect(markup).not.toContain('list-metadata-sentinel');

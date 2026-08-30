@@ -402,11 +402,8 @@ export function auditQueryFromDraft(draft: AuditFilterDraft): {
 }
 
 export function auditWorkspaceHref(query: AuditQuery, selectedId?: string): string {
-  const pathname =
-    selectedId === undefined
-      ? '/backoffice/audit-logs'
-      : `/backoffice/audit-logs/${encodeURIComponent(selectedId)}`;
   const params = new URLSearchParams();
+  if (selectedId !== undefined) params.set('selected', selectedId);
   if (query.page > 1) params.set('page', String(query.page));
   if (query.actorType !== undefined) params.set('actorType', query.actorType);
   if (query.action !== undefined) params.set('action', query.action);
@@ -416,7 +413,13 @@ export function auditWorkspaceHref(query: AuditQuery, selectedId?: string): stri
   if (query.createdTo !== undefined) params.set('createdTo', query.createdTo);
   if (query.sortOrder !== 'desc') params.set('sortOrder', query.sortOrder);
   const queryString = params.toString();
-  return `${pathname}${queryString === '' ? '' : `?${queryString}`}`;
+  return `/backoffice/audit-logs${queryString === '' ? '' : `?${queryString}`}`;
+}
+
+export function auditListQueryKey(params: Pick<URLSearchParams, 'toString'>): string {
+  const listParams = new URLSearchParams(params.toString());
+  listParams.delete('selected');
+  return listParams.toString();
 }
 
 export function projectAuditListItem(item: AuditLogListItem): AuditListRow {

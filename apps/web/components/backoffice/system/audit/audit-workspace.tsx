@@ -29,6 +29,7 @@ import {
   auditActionLabel,
   auditActorLabel,
   auditDraftFromQuery,
+  auditListQueryKey,
   auditQueryFromDraft,
   auditResourceLabel,
   auditWorkspaceHref,
@@ -50,23 +51,20 @@ const EMPTY_PAGINATION: Pagination = {
   totalPages: 0,
 };
 
-export interface AuditLogWorkspaceProps {
-  readonly selectedId?: string;
-}
-
-export function AuditLogWorkspace({ selectedId }: AuditLogWorkspaceProps) {
+export function AuditLogWorkspace() {
   return (
     <SystemAdminShell breadcrumbs={[{ label: 'Hệ thống' }, { label: 'Nhật ký hoạt động' }]}>
-      <AuditLogWorkspaceContent selectedId={selectedId} />
+      <AuditLogWorkspaceContent />
     </SystemAdminShell>
   );
 }
 
-function AuditLogWorkspaceContent({ selectedId }: Readonly<{ selectedId: string | undefined }>) {
+function AuditLogWorkspaceContent() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryKey = searchParams.toString();
+  const selectedId = searchParams.get('selected')?.trim() || undefined;
+  const queryKey = auditListQueryKey(searchParams);
   const query = useMemo(() => parseAuditQuery(new URLSearchParams(queryKey)), [queryKey]);
   const { client } = useAuth();
   const [draft, setDraft] = useState<AuditFilterDraft>(() => auditDraftFromQuery(query));
@@ -105,13 +103,11 @@ function AuditLogWorkspaceContent({ selectedId }: Readonly<{ selectedId: string 
         setPagination(result.pagination);
         setHasLoadedList(true);
         setLoadedQueryKey(queryKey);
-        if (selectedId === undefined) {
-          setAutomaticSelection((current) =>
-            current !== undefined && nextRows.some((row) => row.id === current)
-              ? current
-              : nextRows[0]?.id,
-          );
-        }
+        setAutomaticSelection((current) =>
+          current !== undefined && nextRows.some((row) => row.id === current)
+            ? current
+            : nextRows[0]?.id,
+        );
       })
       .catch((caught: unknown) => {
         if (!active) return;
@@ -123,7 +119,7 @@ function AuditLogWorkspaceContent({ selectedId }: Readonly<{ selectedId: string 
     return () => {
       active = false;
     };
-  }, [client, listReloadKey, query, queryKey, selectedId]);
+  }, [client, listReloadKey, query, queryKey]);
 
   useEffect(() => {
     if (activeId === undefined) {
@@ -171,7 +167,8 @@ function AuditLogWorkspaceContent({ selectedId }: Readonly<{ selectedId: string 
 
   function navigate(next: AuditQuery) {
     const href = auditWorkspaceHref(next, selectedId);
-    const currentHref = `${pathname}${queryKey === '' ? '' : `?${queryKey}`}`;
+    const currentSearch = searchParams.toString();
+    const currentHref = `${pathname}${currentSearch === '' ? '' : `?${currentSearch}`}`;
     if (currentHref === href) {
       setListReloadKey((current) => current + 1);
       return;
