@@ -8,5 +8,6 @@ export interface MailMessage {
 }
 
 export interface MailProvider {
+  probe?(): Promise<'available' | 'not-configured'>;
   send(message: MailMessage): Promise<void>;
 }

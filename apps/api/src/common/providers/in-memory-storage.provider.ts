@@ -6,6 +6,10 @@ export class InMemoryStorageProvider implements StorageProvider {
   private readonly objects = new Map<string, StoredObject>();
   private beforeUpload: (() => Promise<void>) | undefined;
 
+  public probe(): Promise<void> {
+    return Promise.resolve();
+  }
+
   public async upload(input: UploadObjectInput): Promise<StoredObject> {
     await this.beforeUpload?.();
     const key = `${input.bucket}/${input.objectPath}`;

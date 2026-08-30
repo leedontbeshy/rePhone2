@@ -21,6 +21,11 @@ export class SupabaseStorageProvider implements StorageProvider {
     });
   }
 
+  public async probe(): Promise<void> {
+    const { error } = await this.client.storage.listBuckets();
+    if (error !== null) throw new StorageProviderError('probe');
+  }
+
   public async upload(input: UploadObjectInput): Promise<StoredObject> {
     const { error } = await this.client.storage
       .from(input.bucket)

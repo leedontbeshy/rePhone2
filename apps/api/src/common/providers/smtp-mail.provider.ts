@@ -17,6 +17,11 @@ export class SmtpMailProvider implements MailProvider {
     });
   }
 
+  public async probe(): Promise<'available'> {
+    await this.transporter.verify();
+    return 'available';
+  }
+
   public async send(message: MailMessage): Promise<void> {
     await this.transporter.sendMail({
       from: this.config.from,
@@ -29,6 +34,10 @@ export class SmtpMailProvider implements MailProvider {
 }
 
 export class NoopMailProvider implements MailProvider {
+  public probe(): Promise<'not-configured'> {
+    return Promise.resolve('not-configured');
+  }
+
   public send(message: MailMessage): Promise<void> {
     void message;
     return Promise.resolve();
