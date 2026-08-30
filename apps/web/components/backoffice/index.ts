@@ -29,6 +29,7 @@ export {
 export type { CatalogVoucherAccess } from './catalog-voucher-navigation';
 export { CatalogVoucherShell } from './catalog-voucher-shell';
 export type { CatalogVoucherShellProps } from './catalog-voucher-shell';
+export * from './overview';
 export {
   canAccessInventoryWorkspace,
   canViewInventoryCost,
