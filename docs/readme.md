@@ -71,6 +71,7 @@
 - [Backoffice Order, Fulfillment và Refund endpoints](api/backoffice-order-fulfillment-refund-endpoints.md)
 - [Voucher endpoints](api/voucher-endpoints.md)
 - [User management, Settings và Audit endpoints](api/employee-settings-audit-endpoints.md)
+- [Backoffice overview và system health endpoints](api/backoffice-overview-system-health-endpoints.md)
 - [Warranty và After-sales endpoints](api/warranty-and-aftersales-endpoints.md)
 - [OpenAPI và typed API client](api/openapi-and-client.md)
 

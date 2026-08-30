@@ -1,12 +1,16 @@
 import {
   ArrowCounterClockwiseIcon,
   ArrowsLeftRightIcon,
+  ClockCounterClockwiseIcon,
   CreditCardIcon,
   CubeIcon,
   DeviceMobileIcon,
   FileTextIcon,
+  GearIcon,
   HeadsetIcon,
+  HeartbeatIcon,
   HouseIcon,
+  IdentificationBadgeIcon,
   MapPinIcon,
   PackageIcon,
   PlusIcon,
@@ -15,6 +19,7 @@ import {
   ShieldCheckIcon,
   TagIcon,
   TicketIcon,
+  UsersIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -94,25 +99,35 @@ export function NavigationList({
   );
 }
 
-function NavigationIcon({ name }: Readonly<{ name: NonNullable<ShellNavigationItem['icon']> }>) {
-  const iconProps = { size: 22, weight: 'regular' as const };
+type NavigationIconName = NonNullable<ShellNavigationItem['icon']>;
 
-  if (name === 'overview') return <HouseIcon {...iconProps} />;
-  if (name === 'catalog') return <TagIcon {...iconProps} />;
-  if (name === 'inventory') return <CubeIcon {...iconProps} />;
-  if (name === 'orders') return <ShoppingBagIcon {...iconProps} />;
-  if (name === 'vouchers') return <TicketIcon {...iconProps} />;
-  if (name === 'devices') return <DeviceMobileIcon {...iconProps} />;
-  if (name === 'intake') return <PlusIcon {...iconProps} />;
-  if (name === 'lookup') return <ScanIcon {...iconProps} />;
-  if (name === 'stock') return <PackageIcon {...iconProps} />;
-  if (name === 'movements') return <ArrowsLeftRightIcon {...iconProps} />;
-  if (name === 'payments') return <CreditCardIcon {...iconProps} />;
-  if (name === 'refunds') return <ArrowCounterClockwiseIcon {...iconProps} />;
-  if (name === 'after-sales') return <HeadsetIcon {...iconProps} />;
-  if (name === 'warranties') return <ShieldCheckIcon {...iconProps} />;
-  if (name === 'warranty-policies') return <FileTextIcon {...iconProps} />;
-  return <MapPinIcon {...iconProps} />;
+const NAVIGATION_ICONS = {
+  overview: HouseIcon,
+  catalog: TagIcon,
+  inventory: CubeIcon,
+  orders: ShoppingBagIcon,
+  vouchers: TicketIcon,
+  devices: DeviceMobileIcon,
+  intake: PlusIcon,
+  lookup: ScanIcon,
+  stock: PackageIcon,
+  movements: ArrowsLeftRightIcon,
+  locations: MapPinIcon,
+  payments: CreditCardIcon,
+  refunds: ArrowCounterClockwiseIcon,
+  'after-sales': HeadsetIcon,
+  warranties: ShieldCheckIcon,
+  'warranty-policies': FileTextIcon,
+  employees: IdentificationBadgeIcon,
+  customers: UsersIcon,
+  settings: GearIcon,
+  'audit-logs': ClockCounterClockwiseIcon,
+  'system-health': HeartbeatIcon,
+} satisfies Record<NavigationIconName, typeof HouseIcon>;
+
+function NavigationIcon({ name }: Readonly<{ name: NavigationIconName }>) {
+  const Icon = NAVIGATION_ICONS[name];
+  return <Icon size={22} weight="regular" />;
 }
 
 export function MainLandmark({

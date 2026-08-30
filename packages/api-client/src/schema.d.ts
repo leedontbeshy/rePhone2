@@ -1143,6 +1143,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current operations overview snapshot */
+        get: operations["getBackofficeOperationsOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/payments": {
         parameters: {
             query?: never;
@@ -1665,6 +1682,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["transferBackofficeStock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/system/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get safe detailed backend health information */
+        get: operations["getBackofficeSystemHealth"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4041,6 +4075,45 @@ export interface components {
             /** @enum {string} */
             type: "IMEI_1" | "IMEI_2" | "SERIAL" | "EID";
         };
+        OperationsOverviewDto: {
+            /** Format: date-time */
+            generatedAt: string;
+            metrics: components["schemas"]["OperationsOverviewMetricsDto"];
+            priorities: components["schemas"]["OperationsOverviewPriorityDto"][];
+            recentOrders: components["schemas"]["OperationsOverviewRecentOrderDto"][];
+        };
+        OperationsOverviewMetricsDto: {
+            activeOrders: number;
+            lowStockLevels: number;
+            openAfterSales: number;
+            paymentsUnderReview: number;
+        };
+        OperationsOverviewPriorityDto: {
+            count: number;
+            href: string;
+            /** @enum {string} */
+            key: "PAYMENT_REVIEW_OVERDUE" | "PICKUP_OVERDUE" | "REFUND_REQUESTED" | "AFTER_SALES_REQUESTED";
+            /** Format: date-time */
+            oldestAt: string | null;
+        };
+        OperationsOverviewRecentOrderDto: {
+            customerName: string;
+            /** @enum {string} */
+            fulfillmentStatus: "PENDING" | "PREPARING" | "READY" | "IN_TRANSIT" | "COMPLETED" | "FAILED" | "RETURNED" | "CANCELLED";
+            grandTotal: string;
+            /** Format: uuid */
+            id: string;
+            orderNumber: string;
+            /** @enum {string} */
+            paymentStatus: "UNPAID" | "PARTIALLY_PAID" | "PAID" | "PARTIALLY_REFUNDED" | "REFUNDED";
+            /** Format: date-time */
+            placedAt: string;
+            /** @enum {string} */
+            status: "PLACED" | "CONFIRMED" | "PROCESSING" | "COMPLETED" | "CANCELLED";
+        };
+        OperationsOverviewResponse: {
+            data: components["schemas"]["OperationsOverviewDto"];
+        };
         OrderBankTransferInstructionsDto: {
             accountHolder: string;
             accountNumber: string;
@@ -4701,6 +4774,45 @@ export interface components {
         };
         StoreSettingsResponse: {
             data: components["schemas"]["StoreSettingsDto"];
+        };
+        SystemApiHealthDto: {
+            latencyMs: number;
+            /** @enum {string} */
+            reason: "ok" | "timeout" | "unavailable" | "no_applied_migration" | "incomplete_migration" | "not_configured";
+            /** @enum {string} */
+            state: "healthy" | "degraded" | "unavailable" | "not_configured";
+            uptimeSeconds: number;
+            version: string;
+        };
+        SystemDatabaseHealthDto: {
+            appliedMigrationCount: number;
+            incompleteMigrationCount: number;
+            latencyMs: number;
+            /** @enum {string} */
+            reason: "ok" | "timeout" | "unavailable" | "no_applied_migration" | "incomplete_migration" | "not_configured";
+            /** @enum {string} */
+            state: "healthy" | "degraded" | "unavailable" | "not_configured";
+        };
+        SystemDependencyHealthDto: {
+            latencyMs: number;
+            /** @enum {string} */
+            reason: "ok" | "timeout" | "unavailable" | "no_applied_migration" | "incomplete_migration" | "not_configured";
+            /** @enum {string} */
+            state: "healthy" | "degraded" | "unavailable" | "not_configured";
+        };
+        SystemHealthDetailDto: {
+            api: components["schemas"]["SystemApiHealthDto"];
+            /** Format: date-time */
+            checkedAt: string;
+            database: components["schemas"]["SystemDatabaseHealthDto"];
+            durationMs: number;
+            mail: components["schemas"]["SystemDependencyHealthDto"];
+            /** @enum {string} */
+            state: "healthy" | "degraded" | "unavailable";
+            storage: components["schemas"]["SystemDependencyHealthDto"];
+        };
+        SystemHealthDetailResponse: {
+            data: components["schemas"]["SystemHealthDetailDto"];
         };
         TerminalRefundDto: {
             reason: string;
@@ -11850,6 +11962,52 @@ export interface operations {
             };
         };
     };
+    getBackofficeOperationsOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationsOverviewResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     listBackofficePayments: {
         parameters: {
             query?: {
@@ -15288,6 +15446,54 @@ export interface operations {
             /** @description INTERNAL_ERROR */
             500: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getBackofficeSystemHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemHealthDetailResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {

@@ -149,6 +149,7 @@
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
   gap: var(--space-4);
   padding: var(--space-4);
   border: var(--border-default);

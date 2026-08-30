@@ -24,6 +24,7 @@ import { WarrantyOperationsModule } from './modules/warranty/warranty-operations
 import { AfterSalesModule } from './modules/after-sales/after-sales.module.js';
 import { AuditOperationsModule } from './modules/audit-operations/audit-operations.module.js';
 import { UserOperationsModule } from './modules/user-operations/user-operations.module.js';
+import { OperationsOverviewModule } from './modules/operations-overview/operations-overview.module.js';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { UserOperationsModule } from './modules/user-operations/user-operations.
     AfterSalesModule,
     AuditOperationsModule,
     UserOperationsModule,
+    OperationsOverviewModule,
     SchedulerModule,
     HealthModule,
   ],

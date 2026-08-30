@@ -855,7 +855,7 @@ Decision log:
 - Settings form dùng version hiện hành; conflict phải refetch, không auto-merge.
 - Bank QR upload giữ object lifecycle theo backend; UI không xóa object cũ.
 - Audit list không full-text JSON; detail redacted theo serializer.
-- Health page chỉ hiển thị live/ready status và timestamp an toàn, không lộ config/environment.
+- Health page cho `ADMIN` hiển thị snapshot chẩn đoán hệ thống an toàn: API, database/migration, Storage và SMTP cùng trạng thái/thời lượng kiểm tra. `live`/`ready` public vẫn tối giản; không hiển thị URL provider, host, key, biến môi trường, lỗi SQL hoặc dữ liệu khách hàng.
 
 ## 18. Accessibility standard
 

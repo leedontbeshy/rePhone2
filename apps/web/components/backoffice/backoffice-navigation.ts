@@ -11,6 +11,11 @@ export const BACKOFFICE_REFUNDS_ROOT = '/backoffice/refunds';
 export const BACKOFFICE_AFTER_SALES_ROOT = '/backoffice/after-sales';
 export const BACKOFFICE_WARRANTIES_ROOT = '/backoffice/warranties';
 export const BACKOFFICE_WARRANTY_POLICIES_ROOT = '/backoffice/warranty-policies';
+export const BACKOFFICE_EMPLOYEES_ROOT = '/backoffice/employees';
+export const BACKOFFICE_CUSTOMERS_ROOT = '/backoffice/customers';
+export const BACKOFFICE_SETTINGS_ROOT = '/backoffice/settings';
+export const BACKOFFICE_AUDIT_LOGS_ROOT = '/backoffice/audit-logs';
+export const BACKOFFICE_SYSTEM_HEALTH_ROOT = '/backoffice/system/health';
 
 interface BackofficeNavigationOptions {
   readonly activePath?: string | undefined;
@@ -102,6 +107,45 @@ export function backofficeNavigationForRole(
           label: 'Chính sách bảo hành',
           icon: 'warranty-policies',
           isCurrent: isPathWithin(activePath, BACKOFFICE_WARRANTY_POLICIES_ROOT),
+        },
+      ],
+    },
+    {
+      label: 'Hệ thống',
+      items: [
+        {
+          href: BACKOFFICE_EMPLOYEES_ROOT,
+          label: 'Nhân viên',
+          icon: 'employees',
+          isCurrent: isPathWithin(activePath, BACKOFFICE_EMPLOYEES_ROOT),
+          isDisabled: role !== 'ADMIN',
+        },
+        {
+          href: BACKOFFICE_CUSTOMERS_ROOT,
+          label: 'Khách hàng',
+          icon: 'customers',
+          isCurrent: isPathWithin(activePath, BACKOFFICE_CUSTOMERS_ROOT),
+        },
+        {
+          href: BACKOFFICE_SETTINGS_ROOT,
+          label: 'Cấu hình cửa hàng',
+          icon: 'settings',
+          isCurrent: isPathWithin(activePath, BACKOFFICE_SETTINGS_ROOT),
+          isDisabled: role !== 'ADMIN',
+        },
+        {
+          href: BACKOFFICE_AUDIT_LOGS_ROOT,
+          label: 'Nhật ký hoạt động',
+          icon: 'audit-logs',
+          isCurrent: isPathWithin(activePath, BACKOFFICE_AUDIT_LOGS_ROOT),
+          isDisabled: role !== 'ADMIN',
+        },
+        {
+          href: BACKOFFICE_SYSTEM_HEALTH_ROOT,
+          label: 'Trạng thái hệ thống',
+          icon: 'system-health',
+          isCurrent: isPathWithin(activePath, BACKOFFICE_SYSTEM_HEALTH_ROOT),
+          isDisabled: role !== 'ADMIN',
         },
       ],
     },

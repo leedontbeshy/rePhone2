@@ -57,11 +57,13 @@ API tách rõ shared auth, storefront và backoffice dưới `/api/v1`. Namespac
 /api/v1/backoffice/settings
 /api/v1/backoffice/settings/bank-qr
 /api/v1/backoffice/audit-logs/*
+/api/v1/backoffice/overview
+/api/v1/backoffice/system/health
 ```
 
 - Mọi route backoffice require authenticated employee/admin trước policy chi tiết.
 - Admin dùng chung route với employee và được policy cho thêm capability/field; không tạo namespace `/admin` song song.
-- Admin-only gồm employee management, customer suspend/activate, voucher management, settings, audit và cost field; customer list/detail cho phép employee read-only.
+- Admin-only gồm employee management, customer suspend/activate, voucher management, settings, audit, cost field và detailed system health; customer list/detail và operations overview cho phép employee read-only.
 - Employee không nhận field admin-only chỉ vì endpoint chung; serializer/query projection enforce field permission.
 
 ## 4. Controller và application reuse
@@ -77,7 +79,7 @@ API tách rõ shared auth, storefront và backoffice dưới `/api/v1`. Namespac
 - Không encode role vào resource ID hoặc query parameter.
 - Không dùng một route với response schema thay đổi tùy role.
 - Không tạo `/staff` và `/admin` duplicate tree.
-- Endpoint health/docs không thuộc business `/api/v1`: `/health/live`, `/health/ready`; Swagger UI `/docs` chỉ bật development.
+- Public health/docs không thuộc business `/api/v1`: `/health/live`, `/health/ready`; Swagger UI `/docs` chỉ bật development. Snapshot detailed health là backoffice route riêng `/api/v1/backoffice/system/health`, chỉ dành cho `ADMIN`.
 
 ## 6. Acceptance test tối thiểu
 

@@ -19,6 +19,7 @@ describe('FE-07 operations navigation', () => {
       'Kho hàng',
       'Đơn hàng',
       'Sau mua',
+      'Hệ thống',
     ]);
     expect(
       groups.flatMap((group) => group.items).map(({ href, label }) => ({ href, label })),
@@ -38,6 +39,11 @@ describe('FE-07 operations navigation', () => {
       { href: OPERATIONS_AFTER_SALES_ROOT, label: 'Hỗ trợ sau mua' },
       { href: OPERATIONS_WARRANTIES_ROOT, label: 'Bảo hành' },
       { href: OPERATIONS_WARRANTY_POLICIES_ROOT, label: 'Chính sách bảo hành' },
+      { href: '/backoffice/employees', label: 'Nhân viên' },
+      { href: '/backoffice/customers', label: 'Khách hàng' },
+      { href: '/backoffice/settings', label: 'Cấu hình cửa hàng' },
+      { href: '/backoffice/audit-logs', label: 'Nhật ký hoạt động' },
+      { href: '/backoffice/system/health', label: 'Trạng thái hệ thống' },
     ]);
   });
 
@@ -58,6 +64,22 @@ describe('FE-07 operations navigation', () => {
       .find((item) => item.href === '/backoffice/vouchers');
 
     expect(voucher?.isDisabled).toBe(true);
+  });
+
+  it('keeps system administration visible while only customer lookup remains available to staff', () => {
+    const items = operationsNavigationForRole('EMPLOYEE', OPERATIONS_ORDERS_ROOT).flatMap(
+      (group) => group.items,
+    );
+
+    expect(items.find((item) => item.href === '/backoffice/customers')?.isDisabled).toBeFalsy();
+    for (const href of [
+      '/backoffice/employees',
+      '/backoffice/settings',
+      '/backoffice/audit-logs',
+      '/backoffice/system/health',
+    ]) {
+      expect(items.find((item) => item.href === href)?.isDisabled).toBe(true);
+    }
   });
 
   it('allows employees and administrators while rejecting customer and anonymous roles', () => {

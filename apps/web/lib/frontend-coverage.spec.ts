@@ -28,10 +28,10 @@ describe('FE-0 frontend coverage contract', () => {
       }),
     );
 
-    expect(openApiOperationIds).toHaveLength(160);
-    expect(new Set(openApiOperationIds).size).toBe(160);
-    expect(manifestOperationIds).toHaveLength(160);
-    expect(new Set(manifestOperationIds).size).toBe(160);
+    expect(openApiOperationIds).toHaveLength(162);
+    expect(new Set(openApiOperationIds).size).toBe(162);
+    expect(manifestOperationIds).toHaveLength(162);
+    expect(new Set(manifestOperationIds).size).toBe(162);
     expect([...manifestOperationIds].sort()).toEqual([...openApiOperationIds].sort());
     expect(sortOperations(manifestOperations)).toEqual(sortOperations(openApiOperations));
 

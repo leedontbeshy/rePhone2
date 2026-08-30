@@ -15,6 +15,8 @@ export interface UploadObjectInput {
 }
 
 export interface StorageProvider {
+  /** Performs a read-only provider availability check without returning bucket metadata. */
+  probe?(): Promise<void>;
   upload(input: UploadObjectInput): Promise<StoredObject>;
   delete(bucket: string, objectPath: string): Promise<void>;
   createSignedReadUrl(

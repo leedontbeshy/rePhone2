@@ -58,6 +58,29 @@ describe('Slice 12 store, settings and audit HTTP contract', () => {
       .expect(200);
     expectNoStore(allowed);
     expect(successRecord(allowed)).toMatchObject({ version: 1, currency: 'VND' });
+
+    expectNoStore(await request(server).get('/api/v1/backoffice/system/health').expect(401));
+    expectNoStore(
+      await request(server)
+        .get('/api/v1/backoffice/system/health')
+        .set(bearer(employee))
+        .expect(403),
+    );
+    const response = await request(server)
+      .get('/api/v1/backoffice/system/health')
+      .set(bearer(admin))
+      .expect(200);
+    expectNoStore(response);
+    expect(successRecord(response)).toMatchObject({
+      state: 'degraded',
+      api: { state: 'healthy', reason: 'ok' },
+      database: { state: 'healthy', reason: 'ok' },
+      storage: { state: 'healthy', reason: 'ok' },
+      mail: { state: 'not_configured', reason: 'not_configured' },
+    });
+    expect(JSON.stringify(response.body)).not.toMatch(
+      /databaseUrl|serviceRole|bucket|smtp|password|secret|objectPath|stack/i,
+    );
   });
 
   it('uses compare-and-swap, returns the current version and audits only safe deltas', async () => {
@@ -92,6 +115,25 @@ describe('Slice 12 store, settings and audit HTTP contract', () => {
     expect(serialized).not.toContain('REPHONE SAFE HOLDER');
     expect(serialized).not.toContain('Điều khoản');
     expect(await prisma.auditLog.count({ where: { action: 'settings.updated' } })).toBe(1);
+  });
+
+  it('rejects money values that exceed the database precision', async () => {
+    const admin = await login(server, 'ADMIN');
+
+    const response = await request(server)
+      .patch('/api/v1/backoffice/settings')
+      .set(bearer(admin))
+      .send({
+        expectedVersion: 1,
+        defaultShippingFee: '1000000000000000',
+        shippingDepositAmount: '1000000000000000',
+      })
+      .expect(400);
+
+    expectNoStore(response);
+    expect(await prisma.storeSettings.findFirstOrThrow()).toMatchObject({
+      version: 1,
+    });
   });
 
   it('validates and attaches bank QR with the same settings CAS boundary', async () => {

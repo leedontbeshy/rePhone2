@@ -24,6 +24,7 @@ import { NotificationDeliveryService } from './notification-delivery.service.js'
     AfterSalesNotificationService,
   ],
   exports: [
+    MAIL_PROVIDER,
     NotificationDeliveryService,
     OrderNotificationService,
     PaymentLifecycleNotificationService,

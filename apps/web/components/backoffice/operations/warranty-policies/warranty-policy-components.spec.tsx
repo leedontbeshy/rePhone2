@@ -6,7 +6,7 @@ import {
   reconcileWarrantyPolicyMutation,
   WarrantyPolicyEditor,
 } from './warranty-policy-editor';
-import { WarrantyPolicyList } from './warranty-policy-view';
+import { WarrantyPolicyList, warrantyPolicyListQueryKey } from './warranty-policy-view';
 
 describe('warranty policy components', () => {
   it('renders a Vietnamese row and an accessible selected state', () => {
@@ -18,6 +18,18 @@ describe('warranty policy components', () => {
     expect(markup).toContain('aria-label="Đang xem chính sách BH-365"');
     expect(markup).toContain('aria-pressed="true"');
     expect(markup).not.toContain('ACTIVE');
+  });
+
+  it('keeps detail selection out of the policy list request key', () => {
+    const first = warrantyPolicyListQueryKey(
+      new URLSearchParams('status=ACTIVE&page=2&policy=policy-1'),
+    );
+    const second = warrantyPolicyListQueryKey(
+      new URLSearchParams('status=ACTIVE&page=2&policy=policy-2'),
+    );
+
+    expect(first).toBe('status=ACTIVE&page=2');
+    expect(second).toBe(first);
   });
 
   it('keeps archived policy content readable without lifecycle controls', () => {

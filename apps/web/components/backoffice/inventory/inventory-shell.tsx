@@ -6,10 +6,7 @@ import { useAuth } from '@/app/auth-provider';
 import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
 import { backofficeNavigationForRole } from '../backoffice-navigation';
-import {
-  canAccessInventoryWorkspace,
-  canViewInventoryCost,
-} from './inventory-navigation';
+import { canAccessInventoryWorkspace, canViewInventoryCost } from './inventory-navigation';
 import styles from './inventory.module.css';
 
 export interface InventoryShellProps {

@@ -96,5 +96,6 @@ P0 không dùng ETag/conditional GET hoặc application cache. Public media do S
 - [Backoffice Order, Fulfillment và Refund endpoints](backoffice-order-fulfillment-refund-endpoints.md)
 - [Voucher endpoints](voucher-endpoints.md)
 - [User management, Settings và Audit endpoints](employee-settings-audit-endpoints.md)
+- [Backoffice overview và system health endpoints](backoffice-overview-system-health-endpoints.md)
 - [Warranty và After-sales endpoints](warranty-and-aftersales-endpoints.md)
 - [OpenAPI và typed API client](openapi-and-client.md)

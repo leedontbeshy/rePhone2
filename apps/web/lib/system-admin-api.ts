@@ -10,6 +10,13 @@ export type AuditLogListItem = components['schemas']['AuditLogListItemDto'];
 export type AuditLogDetail = components['schemas']['AuditLogDetailDto'];
 export type UpdateSettingsInput = components['schemas']['UpdateStoreSettingsDto'];
 
+export type HealthProbeResult = components['schemas']['SystemDependencyHealthDto'];
+export type HealthProbeState = HealthProbeResult['state'];
+export type HealthReason = HealthProbeResult['reason'];
+export type ApiHealthProbeResult = components['schemas']['SystemApiHealthDto'];
+export type DatabaseHealthProbeResult = components['schemas']['SystemDatabaseHealthDto'];
+export type SystemHealthSnapshot = components['schemas']['SystemHealthDetailDto'];
+
 export interface Pagination {
   page: number;
   pageSize: number;
@@ -208,7 +215,9 @@ export async function listAuditLogs(
   const result = await client.GET('/api/v1/backoffice/audit-logs', {
     params: { query: compact(query) },
   });
-  if (result.data === undefined) throw systemError(result.error, 'Không thể tải audit log.');
+  if (result.data === undefined) {
+    throw systemError(result.error, 'Không thể tải nhật ký hoạt động.');
+  }
   return pageFrom(result.data.data, result.data.meta, query);
 }
 
@@ -216,7 +225,22 @@ export async function getAuditLog(client: SystemApiClient, id: string): Promise<
   const result = await client.GET('/api/v1/backoffice/audit-logs/{id}', {
     params: { path: { id } },
   });
-  if (result.data === undefined) throw systemError(result.error, 'Không thể mở audit log.');
+  if (result.data === undefined) {
+    throw systemError(result.error, 'Không thể mở bản ghi hoạt động.');
+  }
+  return result.data.data;
+}
+
+/** Reads the safe, administrator-only backend health snapshot without cache reuse. */
+export async function getSystemHealthSnapshot(
+  client: SystemApiClient,
+): Promise<SystemHealthSnapshot> {
+  const result = await client.GET('/api/v1/backoffice/system/health', {
+    cache: 'no-store',
+  });
+  if (result.data === undefined) {
+    throw systemError(result.error, 'Không thể kiểm tra trạng thái hệ thống.');
+  }
   return result.data.data;
 }
 

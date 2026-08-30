@@ -42,8 +42,7 @@
 
 .policyRow {
   display: grid;
-  grid-template-columns:
-    minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.65fr) minmax(0, 0.75fr) auto;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.65fr) minmax(0, 0.75fr) auto;
   min-width: 0;
   align-items: center;
   gap: var(--space-4);
