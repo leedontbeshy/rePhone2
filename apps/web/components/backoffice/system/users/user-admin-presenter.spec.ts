@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Employee } from '@/lib/system-admin-api';
 import {
   customerStatusPresentation,
@@ -7,6 +7,7 @@ import {
   employeeEmailState,
   employeeStatusPresentation,
   employeeUpdateInput,
+  focusUserDetailHeading,
   formatUserDate,
   normalizeEmployeeDraft,
   recordAfterRefresh,
@@ -96,6 +97,16 @@ describe('user admin presenter', () => {
     expect(recordAfterRefresh([first, second], 'employee-missing')).toBe(first);
     expect(recordAfterRefresh([first, second], 'employee-missing', false)).toBeUndefined();
     expect(recordAfterRefresh<Employee>([], first.id)).toBeUndefined();
+  });
+
+  it('moves focus to a selected user detail without changing the viewport position', () => {
+    const focus = vi.fn();
+
+    focusUserDetailHeading({ focus });
+    focusUserDetailHeading(null);
+
+    expect(focus).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 });
 

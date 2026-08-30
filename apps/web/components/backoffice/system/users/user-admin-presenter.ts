@@ -7,6 +7,10 @@ export interface UserStatusPresentation {
   readonly tone: UserAdminTone;
 }
 
+interface FocusTarget {
+  focus(options?: FocusOptions): void;
+}
+
 export interface EmployeeDraft {
   readonly email: string;
   readonly employeeCode: string;
@@ -164,6 +168,10 @@ export function recordAfterRefresh<T extends { readonly id: string }>(
   return (
     records.find((record) => record.id === selectedId) ?? (fallbackToFirst ? records[0] : undefined)
   );
+}
+
+export function focusUserDetailHeading(target: FocusTarget | null | undefined): void {
+  target?.focus({ preventScroll: true });
 }
 
 function isDateOnly(value: string): boolean {

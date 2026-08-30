@@ -40,6 +40,7 @@ import {
   employeeEmailState,
   employeeStatusPresentation,
   employeeUpdateInput,
+  focusUserDetailHeading,
   formatUserDate,
   formatUserDateTime,
   normalizeEmployeeDraft,
@@ -210,7 +211,9 @@ export function EmployeeAdminView() {
       if (request !== detailRequest.current) return;
       commitEmployeePanel(employee, 'view');
       setFieldErrors({});
-      window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
+      window.requestAnimationFrame(() => {
+        focusUserDetailHeading(detailHeadingRef.current);
+      });
     } catch (caught) {
       if (request === detailRequest.current) {
         setPanelError(messageFrom(caught, 'Không thể mở hồ sơ nhân viên.'));

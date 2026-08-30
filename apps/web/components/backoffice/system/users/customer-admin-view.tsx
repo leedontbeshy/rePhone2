@@ -30,6 +30,7 @@ import {
 } from '@/lib/system-admin-api';
 import {
   customerStatusPresentation,
+  focusUserDetailHeading,
   formatUserDateTime,
   recordAfterRefresh,
 } from './user-admin-presenter';
@@ -165,7 +166,9 @@ export function CustomerAdminView() {
       const customer = await getCustomer(client, id);
       if (request !== detailRequest.current) return;
       commitCustomerSelection(customer);
-      window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
+      window.requestAnimationFrame(() => {
+        focusUserDetailHeading(detailHeadingRef.current);
+      });
     } catch (caught) {
       if (request === detailRequest.current) {
         setPanelError(messageFrom(caught, 'Không thể mở hồ sơ khách hàng.'));
