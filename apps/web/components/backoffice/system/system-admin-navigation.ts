@@ -19,6 +19,11 @@ export {
 
 export type SystemAdminAccess = 'staff' | 'admin' | 'none';
 
+export interface SystemNavigationOverflowState {
+  readonly canScrollEnd: boolean;
+  readonly canScrollStart: boolean;
+}
+
 export function systemAdminNavigationForRole(
   role: AuthRole | null | undefined,
   pathname: string,
@@ -49,6 +54,23 @@ export function canAccessSystemAdminPath(
   if (access === 'admin') return role === 'ADMIN';
   if (access === 'staff') return role === 'EMPLOYEE' || role === 'ADMIN';
   return false;
+}
+
+export function systemNavigationOverflowState({
+  clientWidth,
+  scrollLeft,
+  scrollWidth,
+}: Readonly<{
+  clientWidth: number;
+  scrollLeft: number;
+  scrollWidth: number;
+}>): SystemNavigationOverflowState {
+  const maximumScrollLeft = Math.max(0, scrollWidth - clientWidth);
+  const normalizedScrollLeft = Math.max(0, Math.min(scrollLeft, maximumScrollLeft));
+  return {
+    canScrollEnd: normalizedScrollLeft < maximumScrollLeft - 1,
+    canScrollStart: normalizedScrollLeft > 1,
+  };
 }
 
 function isPathWithin(pathname: string, root: string): boolean {

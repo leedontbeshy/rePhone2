@@ -8,6 +8,7 @@ import {
   SYSTEM_ADMIN_SETTINGS_ROOT,
   systemAdminAccessForPath,
   systemAdminNavigationForRole,
+  systemNavigationOverflowState,
 } from './system-admin-navigation';
 
 describe('FE-08 system administration navigation', () => {
@@ -71,5 +72,20 @@ describe('FE-08 system administration navigation', () => {
   it('does not expose management navigation to customer or anonymous sessions', () => {
     expect(systemAdminNavigationForRole('CUSTOMER', SYSTEM_ADMIN_CUSTOMERS_ROOT)).toEqual([]);
     expect(systemAdminNavigationForRole(null, SYSTEM_ADMIN_CUSTOMERS_ROOT)).toEqual([]);
+  });
+
+  it('exposes narrow-navigation overflow at the correct edges', () => {
+    expect(
+      systemNavigationOverflowState({ clientWidth: 320, scrollLeft: 0, scrollWidth: 760 }),
+    ).toEqual({ canScrollEnd: true, canScrollStart: false });
+    expect(
+      systemNavigationOverflowState({ clientWidth: 320, scrollLeft: 220, scrollWidth: 760 }),
+    ).toEqual({ canScrollEnd: true, canScrollStart: true });
+    expect(
+      systemNavigationOverflowState({ clientWidth: 320, scrollLeft: 440, scrollWidth: 760 }),
+    ).toEqual({ canScrollEnd: false, canScrollStart: true });
+    expect(
+      systemNavigationOverflowState({ clientWidth: 760, scrollLeft: 0, scrollWidth: 760 }),
+    ).toEqual({ canScrollEnd: false, canScrollStart: false });
   });
 });
