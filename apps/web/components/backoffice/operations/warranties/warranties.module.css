@@ -1,0 +1,261 @@
+.page {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.6fr) repeat(2, minmax(11rem, 0.75fr)) auto;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.queueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.queueMeta p {
+  margin: 0;
+}
+
+.queueList {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.15fr) minmax(13rem, 1.25fr) minmax(12rem, 1fr) minmax(
+      10rem,
+      0.8fr
+    ) auto;
+  column-gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-default);
+  list-style: none;
+}
+
+.queueItem {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  min-width: 0;
+  align-items: start;
+  padding-block: var(--space-4);
+  border-bottom: var(--border-default);
+}
+
+.queueItem > :last-child {
+  justify-self: end;
+}
+
+.queueItem:last-child {
+  border-bottom: 0;
+}
+
+.queueCell {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.queueCell a {
+  color: var(--color-ink);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.queueCell a:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.queueCell strong,
+.queueCell span,
+.queueCell a {
+  overflow-wrap: anywhere;
+}
+
+.queueCell span,
+.queueLabel,
+.secondary {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.queueLabel {
+  display: none;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pagination span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.emptyState,
+.loadingState {
+  display: grid;
+  min-height: 14rem;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.emptyState h2,
+.emptyState p {
+  margin: 0;
+}
+
+.skeletonRows {
+  display: grid;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.detailGrid > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-canvas);
+}
+
+.detailGrid dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+}
+
+.detailGrid dd {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.terms {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.actionStack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.actionStack p {
+  margin: 0;
+}
+
+.inlineLink {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 68rem) {
+  .queueList {
+    grid-template-columns: minmax(12rem, 1fr) minmax(13rem, 1fr) minmax(10rem, 0.75fr) auto;
+  }
+
+  .queueItem > :nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 72rem) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queueList {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, auto);
+    column-gap: var(--space-3);
+  }
+
+  .queueItem {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    row-gap: var(--space-3);
+  }
+
+  .queueItem > :nth-child(2),
+  .queueItem > :nth-child(3),
+  .queueItem > :nth-child(4) {
+    display: grid;
+    grid-column: 1;
+  }
+
+  .queueItem > :last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .queueLabel {
+    display: inline;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .filters,
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions,
+  .filterActions > * {
+    width: 100%;
+  }
+
+  .pagination {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 22rem) {
+  .queueList {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  .queueItem {
+    grid-column: 1;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .queueItem > :last-child {
+    width: fit-content;
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+}

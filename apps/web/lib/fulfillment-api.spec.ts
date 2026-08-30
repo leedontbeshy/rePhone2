@@ -49,6 +49,7 @@ const ORDER = {
   pricing: {
     subtotal: '10990000',
     voucherDiscountAmount: '0',
+    shippingFeeOriginal: '0',
     shippingFee: '0',
     grandTotal: '10990000',
     depositRequired: '0',
@@ -69,6 +70,7 @@ const ORDER = {
     },
   ],
   paymentAttempts: [],
+  refundableAmount: '0',
   refunds: [],
   shipments: [],
   customerNote: null,
@@ -173,6 +175,38 @@ describe('fulfillment api adapter', () => {
     });
     expect(result.reservations[0]).toMatchObject({ holdReason: 'PICKUP', quantity: 1 });
     expect(result).not.toHaveProperty('evidenceObjectPath');
+  });
+
+  it('drops deprecated and unknown actions instead of inventing an allowed command', async () => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            ...ORDER,
+            availableActions: ['CONFIRM_PICKUP', 'UNKNOWN_ACTION', 'CONFIRM'],
+          },
+        },
+      }),
+    };
+
+    await expect(getBackofficeOrder(client, ORDER.id)).resolves.toMatchObject({
+      availableActions: ['CONFIRM'],
+    });
+  });
+
+  it.each([
+    ['trạng thái đơn hàng', { status: 'UNKNOWN' }, 'Trạng thái đơn hàng'],
+    ['tình trạng giao nhận', { fulfillmentStatus: 'UNKNOWN' }, 'Tình trạng giao nhận'],
+    ['tình trạng thanh toán', { paymentStatus: 'UNKNOWN' }, 'Tình trạng thanh toán'],
+    ['cách nhận hàng', { fulfillmentType: 'UNKNOWN' }, 'Cách nhận hàng'],
+    ['tổng tiền', { pricing: { ...ORDER.pricing, grandTotal: 'không-hợp-lệ' } }, 'Tổng tiền'],
+    ['số tiền còn có thể hoàn', { refundableAmount: '-1' }, 'Số tiền còn có thể hoàn'],
+  ])('rejects a malformed required %s field', async (_label, override, expectedMessage) => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({ data: { data: { ...ORDER, ...override } } }),
+    };
+
+    await expect(getBackofficeOrder(client, ORDER.id)).rejects.toThrow(expectedMessage);
   });
 
   it('posts only the cash confirmation flag and maps stable domain conflicts', async () => {

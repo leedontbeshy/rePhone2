@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import { InventoryStockMovementsView } from '@/components/backoffice/inventory/stock/inventory-stock-movements-view';
@@ -28,6 +28,7 @@ export default function InventoryStockMovementsPage() {
   const canLoad =
     status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN');
   const [query, setQuery] = useState<StockMovementQueryState>(() => currentQuery());
+  const queryRef = useRef(query);
   const [movements, setMovements] = useState<readonly InventoryStockMovement[]>([]);
   const [locations, setLocations] = useState<readonly InventoryLocation[]>([]);
   const [variants, setVariants] = useState<readonly StockVariantOption[]>([]);
@@ -38,7 +39,9 @@ export default function InventoryStockMovementsPage() {
 
   useEffect(() => {
     const syncFromBrowser = () => {
-      setQuery(currentQuery());
+      const next = currentQuery();
+      queryRef.current = next;
+      setQuery(next);
     };
     window.addEventListener('popstate', syncFromBrowser);
     return () => {
@@ -107,13 +110,12 @@ export default function InventoryStockMovementsPage() {
 
   const updateQuery = useCallback(
     (overrides: StockMovementQueryOverrides, options: { history?: 'push' | 'replace' } = {}) => {
-      setQuery((current) => {
-        const next = mergeStockMovementQuery(current, overrides);
-        const href = buildStockMovementHref(next);
-        if (options.history === 'replace') window.history.replaceState(null, '', href);
-        else window.history.pushState(null, '', href);
-        return next;
-      });
+      const next = mergeStockMovementQuery(queryRef.current, overrides);
+      queryRef.current = next;
+      setQuery(next);
+      const href = buildStockMovementHref(next);
+      if (options.history === 'replace') window.history.replaceState(null, '', href);
+      else window.history.pushState(null, '', href);
     },
     [],
   );

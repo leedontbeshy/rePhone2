@@ -58,7 +58,32 @@ describe('refund projector', () => {
       [],
     ],
   ] as const)('returns authoritative actions for %s', (_label, record, expected) => {
-    expect(availableRefundActions(record)).toEqual(expected);
+    expect(availableRefundActions(record, adminViewer())).toEqual(expected);
+  });
+
+  it('limits processing completion to the owning employee while preserving admin break-glass', () => {
+    const record = refund({
+      status: 'PROCESSING',
+      method: 'BANK_TRANSFER',
+      processedById: 'processor',
+      processedBy: actor('processor'),
+      processingAt: timestamp(1),
+    });
+
+    expect(availableRefundActions(record, employeeViewer('processor'))).toEqual([
+      'COMPLETE_BANK_TRANSFER',
+    ]);
+    expect(availableRefundActions(record, employeeViewer('other-employee'))).toEqual([]);
+    expect(availableRefundActions(record, adminViewer())).toEqual(['COMPLETE_BANK_TRANSFER']);
+  });
+
+  it('fails closed for non-staff viewers in every state', () => {
+    expect(
+      availableRefundActions(refund({ status: 'REQUESTED' }), {
+        userId: 'customer',
+        role: 'CUSTOMER',
+      }),
+    ).toEqual([]);
   });
 
   it('projects money, actors and timestamps without leaking private evidence metadata', () => {
@@ -74,7 +99,7 @@ describe('refund projector', () => {
       evidenceSha256: 'b'.repeat(64),
     });
 
-    const result = projectRefundDetail(record);
+    const result = projectRefundDetail(record, adminViewer());
 
     expect(result).toMatchObject({
       id: 'refund-1',
@@ -189,6 +214,14 @@ function actor(id: string) {
     fullName: `Nhân viên ${id}`,
     employeeCode: `NV-${id}`,
   };
+}
+
+function employeeViewer(userId: string) {
+  return { userId, role: 'EMPLOYEE' as const };
+}
+
+function adminViewer() {
+  return { userId: 'admin', role: 'ADMIN' as const };
 }
 
 function timestamp(hour: number): Date {

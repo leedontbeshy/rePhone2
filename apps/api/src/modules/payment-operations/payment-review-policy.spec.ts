@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ApiError } from '../../common/errors/api-error.js';
-import { deriveOrderPaymentStatus, validateVerificationAmounts } from './payment-review-policy.js';
+import {
+  availablePaymentReviewActions,
+  deriveOrderPaymentStatus,
+  validateVerificationAmounts,
+  type PaymentReviewActionRecord,
+} from './payment-review-policy.js';
 
 describe('payment review policy', () => {
   it('requires the order deposit and a note for an amount mismatch', () => {
@@ -35,4 +40,51 @@ describe('payment review policy', () => {
     expect(deriveOrderPaymentStatus(1_000_000n, 100_000n, 1_000_000n)).toBe('PARTIALLY_REFUNDED');
     expect(deriveOrderPaymentStatus(1_000_000n, 1_000_000n, 1_000_000n)).toBe('REFUNDED');
   });
+
+  it('projects review and evidence actions only when every server precondition is present', () => {
+    const reviewable = paymentReviewRecord();
+
+    expect(availablePaymentReviewActions(reviewable)).toEqual([
+      'VERIFY',
+      'REJECT',
+      'VIEW_EVIDENCE',
+    ]);
+    expect(availablePaymentReviewActions(paymentReviewRecord({ status: 'VERIFIED' }))).toEqual([
+      'VIEW_EVIDENCE',
+    ]);
+  });
+
+  it.each([
+    ['wrong purpose', { purpose: 'BALANCE' }],
+    ['wrong method', { method: 'CASH' }],
+    ['missing submission time', { submittedAt: null }],
+    ['wrong order state', { order: { status: 'CONFIRMED', fulfillmentStatus: 'PENDING' } }],
+    ['wrong fulfillment state', { order: { status: 'PLACED', fulfillmentStatus: 'READY' } }],
+  ] as const)('fails closed for %s while preserving valid evidence access', (_label, overrides) => {
+    expect(availablePaymentReviewActions(paymentReviewRecord(overrides))).toEqual([
+      'VIEW_EVIDENCE',
+    ]);
+  });
+
+  it.each([
+    ['missing bucket', { evidenceBucket: null }],
+    ['missing object path', { evidenceObjectPath: null }],
+  ] as const)('exposes no action for incomplete evidence: %s', (_label, overrides) => {
+    expect(availablePaymentReviewActions(paymentReviewRecord(overrides))).toEqual([]);
+  });
 });
+
+function paymentReviewRecord(
+  overrides: Partial<PaymentReviewActionRecord> = {},
+): PaymentReviewActionRecord {
+  return {
+    status: 'UNDER_REVIEW',
+    purpose: 'DEPOSIT',
+    method: 'BANK_TRANSFER',
+    evidenceBucket: 'rephone-private',
+    evidenceObjectPath: 'payments/payment-1/evidence.png',
+    submittedAt: new Date('2026-08-29T00:00:00.000Z'),
+    order: { status: 'PLACED', fulfillmentStatus: 'PENDING' },
+    ...overrides,
+  };
+}

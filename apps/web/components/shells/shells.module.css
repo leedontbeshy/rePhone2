@@ -626,6 +626,20 @@
     border-block-end: 0;
     overflow-x: hidden;
     overflow-y: auto;
+    scrollbar-color: var(--color-border-strong, #c7d2dc) transparent;
+    scrollbar-width: thin;
+  }
+
+  .backofficeSidebar::-webkit-scrollbar {
+    display: block;
+    width: 8px;
+  }
+
+  .backofficeSidebar::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--color-border-strong, #c7d2dc);
+    background-clip: padding-box;
   }
 
   .backofficeSidebar nav {

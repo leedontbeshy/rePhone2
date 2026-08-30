@@ -20,7 +20,9 @@ import {
 } from './payment-operations.repository.js';
 import { PaymentClock } from './payment-clock.service.js';
 import {
+  availablePaymentReviewActions,
   deriveOrderPaymentStatus,
+  isPaymentReviewable,
   normalizeOptionalText,
   validateVerificationAmounts,
 } from './payment-review-policy.js';
@@ -202,15 +204,7 @@ export class PaymentReviewCommandService {
 
   private assertReviewable(payment: PaymentOperationsRecord): void {
     if (payment.status !== 'UNDER_REVIEW') throw new ApiError('PAYMENT_ALREADY_REVIEWED');
-    if (
-      payment.purpose !== 'DEPOSIT' ||
-      payment.method !== 'BANK_TRANSFER' ||
-      payment.evidenceBucket === null ||
-      payment.evidenceObjectPath === null ||
-      payment.submittedAt === null ||
-      payment.order.status !== 'PLACED' ||
-      payment.order.fulfillmentStatus !== 'PENDING'
-    ) {
+    if (!isPaymentReviewable(payment)) {
       throw new ApiError('INVALID_STATE_TRANSITION');
     }
   }
@@ -296,6 +290,7 @@ export class PaymentReviewCommandService {
     return {
       payment: projectPaymentPublic(payment, this.config, this.clock.now()),
       order: projectReviewOrder(payment),
+      availableActions: availablePaymentReviewActions(payment),
       notificationDelivery,
     };
   }

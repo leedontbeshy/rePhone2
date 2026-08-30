@@ -104,6 +104,7 @@
 
 .field {
   display: grid;
+  min-width: 0;
   gap: var(--space-2);
 }
 
@@ -120,6 +121,7 @@
 
 .control {
   width: 100%;
+  min-width: 0;
   min-height: var(--control-height);
   padding: var(--space-3);
   border: var(--border-strong);
@@ -130,6 +132,14 @@
   transition:
     border-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.control:not(textarea) {
+  height: var(--control-height);
+}
+
+select.control {
+  padding-block: var(--space-2);
 }
 
 .control::placeholder {

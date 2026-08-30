@@ -1,7 +1,9 @@
 import { apiError, customerApiError } from './order-access';
+import { assertSafeEvidenceUrl } from './evidence-url';
 
 export type PaymentStatus =
   'AWAITING_PROOF' | 'UNDER_REVIEW' | 'VERIFIED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
+export type PaymentReviewAction = 'VERIFY' | 'REJECT' | 'VIEW_EVIDENCE';
 
 export interface PaymentPublic {
   id: string;
@@ -65,13 +67,17 @@ export interface BackofficePaymentDetail {
   payment: PaymentPublic;
   order: BackofficeOrderSummary;
   evidenceAvailable: boolean;
+  availableActions: PaymentReviewAction[];
   reviewer: { id: string; fullName: string } | null;
+  reviewNote: string | null;
+  reviewedAt: string | null;
   timeline: PaymentTimelineItem[];
 }
 
 export interface ReviewPaymentResult {
   payment: PaymentPublic;
   order: BackofficeOrderSummary;
+  availableActions: PaymentReviewAction[];
   notificationDelivery: 'SENT' | 'FAILED' | 'SKIPPED_REPLAY';
 }
 
@@ -216,11 +222,11 @@ export async function getPaymentEvidenceUrl(
   });
   const data = recordOrThrow(
     responseData(result, 'Không thể mở minh chứng thanh toán.'),
-    'Phản hồi signed URL không hợp lệ.',
+    'Phản hồi mở minh chứng không hợp lệ.',
   );
   const url = stringOrNull(data['url']);
-  if (url === null) throw new Error('Phản hồi signed URL không hợp lệ.');
-  assertSafeHttpUrl(url);
+  if (url === null) throw new Error('Không thể mở minh chứng lúc này.');
+  assertSafeEvidenceUrl(url);
   return { url, expiresAt: stringOrNull(data['expiresAt']) };
 }
 
@@ -385,7 +391,10 @@ function parseBackofficeDetail(value: unknown): BackofficePaymentDetail {
     order: parseOrderSummary(orderRecord, payment.orderNumber),
     evidenceAvailable:
       input['evidenceAvailable'] === true || paymentRecord['evidenceAvailable'] === true,
+    availableActions: paymentReviewActions(input['availableActions']),
     reviewer: parseReviewer(input['reviewer']),
+    reviewNote: stringOrNull(input['reviewNote']),
+    reviewedAt: stringOrNull(input['reviewedAt']),
     timeline: parseTimeline(input['timeline'], {
       ...paymentRecord,
       reviewedAt: input['reviewedAt'],
@@ -394,17 +403,27 @@ function parseBackofficeDetail(value: unknown): BackofficePaymentDetail {
 }
 
 function parseReviewResult(value: unknown): ReviewPaymentResult {
-  const input = recordOrThrow(value, 'Dữ liệu kết quả review không hợp lệ.');
+  const input = recordOrThrow(value, 'Dữ liệu kết quả kiểm tra không hợp lệ.');
   const payment = parsePayment(input['payment']);
   const delivery = input['notificationDelivery'];
   return {
     payment,
     order: parseOrderSummary(input['order'], payment.orderNumber),
+    availableActions: paymentReviewActions(input['availableActions']),
     notificationDelivery:
       delivery === 'SENT' || delivery === 'FAILED' || delivery === 'SKIPPED_REPLAY'
         ? delivery
         : 'FAILED',
   };
+}
+
+function paymentReviewActions(value: unknown): PaymentReviewAction[] {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set<PaymentReviewAction>(['VERIFY', 'REJECT', 'VIEW_EVIDENCE']);
+  return value.filter(
+    (candidate): candidate is PaymentReviewAction =>
+      typeof candidate === 'string' && allowed.has(candidate as PaymentReviewAction),
+  );
 }
 
 function parseOrderSummary(value: unknown, fallbackOrderNumber: string): BackofficeOrderSummary {
@@ -468,7 +487,7 @@ function parseTimeline(value: unknown, payment: Record<string, unknown>): Paymen
   const candidates: Array<[string, unknown]> = [
     ['Được tạo', payment['createdAt']],
     ['Đã nộp minh chứng', payment['submittedAt']],
-    ['Đã review', payment['reviewedAt']],
+    ['Đã kiểm tra', payment['reviewedAt']],
   ];
   return candidates.flatMap(([label, at]) => {
     const parsed = stringOrNull(at);
@@ -531,16 +550,6 @@ function stringOrNull(value: unknown): string | null {
 
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function assertSafeHttpUrl(value: string): void {
-  try {
-    const parsed = new URL(value);
-    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') return;
-  } catch {
-    // Handled by the stable public error below.
-  }
-  throw new Error('Phản hồi signed URL không hợp lệ.');
 }
 
 function recordOrEmpty(value: unknown): Record<string, unknown> {

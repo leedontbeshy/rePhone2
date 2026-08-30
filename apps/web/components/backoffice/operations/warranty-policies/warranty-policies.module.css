@@ -1,0 +1,279 @@
+.page {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.5fr) repeat(2, minmax(11rem, 0.75fr)) auto;
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.queueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.queueMeta p {
+  margin: 0;
+}
+
+.policyList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border-top: var(--border-default);
+  container-type: inline-size;
+  list-style: none;
+}
+
+.policyRow {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 0.9fr) minmax(0, 1.5fr) minmax(0, 0.65fr) minmax(0, 0.75fr) auto;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-bottom: var(--border-default);
+}
+
+.policyRow:last-child {
+  border-bottom: 0;
+}
+
+.policyRow[data-selected='true'] {
+  margin-inline: calc(var(--space-3) * -1);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-brand-soft);
+}
+
+.policyCell {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.policyCell strong,
+.policyCell span {
+  overflow-wrap: anywhere;
+}
+
+.policyCell span,
+.secondary,
+.rowLabel {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.rowLabel {
+  display: none;
+}
+
+.rowButton {
+  justify-self: end;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pagination span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.editor,
+.actionStack,
+.readonlyPolicy {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.editor p,
+.actionStack p,
+.readonlyPolicy p,
+.readonlyPolicy h3 {
+  margin: 0;
+}
+
+.editorActions,
+.lifecycleActions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.lifecycleActions {
+  padding-top: var(--space-4);
+  border-top: var(--border-default);
+}
+
+.readonlyGrid {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.readonlyGrid > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.readonlyGrid dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.readonlyGrid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.termsPreview {
+  max-height: 16rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.emptyState,
+.loadingState {
+  display: grid;
+  min-height: 14rem;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.emptyState h2,
+.emptyState p {
+  margin: 0;
+}
+
+.skeletonRows {
+  display: grid;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+@media (max-width: 72rem) {
+  .policyRow {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.3fr) minmax(0, 0.65fr) auto;
+  }
+
+  .policyRow > :nth-child(4) {
+    display: none;
+  }
+}
+
+@media (max-width: 58rem) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 46rem) {
+  .policyRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .policyRow > :nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .policyRow > :nth-child(3) {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .policyRow > :nth-child(4) {
+    display: grid;
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .rowButton {
+    align-self: center;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .rowLabel {
+    display: inline;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions,
+  .filterActions > * {
+    width: 100%;
+  }
+
+  .policyRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .policyRow > :nth-child(2),
+  .policyRow > :nth-child(3),
+  .policyRow > :nth-child(4) {
+    display: grid;
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .rowButton {
+    align-self: start;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .rowLabel {
+    display: inline;
+  }
+
+  .pagination {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 22rem) {
+  .policyRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rowButton {
+    width: 100%;
+    grid-column: 1;
+    grid-row: auto;
+  }
+}

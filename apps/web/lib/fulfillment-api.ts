@@ -253,7 +253,13 @@ export async function updateBackofficeOrderInternalNote(
 }
 
 export function confirmPickupOrder(client: unknown, orderId: string) {
-  return runOrderCommand(client, orderId, 'confirm', undefined, 'Không thể xác nhận đơn pickup.');
+  return runOrderCommand(
+    client,
+    orderId,
+    'confirm',
+    undefined,
+    'Không thể xác nhận đơn nhận tại cửa hàng.',
+  );
 }
 
 export function startPreparingOrder(client: unknown, orderId: string) {
@@ -398,7 +404,7 @@ export function fulfillmentError(value: unknown, fallback: string): string {
     return 'Đơn chưa được xác nhận thu đủ số tiền còn lại.';
   }
   if (code === 'INVENTORY_NOT_AVAILABLE') {
-    return 'Reservation hoặc tồn kho của đơn không còn hợp lệ.';
+    return 'Phần hàng đang giữ hoặc tồn kho của đơn không còn hợp lệ.';
   }
   if (code === 'RESERVATION_EXPIRED') {
     return 'Đã hết hạn giữ hàng. Hãy tải lại để xem trạng thái mới nhất.';
@@ -449,7 +455,6 @@ async function runShipmentCommand(
 function parseListItem(value: unknown): BackofficeOrderListItem {
   const input = recordOrThrow(value, 'Dữ liệu đơn hàng không hợp lệ.');
   const contact = recordOrEmpty(input['contact']);
-  const pricing = recordOrEmpty(input['pricing']);
   const pickup = recordOrEmpty(input['pickup']);
   const items = Array.isArray(input['items']) ? input['items'].map(recordOrEmpty) : [];
   const firstItem = items[0];
@@ -459,7 +464,7 @@ function parseListItem(value: unknown): BackofficeOrderListItem {
     status: orderStatus(input['status']),
     fulfillmentStatus: fulfillmentStatus(input['fulfillmentStatus']),
     paymentStatus: paymentStatus(input['paymentStatus']),
-    fulfillmentType: input['fulfillmentType'] === 'SHIPPING' ? 'SHIPPING' : 'PICKUP',
+    fulfillmentType: fulfillmentType(input['fulfillmentType']),
     contactName:
       stringOrNull(input['customerName']) ?? stringOrNull(contact['fullName']) ?? 'Khách hàng',
     contactEmail: stringOrNull(input['customerEmail']) ?? stringOrNull(contact['email']),
@@ -470,8 +475,8 @@ function parseListItem(value: unknown): BackofficeOrderListItem {
     totalItemQuantity:
       numberOrNull(input['totalItemQuantity']) ??
       items.reduce((sum, item) => sum + numberOr(item['quantity'], 0), 0),
-    grandTotal: moneyOrNull(input['grandTotal']) ?? moneyOrZero(pricing['grandTotal']),
-    balanceDue: moneyOrNull(input['balanceDue']) ?? moneyOrZero(pricing['balanceDue']),
+    grandTotal: requiredMoney(input['grandTotal'], 'Tổng tiền'),
+    balanceDue: requiredMoney(input['balanceDue'], 'Số tiền còn phải thu'),
     location: parseLocation(input['location']),
     pickupHoldUntil: stringOrNull(input['pickupHoldUntil']) ?? stringOrNull(pickup['holdUntil']),
     pickupOverdue: input['pickupOverdue'] === true,
@@ -484,15 +489,15 @@ function parseListItem(value: unknown): BackofficeOrderListItem {
 function parseDetail(value: unknown): BackofficeOrderDetail {
   const input = recordOrThrow(value, 'Dữ liệu chi tiết đơn hàng không hợp lệ.');
   const contact = recordOrEmpty(input['contact']);
-  const pricing = recordOrEmpty(input['pricing']);
+  const pricing = recordOrThrow(input['pricing'], 'Dữ liệu tài chính của đơn hàng không hợp lệ.');
   const pickup = recordOrEmpty(input['pickup']);
-  const fulfillmentType = input['fulfillmentType'] === 'SHIPPING' ? 'SHIPPING' : 'PICKUP';
+  const orderFulfillmentType = fulfillmentType(input['fulfillmentType']);
   const location = parseLocation(input['location']);
   const pickupStore = recordOrEmpty(
     input['pickupStore'] ??
       input['pickupLocation'] ??
       pickup['location'] ??
-      (fulfillmentType === 'PICKUP' ? input['location'] : undefined),
+      (orderFulfillmentType === 'PICKUP' ? input['location'] : undefined),
   );
   const items = Array.isArray(input['items']) ? input['items'] : [];
   const reservations = Array.isArray(input['reservations']) ? input['reservations'] : [];
@@ -516,7 +521,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     status: orderStatus(input['status']),
     fulfillmentStatus: fulfillmentStatus(input['fulfillmentStatus']),
     paymentStatus: paymentStatus(input['paymentStatus']),
-    fulfillmentType,
+    fulfillmentType: orderFulfillmentType,
     contact: {
       fullName: stringOrNull(contact['fullName']) ?? stringOr(input['customerName']),
       email: stringOrNull(contact['email']) ?? stringOr(input['customerEmail']),
@@ -525,7 +530,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     shippingAddress: input['shippingAddress'] ?? null,
     location,
     pickupStore:
-      fulfillmentType !== 'PICKUP' || stringOrNull(pickupStore['name']) === null
+      orderFulfillmentType !== 'PICKUP' || stringOrNull(pickupStore['name']) === null
         ? null
         : { code: stringOr(pickupStore['code']), name: stringOr(pickupStore['name']) },
     items: items.map((row) => {
@@ -537,15 +542,15 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
       });
     }),
     pricing: {
-      subtotal: moneyFrom(input, pricing, 'subtotal'),
-      voucherDiscountAmount: moneyFrom(input, pricing, 'voucherDiscountAmount'),
-      shippingFeeOriginal: moneyFrom(input, pricing, 'shippingFeeOriginal'),
-      shippingFee: moneyFrom(input, pricing, 'shippingFee'),
-      grandTotal: moneyFrom(input, pricing, 'grandTotal'),
-      depositRequired: moneyFrom(input, pricing, 'depositRequired'),
-      paidAmount: moneyFrom(input, pricing, 'paidAmount'),
-      refundedAmount: moneyFrom(input, pricing, 'refundedAmount'),
-      balanceDue: moneyFrom(input, pricing, 'balanceDue'),
+      subtotal: requiredMoney(pricing['subtotal'], 'Tạm tính'),
+      voucherDiscountAmount: requiredMoney(pricing['voucherDiscountAmount'], 'Số tiền giảm giá'),
+      shippingFeeOriginal: requiredMoney(pricing['shippingFeeOriginal'], 'Phí giao hàng ban đầu'),
+      shippingFee: requiredMoney(pricing['shippingFee'], 'Phí giao hàng'),
+      grandTotal: requiredMoney(pricing['grandTotal'], 'Tổng tiền'),
+      depositRequired: requiredMoney(pricing['depositRequired'], 'Tiền cọc'),
+      paidAmount: requiredMoney(pricing['paidAmount'], 'Số tiền đã thu'),
+      refundedAmount: requiredMoney(pricing['refundedAmount'], 'Số tiền đã hoàn'),
+      balanceDue: requiredMoney(pricing['balanceDue'], 'Số tiền còn phải thu'),
       shippingFeeOverride: parseShippingFeeOverride(
         input['shippingFeeOverride'] ?? pricing['shippingFeeOverride'],
       ),
@@ -569,8 +574,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
       };
     }),
     paymentAttempts: payments.map(parsePayment),
-    refundableAmount:
-      moneyOrNull(input['refundableAmount']) ?? moneyOrZero(pricing['refundableAmount']),
+    refundableAmount: requiredMoney(input['refundableAmount'], 'Số tiền còn có thể hoàn'),
     refunds: refunds.map((row) => {
       const refund = recordOrEmpty(row);
       return {
@@ -705,11 +709,7 @@ function parsePayment(value: unknown): BackofficeOrderPayment {
 
 function fulfillmentActions(value: unknown): FulfillmentAction[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((action) => {
-    if (isFulfillmentAction(action)) return [action];
-    if (action === 'CONFIRM_PICKUP') return ['CONFIRM'];
-    return [];
-  });
+  return value.filter(isFulfillmentAction);
 }
 
 function isFulfillmentAction(value: unknown): value is FulfillmentAction {
@@ -757,12 +757,10 @@ function errorCode(value: unknown): string | undefined {
     : undefined;
 }
 
-function moneyFrom(
-  input: Record<string, unknown>,
-  pricing: Record<string, unknown>,
-  key: string,
-): string {
-  return moneyOrNull(input[key]) ?? moneyOrZero(pricing[key]);
+function requiredMoney(value: unknown, label: string): string {
+  const money = moneyOrNull(value);
+  if (money === null) throw new Error(`${label} trong phản hồi đơn hàng không hợp lệ.`);
+  return money;
 }
 
 function moneyOrNull(value: unknown): string | null {
@@ -798,7 +796,8 @@ function orderStatus(value: unknown): BackofficeOrderStatus {
   ) {
     return value;
   }
-  return 'PLACED';
+  if (value === 'PLACED') return value;
+  throw new Error('Trạng thái đơn hàng trong phản hồi không hợp lệ.');
 }
 
 function fulfillmentStatus(value: unknown): BackofficeFulfillmentStatus {
@@ -813,7 +812,8 @@ function fulfillmentStatus(value: unknown): BackofficeFulfillmentStatus {
   ) {
     return value;
   }
-  return 'PENDING';
+  if (value === 'PENDING') return value;
+  throw new Error('Tình trạng giao nhận trong phản hồi không hợp lệ.');
 }
 
 function paymentStatus(value: unknown): BackofficePaymentStatus {
@@ -825,7 +825,13 @@ function paymentStatus(value: unknown): BackofficePaymentStatus {
   ) {
     return value;
   }
-  return 'UNPAID';
+  if (value === 'UNPAID') return value;
+  throw new Error('Tình trạng thanh toán trong phản hồi không hợp lệ.');
+}
+
+function fulfillmentType(value: unknown): 'PICKUP' | 'SHIPPING' {
+  if (value === 'PICKUP' || value === 'SHIPPING') return value;
+  throw new Error('Cách nhận hàng trong phản hồi không hợp lệ.');
 }
 
 function recordOrEmpty(value: unknown): Record<string, unknown> {

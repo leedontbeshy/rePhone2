@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  AfterSalesCommandError,
   afterSalesBackofficeError,
   assignAfterSales,
   getBackofficeAfterSales,
@@ -8,6 +9,7 @@ import {
   listBackofficeAfterSales,
   completeAfterSalesInspection,
   resolveAfterSalesReplaced,
+  shouldRefetchAfterSales,
   updateAfterSalesInspection,
   type AfterSalesBackofficeApiClient,
   type AfterSalesDetail,
@@ -161,6 +163,26 @@ describe('after-sales backoffice api adapter', () => {
     expect(JSON.stringify(result)).not.toContain('secret-digest');
   });
 
+  it('fails closed when the server omits or adds unsupported actions', async () => {
+    const client = {
+      GET: vi
+        .fn()
+        .mockResolvedValueOnce({
+          data: { data: { ...DETAIL, availableActions: undefined } },
+        })
+        .mockResolvedValueOnce({
+          data: { data: { ...DETAIL, availableActions: ['ASSIGN', 'UNKNOWN_ACTION'] } },
+        }),
+    } as unknown as AfterSalesBackofficeApiClient;
+
+    await expect(getBackofficeAfterSales(client, ID)).resolves.toMatchObject({
+      availableActions: [],
+    });
+    await expect(getBackofficeAfterSales(client, ID)).resolves.toMatchObject({
+      availableActions: ['ASSIGN'],
+    });
+  });
+
   it('uses assignment and typed replacement contracts', async () => {
     const client = {
       POST: vi.fn().mockResolvedValue({ data: { data: DETAIL } }),
@@ -281,7 +303,7 @@ describe('after-sales backoffice api adapter', () => {
     } as unknown as AfterSalesBackofficeApiClient;
 
     await expect(getBackofficeAfterSalesAttachmentUrl(client, ID, ATTACHMENT_ID)).rejects.toThrow(
-      'Phản hồi signed URL không hợp lệ.',
+      'Liên kết mở tệp không hợp lệ.',
     );
 
     client.GET = vi.fn().mockResolvedValue({
@@ -293,7 +315,7 @@ describe('after-sales backoffice api adapter', () => {
       },
     });
     await expect(getBackofficeAfterSalesAttachmentUrl(client, ID, ATTACHMENT_ID)).rejects.toThrow(
-      'Phản hồi signed URL không hợp lệ.',
+      'Liên kết mở tệp không hợp lệ.',
     );
 
     client.GET = vi.fn().mockResolvedValue({
@@ -326,5 +348,19 @@ describe('after-sales backoffice api adapter', () => {
         'fallback',
       ),
     ).toContain('phiên khác');
+  });
+
+  it('preserves command conflict codes so the view can refresh authoritative actions', async () => {
+    const client = {
+      POST: vi.fn().mockResolvedValue({
+        error: { error: { code: 'CONCURRENT_MODIFICATION', message: 'private detail' } },
+      }),
+    } as unknown as AfterSalesBackofficeApiClient;
+
+    const caught = await assignAfterSales(client, ID, EMPLOYEE_ID).catch((error: unknown) => error);
+
+    expect(caught).toBeInstanceOf(AfterSalesCommandError);
+    expect(caught).toMatchObject({ code: 'CONCURRENT_MODIFICATION' });
+    expect(shouldRefetchAfterSales(caught)).toBe(true);
   });
 });

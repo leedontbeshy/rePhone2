@@ -179,6 +179,62 @@ describe('Slice 11 after-sales HTTP contract', () => {
     expectNoStore(adminOther);
   });
 
+  it('returns role-aware warranty actions and catalog-backed policy archive readiness', async () => {
+    const customer = await login(server, 'CUSTOMER');
+    const employee = await login(server, 'EMPLOYEE');
+    const admin = await login(server, 'ADMIN');
+    const fixture = await completeAccessoryPickup(server, prisma, bearer(customer), employee);
+    const warranty = await prisma.warranty.findUniqueOrThrow({
+      where: { orderItemId: fixture.orderItemId },
+      select: { id: true },
+    });
+    const policy = await prisma.warrantyPolicy.findUniqueOrThrow({
+      where: { code: 'ACCESSORY-30D' },
+      select: { id: true },
+    });
+
+    const employeeWarranty = await request(server)
+      .get(`/api/v1/backoffice/warranties/${warranty.id}`)
+      .set(bearer(employee))
+      .expect(200);
+    const adminWarranty = await request(server)
+      .get(`/api/v1/backoffice/warranties/${warranty.id}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(arrayProperty(successRecord(employeeWarranty), 'availableActions')).toEqual([]);
+    expect(arrayProperty(successRecord(adminWarranty), 'availableActions')).toEqual(['VOID']);
+
+    const employeePolicy = await request(server)
+      .get(`/api/v1/backoffice/warranty-policies/${policy.id}`)
+      .set(bearer(employee))
+      .expect(200);
+    const adminPolicy = await request(server)
+      .get(`/api/v1/backoffice/warranty-policies/${policy.id}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(arrayProperty(successRecord(employeePolicy), 'availableActions')).toEqual([]);
+    expect(successRecord(employeePolicy)['archiveBlockedReason']).toBe('ACTIVE_CATALOG_REFERENCES');
+    expect(arrayProperty(successRecord(adminPolicy), 'availableActions')).toEqual([
+      'EDIT',
+      'DEACTIVATE',
+    ]);
+    expect(successRecord(adminPolicy)['archiveBlockedReason']).toBe('ACTIVE_CATALOG_REFERENCES');
+
+    const voided = await request(server)
+      .post(`/api/v1/backoffice/warranties/${warranty.id}/void`)
+      .set({ ...JSON_MUTATION_HEADERS, ...bearer(admin) })
+      .send({ reason: 'Hoàn tất kiểm tra và xác nhận bảo hành không còn áp dụng.' })
+      .expect(200);
+    expect(arrayProperty(successRecord(voided), 'availableActions')).toEqual([]);
+
+    const reloaded = await request(server)
+      .get(`/api/v1/backoffice/warranties/${warranty.id}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(successRecord(reloaded)['status']).toBe('VOIDED');
+    expect(arrayProperty(successRecord(reloaded), 'availableActions')).toEqual([]);
+  });
+
   it('runs create, private attachment, receive, inspection, approval and repaired resolution', async () => {
     const customer = await login(server, 'CUSTOMER');
     const employee = await login(server, 'EMPLOYEE');

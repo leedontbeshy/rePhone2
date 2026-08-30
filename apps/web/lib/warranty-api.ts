@@ -5,8 +5,13 @@ export type WarrantyApiClient = ReturnType<typeof createApiClient>;
 export type WarrantyListItem = components['schemas']['WarrantyListItemDto'];
 export type WarrantyDetail = components['schemas']['WarrantyDetailDto'];
 export type WarrantyPolicy = components['schemas']['WarrantyPolicyDto'];
+export type BackofficeWarrantyPolicyDetail =
+  components['schemas']['BackofficeWarrantyPolicyDetailDto'];
 export type BackofficeWarrantyListItem = components['schemas']['BackofficeWarrantyListItemDto'];
 export type BackofficeWarrantyDetail = components['schemas']['BackofficeWarrantyDetailDto'];
+export type BackofficeWarrantyAction = BackofficeWarrantyDetail['availableActions'][number];
+export type BackofficeWarrantyPolicyAction =
+  BackofficeWarrantyPolicyDetail['availableActions'][number];
 export type CreateWarrantyPolicyInput = components['schemas']['CreateWarrantyPolicyDto'];
 export type UpdateWarrantyPolicyInput = components['schemas']['UpdateWarrantyPolicyDto'];
 
@@ -136,20 +141,26 @@ export async function listWarrantyPolicies(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể tải chính sách bảo hành.'));
   }
-  return pageFrom(result.data.data, result.data.meta, query);
+  return pageFrom(
+    arrayOrThrow(result.data.data, 'Dữ liệu danh sách chính sách không hợp lệ.').map(
+      parseWarrantyPolicy,
+    ),
+    result.data.meta,
+    query,
+  );
 }
 
 export async function getWarrantyPolicy(
   client: WarrantyApiClient,
   id: string,
-): Promise<WarrantyPolicy> {
+): Promise<BackofficeWarrantyPolicyDetail> {
   const result = await client.GET('/api/v1/backoffice/warranty-policies/{id}', {
     params: { path: { id } },
   });
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể mở chính sách bảo hành.'));
   }
-  return result.data.data;
+  return parseBackofficeWarrantyPolicyDetail(result.data.data);
 }
 
 export async function createWarrantyPolicy(
@@ -160,7 +171,7 @@ export async function createWarrantyPolicy(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể tạo chính sách bảo hành.'));
   }
-  return result.data.data;
+  return parseWarrantyPolicy(result.data.data);
 }
 
 export async function updateWarrantyPolicy(
@@ -175,7 +186,7 @@ export async function updateWarrantyPolicy(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể cập nhật chính sách bảo hành.'));
   }
-  return result.data.data;
+  return parseWarrantyPolicy(result.data.data);
 }
 
 export function activateWarrantyPolicy(client: WarrantyApiClient, id: string) {
@@ -210,7 +221,13 @@ export async function listBackofficeWarranties(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể tải danh sách bảo hành.'));
   }
-  return pageFrom(result.data.data, result.data.meta, query);
+  return pageFrom(
+    arrayOrThrow(result.data.data, 'Dữ liệu danh sách bảo hành không hợp lệ.').map(
+      parseBackofficeWarrantyListItem,
+    ),
+    result.data.meta,
+    query,
+  );
 }
 
 export async function getBackofficeWarranty(
@@ -223,7 +240,7 @@ export async function getBackofficeWarranty(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể mở chi tiết bảo hành.'));
   }
-  return result.data.data;
+  return parseBackofficeWarrantyDetail(result.data.data);
 }
 
 export async function voidWarranty(
@@ -238,7 +255,7 @@ export async function voidWarranty(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể vô hiệu bảo hành.'));
   }
-  return result.data.data;
+  return parseBackofficeWarrantyDetail(result.data.data);
 }
 
 export function warrantyError(value: unknown, fallback: string): string {
@@ -308,7 +325,138 @@ async function runPolicyCommand(
   if (result.data === undefined) {
     throw new Error(warrantyError(result.error, 'Không thể đổi trạng thái chính sách.'));
   }
-  return result.data.data;
+  return parseWarrantyPolicy(result.data.data);
+}
+
+function parseWarrantyPolicy(value: unknown): WarrantyPolicy {
+  const input = recordOrThrow(value, 'Dữ liệu chính sách bảo hành không hợp lệ.');
+  const status = input['status'];
+  if (status !== 'ACTIVE' && status !== 'INACTIVE') {
+    throw new Error('Dữ liệu chính sách bảo hành không hợp lệ.');
+  }
+  return {
+    archivedAt: nullableString(input['archivedAt']),
+    code: requiredString(input['code'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    createdAt: requiredString(input['createdAt'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    defaultDays: requiredNumber(input['defaultDays'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    id: requiredString(input['id'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    isArchived: requiredBoolean(input['isArchived'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    name: requiredString(input['name'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    status,
+    terms: requiredString(input['terms'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+    updatedAt: requiredString(input['updatedAt'], 'Dữ liệu chính sách bảo hành không hợp lệ.'),
+  };
+}
+
+function parseBackofficeWarrantyPolicyDetail(value: unknown): BackofficeWarrantyPolicyDetail {
+  const input = recordOrThrow(value, 'Dữ liệu chi tiết chính sách không hợp lệ.');
+  const archiveBlockedReason = input['archiveBlockedReason'];
+  if (archiveBlockedReason !== null && archiveBlockedReason !== 'ACTIVE_CATALOG_REFERENCES') {
+    throw new Error('Dữ liệu chi tiết chính sách không hợp lệ.');
+  }
+  return {
+    ...parseWarrantyPolicy(input),
+    archiveBlockedReason,
+    availableActions: warrantyPolicyActions(input['availableActions']),
+  };
+}
+
+function parseBackofficeWarrantyListItem(value: unknown): BackofficeWarrantyListItem {
+  const input = recordOrThrow(value, 'Dữ liệu bảo hành không hợp lệ.');
+  const status = input['status'];
+  if (status !== 'ACTIVE' && status !== 'VOIDED') {
+    throw new Error('Dữ liệu bảo hành không hợp lệ.');
+  }
+  return {
+    createdAt: requiredString(input['createdAt'], 'Dữ liệu bảo hành không hợp lệ.'),
+    customer: parseWarrantyCustomer(input['customer']),
+    daysSnapshot: requiredNumber(input['daysSnapshot'], 'Dữ liệu bảo hành không hợp lệ.'),
+    endAt: requiredString(input['endAt'], 'Dữ liệu bảo hành không hợp lệ.'),
+    id: requiredString(input['id'], 'Dữ liệu bảo hành không hợp lệ.'),
+    inventoryCode: nullableString(input['inventoryCode']),
+    isExpired: requiredBoolean(input['isExpired'], 'Dữ liệu bảo hành không hợp lệ.'),
+    isValid: requiredBoolean(input['isValid'], 'Dữ liệu bảo hành không hợp lệ.'),
+    orderItemId: requiredString(input['orderItemId'], 'Dữ liệu bảo hành không hợp lệ.'),
+    orderNumber: requiredString(input['orderNumber'], 'Dữ liệu bảo hành không hợp lệ.'),
+    policy: parseWarrantyPolicySummary(input['policy']),
+    productName: requiredString(input['productName'], 'Dữ liệu bảo hành không hợp lệ.'),
+    startAt: requiredString(input['startAt'], 'Dữ liệu bảo hành không hợp lệ.'),
+    status,
+    variantName: requiredString(input['variantName'], 'Dữ liệu bảo hành không hợp lệ.'),
+    warrantyCode: requiredString(input['warrantyCode'], 'Dữ liệu bảo hành không hợp lệ.'),
+  };
+}
+
+function parseBackofficeWarrantyDetail(value: unknown): BackofficeWarrantyDetail {
+  const input = recordOrThrow(value, 'Dữ liệu chi tiết bảo hành không hợp lệ.');
+  return {
+    ...parseBackofficeWarrantyListItem(input),
+    availableActions: warrantyActions(input['availableActions']),
+    maskedIdentifierSuffix: nullableString(input['maskedIdentifierSuffix']),
+    sku: requiredString(input['sku'], 'Dữ liệu chi tiết bảo hành không hợp lệ.'),
+    termsSnapshot: requiredString(
+      input['termsSnapshot'],
+      'Dữ liệu chi tiết bảo hành không hợp lệ.',
+    ),
+    updatedAt: requiredString(input['updatedAt'], 'Dữ liệu chi tiết bảo hành không hợp lệ.'),
+    voidedAt: nullableString(input['voidedAt']),
+    voidedBy: parseWarrantyActor(input['voidedBy']),
+    voidReason: nullableString(input['voidReason']),
+  };
+}
+
+function parseWarrantyCustomer(
+  value: unknown,
+): components['schemas']['WarrantyCustomerSummaryDto'] {
+  const input = recordOrThrow(value, 'Dữ liệu khách hàng trong bảo hành không hợp lệ.');
+  return {
+    customerId: nullableString(input['customerId']),
+    email: requiredString(input['email'], 'Dữ liệu khách hàng trong bảo hành không hợp lệ.'),
+    name: requiredString(input['name'], 'Dữ liệu khách hàng trong bảo hành không hợp lệ.'),
+    phone: requiredString(input['phone'], 'Dữ liệu khách hàng trong bảo hành không hợp lệ.'),
+  };
+}
+
+function parseWarrantyPolicySummary(
+  value: unknown,
+): components['schemas']['WarrantyPolicySummaryDto'] | null {
+  if (value === null || value === undefined) return null;
+  const input = recordOrThrow(value, 'Dữ liệu chính sách trong bảo hành không hợp lệ.');
+  return {
+    code: requiredString(input['code'], 'Dữ liệu chính sách trong bảo hành không hợp lệ.'),
+    id: requiredString(input['id'], 'Dữ liệu chính sách trong bảo hành không hợp lệ.'),
+    name: requiredString(input['name'], 'Dữ liệu chính sách trong bảo hành không hợp lệ.'),
+  };
+}
+
+function parseWarrantyActor(
+  value: unknown,
+): components['schemas']['WarrantyActorSummaryDto'] | null {
+  if (value === null || value === undefined) return null;
+  const input = recordOrThrow(value, 'Dữ liệu người thực hiện không hợp lệ.');
+  return {
+    fullName: requiredString(input['fullName'], 'Dữ liệu người thực hiện không hợp lệ.'),
+    id: requiredString(input['id'], 'Dữ liệu người thực hiện không hợp lệ.'),
+  };
+}
+
+function warrantyActions(value: unknown): BackofficeWarrantyAction[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((candidate): candidate is BackofficeWarrantyAction => candidate === 'VOID');
+}
+
+function warrantyPolicyActions(value: unknown): BackofficeWarrantyPolicyAction[] {
+  if (!Array.isArray(value)) return [];
+  const allowed = new Set<BackofficeWarrantyPolicyAction>([
+    'EDIT',
+    'ACTIVATE',
+    'DEACTIVATE',
+    'ARCHIVE',
+  ]);
+  return value.filter(
+    (candidate): candidate is BackofficeWarrantyPolicyAction =>
+      typeof candidate === 'string' && allowed.has(candidate as BackofficeWarrantyPolicyAction),
+  );
 }
 
 function pageFrom<T>(items: T[], meta: unknown, fallback: CustomerWarrantyQuery): WarrantyPage<T> {
@@ -333,6 +481,37 @@ function errorCode(value: unknown): string | undefined {
 
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function arrayOrThrow(value: unknown, message: string): unknown[] {
+  if (!Array.isArray(value)) throw new Error(message);
+  return value;
+}
+
+function recordOrThrow(value: unknown, message: string): Record<string, unknown> {
+  if (!isRecord(value)) throw new Error(message);
+  return value;
+}
+
+function requiredString(value: unknown, message: string): string {
+  if (typeof value !== 'string' || value.length === 0) throw new Error(message);
+  return value;
+}
+
+function nullableString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'string') throw new Error('Dữ liệu bảo hành không hợp lệ.');
+  return value;
+}
+
+function requiredNumber(value: unknown, message: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(message);
+  return value;
+}
+
+function requiredBoolean(value: unknown, message: string): boolean {
+  if (typeof value !== 'boolean') throw new Error(message);
+  return value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

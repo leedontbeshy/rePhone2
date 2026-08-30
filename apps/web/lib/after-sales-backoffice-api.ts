@@ -12,6 +12,20 @@ export type InspectionDetail = components['schemas']['InspectionDetailDto'];
 export type UpdateInspectionInput = components['schemas']['UpdateInspectionDto'];
 export type AfterSalesLocationOption = components['schemas']['InventoryLocationDto'];
 
+const AFTER_SALES_ACTIONS = new Set<AfterSalesAction>([
+  'ASSIGN',
+  'RECEIVE',
+  'START_INSPECTION',
+  'RECORD_INSPECTION_SUMMARY',
+  'APPROVE',
+  'REJECT',
+  'RESOLVE_REPAIRED',
+  'RESOLVE_REPLACED',
+  'RESOLVE_REFUNDED',
+  'RESOLVE_RETURNED_UNCHANGED',
+  'RESOLVE_OTHER',
+]);
+
 export interface AfterSalesListQuery {
   q?: string;
   type?: AfterSalesType | '';
@@ -35,6 +49,24 @@ export interface AfterSalesPage {
   };
 }
 
+export class AfterSalesCommandError extends Error {
+  public constructor(
+    message: string,
+    public readonly code: string | undefined,
+  ) {
+    super(message);
+    this.name = 'AfterSalesCommandError';
+  }
+
+  public get requiresRefetch(): boolean {
+    return this.code === 'INVALID_STATE_TRANSITION' || this.code === 'CONCURRENT_MODIFICATION';
+  }
+}
+
+export function shouldRefetchAfterSales(value: unknown): boolean {
+  return value instanceof AfterSalesCommandError && value.requiresRefetch;
+}
+
 export async function listBackofficeAfterSales(
   client: AfterSalesBackofficeApiClient,
   query: AfterSalesListQuery,
@@ -43,7 +75,9 @@ export async function listBackofficeAfterSales(
     params: { query: compactQuery(query) },
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesBackofficeError(result.error, 'Không thể tải hàng chờ hậu mãi.'));
+    throw new Error(
+      afterSalesBackofficeError(result.error, 'Không thể tải danh sách hỗ trợ sau mua.'),
+    );
   }
   const rows = result.data.data.map(projectListItem);
   const rawMeta: unknown = result.data.meta;
@@ -69,7 +103,7 @@ export async function getBackofficeAfterSales(
     params: { path: { id } },
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesBackofficeError(result.error, 'Không thể tải hồ sơ hậu mãi.'));
+    throw new Error(afterSalesBackofficeError(result.error, 'Không thể tải hồ sơ hỗ trợ sau mua.'));
   }
   return projectDetail(result.data.data);
 }
@@ -80,7 +114,7 @@ export async function listAfterSalesLocations(
   const result = await client.GET('/api/v1/backoffice/inventory-locations');
   if (result.data === undefined) {
     throw new Error(
-      afterSalesBackofficeError(result.error, 'Không thể tải địa điểm tiếp nhận hậu mãi.'),
+      afterSalesBackofficeError(result.error, 'Không thể tải địa điểm tiếp nhận sản phẩm.'),
     );
   }
   return result.data.data.map(({ id, code, name, type, status }) => ({
@@ -105,7 +139,7 @@ export async function getBackofficeAfterSalesAttachmentUrl(
     throw new Error(afterSalesBackofficeError(result.error, 'Không thể mở tệp đính kèm.'));
   }
   const { url, expiresAt } = result.data.data;
-  if (!isSafeHttpUrl(url)) throw new Error('Phản hồi signed URL không hợp lệ.');
+  if (!isSafeHttpUrl(url)) throw new Error('Liên kết mở tệp không hợp lệ.');
   return { url, expiresAt };
 }
 
@@ -144,7 +178,7 @@ export function recordAfterSalesInspectionSummary(
 }
 
 export function approveAfterSales(client: AfterSalesBackofficeApiClient, id: string, note: string) {
-  return command(client, id, 'approve', { note }, 'Không thể duyệt hồ sơ hậu mãi.');
+  return command(client, id, 'approve', { note }, 'Không thể chấp thuận hồ sơ hỗ trợ sau mua.');
 }
 
 export function rejectAfterSales(
@@ -152,7 +186,7 @@ export function rejectAfterSales(
   id: string,
   input: { reason: string; returnNote?: string },
 ) {
-  return command(client, id, 'reject', input, 'Không thể từ chối hồ sơ hậu mãi.');
+  return command(client, id, 'reject', input, 'Không thể từ chối hồ sơ hỗ trợ sau mua.');
 }
 
 export function resolveAfterSalesRepaired(
@@ -203,7 +237,7 @@ export async function getAfterSalesInspection(
     params: { path: { id: inspectionId } },
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesBackofficeError(result.error, 'Không thể tải checklist kiểm định.'));
+    throw new Error(afterSalesBackofficeError(result.error, 'Không thể tải phiếu kiểm định.'));
   }
   return projectInspection(result.data.data);
 }
@@ -218,7 +252,7 @@ export async function updateAfterSalesInspection(
     body: input,
   });
   if (result.data === undefined) {
-    throw new Error(afterSalesBackofficeError(result.error, 'Không thể lưu checklist kiểm định.'));
+    throw new Error(afterSalesBackofficeError(result.error, 'Không thể lưu phiếu kiểm định.'));
   }
   return projectInspection(result.data.data);
 }
@@ -231,9 +265,7 @@ export async function completeAfterSalesInspection(
     params: { path: { id: inspectionId } },
   });
   if (result.data === undefined) {
-    throw new Error(
-      afterSalesBackofficeError(result.error, 'Không thể hoàn tất checklist kiểm định.'),
-    );
+    throw new Error(afterSalesBackofficeError(result.error, 'Không thể hoàn tất phiếu kiểm định.'));
   }
   return projectInspection(result.data.data);
 }
@@ -251,7 +283,7 @@ export function afterSalesBackofficeError(value: unknown, fallback: string): str
     return 'Hồ sơ chưa đủ điều kiện cho thao tác này. Hãy hoàn tất kiểm định hoặc chứng từ liên quan.';
   }
   if (code === 'INVENTORY_NOT_AVAILABLE') {
-    return 'Unit thay thế không còn khả dụng hoặc không đúng sản phẩm.';
+    return 'Máy thay thế không còn sẵn sàng hoặc không đúng sản phẩm.';
   }
   if (code === 'INVENTORY_INSPECTION_REQUIRED') {
     return 'Cần hoàn tất kiểm định iPhone trước khi quyết định.';
@@ -294,7 +326,10 @@ async function command(
   };
   const result = await runtime.POST(`/api/v1/backoffice/after-sales/{id}/${operation}`, options);
   if (result.data === undefined) {
-    throw new Error(afterSalesBackofficeError(result.error, fallback));
+    throw new AfterSalesCommandError(
+      afterSalesBackofficeError(result.error, fallback),
+      errorCode(result.error),
+    );
   }
   return projectDetail(result.data.data);
 }
@@ -310,7 +345,7 @@ function resolve(
     | 'resolve-other',
   body: unknown,
 ) {
-  return command(client, id, operation, body, 'Không thể chốt phương án xử lý hậu mãi.');
+  return command(client, id, operation, body, 'Không thể hoàn tất phương án hỗ trợ sau mua.');
 }
 
 function projectListItem(input: AfterSalesListItem): AfterSalesListItem {
@@ -368,8 +403,16 @@ function projectDetail(input: AfterSalesDetail): AfterSalesDetail {
     resolutionNote: input.resolutionNote ?? null,
     cancelReason: input.cancelReason ?? null,
     timeline: { ...input.timeline },
-    availableActions: [...input.availableActions],
+    availableActions: safeAfterSalesActions(input.availableActions),
   };
+}
+
+function safeAfterSalesActions(value: unknown): AfterSalesAction[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (action): action is AfterSalesAction =>
+      typeof action === 'string' && AFTER_SALES_ACTIONS.has(action as AfterSalesAction),
+  );
 }
 
 function projectInspection(input: InspectionDetail): InspectionDetail {

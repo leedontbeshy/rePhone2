@@ -66,3 +66,33 @@ export type {
 } from './inventory/inventory-presenter';
 export { InventoryShell } from './inventory/inventory-shell';
 export type { InventoryShellProps } from './inventory/inventory-shell';
+export {
+  canAccessOperationsWorkspace,
+  OPERATIONS_AFTER_SALES_ROOT,
+  OPERATIONS_ORDERS_ROOT,
+  OPERATIONS_PAYMENTS_ROOT,
+  OPERATIONS_REFUNDS_ROOT,
+  OPERATIONS_WARRANTIES_ROOT,
+  OPERATIONS_WARRANTY_POLICIES_ROOT,
+  operationsNavigationForRole,
+} from './operations/operations-navigation';
+export {
+  OperationsActionRail,
+  OperationsDetailLayout,
+  OperationsMoneySummary,
+  OperationsPageHeader,
+  OperationsPanel,
+  OperationsStatusAxes,
+  OperationsTimeline,
+} from './operations/operations-primitives';
+export type {
+  OperationsActionRailProps,
+  OperationsMoneyRow,
+  OperationsPageHeaderProps,
+  OperationsPanelProps,
+  OperationsStatusAxis,
+  OperationsTimelineItem,
+  OperationsTone,
+} from './operations/operations-primitives';
+export { OperationsShell } from './operations/operations-shell';
+export type { OperationsShellProps } from './operations/operations-shell';

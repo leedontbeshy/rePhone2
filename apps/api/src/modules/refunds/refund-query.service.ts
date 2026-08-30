@@ -56,10 +56,10 @@ export class RefundQueryService {
     });
   }
 
-  public async detail(id: string): Promise<RefundDetailDto> {
+  public async detail(id: string, auth: AuthContext): Promise<RefundDetailDto> {
     const refund = await this.refunds.findById(id);
     if (refund === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectRefundDetail(refund);
+    return projectRefundDetail(refund, auth);
   }
 
   public async evidenceUrl(

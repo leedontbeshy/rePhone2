@@ -2986,6 +2986,7 @@ export interface components {
             data: components["schemas"]["BackofficeOrderShipmentDto"];
         };
         BackofficePaymentDetailDto: {
+            availableActions: ("VERIFY" | "REJECT" | "VIEW_EVIDENCE")[];
             evidenceAvailable: boolean;
             order: components["schemas"]["BackofficePaymentOrderDto"];
             payment: components["schemas"]["PaymentPublicDto"];
@@ -3215,6 +3216,7 @@ export interface components {
             data: components["schemas"]["BackofficeVoucherDto"];
         };
         BackofficeWarrantyDetailDto: {
+            availableActions: "VOID"[];
             /** Format: date-time */
             createdAt: string;
             customer: components["schemas"]["WarrantyCustomerSummaryDto"];
@@ -3286,6 +3288,29 @@ export interface components {
         BackofficeWarrantyListResponse: {
             data: components["schemas"]["BackofficeWarrantyListItemDto"][];
             meta: components["schemas"]["WarrantyListMetaDto"];
+        };
+        BackofficeWarrantyPolicyDetailDto: {
+            /** @enum {string|null} */
+            archiveBlockedReason: "ACTIVE_CATALOG_REFERENCES" | null;
+            /** Format: date-time */
+            archivedAt?: string | null;
+            availableActions: ("EDIT" | "ACTIVATE" | "DEACTIVATE" | "ARCHIVE")[];
+            code: string;
+            /** Format: date-time */
+            createdAt: string;
+            defaultDays: number;
+            /** Format: uuid */
+            id: string;
+            isArchived: boolean;
+            name: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "INACTIVE";
+            terms: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BackofficeWarrantyPolicyDetailResponse: {
+            data: components["schemas"]["BackofficeWarrantyPolicyDetailDto"];
         };
         BankTransferInstructionsDto: {
             accountHolder: string;
@@ -4265,6 +4290,7 @@ export interface components {
             status: string;
         };
         PaymentReviewResultDto: {
+            availableActions: ("VERIFY" | "REJECT" | "VIEW_EVIDENCE")[];
             /** @enum {string} */
             notificationDelivery: "SENT" | "FAILED" | "SKIPPED_REPLAY";
             order: components["schemas"]["PaymentReviewOrderProjectionDto"];
@@ -16717,7 +16743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WarrantyPolicyResponse"];
+                    "application/json": components["schemas"]["BackofficeWarrantyPolicyDetailResponse"];
                 };
             };
             /** @description VALIDATION_FAILED or MALFORMED_JSON */

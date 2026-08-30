@@ -144,8 +144,8 @@ export class BackofficeRefundController {
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: RefundDetailResponse })
   @ApiErrorResponses(...REFUND_QUERY_ERRORS)
-  public detail(@Param() params: RefundIdParamsDto) {
-    return this.queries.detail(params.id);
+  public detail(@Param() params: RefundIdParamsDto, @CurrentAuth() auth: AuthContext) {
+    return this.queries.detail(params.id, auth);
   }
 
   @Post(':id/start-processing')

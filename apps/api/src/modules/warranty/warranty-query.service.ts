@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Request } from 'express';
+import type { UserRole } from '../../generated/prisma/enums.js';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
+import { WarrantyPolicyCatalogReferenceGateway } from '../backoffice-catalog/warranty-policy-catalog-reference.gateway.js';
 import { OrderOwnershipPolicy } from '../order-transaction-ports/order-ownership.policy.js';
 import type {
   BackofficeWarrantyListQueryDto,
@@ -14,6 +16,7 @@ import { WarrantyPolicyReader } from './warranty-policy.reader.js';
 import {
   projectBackofficeWarrantyDetail,
   projectBackofficeWarrantyListItem,
+  projectBackofficeWarrantyPolicyDetail,
   projectWarrantyDetail,
   projectWarrantyListItem,
   projectWarrantyPolicy,
@@ -25,6 +28,8 @@ export class WarrantyQueryService {
     @Inject(WarrantyOperationsRepository)
     private readonly repository: WarrantyOperationsRepository,
     @Inject(WarrantyPolicyReader) private readonly policies: WarrantyPolicyReader,
+    @Inject(WarrantyPolicyCatalogReferenceGateway)
+    private readonly catalogReferences: WarrantyPolicyCatalogReferenceGateway,
     @Inject(OrderOwnershipPolicy) private readonly ownership: OrderOwnershipPolicy,
     @Inject(WarrantyClock) private readonly clock: WarrantyClock,
   ) {}
@@ -60,10 +65,14 @@ export class WarrantyQueryService {
     );
   }
 
-  public async getPolicy(id: string) {
+  public async getPolicy(id: string, role: UserRole) {
     const policy = await this.policies.findById(id);
     if (policy === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectWarrantyPolicy(policy);
+    const archiveBlockedReason =
+      policy.archivedAt === null && (await this.catalogReferences.hasActiveReferences(policy.id))
+        ? ('ACTIVE_CATALOG_REFERENCES' as const)
+        : null;
+    return projectBackofficeWarrantyPolicyDetail(policy, role, archiveBlockedReason);
   }
 
   public async listBackoffice(query: BackofficeWarrantyListQueryDto) {
@@ -75,10 +84,10 @@ export class WarrantyQueryService {
     );
   }
 
-  public async getBackoffice(id: string) {
+  public async getBackoffice(id: string, role: UserRole) {
     const warranty = await this.repository.findById(id);
     if (warranty === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectBackofficeWarrantyDetail(warranty, this.clock.now());
+    return projectBackofficeWarrantyDetail(warranty, this.clock.now(), role);
   }
 }
 

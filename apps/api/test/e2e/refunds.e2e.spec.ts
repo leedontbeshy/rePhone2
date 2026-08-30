@@ -341,6 +341,74 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     }
   });
 
+  it('returns completion actions only to the processor employee or an admin', async () => {
+    const fixture = await createPaidOrder(prisma, {
+      status: 'COMPLETED',
+      paidAmount: '100000',
+      grandTotal: '100000',
+    });
+    const employee = await login(server, 'EMPLOYEE');
+    const otherEmployee = await createAndLoginSecondEmployee(server, prisma);
+    const admin = await login(server, 'ADMIN');
+
+    const created = await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+      .set(bearer(employee))
+      .send({
+        amount: '30000',
+        method: 'CASH',
+        reason: 'Hoàn tiền để kiểm thử quyền người xử lý',
+      })
+      .expect(201);
+    const refundId = stringProperty(successRecord(created), 'id');
+
+    const started = await request(server)
+      .post(`/api/v1/backoffice/refunds/${refundId}/start-processing`)
+      .set(bearer(employee))
+      .send({ note: 'Nhân viên thứ nhất nhận xử lý hoàn tiền' })
+      .expect(200);
+    expect(successRecord(started)).toMatchObject({
+      status: 'PROCESSING',
+      availableActions: ['COMPLETE_CASH'],
+    });
+
+    const hiddenFromOtherEmployee = await request(server)
+      .get(`/api/v1/backoffice/refunds/${refundId}`)
+      .set(bearer(otherEmployee))
+      .expect(200);
+    expect(successRecord(hiddenFromOtherEmployee)).toMatchObject({
+      status: 'PROCESSING',
+      availableActions: [],
+    });
+
+    const forbiddenCompletion = await request(server)
+      .post(`/api/v1/backoffice/refunds/${refundId}/complete-cash`)
+      .set(bearer(otherEmployee))
+      .send({ note: CASH_COMPLETION_NOTE })
+      .expect(403);
+    expect(errorCode(forbiddenCompletion)).toBe('FORBIDDEN');
+
+    const visibleToAdmin = await request(server)
+      .get(`/api/v1/backoffice/refunds/${refundId}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(successRecord(visibleToAdmin)).toMatchObject({
+      status: 'PROCESSING',
+      availableActions: ['COMPLETE_CASH'],
+    });
+
+    const completedByAdmin = await request(server)
+      .post(`/api/v1/backoffice/refunds/${refundId}/complete-cash`)
+      .set(bearer(admin))
+      .send({ note: CASH_COMPLETION_NOTE })
+      .expect(200);
+    expect(successRecord(completedByAdmin)).toMatchObject({
+      status: 'COMPLETED',
+      availableActions: [],
+      processor: { fullName: 'Nhân viên Demo' },
+    });
+  });
+
   it('completes a BANK_TRANSFER refund with private evidence and exact replay', async () => {
     const fixture = await createPaidOrder(prisma, {
       status: 'COMPLETED',
@@ -561,6 +629,35 @@ async function login(server: Server, role: 'ADMIN' | 'EMPLOYEE' | 'CUSTOMER'): P
     CUSTOMER: ['customer@rephone.local', 'CustomerDemo123'],
   } as const;
   const [email, password] = credentials[role];
+  return loginWithCredentials(server, email, password);
+}
+
+async function createAndLoginSecondEmployee(server: Server, prisma: PrismaClient): Promise<string> {
+  const source = await prisma.user.findUniqueOrThrow({
+    where: { normalizedEmail: 'employee@rephone.local' },
+  });
+  const email = 'employee-second@rephone.local';
+  await prisma.user.create({
+    data: {
+      email,
+      normalizedEmail: email,
+      passwordHash: source.passwordHash,
+      role: 'EMPLOYEE',
+      status: 'ACTIVE',
+      fullName: 'Nhân viên thứ hai',
+      employeeCode: 'EMP-002',
+      emailVerifiedAt: source.emailVerifiedAt,
+      passwordChangedAt: source.passwordChangedAt,
+    },
+  });
+  return loginWithCredentials(server, email, 'EmployeeDemo123');
+}
+
+async function loginWithCredentials(
+  server: Server,
+  email: string,
+  password: string,
+): Promise<string> {
   const response = await request(server)
     .post('/api/v1/auth/login')
     .send({ email, password })

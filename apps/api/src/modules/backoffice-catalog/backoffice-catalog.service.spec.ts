@@ -229,6 +229,44 @@ describe('BackofficeCatalogService', () => {
     );
   });
 
+  it('rejects changing an active product to an unusable warranty policy', async () => {
+    const fixture = createFixture();
+    fixture.repository.findProduct.mockResolvedValue(
+      product({
+        status: 'ACTIVE',
+        warrantyPolicyId: 'policy-current',
+        variants: [variant({ status: 'ACTIVE', warrantyPolicyId: null })],
+      }),
+    );
+    fixture.warrantyPolicies.findUsableById.mockResolvedValue(null);
+
+    await expect(
+      fixture.service.updateProduct('product-1', { warrantyPolicyId: 'policy-archived' }, ACTOR),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: [{ field: 'warrantyPolicyId', code: 'WARRANTY_POLICY_NOT_ACTIVE' }],
+    });
+    expect(fixture.warrantyPolicies.findUsableById).toHaveBeenCalledWith(
+      'policy-archived',
+      fixture.transaction,
+    );
+    expect(fixture.repository.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it('allows configuring an unusable warranty policy while a product remains draft', async () => {
+    const fixture = createFixture();
+    fixture.repository.findProduct.mockResolvedValue(product({ status: 'DRAFT' }));
+    fixture.repository.updateProduct.mockResolvedValue(
+      product({ status: 'DRAFT', warrantyPolicyId: 'policy-inactive' }),
+    );
+    fixture.warrantyPolicies.findUsableById.mockResolvedValue(null);
+
+    await expect(
+      fixture.service.updateProduct('product-1', { warrantyPolicyId: 'policy-inactive' }, ACTOR),
+    ).resolves.toMatchObject({ warrantyPolicyId: 'policy-inactive' });
+    expect(fixture.warrantyPolicies.findUsableById).not.toHaveBeenCalled();
+  });
+
   it('maps unique product update conflicts', async () => {
     const fixture = createFixture();
     fixture.repository.findProduct.mockResolvedValue(product());
@@ -476,6 +514,64 @@ describe('BackofficeCatalogService', () => {
     await expect(
       unique.service.updateVariant('variant-1', { displayName: 'Changed' }, ACTOR),
     ).rejects.toMatchObject({ code: 'DUPLICATE_RESOURCE' });
+  });
+
+  it('rejects changing an active variant to an unusable warranty policy', async () => {
+    const fixture = createFixture();
+    fixture.repository.findVariant.mockResolvedValue(
+      variant({ status: 'ACTIVE', warrantyPolicyId: 'policy-current' }),
+    );
+    fixture.warrantyPolicies.findUsableById.mockResolvedValue(null);
+
+    await expect(
+      fixture.service.updateVariant('variant-1', { warrantyPolicyId: 'policy-archived' }, ACTOR),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: [{ field: 'warrantyPolicyId', code: 'WARRANTY_POLICY_NOT_ACTIVE' }],
+    });
+    expect(fixture.warrantyPolicies.findUsableById).toHaveBeenCalledWith(
+      'policy-archived',
+      fixture.transaction,
+    );
+    expect(fixture.repository.updateVariant).not.toHaveBeenCalled();
+  });
+
+  it('checks the product policy when an active variant removes its policy override', async () => {
+    const fixture = createFixture();
+    fixture.repository.findVariant.mockResolvedValue(
+      variant({
+        status: 'ACTIVE',
+        warrantyPolicyId: 'policy-current',
+        product: { status: 'ACTIVE', type: 'IPHONE', warrantyPolicyId: 'policy-archived' },
+      }),
+    );
+    fixture.warrantyPolicies.findUsableById.mockResolvedValue(null);
+
+    await expect(
+      fixture.service.updateVariant('variant-1', { warrantyPolicyId: null }, ACTOR),
+    ).rejects.toMatchObject({
+      code: 'VALIDATION_FAILED',
+      details: [{ field: 'warrantyPolicyId', code: 'WARRANTY_POLICY_NOT_ACTIVE' }],
+    });
+    expect(fixture.warrantyPolicies.findUsableById).toHaveBeenCalledWith(
+      'policy-archived',
+      fixture.transaction,
+    );
+    expect(fixture.repository.updateVariant).not.toHaveBeenCalled();
+  });
+
+  it('allows configuring an unusable warranty policy while a variant remains draft', async () => {
+    const fixture = createFixture();
+    fixture.repository.findVariant.mockResolvedValue(variant({ status: 'DRAFT' }));
+    fixture.repository.updateVariant.mockResolvedValue(
+      variant({ status: 'DRAFT', warrantyPolicyId: 'policy-inactive' }),
+    );
+    fixture.warrantyPolicies.findUsableById.mockResolvedValue(null);
+
+    await expect(
+      fixture.service.updateVariant('variant-1', { warrantyPolicyId: 'policy-inactive' }, ACTOR),
+    ).resolves.toMatchObject({ warrantyPolicyId: 'policy-inactive' });
+    expect(fixture.warrantyPolicies.findUsableById).not.toHaveBeenCalled();
   });
 
   it('guards variant activation requirements and activates a complete variant', async () => {

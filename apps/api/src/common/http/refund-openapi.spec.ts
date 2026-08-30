@@ -15,6 +15,13 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+interface OpenApiSchema {
+  items?: { enum?: string[]; type?: string };
+  properties?: Record<string, OpenApiSchema>;
+  required?: string[];
+  type?: string;
+}
+
 const REFUND_OPERATION_IDS = [
   'cancelBackofficeOrder',
   'listBackofficeRefunds',
@@ -31,7 +38,10 @@ const REFUND_OPERATION_IDS = [
 describe('Slice 10 OpenAPI contract', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
-  ) as { paths: Record<string, Record<string, Operation>> };
+  ) as {
+    paths: Record<string, Record<string, Operation>>;
+    components?: { schemas?: Record<string, OpenApiSchema> };
+  };
   const allOperations = Object.values(document.paths).flatMap((pathItem) =>
     Object.entries(pathItem)
       .filter(([method]) => ['get', 'post', 'patch', 'put', 'delete'].includes(method))
@@ -114,5 +124,27 @@ describe('Slice 10 OpenAPI contract', () => {
         'sortOrder',
       ]),
     );
+  });
+
+  it('keeps authoritative refund actions required on detail responses', () => {
+    const actions =
+      document.components?.schemas?.['RefundDetailDto']?.properties?.['availableActions'];
+    expect(document.components?.schemas?.['RefundDetailDto']?.required).toContain(
+      'availableActions',
+    );
+    expect(actions).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: [
+          'START_PROCESSING',
+          'COMPLETE_BANK_TRANSFER',
+          'COMPLETE_CASH',
+          'REJECT',
+          'CANCEL',
+          'VIEW_EVIDENCE',
+        ],
+      },
+    });
   });
 });

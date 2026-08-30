@@ -1,11 +1,18 @@
 import type { AuthRole } from '@/app/auth-provider';
 import type { BackofficeNavigationGroup } from '@/components/shells';
+import {
+  BACKOFFICE_CATALOG_ROOT,
+  BACKOFFICE_ORDERS_ROOT,
+  BACKOFFICE_ROOT as SHARED_BACKOFFICE_ROOT,
+  BACKOFFICE_VOUCHERS_ROOT,
+  backofficeNavigationForRole,
+} from './backoffice-navigation';
 
-export const CATALOG_PRODUCTS_ROOT = '/backoffice/catalog/products';
-export const BACKOFFICE_ROOT = '/backoffice';
+export const CATALOG_PRODUCTS_ROOT = BACKOFFICE_CATALOG_ROOT;
+export const BACKOFFICE_ROOT = SHARED_BACKOFFICE_ROOT;
 export const INVENTORY_ROOT = '/backoffice/inventory/units';
-export const ORDERS_ROOT = '/backoffice/orders';
-export const VOUCHERS_ROOT = '/backoffice/vouchers';
+export const ORDERS_ROOT = BACKOFFICE_ORDERS_ROOT;
+export const VOUCHERS_ROOT = BACKOFFICE_VOUCHERS_ROOT;
 
 export type CatalogVoucherAccess = 'staff' | 'admin';
 
@@ -13,47 +20,7 @@ export function catalogVoucherNavigationForRole(
   role: AuthRole | null | undefined,
   pathname: string,
 ): readonly BackofficeNavigationGroup[] {
-  if (role !== 'EMPLOYEE' && role !== 'ADMIN') return [];
-
-  return [
-    {
-      label: 'Vận hành',
-      items: [
-        {
-          href: BACKOFFICE_ROOT,
-          label: 'Tổng quan',
-          icon: 'overview',
-          isCurrent: pathname === BACKOFFICE_ROOT,
-        },
-        {
-          href: CATALOG_PRODUCTS_ROOT,
-          label: 'Danh mục',
-          icon: 'catalog',
-          isCurrent: isPathWithin(pathname, CATALOG_PRODUCTS_ROOT),
-        },
-        {
-          href: INVENTORY_ROOT,
-          label: 'Kho hàng',
-          icon: 'inventory',
-          isCurrent: isPathWithin(pathname, '/backoffice/inventory'),
-        },
-        {
-          href: ORDERS_ROOT,
-          label: 'Đơn hàng',
-          icon: 'orders',
-          isCurrent: isPathWithin(pathname, ORDERS_ROOT),
-        },
-        {
-          href: VOUCHERS_ROOT,
-          label: 'Mã ưu đãi',
-          icon: 'vouchers',
-          isCurrent: isPathWithin(pathname, VOUCHERS_ROOT),
-          isDisabled: role !== 'ADMIN',
-          isSeparated: true,
-        },
-      ],
-    },
-  ];
+  return backofficeNavigationForRole(role, pathname);
 }
 
 export function catalogVoucherAccessForPath(pathname: string): CatalogVoucherAccess {

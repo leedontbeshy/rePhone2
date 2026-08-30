@@ -1,13 +1,18 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowsLeftRightIcon,
+  CreditCardIcon,
   CubeIcon,
   DeviceMobileIcon,
+  FileTextIcon,
+  HeadsetIcon,
   HouseIcon,
   MapPinIcon,
   PackageIcon,
   PlusIcon,
   ScanIcon,
   ShoppingBagIcon,
+  ShieldCheckIcon,
   TagIcon,
   TicketIcon,
 } from '@phosphor-icons/react/ssr';
@@ -102,6 +107,11 @@ function NavigationIcon({ name }: Readonly<{ name: NonNullable<ShellNavigationIt
   if (name === 'lookup') return <ScanIcon {...iconProps} />;
   if (name === 'stock') return <PackageIcon {...iconProps} />;
   if (name === 'movements') return <ArrowsLeftRightIcon {...iconProps} />;
+  if (name === 'payments') return <CreditCardIcon {...iconProps} />;
+  if (name === 'refunds') return <ArrowCounterClockwiseIcon {...iconProps} />;
+  if (name === 'after-sales') return <HeadsetIcon {...iconProps} />;
+  if (name === 'warranties') return <ShieldCheckIcon {...iconProps} />;
+  if (name === 'warranty-policies') return <FileTextIcon {...iconProps} />;
   return <MapPinIcon {...iconProps} />;
 }
 

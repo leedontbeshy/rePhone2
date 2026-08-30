@@ -2461,6 +2461,17 @@
       },
       "BackofficePaymentDetailDto": {
         "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "VERIFY",
+                "REJECT",
+                "VIEW_EVIDENCE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "evidenceAvailable": {
             "type": "boolean"
           },
@@ -2492,6 +2503,7 @@
         "required": [
           "payment",
           "evidenceAvailable",
+          "availableActions",
           "order"
         ],
         "type": "object"
@@ -3334,6 +3346,15 @@
       },
       "BackofficeWarrantyDetailDto": {
         "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "VOID"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -3449,7 +3470,8 @@
           "createdAt",
           "sku",
           "termsSnapshot",
-          "updatedAt"
+          "updatedAt",
+          "availableActions"
         ],
         "type": "object"
       },
@@ -3594,6 +3616,95 @@
         "required": [
           "data",
           "meta"
+        ],
+        "type": "object"
+      },
+      "BackofficeWarrantyPolicyDetailDto": {
+        "properties": {
+          "archiveBlockedReason": {
+            "enum": [
+              "ACTIVE_CATALOG_REFERENCES"
+            ],
+            "nullable": true,
+            "type": "string"
+          },
+          "archivedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "availableActions": {
+            "items": {
+              "enum": [
+                "EDIT",
+                "ACTIVATE",
+                "DEACTIVATE",
+                "ARCHIVE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "code": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "defaultDays": {
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "type": "string"
+          },
+          "terms": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "defaultDays",
+          "terms",
+          "status",
+          "isArchived",
+          "createdAt",
+          "updatedAt",
+          "availableActions",
+          "archiveBlockedReason"
+        ],
+        "type": "object"
+      },
+      "BackofficeWarrantyPolicyDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BackofficeWarrantyPolicyDetailDto"
+          }
+        },
+        "required": [
+          "data"
         ],
         "type": "object"
       },
@@ -7343,6 +7454,17 @@
       },
       "PaymentReviewResultDto": {
         "properties": {
+          "availableActions": {
+            "items": {
+              "enum": [
+                "VERIFY",
+                "REJECT",
+                "VIEW_EVIDENCE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
           "notificationDelivery": {
             "enum": [
               "SENT",
@@ -7361,6 +7483,7 @@
         "required": [
           "payment",
           "order",
+          "availableActions",
           "notificationDelivery"
         ],
         "type": "object"
@@ -27608,7 +27731,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/WarrantyPolicyResponse"
+                  "$ref": "#/components/schemas/BackofficeWarrantyPolicyDetailResponse"
                 }
               }
             },

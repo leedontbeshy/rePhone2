@@ -43,25 +43,30 @@ export function BackofficeShell({
 
   useEffect(() => {
     const navigation = navigationRef.current;
-    const current = navigation?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (
-      navigation === null ||
-      current === null ||
-      current === undefined ||
-      navigation.scrollWidth <= navigation.clientWidth
-    )
-      return;
-    const navigationRect = navigation.getBoundingClientRect();
-    const currentRect = current.getBoundingClientRect();
-    const targetLeft =
-      navigation.scrollLeft +
-      currentRect.left -
-      navigationRect.left -
-      (navigationRect.width - currentRect.width) / 2;
-    navigation.scrollTo({
-      behavior: 'auto',
-      left: Math.max(0, Math.min(targetLeft, navigation.scrollWidth - navigation.clientWidth)),
-    });
+    if (navigation === null) return;
+
+    const centerCurrentNavigation = () => {
+      const current = navigation.querySelector<HTMLElement>('[aria-current="page"]');
+      if (current === null || navigation.scrollWidth <= navigation.clientWidth) return;
+      const navigationRect = navigation.getBoundingClientRect();
+      const currentRect = current.getBoundingClientRect();
+      const targetLeft =
+        navigation.scrollLeft +
+        currentRect.left -
+        navigationRect.left -
+        (navigationRect.width - currentRect.width) / 2;
+      navigation.scrollTo({
+        behavior: 'auto',
+        left: Math.max(0, Math.min(targetLeft, navigation.scrollWidth - navigation.clientWidth)),
+      });
+    };
+
+    centerCurrentNavigation();
+    const resizeObserver = new ResizeObserver(centerCurrentNavigation);
+    resizeObserver.observe(navigation);
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [currentNavigationHref]);
 
   return (
@@ -100,9 +105,18 @@ export function BackofficeShell({
         aria-label="Điều hướng backoffice"
       >
         <nav aria-label="Các khu vực vận hành" ref={navigationRef}>
-          {navigationGroups.map((group) => (
-            <section className={styles.navigationGroup} key={group.label}>
-              <h2 className={styles.navigationGroupLabel}>{group.label}</h2>
+          {navigationGroups.map((group, index) => (
+            <section
+              aria-labelledby={`backoffice-navigation-group-${String(index)}`}
+              className={styles.navigationGroup}
+              key={group.label}
+            >
+              <h2
+                className={styles.navigationGroupLabel}
+                id={`backoffice-navigation-group-${String(index)}`}
+              >
+                {group.label}
+              </h2>
               <NavigationList items={group.items} className={styles.backofficeNavigationList} />
             </section>
           ))}

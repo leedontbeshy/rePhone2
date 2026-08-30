@@ -1,0 +1,653 @@
+.page,
+.filters,
+.queue,
+.orderRows,
+.orderIdentity,
+.fulfillmentSummary,
+.financeSummary,
+.rowStatuses,
+.emptyState,
+.skeletonRows,
+.detailPage,
+.loadingState,
+.detailSections,
+.specGrid,
+.spec,
+.itemList,
+.itemCopy,
+.recordList,
+.recordCard,
+.noteForm,
+.actionChooser,
+.actionForm,
+.actionFieldset,
+.actionIntro,
+.actionFields,
+.noteFieldset,
+.railStack,
+.paymentList,
+.refundList,
+.shipmentList {
+  display: grid;
+  min-width: 0;
+}
+
+.page,
+.detailPage {
+  gap: var(--space-5);
+}
+
+.filters {
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.filterGrid,
+.advancedGrid {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.filterGrid {
+  grid-template-columns: minmax(15rem, 1.55fr) repeat(2, minmax(10rem, 0.72fr));
+}
+
+.searchField {
+  min-width: 0;
+}
+
+.advancedFilters {
+  border-block-start: var(--border-default);
+}
+
+.advancedFilters summary {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.advancedGrid {
+  grid-template-columns: repeat(5, minmax(9rem, 1fr));
+  padding-block-start: var(--space-3);
+}
+
+.filterActions,
+.alertContent,
+.queueSummary,
+.queueSummary > div,
+.pagination,
+.panelHeading,
+.itemRow,
+.itemPrice,
+.recordHeading,
+.noteActions,
+.actionTabs,
+.actionFooter,
+.linkRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.filterActions,
+.noteActions,
+.actionFooter {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.alertContent {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.queueSummary {
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.queueSummary > div {
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.queueSummary strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+}
+
+.updating {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-weight: var(--font-weight-medium);
+}
+
+.queue {
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.queue[data-updating='true'] .orderRows {
+  opacity: 0.68;
+}
+
+.queueHeader,
+.orderRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(14rem, 1.25fr) minmax(11rem, 0.9fr) minmax(9rem, 0.68fr) minmax(
+      12rem,
+      0.9fr
+    );
+  gap: var(--space-4);
+}
+
+.queueHeader {
+  padding: var(--space-3) var(--space-4);
+  border-block-end: var(--border-default);
+  color: var(--color-muted);
+  background: color-mix(in srgb, var(--color-brand-soft) 45%, var(--color-surface));
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.orderRows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.orderRows > li + li {
+  border-block-start: var(--border-default);
+}
+
+.orderRow {
+  align-items: start;
+  padding: var(--space-4);
+  color: var(--color-body);
+  text-decoration: none;
+}
+
+.orderRow:hover,
+.orderRow:focus-visible {
+  outline: 0;
+  background: var(--color-surface-subtle);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.orderIdentity,
+.fulfillmentSummary,
+.financeSummary {
+  align-content: center;
+  gap: var(--space-1);
+}
+
+.orderIdentity strong,
+.fulfillmentSummary strong,
+.financeSummary strong {
+  color: var(--color-ink);
+}
+
+.orderIdentity span,
+.orderIdentity small,
+.fulfillmentSummary span,
+.financeSummary span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.orderNumber {
+  color: var(--color-primary-hover) !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.financeSummary strong {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-body);
+}
+
+.rowStatuses {
+  justify-items: start;
+  gap: var(--space-2);
+}
+
+.emptyState,
+.loadingState {
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-8);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+
+.emptyState h2,
+.emptyState p,
+.loadingState h2,
+.loadingState p {
+  margin: 0;
+}
+
+.emptyState p,
+.loadingState p {
+  color: var(--color-muted);
+}
+
+.skeletonRows {
+  gap: 1px;
+  background: var(--color-border);
+}
+
+.skeletonRow {
+  display: grid;
+  min-height: 6.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+
+.pagination {
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pagination > span {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+/* Chi tiết đơn hàng */
+.backLink {
+  display: inline-flex;
+  min-height: var(--control-height);
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.detailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.detailSections,
+.railStack {
+  gap: var(--space-4);
+}
+
+.specGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--space-6);
+  margin: 0;
+}
+
+.spec {
+  grid-template-columns: minmax(7rem, 0.72fr) minmax(0, 1.28fr);
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-block-end: var(--border-default);
+}
+
+.spec dt {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.spec dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+.itemList,
+.recordList,
+.paymentList,
+.refundList,
+.shipmentList {
+  gap: 1px;
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-border);
+}
+
+.itemRow,
+.recordCard {
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+}
+
+.itemRow {
+  justify-content: space-between;
+}
+
+.itemCopy {
+  gap: var(--space-1);
+}
+
+.itemCopy strong,
+.recordCard strong {
+  color: var(--color-ink);
+}
+
+.itemCopy span,
+.itemCopy small,
+.recordCard span,
+.recordCard small {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.itemPrice {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.recordCard {
+  gap: var(--space-3);
+}
+
+.recordHeading {
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.recordHeading > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.linkRow {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.noteForm,
+.actionForm,
+.actionFieldset,
+.noteFieldset,
+.actionFields {
+  gap: var(--space-4);
+}
+
+.actionFieldset,
+.noteFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.customerNote {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+  background: var(--color-surface-subtle);
+  line-height: var(--line-height-small);
+}
+
+.actionChooser {
+  gap: var(--space-3);
+}
+
+.actionTabs {
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.actionTabs > * {
+  flex: 1 1 10rem;
+}
+
+.actionTabs button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.actionTabs button[data-tone='danger'] {
+  border-color: color-mix(in srgb, var(--color-danger) 48%, var(--color-border));
+  color: var(--color-danger);
+}
+
+.actionTabs button[data-tone='danger'][aria-pressed='true'] {
+  background: var(--color-danger-soft);
+}
+
+.actionIntro {
+  gap: var(--space-1);
+}
+
+.actionIntro h3,
+.actionIntro p {
+  margin: 0;
+}
+
+.actionIntro h3 {
+  color: var(--color-ink);
+  font-size: var(--font-size-body);
+}
+
+.actionIntro p,
+.actionHint,
+.terminalMessage,
+.muted {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.actionForm {
+  padding-block-start: var(--space-4);
+  border-block-start: var(--border-default);
+}
+
+.actionFooter {
+  padding-block-start: var(--space-2);
+}
+
+.checkboxRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.checkboxRow input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--color-primary);
+}
+
+.checkboxRow span {
+  color: var(--color-body);
+  line-height: var(--line-height-small);
+}
+
+.warningBox,
+.dangerBox {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid;
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.warningBox {
+  border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+  color: var(--color-ink);
+  background: var(--color-warning-soft);
+}
+
+.dangerBox {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+@media (max-width: 75rem) {
+  .advancedGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .queueHeader,
+  .orderRow {
+    grid-template-columns: minmax(13rem, 1.2fr) minmax(10rem, 0.9fr) minmax(9rem, 0.7fr);
+  }
+
+  .queueHeader > :last-child,
+  .rowStatuses {
+    grid-column: 1 / -1;
+  }
+
+  .rowStatuses {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 55rem) {
+  .filterGrid,
+  .advancedGrid,
+  .specGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .queueHeader {
+    display: none;
+  }
+
+  .orderRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .itemRow,
+  .recordHeading {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 35rem) {
+  .filters {
+    padding: var(--space-4);
+  }
+
+  .filterGrid,
+  .advancedGrid,
+  .orderRow,
+  .specGrid,
+  .skeletonRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .filterActions,
+  .filterActions > *,
+  .alertContent,
+  .pagination,
+  .itemRow,
+  .recordHeading,
+  .noteActions,
+  .noteActions > *,
+  .actionFooter,
+  .actionFooter > * {
+    width: 100%;
+  }
+
+  .alertContent,
+  .pagination,
+  .itemRow,
+  .recordHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pagination > span {
+    order: -1;
+    text-align: center;
+  }
+
+  .financeSummary,
+  .itemPrice {
+    align-items: flex-start;
+    text-align: start;
+  }
+
+  .spec {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .spec dd {
+    text-align: start;
+  }
+}
+
+@media (forced-colors: active) {
+  .orderRow:hover,
+  .orderRow:focus-visible {
+    outline: 2px solid CanvasText;
+  }
+}

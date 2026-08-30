@@ -5,6 +5,8 @@ import {
   clearWarrantyGuestCredential,
   createWarrantyPolicy,
   customerWarrantyError,
+  getBackofficeWarranty,
+  getWarrantyPolicy,
   getCustomerWarranty,
   listBackofficeWarranties,
   listCustomerWarranties,
@@ -189,6 +191,48 @@ describe('warranty typed-client adapter', () => {
     });
   });
 
+  it('keeps policy actions and archive readiness from the detail contract', async () => {
+    const detail = {
+      ...POLICY,
+      archiveBlockedReason: 'ACTIVE_CATALOG_REFERENCES' as const,
+      availableActions: ['EDIT', 'ACTIVATE'] as const,
+    };
+    const get = vi.fn().mockResolvedValue({ data: { data: detail } });
+
+    const result = await getWarrantyPolicy(mockClient({ GET: get }), POLICY.id);
+
+    expect(result.availableActions).toEqual(['EDIT', 'ACTIVATE']);
+    expect(result.archiveBlockedReason).toBe('ACTIVE_CATALOG_REFERENCES');
+    expect(get).toHaveBeenCalledWith('/api/v1/backoffice/warranty-policies/{id}', {
+      params: { path: { id: POLICY.id } },
+    });
+  });
+
+  it('keeps policy actions fail-closed when the runtime payload is missing or unknown', async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            ...POLICY,
+            archiveBlockedReason: null,
+            availableActions: ['EDIT', 'UNSUPPORTED', 42],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { data: { ...POLICY, archiveBlockedReason: null } },
+      });
+    const client = mockClient({ GET: get });
+
+    await expect(getWarrantyPolicy(client, POLICY.id)).resolves.toMatchObject({
+      availableActions: ['EDIT'],
+    });
+    await expect(getWarrantyPolicy(client, POLICY.id)).resolves.toMatchObject({
+      availableActions: [],
+    });
+  });
+
   it('uses the exact lifecycle command routes and reason bodies', async () => {
     const post = vi.fn().mockResolvedValue({ data: { data: POLICY } });
     const client = mockClient({ POST: post });
@@ -226,6 +270,7 @@ describe('warranty typed-client adapter', () => {
     };
     const detail = {
       ...row,
+      availableActions: ['VOID'] as const,
       sku: 'IP15-128-BLK',
       termsSnapshot: 'Terms',
       updatedAt: CUSTOMER_WARRANTY.startAt,
@@ -253,6 +298,23 @@ describe('warranty typed-client adapter', () => {
       params: { path: { id: POLICY.id } },
       body: { reason: 'Hoàn tiền theo case hậu mãi' },
     });
+  });
+
+  it('validates required warranty detail fields and defaults malformed actions to none', async () => {
+    const safeDetail = backofficeWarrantyDetail();
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: safeDetail } })
+      .mockResolvedValueOnce({ data: { data: { ...safeDetail, customer: null } } });
+    const client = mockClient({ GET: get });
+
+    await expect(getBackofficeWarranty(client, POLICY.id)).resolves.toMatchObject({
+      availableActions: [],
+      warrantyCode: CUSTOMER_WARRANTY.warrantyCode,
+    });
+    await expect(getBackofficeWarranty(client, POLICY.id)).rejects.toThrow(
+      'Dữ liệu khách hàng trong bảo hành không hợp lệ.',
+    );
   });
 
   it('maps stable conflicts without reflecting unsafe server detail', () => {
@@ -285,4 +347,25 @@ describe('warranty typed-client adapter', () => {
 
 function mockClient(methods: Record<string, unknown>): WarrantyApiClient {
   return methods as unknown as WarrantyApiClient;
+}
+
+function backofficeWarrantyDetail() {
+  return {
+    ...CUSTOMER_WARRANTY,
+    id: POLICY.id,
+    customer: {
+      customerId: null,
+      name: 'Guest',
+      email: 'guest@example.com',
+      phone: '0900000000',
+    },
+    policy: null,
+    createdAt: CUSTOMER_WARRANTY.startAt,
+    sku: 'IP15-128-BLK',
+    termsSnapshot: 'Terms',
+    updatedAt: CUSTOMER_WARRANTY.startAt,
+    voidReason: null,
+    voidedBy: null,
+    voidedAt: null,
+  };
 }
