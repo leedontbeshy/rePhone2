@@ -218,6 +218,7 @@ export function SettingsView() {
 
   function changeDraft(field: SettingsField, value: string) {
     setDraft((current) => (current === undefined ? current : { ...current, [field]: value }));
+    setError(undefined);
     setNotice(undefined);
     setFieldErrors((current) =>
       Object.fromEntries(Object.entries(current).filter(([key]) => key !== field)),
@@ -504,6 +505,7 @@ export function SettingsView() {
             </div>
             {settings.bankQrUrl ? (
               <a
+                aria-label="Xem ảnh QR đang dùng (mở trong thẻ mới)"
                 className={styles.qrLink}
                 href={settings.bankQrUrl}
                 rel="noopener noreferrer"
