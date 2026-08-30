@@ -11,6 +11,7 @@ export {
   formatUserDate,
   formatUserDateTime,
   normalizeEmployeeDraft,
+  recordAfterRefresh,
   userAvatarTone,
   userInitials,
   validateEmployeeDraft,

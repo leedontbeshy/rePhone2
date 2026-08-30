@@ -1,9 +1,14 @@
 'use client';
 
 import {
+  ArrowLeftIcon,
   ArrowCounterClockwiseIcon,
+  CalendarBlankIcon,
+  ClockIcon,
   EnvelopeSimpleIcon,
+  IdentificationBadgeIcon,
   PencilSimpleIcon,
+  PhoneIcon,
   PlusIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
@@ -38,6 +43,7 @@ import {
   formatUserDate,
   formatUserDateTime,
   normalizeEmployeeDraft,
+  recordAfterRefresh,
   validateEmployeeDraft,
   type EmployeeDraft,
   type EmployeeDraftErrors,
@@ -56,7 +62,9 @@ import {
   UserAdminPageHeader,
   UserDetailField,
   UserDetailIdentity,
+  UserDetailSection,
   UserDetailSkeleton,
+  UserDetailSummary,
   UserFilterBar,
   UserListPanel,
   UserListSkeleton,
@@ -107,10 +115,24 @@ export function EmployeeAdminView() {
   const [dialogError, setDialogError] = useState<string>();
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
+  const panelState = useRef<{
+    mode: EmployeePanelMode;
+    selectedId: string | undefined;
+  }>({ mode: 'empty', selectedId: undefined });
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const isAdmin = user?.role === 'ADMIN';
   const formLocked = busy !== undefined;
+
+  const commitEmployeePanel = useCallback(
+    (employee: Employee | undefined, nextMode: EmployeePanelMode) => {
+      panelState.current = { mode: nextMode, selectedId: employee?.id };
+      setSelected(employee);
+      setDraft(employee === undefined ? EMPTY_EMPLOYEE_DRAFT : employeeDraftFromDetail(employee));
+      setMode(nextMode);
+    },
+    [],
+  );
 
   useEffect(() => {
     setFilters(employeeDraftFromQuery(query));
@@ -119,11 +141,6 @@ export function EmployeeAdminView() {
   useEffect(() => {
     const expected = query.q ?? '';
     if (filters.q.trim() === expected) return;
-    if (mode === 'view') {
-      setSelected(undefined);
-      setDraft(EMPTY_EMPLOYEE_DRAFT);
-      setMode('empty');
-    }
     const timer = window.setTimeout(() => {
       router.replace(buildEmployeeListHref(employeeQueryFromDraft(filters, query)), {
         scroll: false,
@@ -132,7 +149,7 @@ export function EmployeeAdminView() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [filters, mode, query, router]);
+  }, [filters, query, router]);
 
   const refreshList = useCallback(async () => {
     const request = ++listRequest.current;
@@ -143,6 +160,10 @@ export function EmployeeAdminView() {
       if (request !== listRequest.current) return;
       setEmployees(result.data);
       setPagination(result.pagination);
+      if (panelState.current.mode === 'empty' || panelState.current.mode === 'view') {
+        const nextEmployee = recordAfterRefresh(result.data, panelState.current.selectedId);
+        commitEmployeePanel(nextEmployee, nextEmployee === undefined ? 'empty' : 'view');
+      }
       setHasLoaded(true);
     } catch (caught) {
       if (request !== listRequest.current) return;
@@ -151,7 +172,7 @@ export function EmployeeAdminView() {
     } finally {
       if (request === listRequest.current) setLoading(false);
     }
-  }, [client, query]);
+  }, [client, commitEmployeePanel, query]);
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isAdmin) return;
@@ -174,10 +195,8 @@ export function EmployeeAdminView() {
     try {
       const employee = await getEmployee(client, id);
       if (request !== detailRequest.current) return;
-      setSelected(employee);
-      setDraft(employeeDraftFromDetail(employee));
+      commitEmployeePanel(employee, 'view');
       setFieldErrors({});
-      setMode('view');
       window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
     } catch (caught) {
       if (request === detailRequest.current) {
@@ -190,33 +209,28 @@ export function EmployeeAdminView() {
 
   function startCreate() {
     if (formLocked) return;
-    setSelected(undefined);
-    setDraft(EMPTY_EMPLOYEE_DRAFT);
+    commitEmployeePanel(undefined, 'create');
     setFieldErrors({});
     setPanelError(undefined);
     setNotice(undefined);
-    setMode('create');
     window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
   }
 
   function startEdit() {
     if (selected === undefined || formLocked) return;
-    setDraft(employeeDraftFromDetail(selected));
+    commitEmployeePanel(selected, 'edit');
     setFieldErrors({});
     setPanelError(undefined);
-    setMode('edit');
   }
 
   function cancelEditor() {
     setFieldErrors({});
     setPanelError(undefined);
     if (selected === undefined) {
-      setDraft(EMPTY_EMPLOYEE_DRAFT);
-      setMode('empty');
+      commitEmployeePanel(undefined, 'empty');
       return;
     }
-    setDraft(employeeDraftFromDetail(selected));
-    setMode('view');
+    commitEmployeePanel(selected, 'view');
   }
 
   async function submitEmployee(event: SyntheticEvent<HTMLFormElement>) {
@@ -231,7 +245,7 @@ export function EmployeeAdminView() {
     const normalized = normalizeEmployeeDraft(draft);
     if (mode === 'edit' && selected !== undefined && !employeeDraftChanged(selected, draft)) {
       setNotice({ message: 'Chưa có thay đổi nào cần lưu.', tone: 'warning' });
-      setMode('view');
+      commitEmployeePanel(selected, 'view');
       return;
     }
 
@@ -247,9 +261,7 @@ export function EmployeeAdminView() {
           ...(normalized.phone === '' ? {} : { phone: normalized.phone }),
           ...(normalized.hiredAt === '' ? {} : { hiredAt: normalized.hiredAt }),
         });
-        setSelected(created.employee);
-        setDraft(employeeDraftFromDetail(created.employee));
-        setMode('view');
+        commitEmployeePanel(created.employee, 'view');
         setNotice(
           created.deliveryStatus === 'SENT'
             ? { message: 'Đã tạo nhân viên và gửi lời mời kích hoạt.', tone: 'success' }
@@ -265,9 +277,7 @@ export function EmployeeAdminView() {
           selected.id,
           employeeUpdateInput(selected, draft),
         );
-        setSelected(updated);
-        setDraft(employeeDraftFromDetail(updated));
-        setMode('view');
+        commitEmployeePanel(updated, 'view');
         setNotice({ message: 'Đã cập nhật hồ sơ nhân viên.', tone: 'success' });
       }
       setFieldErrors({});
@@ -323,8 +333,7 @@ export function EmployeeAdminView() {
         action === 'disable'
           ? await disableEmployee(client, selected.id, reason)
           : await enableEmployee(client, selected.id, reason);
-      setSelected(updated);
-      setDraft(employeeDraftFromDetail(updated));
+      commitEmployeePanel(updated, 'view');
       setEmployees((current) =>
         current.map((employee) => (employee.id === updated.id ? updated : employee)),
       );
@@ -359,9 +368,7 @@ export function EmployeeAdminView() {
   async function reloadEmployeeAfterConflict(id: string) {
     try {
       const current = await getEmployee(client, id);
-      setSelected(current);
-      setDraft(employeeDraftFromDetail(current));
-      setMode('view');
+      commitEmployeePanel(current, 'view');
       setEmployees((items) => items.map((item) => (item.id === current.id ? current : item)));
       setPanelError(undefined);
       setNotice({
@@ -378,12 +385,11 @@ export function EmployeeAdminView() {
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mode === 'view') {
-      setSelected(undefined);
-      setDraft(EMPTY_EMPLOYEE_DRAFT);
-      setMode('empty');
-    }
     router.push(buildEmployeeListHref(employeeQueryFromDraft(filters, query)), { scroll: false });
+  }
+
+  function returnToEmployeeList() {
+    document.getElementById('employee-list-title')?.focus();
   }
 
   return (
@@ -422,11 +428,6 @@ export function EmployeeAdminView() {
                   : '';
               const next: EmployeeFilterDraft = { ...filters, status };
               setFilters(next);
-              if (mode === 'view') {
-                setSelected(undefined);
-                setDraft(EMPTY_EMPLOYEE_DRAFT);
-                setMode('empty');
-              }
               router.push(buildEmployeeListHref(employeeQueryFromDraft(next, query)), {
                 scroll: false,
               });
@@ -469,6 +470,7 @@ export function EmployeeAdminView() {
           <UserListPanel
             loading={loading}
             title={`Nhân viên (${String(pagination.totalItems)})`}
+            titleId="employee-list-title"
             footer={
               <BackofficePagination
                 buildHref={(page) => buildEmployeeListHref(query, page)}
@@ -511,6 +513,15 @@ export function EmployeeAdminView() {
                     ? 'Chỉnh sửa nhân viên'
                     : 'Chi tiết nhân viên'}
               </h2>
+              <Button
+                className={styles.detailBack}
+                iconLeading={<ArrowLeftIcon aria-hidden="true" size={18} />}
+                size="compact"
+                variant="ghost"
+                onClick={returnToEmployeeList}
+              >
+                Quay lại danh sách
+              </Button>
             </div>
             {detailLoading ? <UserDetailSkeleton /> : null}
             {!detailLoading && (mode === 'create' || mode === 'edit') ? (
@@ -601,50 +612,103 @@ export function EmployeeDetailPanel({
   onResend: () => void;
 }>) {
   const status = employeeStatusPresentation(employee.status);
+  const hiredAt = employee.hiredAt ? formatUserDate(employee.hiredAt) : 'Chưa ghi nhận';
+  const lastLoginAt = employee.lastLoginAt
+    ? formatUserDateTime(employee.lastLoginAt)
+    : 'Chưa đăng nhập';
   return (
     <div className={styles.detailBody}>
-      <UserDetailIdentity
-        email={employee.email}
-        fullName={employee.fullName}
-        identity={employee.id}
-        status={status}
-      />
-      <dl className={styles.detailList}>
-        <UserDetailField label="Mã nhân viên" value={employee.employeeCode} />
-        <UserDetailField label="Số điện thoại" value={employee.phone ?? 'Chưa cung cấp'} />
-        <UserDetailField label="Ngày vào làm" value={formatUserDate(employee.hiredAt)} />
-        <UserDetailField label="Trạng thái email" value={employeeEmailState(employee)} />
-        <UserDetailField
-          label="Đăng nhập gần nhất"
-          value={formatUserDateTime(employee.lastLoginAt)}
+      <div className={styles.detailOverview}>
+        <UserDetailIdentity
+          aside={
+            <>
+              <span>Mã nhân viên</span>
+              <strong>{employee.employeeCode}</strong>
+            </>
+          }
+          email={employee.email}
+          fullName={employee.fullName}
+          identity={employee.id}
+          status={status}
         />
-        <UserDetailField label="Ngày tạo hồ sơ" value={formatUserDateTime(employee.createdAt)} />
-        {employee.disabledAt ? (
+        <UserDetailSummary
+          items={[
+            {
+              icon: <CalendarBlankIcon aria-hidden="true" size={19} />,
+              label: 'Ngày vào làm',
+              value: hiredAt,
+            },
+            {
+              icon: <ClockIcon aria-hidden="true" size={19} />,
+              label: 'Đăng nhập gần nhất',
+              value: lastLoginAt,
+            },
+            {
+              icon: <EnvelopeSimpleIcon aria-hidden="true" size={19} />,
+              label: 'Trạng thái email',
+              value: employeeEmailState(employee),
+            },
+          ]}
+        />
+      </div>
+      <div className={styles.detailSections}>
+        <UserDetailSection title="Liên hệ">
           <UserDetailField
-            label="Vô hiệu hóa lúc"
-            value={formatUserDateTime(employee.disabledAt)}
+            icon={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
+            label="Email"
+            value={employee.email}
           />
-        ) : null}
-      </dl>
+          <UserDetailField
+            icon={<PhoneIcon aria-hidden="true" size={18} />}
+            label="Số điện thoại"
+            value={employee.phone ?? 'Chưa cung cấp'}
+          />
+        </UserDetailSection>
+        <UserDetailSection title="Tài khoản">
+          <UserDetailField
+            icon={<IdentificationBadgeIcon aria-hidden="true" size={18} />}
+            label="Mã nhân viên"
+            value={employee.employeeCode}
+          />
+          <UserDetailField
+            icon={<CalendarBlankIcon aria-hidden="true" size={18} />}
+            label="Ngày vào làm"
+            value={hiredAt}
+          />
+          <UserDetailField
+            icon={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
+            label="Trạng thái email"
+            value={employeeEmailState(employee)}
+          />
+          <UserDetailField
+            icon={<ClockIcon aria-hidden="true" size={18} />}
+            label="Đăng nhập gần nhất"
+            value={lastLoginAt}
+          />
+          <UserDetailField
+            icon={<CalendarBlankIcon aria-hidden="true" size={18} />}
+            label="Ngày tạo hồ sơ"
+            value={formatUserDateTime(employee.createdAt)}
+          />
+          {employee.disabledAt ? (
+            <UserDetailField
+              icon={<WarningCircleIcon aria-hidden="true" size={18} />}
+              label="Vô hiệu hóa lúc"
+              value={formatUserDateTime(employee.disabledAt)}
+            />
+          ) : null}
+        </UserDetailSection>
+      </div>
       <div className={styles.detailActions}>
         {employee.status === 'PENDING_VERIFICATION' ? (
           <Button
             disabled={busy}
             iconLeading={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
-            variant="secondary"
             onClick={onResend}
           >
             Gửi lại lời mời
           </Button>
         ) : null}
-        <Button
-          disabled={busy}
-          iconLeading={<PencilSimpleIcon aria-hidden="true" size={18} />}
-          variant="secondary"
-          onClick={onEdit}
-        >
-          Chỉnh sửa
-        </Button>
         {employee.status === 'DISABLED' ? (
           <Button
             disabled={busy}
@@ -653,11 +717,21 @@ export function EmployeeDetailPanel({
           >
             Kích hoạt lại
           </Button>
-        ) : (
+        ) : null}
+        <Button
+          disabled={busy}
+          iconLeading={<PencilSimpleIcon aria-hidden="true" size={18} />}
+          variant={employee.status === 'ACTIVE' ? 'primary' : 'secondary'}
+          onClick={onEdit}
+        >
+          Chỉnh sửa
+        </Button>
+        {employee.status === 'DISABLED' ? null : (
           <Button
+            className={styles.dangerOutline}
             disabled={busy}
             iconLeading={<WarningCircleIcon aria-hidden="true" size={18} />}
-            variant="destructive"
+            variant="secondary"
             onClick={onDisable}
           >
             Vô hiệu hóa

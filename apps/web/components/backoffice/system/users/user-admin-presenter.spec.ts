@@ -9,6 +9,7 @@ import {
   employeeUpdateInput,
   formatUserDate,
   normalizeEmployeeDraft,
+  recordAfterRefresh,
   userInitials,
   validateEmployeeDraft,
 } from './user-admin-presenter';
@@ -85,6 +86,15 @@ describe('user admin presenter', () => {
     const state = employeeEmailState(sampleEmployee({ status: 'PENDING_VERIFICATION' }));
     expect(state).toBe('Chưa kích hoạt tài khoản');
     expect(state).not.toContain('30/08/2026');
+  });
+
+  it('keeps a valid selection after refresh and otherwise selects the first record', () => {
+    const first = sampleEmployee({ id: 'employee-1' });
+    const second = sampleEmployee({ id: 'employee-2' });
+
+    expect(recordAfterRefresh([first, second], second.id)).toBe(second);
+    expect(recordAfterRefresh([first, second], 'employee-missing')).toBe(first);
+    expect(recordAfterRefresh<Employee>([], first.id)).toBeUndefined();
   });
 });
 

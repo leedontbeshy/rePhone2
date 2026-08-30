@@ -156,6 +156,13 @@ export function employeeEmailState(employee: Employee): string {
     : 'Chưa xác minh email';
 }
 
+export function recordAfterRefresh<T extends { readonly id: string }>(
+  records: readonly T[],
+  selectedId: string | undefined,
+): T | undefined {
+  return records.find((record) => record.id === selectedId) ?? records[0];
+}
+
 function isDateOnly(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (match === null) return false;

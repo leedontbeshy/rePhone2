@@ -18,6 +18,9 @@ describe('user admin master-detail components', () => {
     );
 
     expect(markup).toContain('Chờ kích hoạt');
+    expect(markup).toContain('Tóm tắt hồ sơ');
+    expect(markup).toContain('Liên hệ');
+    expect(markup).toContain('Tài khoản');
     expect(markup).toContain('Chưa kích hoạt tài khoản');
     expect(markup).toContain('Gửi lại lời mời');
     expect(markup).not.toContain('Gửi lúc');
@@ -64,6 +67,26 @@ describe('user admin master-detail components', () => {
     expect(staffMarkup).toContain('Chỉ quản trị viên');
     expect(staffMarkup).not.toContain('Tạm khóa khách hàng</button>');
     expect(adminMarkup).toContain('Tạm khóa khách hàng');
+  });
+
+  it('renders the three customer summary fields and grouped detail from contract data', () => {
+    const markup = renderToStaticMarkup(
+      <CustomerDetailPanel
+        busy={false}
+        customer={sampleCustomer({ lastLoginAt: null, lastOrderAt: null })}
+        isAdmin
+        onTransition={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain('Tóm tắt hồ sơ');
+    expect(markup).toContain('Số đơn hàng');
+    expect(markup).toContain('Đơn gần nhất');
+    expect(markup).toContain('Đăng nhập gần nhất');
+    expect(markup).toContain('Liên hệ');
+    expect(markup).toContain('Hoạt động tài khoản');
+    expect(markup).toContain('Chưa có đơn hàng');
+    expect(markup).toContain('Chưa đăng nhập');
   });
 });
 

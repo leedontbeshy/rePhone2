@@ -1,6 +1,15 @@
 'use client';
 
-import { LockOpenIcon, LockSimpleIcon } from '@phosphor-icons/react';
+import {
+  ArrowLeftIcon,
+  CalendarBlankIcon,
+  ClockIcon,
+  EnvelopeSimpleIcon,
+  LockOpenIcon,
+  LockSimpleIcon,
+  PhoneIcon,
+  ShoppingBagIcon,
+} from '@phosphor-icons/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
@@ -19,7 +28,11 @@ import {
   type Customer,
   type Pagination,
 } from '@/lib/system-admin-api';
-import { customerStatusPresentation, formatUserDateTime } from './user-admin-presenter';
+import {
+  customerStatusPresentation,
+  formatUserDateTime,
+  recordAfterRefresh,
+} from './user-admin-presenter';
 import {
   buildCustomerListHref,
   customerDraftFromQuery,
@@ -33,7 +46,9 @@ import {
   UserAdminPageHeader,
   UserDetailField,
   UserDetailIdentity,
+  UserDetailSection,
   UserDetailSkeleton,
+  UserDetailSummary,
   UserFilterBar,
   UserListPanel,
   UserListSkeleton,
@@ -79,9 +94,15 @@ export function CustomerAdminView() {
   const [dialogError, setDialogError] = useState<string>();
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
+  const selectedId = useRef<string | undefined>(undefined);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
+
+  const commitCustomerSelection = useCallback((customer: Customer | undefined) => {
+    selectedId.current = customer?.id;
+    setSelected(customer);
+  }, []);
 
   useEffect(() => {
     setFilters(customerDraftFromQuery(query));
@@ -90,7 +111,6 @@ export function CustomerAdminView() {
   useEffect(() => {
     const expected = query.q ?? '';
     if (filters.q.trim() === expected) return;
-    if (selected !== undefined) setSelected(undefined);
     const timer = window.setTimeout(() => {
       router.replace(buildCustomerListHref(customerQueryFromDraft(filters, query)), {
         scroll: false,
@@ -99,7 +119,7 @@ export function CustomerAdminView() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [filters, query, router, selected]);
+  }, [filters, query, router]);
 
   const refreshList = useCallback(async () => {
     const request = ++listRequest.current;
@@ -110,6 +130,7 @@ export function CustomerAdminView() {
       if (request !== listRequest.current) return;
       setCustomers(result.data);
       setPagination(result.pagination);
+      commitCustomerSelection(recordAfterRefresh(result.data, selectedId.current));
       setHasLoaded(true);
     } catch (caught) {
       if (request !== listRequest.current) return;
@@ -118,7 +139,7 @@ export function CustomerAdminView() {
     } finally {
       if (request === listRequest.current) setLoading(false);
     }
-  }, [client, query]);
+  }, [client, commitCustomerSelection, query]);
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isStaff) return;
@@ -137,7 +158,7 @@ export function CustomerAdminView() {
     try {
       const customer = await getCustomer(client, id);
       if (request !== detailRequest.current) return;
-      setSelected(customer);
+      commitCustomerSelection(customer);
       window.requestAnimationFrame(() => detailHeadingRef.current?.focus());
     } catch (caught) {
       if (request === detailRequest.current) {
@@ -158,7 +179,7 @@ export function CustomerAdminView() {
         selected.status === 'ACTIVE'
           ? await suspendCustomer(client, selected.id, reasonValue)
           : await activateCustomer(client, selected.id, reasonValue);
-      setSelected(updated);
+      commitCustomerSelection(updated);
       setCustomers((current) =>
         current.map((customer) => (customer.id === updated.id ? updated : customer)),
       );
@@ -188,7 +209,7 @@ export function CustomerAdminView() {
   async function reloadCustomerAfterConflict(id: string) {
     try {
       const current = await getCustomer(client, id);
-      setSelected(current);
+      commitCustomerSelection(current);
       setCustomers((items) => items.map((item) => (item.id === current.id ? current : item)));
       setPanelError(undefined);
       setNotice({
@@ -205,8 +226,11 @@ export function CustomerAdminView() {
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSelected(undefined);
     router.push(buildCustomerListHref(customerQueryFromDraft(filters, query)), { scroll: false });
+  }
+
+  function returnToCustomerList() {
+    document.getElementById('customer-list-title')?.focus();
   }
 
   return (
@@ -234,7 +258,6 @@ export function CustomerAdminView() {
                 value === 'ACTIVE' || value === 'SUSPENDED' ? value : '';
               const next: CustomerFilterDraft = { ...filters, status };
               setFilters(next);
-              setSelected(undefined);
               router.push(buildCustomerListHref(customerQueryFromDraft(next, query)), {
                 scroll: false,
               });
@@ -250,7 +273,6 @@ export function CustomerAdminView() {
             onChange={(sortBy) => {
               const next = { ...filters, sortBy };
               setFilters(next);
-              setSelected(undefined);
               router.push(buildCustomerListHref(customerQueryFromDraft(next, query)), {
                 scroll: false,
               });
@@ -288,6 +310,7 @@ export function CustomerAdminView() {
           <UserListPanel
             loading={loading}
             title={`Khách hàng (${String(pagination.totalItems)})`}
+            titleId="customer-list-title"
             footer={
               <BackofficePagination
                 buildHref={(page) => buildCustomerListHref(query, page)}
@@ -326,6 +349,15 @@ export function CustomerAdminView() {
               <h2 ref={detailHeadingRef} tabIndex={-1}>
                 Chi tiết khách hàng
               </h2>
+              <Button
+                className={styles.detailBack}
+                iconLeading={<ArrowLeftIcon aria-hidden="true" size={18} />}
+                size="compact"
+                variant="ghost"
+                onClick={returnToCustomerList}
+              >
+                Quay lại danh sách
+              </Button>
             </div>
             {detailLoading ? <UserDetailSkeleton /> : null}
             {!detailLoading && selected !== undefined ? (
@@ -388,41 +420,97 @@ export function CustomerDetailPanel({
   isAdmin: boolean;
   onTransition: () => void;
 }>) {
+  const lastOrderAt = customer.lastOrderAt
+    ? formatUserDateTime(customer.lastOrderAt)
+    : 'Chưa có đơn hàng';
+  const lastLoginAt = customer.lastLoginAt
+    ? formatUserDateTime(customer.lastLoginAt)
+    : 'Chưa đăng nhập';
   return (
     <div className={styles.detailBody}>
-      <UserDetailIdentity
-        email={customer.email}
-        fullName={customer.fullName}
-        identity={customer.id}
-        status={customerStatusPresentation(customer.status)}
-      />
-      <dl className={styles.detailList}>
-        <UserDetailField label="Số điện thoại" value={customer.phone ?? 'Chưa cung cấp'} />
-        <UserDetailField label="Số đơn hàng" value={String(customer.orderCount)} />
-        <UserDetailField label="Đơn gần nhất" value={formatUserDateTime(customer.lastOrderAt)} />
-        <UserDetailField
-          label="Đăng nhập gần nhất"
-          value={formatUserDateTime(customer.lastLoginAt)}
+      <div className={styles.detailOverview}>
+        <UserDetailIdentity
+          email={customer.email}
+          fullName={customer.fullName}
+          identity={customer.id}
+          status={customerStatusPresentation(customer.status)}
         />
-        <UserDetailField
-          label="Xác minh email"
-          value={
-            customer.emailVerifiedAt
-              ? `Đã xác minh ${formatUserDateTime(customer.emailVerifiedAt)}`
-              : 'Chưa xác minh'
-          }
+        <UserDetailSummary
+          items={[
+            {
+              icon: <ShoppingBagIcon aria-hidden="true" size={19} />,
+              label: 'Số đơn hàng',
+              value: `${String(customer.orderCount)} đơn hàng`,
+            },
+            {
+              icon: <CalendarBlankIcon aria-hidden="true" size={19} />,
+              label: 'Đơn gần nhất',
+              value: lastOrderAt,
+            },
+            {
+              icon: <ClockIcon aria-hidden="true" size={19} />,
+              label: 'Đăng nhập gần nhất',
+              value: lastLoginAt,
+            },
+          ]}
         />
-        <UserDetailField
-          label="Ngày tạo tài khoản"
-          value={formatUserDateTime(customer.createdAt)}
-        />
-        {customer.suspendedAt ? (
-          <UserDetailField label="Tạm khóa lúc" value={formatUserDateTime(customer.suspendedAt)} />
-        ) : null}
-      </dl>
+      </div>
+      <div className={styles.detailSections}>
+        <UserDetailSection title="Liên hệ">
+          <UserDetailField
+            icon={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
+            label="Email"
+            value={customer.email}
+          />
+          <UserDetailField
+            icon={<PhoneIcon aria-hidden="true" size={18} />}
+            label="Số điện thoại"
+            value={customer.phone ?? 'Chưa cung cấp'}
+          />
+        </UserDetailSection>
+        <UserDetailSection title="Hoạt động tài khoản">
+          <UserDetailField
+            icon={<ShoppingBagIcon aria-hidden="true" size={18} />}
+            label="Số đơn hàng"
+            value={String(customer.orderCount)}
+          />
+          <UserDetailField
+            icon={<CalendarBlankIcon aria-hidden="true" size={18} />}
+            label="Đơn gần nhất"
+            value={lastOrderAt}
+          />
+          <UserDetailField
+            icon={<ClockIcon aria-hidden="true" size={18} />}
+            label="Đăng nhập gần nhất"
+            value={lastLoginAt}
+          />
+          <UserDetailField
+            icon={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
+            label="Xác minh email"
+            value={
+              customer.emailVerifiedAt
+                ? `Đã xác minh ${formatUserDateTime(customer.emailVerifiedAt)}`
+                : 'Chưa xác minh'
+            }
+          />
+          <UserDetailField
+            icon={<CalendarBlankIcon aria-hidden="true" size={18} />}
+            label="Ngày tạo tài khoản"
+            value={formatUserDateTime(customer.createdAt)}
+          />
+          {customer.suspendedAt ? (
+            <UserDetailField
+              icon={<LockSimpleIcon aria-hidden="true" size={18} />}
+              label="Tạm khóa lúc"
+              value={formatUserDateTime(customer.suspendedAt)}
+            />
+          ) : null}
+        </UserDetailSection>
+      </div>
       <div className={styles.detailActions}>
         {isAdmin ? (
           <Button
+            className={customer.status === 'ACTIVE' ? styles.dangerOutline : undefined}
             disabled={busy}
             iconLeading={
               customer.status === 'ACTIVE' ? (
@@ -431,7 +519,7 @@ export function CustomerDetailPanel({
                 <LockOpenIcon aria-hidden="true" size={18} />
               )
             }
-            variant={customer.status === 'ACTIVE' ? 'destructive' : 'primary'}
+            variant={customer.status === 'ACTIVE' ? 'secondary' : 'primary'}
             onClick={onTransition}
           >
             {customer.status === 'ACTIVE' ? 'Tạm khóa khách hàng' : 'Kích hoạt lại'}

@@ -187,20 +187,24 @@ export function UserListPanel({
   footer,
   loading,
   title,
+  titleId = 'user-list-title',
 }: Readonly<{
   children: ReactNode;
   footer?: ReactNode;
   loading: boolean;
   title: string;
+  titleId?: string;
 }>) {
   return (
     <section
       className={styles.listPanel}
       aria-busy={loading || undefined}
-      aria-labelledby="user-list-title"
+      aria-labelledby={titleId}
     >
       <div className={styles.panelHeading}>
-        <h2 id="user-list-title">{title}</h2>
+        <h2 id={titleId} tabIndex={-1}>
+          {title}
+        </h2>
         {loading ? <span role="status">Đang cập nhật…</span> : null}
       </div>
       <div className={styles.recordList}>{children}</div>
@@ -210,11 +214,13 @@ export function UserListPanel({
 }
 
 export function UserDetailIdentity({
+  aside,
   email,
   fullName,
   identity,
   status,
 }: Readonly<{
+  aside?: ReactNode;
   email: string;
   fullName: string;
   identity: string;
@@ -223,19 +229,65 @@ export function UserDetailIdentity({
   return (
     <div className={styles.detailIdentity}>
       <UserAvatar fullName={fullName} identity={identity} large />
-      <div>
+      <div className={styles.detailIdentityCopy}>
         <h3>{fullName}</h3>
         <p>{email}</p>
         <StatusChip label={status.label} tone={status.tone} />
       </div>
+      {aside === undefined ? null : <div className={styles.detailIdentityAside}>{aside}</div>}
     </div>
   );
 }
 
-export function UserDetailField({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
+export function UserDetailSummary({
+  items,
+}: Readonly<{
+  items: readonly Readonly<{ icon: ReactNode; label: string; value: ReactNode }>[];
+}>) {
+  return (
+    <dl className={styles.detailSummary} aria-label="Tóm tắt hồ sơ">
+      {items.map((item) => (
+        <div className={styles.detailSummaryItem} key={item.label}>
+          <span aria-hidden="true" className={styles.detailSummaryIcon}>
+            {item.icon}
+          </span>
+          <span className={styles.detailSummaryCopy}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </span>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function UserDetailSection({
+  children,
+  title,
+}: Readonly<{ children: ReactNode; title: string }>) {
+  return (
+    <section className={styles.detailSection}>
+      <h3>{title}</h3>
+      <dl className={styles.detailList}>{children}</dl>
+    </section>
+  );
+}
+
+export function UserDetailField({
+  icon,
+  label,
+  value,
+}: Readonly<{ icon?: ReactNode; label: string; value: ReactNode }>) {
   return (
     <div className={styles.detailField}>
-      <dt>{label}</dt>
+      <dt>
+        {icon === undefined ? null : (
+          <span aria-hidden="true" className={styles.detailFieldIcon}>
+            {icon}
+          </span>
+        )}
+        <span>{label}</span>
+      </dt>
       <dd>{value}</dd>
     </div>
   );
