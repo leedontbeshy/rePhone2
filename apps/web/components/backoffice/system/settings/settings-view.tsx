@@ -109,6 +109,8 @@ export function SettingsView() {
   async function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (settings === undefined || draft === undefined || busy !== undefined) return;
+    setError(undefined);
+    setNotice(undefined);
     const validation = validateSettingsDraft(settings, draft);
     setFieldErrors(validation.errors);
     if (validation.input === undefined) {
@@ -216,6 +218,7 @@ export function SettingsView() {
 
   function changeDraft(field: SettingsField, value: string) {
     setDraft((current) => (current === undefined ? current : { ...current, [field]: value }));
+    setNotice(undefined);
     setFieldErrors((current) =>
       Object.fromEntries(Object.entries(current).filter(([key]) => key !== field)),
     );
@@ -545,6 +548,7 @@ export function SettingsView() {
                   const file = event.target.files?.[0];
                   setQrFile(file);
                   setQrError(file === undefined ? undefined : validateQrFile(file));
+                  setNotice(undefined);
                 }}
               />
               {qrError === undefined ? null : (
