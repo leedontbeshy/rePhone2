@@ -199,7 +199,7 @@ export function CustomerAdminView() {
             }
           : { message: 'Đã kích hoạt lại khách hàng.', tone: 'success' },
       );
-      await refreshList(false);
+      void refreshList(false);
     } catch (caught) {
       if (isStateConflict(caught)) {
         setDialogOpen(false);

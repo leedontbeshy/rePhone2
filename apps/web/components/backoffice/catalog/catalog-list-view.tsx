@@ -150,7 +150,6 @@ export function CatalogListView({
 
       <section
         className={styles.board}
-        data-updating={loading && products.length > 0}
         aria-busy={loading || undefined}
         aria-label="Danh sách sản phẩm"
       >

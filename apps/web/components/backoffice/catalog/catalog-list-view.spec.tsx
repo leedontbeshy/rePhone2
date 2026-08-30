@@ -42,4 +42,33 @@ describe('bảng danh mục sản phẩm', () => {
     expect(nextSuggestionIndex(0, 3, 'ArrowUp')).toBe(2);
     expect(nextSuggestionIndex(-1, 0, 'ArrowDown')).toBe(-1);
   });
+
+  it('keeps loaded product links interactive while refreshing the list', () => {
+    const markup = renderToStaticMarkup(
+      <CatalogListView
+        counts={{ ACTIVE: 1, ARCHIVED: 0, DRAFT: 0, total: 1 }}
+        loading
+        pagination={{ page: 1, pageSize: 6, totalItems: 1, totalPages: 1 }}
+        products={[
+          {
+            id: 'product-1',
+            name: 'iPhone 16 Pro',
+            primaryMedia: null,
+            releaseYear: 2024,
+            slug: 'iphone-16-pro',
+            status: 'ACTIVE',
+            type: 'IPHONE',
+            updatedAt: '2026-08-28T07:20:00.000Z',
+            variantCount: 4,
+          },
+        ]}
+        query={{ page: 1, pageSize: 6, sortBy: 'releaseYear', sortOrder: 'desc' }}
+      />,
+    );
+
+    expect(markup).toContain('Đang cập nhật danh sách…');
+    expect(markup).toContain('href="/backoffice/catalog/products/product-1"');
+    expect(markup).not.toContain('data-updating');
+    expect(markup).not.toContain('aria-disabled="true"');
+  });
 });

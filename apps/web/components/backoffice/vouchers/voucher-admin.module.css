@@ -216,14 +216,6 @@
   gap: var(--space-4);
 }
 
-.voucherBoard[data-updating='true'] .voucherCard {
-  opacity: 0.72;
-}
-
-.voucherCard[aria-disabled='true'] {
-  cursor: wait;
-}
-
 .updateStatus {
   grid-column: 1 / -1;
   margin: 0;

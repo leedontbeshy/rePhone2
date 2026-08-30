@@ -277,7 +277,6 @@ export function VoucherListView() {
             className={styles.voucherBoard}
             aria-label="Danh sách mã ưu đãi"
             aria-busy={loading || undefined}
-            data-updating={loading && vouchers.length > 0}
           >
             {loading && vouchers.length > 0 ? (
               <p className={styles.updateStatus} role="status">
@@ -290,9 +289,7 @@ export function VoucherListView() {
                 <p>Hãy thay đổi bộ lọc hoặc tạo một chương trình mới.</p>
               </div>
             ) : (
-              vouchers.map((voucher) => (
-                <VoucherBoardCard disabled={loading} key={voucher.id} voucher={voucher} />
-              ))
+              vouchers.map((voucher) => <VoucherBoardCard key={voucher.id} voucher={voucher} />)
             )}
           </section>
         )}
@@ -313,10 +310,7 @@ export function VoucherListView() {
   );
 }
 
-function VoucherBoardCard({
-  disabled,
-  voucher,
-}: Readonly<{ disabled: boolean; voucher: Voucher }>) {
+export function VoucherBoardCard({ voucher }: Readonly<{ voucher: Voucher }>) {
   const used = voucher.usageCounts.consumed;
   const usageSummary =
     voucher.totalUsageLimit === null || voucher.totalUsageLimit === undefined
@@ -327,13 +321,8 @@ function VoucherBoardCard({
 
   return (
     <Link
-      aria-disabled={disabled || undefined}
       className={styles.voucherCard}
       href={`${VOUCHERS_ROOT}/${encodeURIComponent(voucher.id)}`}
-      onClick={(event) => {
-        if (disabled) event.preventDefault();
-      }}
-      tabIndex={disabled ? -1 : undefined}
     >
       <span className={styles.voucherCode}>{voucher.code}</span>
       <span className={styles.cardCopy}>

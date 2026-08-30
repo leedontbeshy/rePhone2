@@ -342,10 +342,6 @@
   gap: var(--space-3);
 }
 
-.board[data-updating='true'] .productCard {
-  opacity: 0.72;
-}
-
 .updateStatus {
   grid-column: 1 / -1;
   margin: 0;

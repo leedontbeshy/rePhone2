@@ -294,7 +294,7 @@ export function EmployeeAdminView() {
         setNotice({ message: 'Đã cập nhật hồ sơ nhân viên.', tone: 'success' });
       }
       setFieldErrors({});
-      await refreshList(false);
+      void refreshList(false);
     } catch (caught) {
       if (selected !== undefined && isStateConflict(caught)) {
         await reloadEmployeeAfterConflict(selected.id);
@@ -365,7 +365,7 @@ export function EmployeeAdminView() {
               }
             : { message: 'Đã kích hoạt lại nhân viên.', tone: 'success' },
       );
-      await refreshList(false);
+      void refreshList(false);
     } catch (caught) {
       if (isStateConflict(caught)) {
         setLifecycleAction(undefined);
