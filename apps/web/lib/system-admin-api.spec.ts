@@ -84,46 +84,21 @@ describe('audit API adapter', () => {
 });
 
 describe('getSystemHealthSnapshot', () => {
-  it('checks both machine endpoints outside the API prefix without cache reuse', async () => {
-    const get = vi
-      .fn()
-      .mockResolvedValueOnce(healthResult(200, { status: 'ok' }, 'request-live'))
-      .mockResolvedValueOnce(healthResult(200, { status: 'ok' }, 'request-ready'));
+  it('reads the guarded detailed endpoint without cache reuse', async () => {
+    const snapshot = healthSnapshot();
+    const get = vi.fn().mockResolvedValue({ data: { data: snapshot } });
 
-    const snapshot = await getSystemHealthSnapshot(clientWithGet(get), () => FIXED_NOW);
+    const result = await getSystemHealthSnapshot(clientWithGet(get));
 
-    expect(get).toHaveBeenNthCalledWith(1, '/health/live', { cache: 'no-store' });
-    expect(get).toHaveBeenNthCalledWith(2, '/health/ready', { cache: 'no-store' });
-    expect(snapshot).toEqual({
-      checkedAt: FIXED_NOW.toISOString(),
-      live: { state: 'healthy' },
-      ready: { state: 'healthy' },
+    expect(get).toHaveBeenCalledWith('/api/v1/backoffice/system/health', {
+      cache: 'no-store',
     });
-    expect(JSON.stringify(snapshot)).not.toContain('request-live');
-    expect(JSON.stringify(snapshot)).not.toContain('request-ready');
+    expect(result).toEqual(snapshot);
   });
 
-  it('distinguishes a readiness degradation from an unreachable liveness probe', async () => {
-    const get = vi
-      .fn()
-      .mockRejectedValueOnce(new TypeError('network unavailable'))
-      .mockResolvedValueOnce(healthResult(503, undefined, undefined, { status: 'error' }));
-
-    const snapshot = await getSystemHealthSnapshot(clientWithGet(get), () => FIXED_NOW);
-
-    expect(snapshot.live).toEqual({ state: 'unavailable' });
-    expect(snapshot.ready).toEqual({ state: 'degraded' });
-  });
-
-  it('fails closed for an unexpected readiness payload', async () => {
-    const get = vi
-      .fn()
-      .mockResolvedValueOnce(healthResult(200, { status: 'ok' }))
-      .mockResolvedValueOnce(healthResult(200, { status: 'unexpected' }));
-
-    const snapshot = await getSystemHealthSnapshot(clientWithGet(get), () => FIXED_NOW);
-
-    expect(snapshot.ready).toEqual({ state: 'unavailable' });
+  it('fails closed when the detailed envelope is missing', async () => {
+    const get = vi.fn().mockResolvedValue({ error: { error: { message: 'An toàn' } } });
+    await expect(getSystemHealthSnapshot(clientWithGet(get))).rejects.toThrow('An toàn');
   });
 });
 
@@ -133,13 +108,27 @@ function clientWithGet(get: ReturnType<typeof vi.fn>): SystemApiClient {
   return { GET: get } as unknown as SystemApiClient;
 }
 
-function healthResult(status: number, data?: unknown, requestId?: string, error?: unknown) {
-  const headers = new Headers();
-  if (requestId !== undefined) headers.set('x-request-id', requestId);
+function healthSnapshot() {
   return {
-    data,
-    error,
-    response: new Response(null, { headers, status }),
+    state: 'healthy' as const,
+    checkedAt: FIXED_NOW.toISOString(),
+    durationMs: 21,
+    api: {
+      state: 'healthy' as const,
+      reason: 'ok' as const,
+      latencyMs: 0,
+      uptimeSeconds: 3600,
+      version: 'dev',
+    },
+    database: {
+      state: 'healthy' as const,
+      reason: 'ok' as const,
+      latencyMs: 12,
+      appliedMigrationCount: 12,
+      incompleteMigrationCount: 0,
+    },
+    storage: { state: 'healthy' as const, reason: 'ok' as const, latencyMs: 20 },
+    mail: { state: 'healthy' as const, reason: 'ok' as const, latencyMs: 8 },
   };
 }
 

@@ -10,17 +10,12 @@ export type AuditLogListItem = components['schemas']['AuditLogListItemDto'];
 export type AuditLogDetail = components['schemas']['AuditLogDetailDto'];
 export type UpdateSettingsInput = components['schemas']['UpdateStoreSettingsDto'];
 
-export type HealthProbeState = 'healthy' | 'degraded' | 'unavailable';
-
-export interface HealthProbeResult {
-  state: HealthProbeState;
-}
-
-export interface SystemHealthSnapshot {
-  checkedAt: string;
-  live: HealthProbeResult;
-  ready: HealthProbeResult;
-}
+export type HealthProbeResult = components['schemas']['SystemDependencyHealthDto'];
+export type HealthProbeState = HealthProbeResult['state'];
+export type HealthReason = HealthProbeResult['reason'];
+export type ApiHealthProbeResult = components['schemas']['SystemApiHealthDto'];
+export type DatabaseHealthProbeResult = components['schemas']['SystemDatabaseHealthDto'];
+export type SystemHealthSnapshot = components['schemas']['SystemHealthDetailDto'];
 
 export interface Pagination {
   page: number;
@@ -236,21 +231,17 @@ export async function getAuditLog(client: SystemApiClient, id: string): Promise<
   return result.data.data;
 }
 
-/**
- * Reads both public machine probes without allowing one failed request to hide
- * the other result. The UI deliberately receives only safe state and the local
- * observation time; infrastructure details never cross this adapter.
- */
+/** Reads the safe, administrator-only backend health snapshot without cache reuse. */
 export async function getSystemHealthSnapshot(
   client: SystemApiClient,
-  now: () => Date = () => new Date(),
 ): Promise<SystemHealthSnapshot> {
-  const [live, ready] = await Promise.all([readLiveness(client), readReadiness(client)]);
-  return {
-    checkedAt: now().toISOString(),
-    live,
-    ready,
-  };
+  const result = await client.GET('/api/v1/backoffice/system/health', {
+    cache: 'no-store',
+  });
+  if (result.data === undefined) {
+    throw systemError(result.error, 'Không thể kiểm tra trạng thái hệ thống.');
+  }
+  return result.data.data;
 }
 
 export function systemError(value: unknown, fallback: string): Error {
@@ -320,30 +311,6 @@ async function customerLifecycle(
         });
   if (result.data === undefined) throw systemError(result.error, 'Không thể đổi trạng thái.');
   return result.data.data;
-}
-
-async function readLiveness(client: SystemApiClient): Promise<HealthProbeResult> {
-  try {
-    const result = await client.GET('/health/live', { cache: 'no-store' });
-    return { state: result.data?.status === 'ok' ? 'healthy' : 'unavailable' };
-  } catch {
-    return { state: 'unavailable' };
-  }
-}
-
-async function readReadiness(client: SystemApiClient): Promise<HealthProbeResult> {
-  try {
-    const result = await client.GET('/health/ready', { cache: 'no-store' });
-    const state: HealthProbeState =
-      result.data?.status === 'ok'
-        ? 'healthy'
-        : result.response.status === 503 && result.error?.status === 'error'
-          ? 'degraded'
-          : 'unavailable';
-    return { state };
-  } catch {
-    return { state: 'unavailable' };
-  }
 }
 
 function pageFrom<T>(
