@@ -10,7 +10,11 @@ interface VisibleScrollOffsetInput extends CenteredScrollOffsetInput {
   readonly targetEnd: number;
 }
 
-export function clampScrollOffset(offset: number, scrollSize: number, viewportSize: number): number {
+export function clampScrollOffset(
+  offset: number,
+  scrollSize: number,
+  viewportSize: number,
+): number {
   return Math.max(0, Math.min(offset, Math.max(0, scrollSize - viewportSize)));
 }
 

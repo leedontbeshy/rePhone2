@@ -31,7 +31,16 @@ export class OperationsOverviewRecentOrderDto {
   @ApiProperty({ enum: ['PLACED', 'CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED'] })
   public status!: string;
   @ApiProperty({
-    enum: ['PENDING', 'PREPARING', 'READY', 'IN_TRANSIT', 'COMPLETED', 'FAILED', 'RETURNED', 'CANCELLED'],
+    enum: [
+      'PENDING',
+      'PREPARING',
+      'READY',
+      'IN_TRANSIT',
+      'COMPLETED',
+      'FAILED',
+      'RETURNED',
+      'CANCELLED',
+    ],
   })
   public fulfillmentStatus!: string;
   @ApiProperty({

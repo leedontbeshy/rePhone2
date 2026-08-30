@@ -33,10 +33,9 @@
 
 .queueList {
   display: grid;
-  grid-template-columns: minmax(12rem, 1.15fr) minmax(13rem, 1.25fr) minmax(12rem, 1fr) minmax(
-      10rem,
-      0.8fr
-    ) auto;
+  grid-template-columns:
+    minmax(12rem, 1.15fr) minmax(13rem, 1.25fr) minmax(12rem, 1fr) minmax(10rem, 0.8fr)
+    auto;
   column-gap: var(--space-4);
   margin: 0;
   padding: 0;

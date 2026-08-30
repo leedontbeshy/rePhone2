@@ -6,10 +6,7 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { DEFAULT_MAIN_ID, MainLandmark, NavigationList, SkipLink, Wordmark } from './shell-parts';
 import { joinClassNames } from './shell-utils';
 import type { BackofficeNavigationGroup, SharedShellProps } from './shell.types';
-import {
-  centeredScrollOffset,
-  scrollOffsetForVisibleTarget,
-} from './backoffice-shell-scroll';
+import { centeredScrollOffset, scrollOffsetForVisibleTarget } from './backoffice-shell-scroll';
 import styles from './shells.module.css';
 
 const SIDEBAR_SCROLL_STORAGE_KEY = 'rephone:backoffice-sidebar-scroll-top';
