@@ -127,6 +127,72 @@ final result: passed
 
 ---
 
+# Design QA — FE-08 quản trị hệ thống
+
+Ngày kiểm tra: 2026-08-30
+
+Trang xem chính: `http://localhost:3000/backoffice/employees`
+
+## Phạm vi
+
+Năm workspace, tương ứng sáu route, đã được kiểm tra:
+
+- `/backoffice/employees`
+- `/backoffice/customers`
+- `/backoffice/settings`
+- `/backoffice/audit-logs`
+- `/backoffice/audit-logs/[id]`
+- `/backoffice/system/health`
+
+## Nguồn và trạng thái đối chiếu
+
+- Mockup được duyệt: [quản lý nhân viên — phương án 2](docs/assets/ui/fe-08/employee-master-detail-selected.png).
+- Bản triển khai: tài khoản quản trị viên, danh sách nhân viên đã tải và hồ sơ đầu tiên được chọn.
+- Vùng nhìn logic dùng để kiểm tra là `1280 × 720`; ảnh trình duyệt lưu ở `1265 × 712` do phần viền của cửa sổ nhúng.
+- Mockup được co và cắt về cùng vùng nhìn trước khi đánh giá, không thay đổi nội dung thiết kế.
+- Ảnh đối chiếu kết hợp: [mockup và bản triển khai](docs/assets/ui/fe-08/qa-employees-comparison.png).
+
+## Ảnh kiểm tra
+
+- [Quản lý nhân viên](docs/assets/ui/fe-08/qa-employees-1280.png).
+- [Quản lý khách hàng](docs/assets/ui/fe-08/qa-customers-1280.png).
+- [Cấu hình cửa hàng](docs/assets/ui/fe-08/qa-settings-1280.png).
+- [Nhật ký hoạt động](docs/assets/ui/fe-08/qa-audit-1280.png).
+- [Trạng thái hệ thống](docs/assets/ui/fe-08/qa-health-1280.png).
+
+## Kết quả đối chiếu và các vòng sửa
+
+- Bản triển khai giữ đúng cấu trúc master–detail, thẻ hồ sơ, hàng đang chọn, nhịp khoảng cách và màu chủ đạo của mockup.
+- Sidebar tiếp tục mở đầy đủ theo yêu cầu trước đó của người dùng và giữ chiều rộng chung của workspace vận hành; đây là khác biệt có chủ đích so với mockup rút gọn.
+- Dữ liệu thật có tên, email và mã nhân viên dài hơn mockup; danh sách vẫn cắt chữ an toàn và cột trạng thái không làm xô lệch chi tiết.
+- Lần kiểm tra đầu phát hiện hồ sơ cũ vẫn còn sau khi đổi bộ lọc. Bản sửa hiện xóa lựa chọn ngay khi tìm kiếm, đổi trạng thái hoặc đổi sắp xếp.
+- Vòng đối chiếu đầu có viền lấy nét thừa quanh tiêu đề được lấy nét bằng chương trình. Viền này đã được bỏ khỏi tiêu đề không tương tác, không ảnh hưởng focus của nút và trường nhập.
+- Lỗi tổng của biểu mẫu cấu hình từng còn lại sau khi người dùng sửa trường sai. Bản sửa hiện xóa lỗi cũ ngay khi nội dung được điều chỉnh; lỗi riêng từng trường và trạng thái xung đột vẫn giữ đúng chức năng.
+- Liên kết xem ảnh QR thông báo rõ việc mở trong thẻ mới cho trình đọc màn hình.
+
+## Quyền và hành trình đã kiểm tra trực tiếp
+
+- Quản trị viên mở được cả năm workspace, lọc danh sách không tải lại toàn trang và xem được hồ sơ chi tiết.
+- Nhân viên bị chặn ngay tại quản lý nhân viên, không nhìn thấy nội dung bên trong; quản lý khách hàng chỉ có quyền xem và không có thao tác đổi trạng thái.
+- Khách hàng truy cập link quản trị bị chặn trước khi shell quản trị xuất hiện.
+- Cấu hình cửa hàng xử lý trường bắt buộc, giới hạn giá trị tiền, thay đổi chưa lưu, xung đột phiên bản và ảnh QR.
+- Nhật ký chỉ hiển thị dữ liệu đã được làm sạch; danh sách, bộ lọc, phân trang và chi tiết giữ cùng workspace.
+- Trạng thái hệ thống phân biệt sẵn sàng, suy giảm và không kết nối; nút kiểm tra lại hoạt động tại chỗ.
+
+## Cổng chất lượng
+
+- Web test: `117/117` tệp, `535/535` bài kiểm tra đạt.
+- API unit test: `110/110` tệp, `670/670` bài kiểm tra đạt.
+- API E2E cấu hình/nhật ký: `6/6` đạt, bao gồm biên tiền 15/16 chữ số và không ghi thay đổi khi dữ liệu sai.
+- Frontend coverage contract: `4/4` đạt; FE-08 có `18/18` operation `DONE`, toàn ledger `160/160` `DONE`.
+- Web/API lint và typecheck: đạt.
+- Production build: đạt; route `/backoffice/system/health` có trong kết quả build.
+- Kiểm tra khoảng trắng thay đổi: đạt.
+
+final result: passed
+
+---
+
 # Design QA — FE-07 vận hành đơn hàng và hậu mãi
 
 Ngày kiểm tra: 2026-08-29
