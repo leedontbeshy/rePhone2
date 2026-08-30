@@ -59,6 +59,10 @@
   box-shadow: var(--shadow-raised);
 }
 
+.statusPanel {
+  gap: var(--space-5);
+}
+
 .summary {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
