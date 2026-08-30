@@ -2,11 +2,17 @@
 
 import Link from 'next/link';
 import { StorefrontIcon, UserIcon } from '@phosphor-icons/react/ssr';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { DEFAULT_MAIN_ID, MainLandmark, NavigationList, SkipLink, Wordmark } from './shell-parts';
 import { joinClassNames } from './shell-utils';
 import type { BackofficeNavigationGroup, SharedShellProps } from './shell.types';
+import {
+  centeredScrollOffset,
+  scrollOffsetForVisibleTarget,
+} from './backoffice-shell-scroll';
 import styles from './shells.module.css';
+
+const SIDEBAR_SCROLL_STORAGE_KEY = 'rephone:backoffice-sidebar-scroll-top';
 
 export interface ShellBreadcrumb {
   readonly href?: string;
@@ -36,35 +42,58 @@ export function BackofficeShell({
   mainId = DEFAULT_MAIN_ID,
   mainClassName,
 }: Readonly<BackofficeShellProps>) {
+  const sidebarRef = useRef<HTMLElement>(null);
   const navigationRef = useRef<HTMLElement>(null);
   const currentNavigationHref = navigationGroups
     .flatMap((group) => group.items)
     .find((item) => item.isCurrent)?.href;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const sidebar = sidebarRef.current;
     const navigation = navigationRef.current;
-    if (navigation === null) return;
+    if (sidebar === null || navigation === null) return;
 
     const centerCurrentNavigation = () => {
       const current = navigation.querySelector<HTMLElement>('[aria-current="page"]');
-      if (current === null || navigation.scrollWidth <= navigation.clientWidth) return;
-      const navigationRect = navigation.getBoundingClientRect();
+      if (current === null) return;
       const currentRect = current.getBoundingClientRect();
-      const targetLeft =
-        navigation.scrollLeft +
-        currentRect.left -
-        navigationRect.left -
-        (navigationRect.width - currentRect.width) / 2;
-      navigation.scrollTo({
-        behavior: 'auto',
-        left: Math.max(0, Math.min(targetLeft, navigation.scrollWidth - navigation.clientWidth)),
-      });
+
+      if (sidebar.scrollHeight > sidebar.clientHeight) {
+        const sidebarRect = sidebar.getBoundingClientRect();
+        sidebar.scrollTop = scrollOffsetForVisibleTarget({
+          currentOffset: sidebar.scrollTop,
+          scrollSize: sidebar.scrollHeight,
+          targetEnd: currentRect.bottom - sidebarRect.top,
+          targetSize: currentRect.height,
+          targetStart: currentRect.top - sidebarRect.top,
+          viewportSize: sidebar.clientHeight,
+        });
+      }
+
+      if (navigation.scrollWidth > navigation.clientWidth) {
+        const navigationRect = navigation.getBoundingClientRect();
+        navigation.scrollLeft = centeredScrollOffset({
+          currentOffset: navigation.scrollLeft,
+          scrollSize: navigation.scrollWidth,
+          targetSize: currentRect.width,
+          targetStart: currentRect.left - navigationRect.left,
+          viewportSize: navigation.clientWidth,
+        });
+      }
     };
 
+    sidebar.scrollTop = readStoredSidebarScrollTop();
     centerCurrentNavigation();
+    const rememberSidebarPosition = () => {
+      storeSidebarScrollTop(sidebar.scrollTop);
+    };
     const resizeObserver = new ResizeObserver(centerCurrentNavigation);
     resizeObserver.observe(navigation);
+    resizeObserver.observe(sidebar);
+    sidebar.addEventListener('scroll', rememberSidebarPosition, { passive: true });
     return () => {
+      rememberSidebarPosition();
+      sidebar.removeEventListener('scroll', rememberSidebarPosition);
       resizeObserver.disconnect();
     };
   }, [currentNavigationHref]);
@@ -98,6 +127,7 @@ export function BackofficeShell({
         </div>
       </header>
       <aside
+        ref={sidebarRef}
         className={joinClassNames(
           styles.backofficeSidebar,
           showNavigationGroupLabels ? styles.backofficeSidebarWithLabels : undefined,
@@ -151,4 +181,21 @@ export function BackofficeShell({
       </div>
     </div>
   );
+}
+
+function readStoredSidebarScrollTop(): number {
+  try {
+    const value = Number(window.sessionStorage.getItem(SIDEBAR_SCROLL_STORAGE_KEY));
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function storeSidebarScrollTop(scrollTop: number): void {
+  try {
+    window.sessionStorage.setItem(SIDEBAR_SCROLL_STORAGE_KEY, String(Math.max(0, scrollTop)));
+  } catch {
+    // Navigation remains usable when session storage is unavailable.
+  }
 }
