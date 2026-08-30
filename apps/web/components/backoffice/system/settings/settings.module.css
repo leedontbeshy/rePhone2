@@ -130,6 +130,7 @@
 .rail {
   position: sticky;
   inset-block-start: calc(var(--backoffice-topbar-height, 76px) + var(--space-6));
+  align-items: start;
 }
 
 .summaryCard,
@@ -144,7 +145,10 @@
 
 .summaryCard {
   display: grid;
+  align-self: start;
+  align-content: start;
   grid-template-columns: auto minmax(0, 1fr);
+  grid-auto-rows: max-content;
   gap: var(--space-4);
 }
 
@@ -238,6 +242,15 @@
   box-shadow: var(--shadow-raised);
 }
 
+.filePickerDisabled,
+.filePickerDisabled:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .filePicker > span {
   display: grid;
   min-width: 0;
@@ -279,6 +292,13 @@
 
 .fileError {
   color: var(--color-danger) !important;
+}
+
+.conflictActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
 }
 
 .loadingHeading,
@@ -344,6 +364,10 @@
 
   .formFooter span {
     margin-inline-end: 0;
+  }
+
+  .conflictActions > button {
+    width: 100%;
   }
 }
 

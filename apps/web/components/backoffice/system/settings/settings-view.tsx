@@ -20,6 +20,7 @@ import {
   type StoreSettings,
 } from '@/lib/system-admin-api';
 import {
+  changedSettingsFields,
   hasSettingsChanges,
   settingsToDraft,
   validateQrFile,
@@ -33,6 +34,7 @@ import styles from './settings.module.css';
 export function SettingsView() {
   const { client } = useAuth();
   const [settings, setSettings] = useState<StoreSettings>();
+  const [draftBaseline, setDraftBaseline] = useState<StoreSettings>();
   const [draft, setDraft] = useState<SettingsDraft>();
   const [fieldErrors, setFieldErrors] = useState<SettingsErrors>({});
   const [qrFile, setQrFile] = useState<File>();
@@ -50,7 +52,10 @@ export function SettingsView() {
     async (replaceDraft: boolean) => {
       const current = await getSettings(client);
       setSettings(current);
-      if (replaceDraft) setDraft(settingsToDraft(current));
+      if (replaceDraft) {
+        setDraft(settingsToDraft(current));
+        setDraftBaseline(current);
+      }
       return current;
     },
     [client],
@@ -76,8 +81,11 @@ export function SettingsView() {
   }, [error]);
 
   const dirty = useMemo(
-    () => settings !== undefined && draft !== undefined && hasSettingsChanges(settings, draft),
-    [draft, settings],
+    () =>
+      draftBaseline !== undefined &&
+      draft !== undefined &&
+      hasSettingsChanges(draftBaseline, draft),
+    [draft, draftBaseline],
   );
 
   async function reload() {
@@ -108,6 +116,10 @@ export function SettingsView() {
       return;
     }
     if (Object.keys(validation.input).length === 1) {
+      setDraft(settingsToDraft(settings));
+      setDraftBaseline(settings);
+      setFieldErrors({});
+      setError(undefined);
       setNotice('Chưa có thay đổi nào cần lưu.');
       return;
     }
@@ -119,6 +131,7 @@ export function SettingsView() {
       const updated = await updateSettings(client, validation.input);
       setSettings(updated);
       setDraft(settingsToDraft(updated));
+      setDraftBaseline(updated);
       setFieldErrors({});
       setConflict(false);
       setNotice('Đã lưu cấu hình cửa hàng.');
@@ -201,6 +214,23 @@ export function SettingsView() {
     message,
   }));
 
+  function changeDraft(field: SettingsField, value: string) {
+    setDraft((current) => (current === undefined ? current : { ...current, [field]: value }));
+    setFieldErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([key]) => key !== field)),
+    );
+  }
+
+  function keepLocalChanges() {
+    if (draftBaseline === undefined || settings === undefined || draft === undefined) return;
+    const rebased = settingsToDraft(settings);
+    for (const field of changedSettingsFields(draftBaseline, draft)) rebased[field] = draft[field];
+    setDraft(rebased);
+    setDraftBaseline(settings);
+    setConflict(false);
+    setFieldErrors({});
+  }
+
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -239,17 +269,23 @@ export function SettingsView() {
             Cấu hình đã được cập nhật ở nơi khác. Bản mới nhất đã tải xong; nội dung bạn đang nhập
             vẫn được giữ để bạn đối chiếu.
           </p>
-          <Button
-            size="compact"
-            variant="secondary"
-            onClick={() => {
-              setDraft(settingsToDraft(settings));
-              setConflict(false);
-              setFieldErrors({});
-            }}
-          >
-            Dùng dữ liệu mới nhất
-          </Button>
+          <div className={styles.conflictActions}>
+            <Button
+              size="compact"
+              variant="secondary"
+              onClick={() => {
+                setDraft(settingsToDraft(settings));
+                setDraftBaseline(settings);
+                setConflict(false);
+                setFieldErrors({});
+              }}
+            >
+              Dùng dữ liệu mới nhất
+            </Button>
+            <Button size="compact" onClick={keepLocalChanges}>
+              Giữ các trường tôi đã sửa
+            </Button>
+          </div>
         </InlineAlert>
       ) : null}
 
@@ -263,22 +299,24 @@ export function SettingsView() {
             <div className={styles.twoColumns}>
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="storeName"
                 label="Tên cửa hàng"
                 maxLength={255}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 autoComplete="tel"
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="storePhone"
                 label="Số điện thoại"
                 maxLength={32}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <Textarea
                 containerClassName={styles.fullWidth ?? ''}
@@ -291,7 +329,7 @@ export function SettingsView() {
                 rows={3}
                 value={draft.storeAddress}
                 onChange={(event) => {
-                  updateDraft(draft, setDraft, 'storeAddress', event.target.value);
+                  changeDraft('storeAddress', event.target.value);
                 }}
               />
             </div>
@@ -304,48 +342,55 @@ export function SettingsView() {
             <div className={styles.twoColumns}>
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="defaultShippingFee"
                 inputMode="numeric"
                 label="Phí giao hàng mặc định (đồng)"
+                maxLength={15}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="shippingDepositAmount"
                 inputMode="numeric"
                 label="Tiền đặt trước khi giao hàng (đồng)"
+                maxLength={15}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="pickupHoldMinutes"
                 inputMode="numeric"
                 label="Thời gian giữ máy tại cửa hàng (phút)"
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="depositProofWindowMinutes"
                 inputMode="numeric"
                 label="Thời hạn gửi minh chứng (phút)"
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="depositReviewWindowMinutes"
                 inputMode="numeric"
                 label="Thời gian duyệt thanh toán (phút)"
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
             </div>
           </SettingsSection>
@@ -357,12 +402,13 @@ export function SettingsView() {
             <div className={styles.twoColumns}>
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="defaultWarrantyDays"
                 inputMode="numeric"
                 label="Thời hạn bảo hành mặc định (ngày)"
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <Textarea
                 containerClassName={styles.fullWidth ?? ''}
@@ -375,45 +421,54 @@ export function SettingsView() {
                 rows={5}
                 value={draft.defaultWarrantyTerms}
                 onChange={(event) => {
-                  updateDraft(draft, setDraft, 'defaultWarrantyTerms', event.target.value);
+                  changeDraft('defaultWarrantyTerms', event.target.value);
                 }}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="bankName"
                 label="Ngân hàng"
                 maxLength={255}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="bankAccountNumber"
                 inputMode="numeric"
                 label="Số tài khoản"
                 maxLength={255}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
               <SettingInput
                 containerClassName={styles.fullWidth ?? ''}
                 draft={draft}
+                disabled={busy !== undefined}
                 errors={fieldErrors}
                 field="bankAccountHolder"
                 label="Tên chủ tài khoản"
                 maxLength={255}
                 required
-                setDraft={setDraft}
+                onValueChange={changeDraft}
               />
             </div>
           </SettingsSection>
 
           <div className={styles.formFooter}>
-            <span>{dirty ? 'Có thay đổi chưa lưu' : 'Mọi thay đổi đã được lưu'}</span>
+            <span>
+              {conflict
+                ? 'Chọn cách xử lý dữ liệu mới trước khi lưu'
+                : dirty
+                  ? 'Có thay đổi chưa lưu'
+                  : 'Mọi thay đổi đã được lưu'}
+            </span>
             <Button
-              disabled={!dirty || busy !== undefined}
+              disabled={!dirty || conflict || busy !== undefined}
               iconLeading={<FloppyDiskIcon aria-hidden="true" size={18} />}
               loading={busy === 'save'}
               loadingLabel="Đang lưu"
@@ -458,7 +513,15 @@ export function SettingsView() {
               <p className={styles.qrEmpty}>Chưa có ảnh QR chuyển khoản.</p>
             )}
             <form className={styles.uploadForm} onSubmit={(event) => void upload(event)}>
-              <label className={styles.filePicker} htmlFor="settings-bank-qr">
+              <label
+                aria-disabled={busy !== undefined}
+                className={
+                  busy === undefined
+                    ? (styles.filePicker ?? '')
+                    : `${styles.filePicker ?? ''} ${styles.filePickerDisabled ?? ''}`
+                }
+                htmlFor="settings-bank-qr"
+              >
                 <UploadSimpleIcon aria-hidden="true" size={24} />
                 <span>
                   <strong>{qrFile?.name ?? 'Chọn ảnh QR mới'}</strong>
@@ -476,6 +539,8 @@ export function SettingsView() {
                 id="settings-bank-qr"
                 key={fileInputKey}
                 type="file"
+                aria-describedby={qrError === undefined ? undefined : 'settings-bank-qr-error'}
+                aria-invalid={qrError !== undefined}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   setQrFile(file);
@@ -483,7 +548,7 @@ export function SettingsView() {
                 }}
               />
               {qrError === undefined ? null : (
-                <p className={styles.fileError} role="alert">
+                <p className={styles.fileError} id="settings-bank-qr-error" role="alert">
                   {qrError}
                 </p>
               )}
@@ -539,10 +604,10 @@ interface SettingInputProps extends Omit<
   errors: SettingsErrors;
   field: SettingsField;
   label: string;
-  setDraft: (value: SettingsDraft) => void;
+  onValueChange: (field: SettingsField, value: string) => void;
 }
 
-function SettingInput({ draft, errors, field, label, setDraft, ...props }: SettingInputProps) {
+function SettingInput({ draft, errors, field, label, onValueChange, ...props }: SettingInputProps) {
   return (
     <Input
       {...props}
@@ -552,19 +617,10 @@ function SettingInput({ draft, errors, field, label, setDraft, ...props }: Setti
       label={label}
       value={draft[field]}
       onChange={(event) => {
-        updateDraft(draft, setDraft, field, event.target.value);
+        onValueChange(field, event.target.value);
       }}
     />
   );
-}
-
-function updateDraft(
-  draft: SettingsDraft,
-  setDraft: (value: SettingsDraft) => void,
-  field: SettingsField,
-  value: string,
-) {
-  setDraft({ ...draft, [field]: value });
 }
 
 function SettingsLoadingState() {

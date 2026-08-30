@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { StoreSettings } from '@/lib/system-admin-api';
 import {
+  changedSettingsFields,
   hasSettingsChanges,
   settingsToDraft,
   validateQrFile,
@@ -52,6 +53,26 @@ describe('settings model', () => {
     expect(hasSettingsChanges(SETTINGS, draft)).toBe(false);
   });
 
+  it('normalizes whitespace-only edits into an empty patch', () => {
+    const draft = settingsToDraft(SETTINGS);
+    draft.storeName = '  rePhone  ';
+
+    expect(hasSettingsChanges(SETTINGS, draft)).toBe(true);
+    expect(validateSettingsDraft(SETTINGS, draft)).toEqual({
+      errors: {},
+      input: { expectedVersion: 4 },
+    });
+    expect(changedSettingsFields(SETTINGS, draft)).toEqual([]);
+  });
+
+  it('compares numeric formatting by value when rebasing a conflict', () => {
+    const draft = settingsToDraft(SETTINGS);
+    draft.pickupHoldMinutes = '00120';
+    draft.defaultShippingFee = '030000';
+
+    expect(changedSettingsFields(SETTINGS, draft)).toEqual([]);
+  });
+
   it('returns field-specific messages for invalid money and time values', () => {
     const draft = settingsToDraft(SETTINGS);
     draft.defaultShippingFee = '-1';
@@ -66,6 +87,24 @@ describe('settings model', () => {
     expect(validation.errors.shippingDepositAmount).toContain('lớn hơn 0');
     expect(validation.errors.pickupHoldMinutes).toContain('10.080');
     expect(validation.errors.defaultWarrantyDays).toContain('3.650');
+    expect(hasSettingsChanges(SETTINGS, draft)).toBe(true);
+  });
+
+  it('accepts 15-digit money values and rejects 16 digits', () => {
+    const accepted = settingsToDraft(SETTINGS);
+    accepted.defaultShippingFee = '999999999999999';
+    accepted.shippingDepositAmount = '100000000000000';
+
+    expect(validateSettingsDraft(SETTINGS, accepted).errors).toEqual({});
+
+    const rejected = settingsToDraft(SETTINGS);
+    rejected.defaultShippingFee = '1000000000000000';
+    rejected.shippingDepositAmount = '1000000000000000';
+
+    const validation = validateSettingsDraft(SETTINGS, rejected);
+    expect(validation.input).toBeUndefined();
+    expect(validation.errors.defaultShippingFee).toContain('15 chữ số');
+    expect(validation.errors.shippingDepositAmount).toContain('15 chữ số');
   });
 
   it('validates QR type, size and empty files before upload', () => {

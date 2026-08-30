@@ -24,8 +24,8 @@ export interface SettingsValidation {
   input?: UpdateSettingsInput;
 }
 
-const MONEY_PATTERN = /^\d+$/;
-const POSITIVE_MONEY_PATTERN = /^[1-9]\d*$/;
+const MONEY_PATTERN = /^\d{1,15}$/;
+const POSITIVE_MONEY_PATTERN = /^[1-9]\d{0,14}$/;
 
 export function settingsToDraft(settings: StoreSettings): SettingsDraft {
   return {
@@ -85,10 +85,10 @@ export function validateSettingsDraft(
   );
 
   if (!MONEY_PATTERN.test(draft.defaultShippingFee)) {
-    errors.defaultShippingFee = 'Phí giao hàng phải là số nguyên không âm.';
+    errors.defaultShippingFee = 'Phí giao hàng phải là số nguyên không âm, tối đa 15 chữ số.';
   }
   if (!POSITIVE_MONEY_PATTERN.test(draft.shippingDepositAmount)) {
-    errors.shippingDepositAmount = 'Tiền đặt trước phải là số nguyên lớn hơn 0.';
+    errors.shippingDepositAmount = 'Tiền đặt trước phải là số nguyên lớn hơn 0, tối đa 15 chữ số.';
   }
   if (Object.keys(errors).length > 0) return { errors };
 
@@ -131,8 +131,19 @@ export function validateSettingsDraft(
 }
 
 export function hasSettingsChanges(settings: StoreSettings, draft: SettingsDraft): boolean {
-  const validation = validateSettingsDraft(settings, draft);
-  return validation.input !== undefined && Object.keys(validation.input).length > 1;
+  const current = settingsToDraft(settings);
+  return (Object.keys(current) as SettingsField[]).some((field) => draft[field] !== current[field]);
+}
+
+export function changedSettingsFields(
+  settings: StoreSettings,
+  draft: SettingsDraft,
+): SettingsField[] {
+  const current = comparableDraft(settingsToDraft(settings));
+  const candidate = comparableDraft(draft);
+  return (Object.keys(current) as SettingsField[]).filter(
+    (field) => candidate[field] !== current[field],
+  );
 }
 
 export function validateQrFile(file: File): string | undefined {
@@ -173,6 +184,27 @@ function normalizedText(draft: SettingsDraft, errors: SettingsErrors): SettingsD
     if (normalized[field] === '') errors[field] = message;
   }
   return normalized;
+}
+
+function comparableDraft(draft: SettingsDraft): SettingsDraft {
+  const comparable = { ...draft };
+  for (const field of Object.keys(comparable) as SettingsField[]) {
+    comparable[field] = comparable[field].trim();
+  }
+  for (const field of ['defaultShippingFee', 'shippingDepositAmount'] satisfies SettingsField[]) {
+    const value = comparable[field];
+    if (/^\d{1,15}$/.test(value)) comparable[field] = BigInt(value).toString();
+  }
+  for (const field of [
+    'defaultWarrantyDays',
+    'depositProofWindowMinutes',
+    'depositReviewWindowMinutes',
+    'pickupHoldMinutes',
+  ] satisfies SettingsField[]) {
+    const value = comparable[field];
+    if (/^\d+$/.test(value)) comparable[field] = String(Number(value));
+  }
+  return comparable;
 }
 
 function boundedInteger(

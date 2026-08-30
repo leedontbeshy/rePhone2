@@ -34,16 +34,16 @@ export class UpdateStoreSettingsDto {
   @Length(1, 2_000)
   public storeAddress?: string;
 
-  @ApiPropertyOptional({ type: String, pattern: '^\\d+$', example: '30000' })
+  @ApiPropertyOptional({ type: String, pattern: '^\\d{1,15}$', example: '30000' })
   @IsOptional()
   @IsString()
-  @Matches(/^\d+$/)
+  @Matches(/^\d{1,15}$/)
   public defaultShippingFee?: string;
 
-  @ApiPropertyOptional({ type: String, pattern: '^[1-9]\\d*$', example: '500000' })
+  @ApiPropertyOptional({ type: String, pattern: '^[1-9]\\d{0,14}$', example: '500000' })
   @IsOptional()
   @IsString()
-  @Matches(/^[1-9]\d*$/)
+  @Matches(/^[1-9]\d{0,14}$/)
   public shippingDepositAmount?: string;
 
   @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 10_080 })
