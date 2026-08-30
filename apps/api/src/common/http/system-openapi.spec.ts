@@ -30,7 +30,7 @@ const SLICE_12_OPERATIONS = [
   'getBackofficeAuditLog',
 ] as const;
 
-describe('Slice 12 final OpenAPI artifact', () => {
+describe('Current OpenAPI artifact', () => {
   const document = JSON.parse(
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
   ) as {
@@ -46,9 +46,9 @@ describe('Slice 12 final OpenAPI artifact', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('publishes exactly 160 unique operations and all seventeen Slice 12 operations', () => {
-    expect(operations).toHaveLength(160);
-    expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(160);
+  it('publishes exactly 162 unique operations and retains all seventeen Slice 12 operations', () => {
+    expect(operations).toHaveLength(162);
+    expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(162);
     expect(SLICE_12_OPERATIONS.every((operationId) => byId.has(operationId))).toBe(true);
   });
 

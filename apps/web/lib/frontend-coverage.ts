@@ -35,7 +35,7 @@ export type FrontendRouteCoverage = readonly [
 ];
 
 /**
- * Executable counterpart of the approved 160-row ledger in plan-fe.md.
+ * Executable counterpart of the approved 162-row ledger in plan-fe.md.
  *
  * Operation status progresses with its owning phase. Ownership alone never
  * counts as implemented UI and the plan ledger must move atomically with this
@@ -1798,6 +1798,28 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public machine probe; ADMIN quan sát',
     '/backoffice/system/health',
     'Hiển thị healthy/degraded/unavailable; retry thủ công',
+    'FE-8',
+    'browser:system-admin-health',
+    'DONE',
+  ],
+  [
+    'getBackofficeOperationsOverview',
+    'GET',
+    '/api/v1/backoffice/overview',
+    'EMPLOYEE hoặc ADMIN Bearer',
+    '/backoffice',
+    'Đọc tổng quan vận hành; loading, stale refresh, error, shortcut điều hướng',
+    'FE-8',
+    'browser:system-admin-health',
+    'DONE',
+  ],
+  [
+    'getBackofficeSystemHealth',
+    'GET',
+    '/api/v1/backoffice/system/health',
+    'ADMIN Bearer',
+    '/backoffice/system/health',
+    'Đọc chi tiết API, database, lưu trữ và email; loading, unavailable, retry thủ công',
     'FE-8',
     'browser:system-admin-health',
     'DONE',
