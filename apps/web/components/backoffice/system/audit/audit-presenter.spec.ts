@@ -6,6 +6,7 @@ import {
   auditDraftFromQuery,
   auditQueryFromDraft,
   auditWorkspaceHref,
+  humanizeAuditPayload,
   parseAuditQuery,
   projectAuditListItem,
 } from './audit-presenter';
@@ -104,5 +105,65 @@ describe('audit list projection', () => {
     expect(row).not.toHaveProperty('metadata');
     expect(row).not.toHaveProperty('requestId');
     expect(JSON.stringify(row)).not.toContain('must-not-enter-the-list-row');
+  });
+});
+
+describe('audit detail payload presentation', () => {
+  it('humanizes known before and after fields while isolating unknown technical data', () => {
+    const presentation = humanizeAuditPayload({
+      after: { status: 'SUSPENDED', unknownAfter: 'kept-as-fallback' },
+      before: { status: 'ACTIVE' },
+      reason: '[REDACTED]',
+    } as never);
+
+    expect(presentation.groups).toEqual([
+      {
+        fields: [{ key: 'reason', label: 'Lý do', value: '[REDACTED]' }],
+        key: 'summary',
+      },
+      {
+        fields: [{ key: 'status', label: 'Trạng thái', value: 'Đang hoạt động' }],
+        key: 'before',
+        title: 'Trước thay đổi',
+      },
+      {
+        fields: [{ key: 'status', label: 'Trạng thái', value: 'Tạm khóa' }],
+        key: 'after',
+        title: 'Sau thay đổi',
+      },
+    ]);
+    expect(presentation.fallbackJson).toContain('unknownAfter');
+    expect(presentation.fallbackJson).not.toContain('[REDACTED]');
+  });
+
+  it('describes shaped text metadata without exposing an object dump', () => {
+    const presentation = humanizeAuditPayload({
+      issue: { length: 42, present: true },
+    } as never);
+
+    expect(presentation.groups[0]?.fields[0]?.value).toBe('Có nội dung (42 ký tự)');
+    expect(presentation.fallbackJson).toBeUndefined();
+  });
+
+  it('keeps date-only values date-only and translates common statuses', () => {
+    const presentation = humanizeAuditPayload({
+      hiredAt: '2026-08-25',
+      status: 'PENDING_VERIFICATION',
+    } as never);
+
+    expect(presentation.groups[0]?.fields).toEqual([
+      { key: 'hiredAt', label: 'Ngày nhận việc', value: '25/08/2026' },
+      { key: 'status', label: 'Trạng thái', value: 'Chờ xác minh' },
+    ]);
+  });
+
+  it('keeps unknown enum values and non-object payloads inside the technical fallback', () => {
+    const unknownEnum = humanizeAuditPayload({ status: 'FUTURE_STATUS' } as never);
+    const arrayPayload = humanizeAuditPayload(['one', 'two'] as never);
+
+    expect(unknownEnum.groups).toHaveLength(0);
+    expect(unknownEnum.fallbackJson).toContain('FUTURE_STATUS');
+    expect(arrayPayload.groups).toHaveLength(0);
+    expect(arrayPayload.fallbackJson).toContain('one');
   });
 });

@@ -33,12 +33,13 @@ import {
   auditResourceLabel,
   auditWorkspaceHref,
   formatAuditDateTime,
-  formatAuditJson,
+  humanizeAuditPayload,
   parseAuditQuery,
   projectAuditListItem,
   type AuditFilterDraft,
   type AuditFilterErrors,
   type AuditListRow,
+  type AuditPayloadPresentation,
 } from './audit-presenter';
 import styles from './audit.module.css';
 
@@ -341,6 +342,22 @@ function AuditFilters({
   setDraft,
 }: AuditFiltersProps) {
   const knownAction = AUDIT_ACTION_FILTERS.some((option) => option.value === draft.action);
+  const advancedFilterCount = [
+    draft.resourceType,
+    draft.requestId,
+    draft.createdFrom,
+    draft.createdTo,
+  ].filter((value) => value !== '').length;
+  const [advancedOpen, setAdvancedOpen] = useState(advancedFilterCount > 0);
+  useEffect(() => {
+    if (
+      advancedFilterCount > 0 ||
+      errors.createdTo !== undefined ||
+      errors.resourceType !== undefined
+    ) {
+      setAdvancedOpen(true);
+    }
+  }, [advancedFilterCount, errors.createdTo, errors.resourceType]);
   const summaryErrors = Object.entries(errors).map(([field, message]) => ({
     href: `#audit-${field}` as `#${string}`,
     message,
@@ -402,9 +419,30 @@ function AuditFilters({
           <option value="desc">Mới nhất trước</option>
           <option value="asc">Cũ nhất trước</option>
         </Select>
+        <div className={styles.filterActions}>
+          <Button disabled={loading} type="submit">
+            Áp dụng
+          </Button>
+          <Button disabled={loading} type="button" variant="secondary" onClick={onReset}>
+            Xóa lọc
+          </Button>
+        </div>
       </div>
-      <details className={styles.advancedFilters}>
-        <summary>Bộ lọc chi tiết</summary>
+      <details
+        className={styles.advancedFilters}
+        open={advancedOpen}
+        onToggle={(event) => {
+          setAdvancedOpen(event.currentTarget.open);
+        }}
+      >
+        <summary>
+          <span>Bộ lọc chi tiết</span>
+          <small>
+            {advancedFilterCount > 0
+              ? `${String(advancedFilterCount)} điều kiện đang nhập`
+              : 'Theo đối tượng, mã yêu cầu hoặc thời gian'}
+          </small>
+        </summary>
         <div className={styles.advancedGrid}>
           <Input
             error={errors.resourceType}
@@ -446,14 +484,6 @@ function AuditFilters({
           />
         </div>
       </details>
-      <div className={styles.filterActions}>
-        <Button disabled={loading} type="submit">
-          Áp dụng bộ lọc
-        </Button>
-        <Button disabled={loading} type="button" variant="secondary" onClick={onReset}>
-          Xóa bộ lọc
-        </Button>
-      </div>
     </form>
   );
 }
@@ -475,6 +505,7 @@ export function AuditLogList({
         const selected = row.id === activeId;
         return (
           <NextLink
+            aria-current={selected ? 'page' : undefined}
             className={styles.auditRow}
             data-selected={selected || undefined}
             href={buildHref(row.id)}
@@ -540,8 +571,10 @@ export function AuditDetailPanel({
   }
   if (detail === undefined) return <AuditDetailSkeleton />;
 
-  const changes = formatAuditJson(detail.changes);
-  const metadata = formatAuditJson(detail.metadata);
+  const changes = humanizeAuditPayload(detail.changes);
+  const metadata = humanizeAuditPayload(detail.metadata);
+  const actorLabel = auditActorLabel(detail);
+  const resourceLabel = auditResourceLabel(detail.resourceType);
   return (
     <aside className={styles.detailPanel} aria-labelledby="audit-detail-title">
       <div className={styles.detailHeading}>
@@ -549,9 +582,9 @@ export function AuditDetailPanel({
         <h2 id="audit-detail-title" ref={headingRef} tabIndex={-1}>
           {auditActionLabel(detail.action)}
         </h2>
-        <span>{auditActorLabel(detail)}</span>
+        <span>{resourceLabel}</span>
       </div>
-      <dl className={styles.detailList}>
+      <dl className={styles.detailSummary}>
         <div>
           <dt>Thời điểm</dt>
           <dd>
@@ -559,40 +592,65 @@ export function AuditDetailPanel({
           </dd>
         </div>
         <div>
-          <dt>Đối tượng</dt>
-          <dd>{auditResourceLabel(detail.resourceType)}</dd>
+          <dt>Người thực hiện</dt>
+          <dd>{actorLabel}</dd>
         </div>
         <div>
           <dt>Mã đối tượng</dt>
           <dd>{detail.resourceId ?? 'Không có'}</dd>
         </div>
-        <div>
-          <dt>Mã yêu cầu</dt>
-          <dd>{detail.requestId ?? 'Không có'}</dd>
-        </div>
-        <div>
-          <dt>Địa chỉ mạng</dt>
-          <dd>{detail.ipAddress ?? 'Không ghi nhận'}</dd>
-        </div>
-        <div>
-          <dt>Thiết bị gửi yêu cầu</dt>
-          <dd>{detail.userAgent ?? 'Không ghi nhận'}</dd>
-        </div>
       </dl>
-      <AuditJsonSection title="Thay đổi được ghi nhận" value={changes} />
-      <AuditJsonSection title="Thông tin bổ sung" value={metadata} />
+      <section className={styles.detailGroup}>
+        <h3>Truy vết yêu cầu</h3>
+        <dl className={styles.detailList}>
+          <div>
+            <dt>Mã yêu cầu</dt>
+            <dd>{detail.requestId ?? 'Không có'}</dd>
+          </div>
+          <div>
+            <dt>Địa chỉ mạng</dt>
+            <dd>{detail.ipAddress ?? 'Không ghi nhận'}</dd>
+          </div>
+          <div>
+            <dt>Thiết bị gửi yêu cầu</dt>
+            <dd>{detail.userAgent ?? 'Không ghi nhận'}</dd>
+          </div>
+        </dl>
+      </section>
+      <AuditPayloadSection title="Thay đổi được ghi nhận" value={changes} />
+      <AuditPayloadSection title="Thông tin bổ sung" value={metadata} />
     </aside>
   );
 }
 
-function AuditJsonSection({
+function AuditPayloadSection({
   title,
   value,
-}: Readonly<{ title: string; value: string | undefined }>) {
+}: Readonly<{ title: string; value: AuditPayloadPresentation }>) {
+  const empty = value.groups.length === 0 && value.fallbackJson === undefined;
   return (
-    <section className={styles.jsonSection}>
+    <section className={styles.payloadSection}>
       <h3>{title}</h3>
-      {value === undefined ? <p>Không có dữ liệu.</p> : <pre>{value}</pre>}
+      {empty ? <p>Không có dữ liệu.</p> : null}
+      {value.groups.map((group) => (
+        <div className={styles.payloadGroup} key={group.key}>
+          {group.title === undefined ? null : <h4>{group.title}</h4>}
+          <dl className={styles.payloadFields}>
+            {group.fields.map((field) => (
+              <div key={field.key}>
+                <dt>{field.label}</dt>
+                <dd>{field.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ))}
+      {value.fallbackJson === undefined ? null : (
+        <details className={styles.payloadFallback}>
+          <summary>Dữ liệu kỹ thuật khác</summary>
+          <pre>{value.fallbackJson}</pre>
+        </details>
+      )}
     </section>
   );
 }

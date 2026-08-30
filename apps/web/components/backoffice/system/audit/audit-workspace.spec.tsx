@@ -31,7 +31,7 @@ describe('audit master-detail presentation', () => {
     expect(markup).not.toContain('list-request-sentinel');
   });
 
-  it('renders the selected detail with natural labels and sanitized JSON', () => {
+  it('renders the selected detail with hierarchy and humanized sanitized fields', () => {
     const detail = {
       ...auditItem(),
       changes: { reason: '[REDACTED]' },
@@ -51,9 +51,16 @@ describe('audit master-detail presentation', () => {
     );
 
     expect(markup).toContain('Đã vô hiệu hóa nhân viên');
+    expect(markup).toContain('Người thực hiện');
+    expect(markup).toContain('Truy vết yêu cầu');
     expect(markup).toContain('Thay đổi được ghi nhận');
+    expect(markup).toContain('Lý do');
     expect(markup).toContain('[REDACTED]');
     expect(markup).toContain('Thông tin bổ sung');
+    expect(markup).toContain('Kết quả');
+    expect(markup).toContain('Thành công');
+    expect(markup).not.toContain('&quot;reason&quot;');
+    expect(markup).not.toContain('&quot;result&quot;');
     expect(markup).not.toContain('employee.disabled');
   });
 
