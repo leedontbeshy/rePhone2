@@ -90,6 +90,7 @@ export function CustomerAdminView() {
   useEffect(() => {
     const expected = query.q ?? '';
     if (filters.q.trim() === expected) return;
+    if (selected !== undefined) setSelected(undefined);
     const timer = window.setTimeout(() => {
       router.replace(buildCustomerListHref(customerQueryFromDraft(filters, query)), {
         scroll: false,
@@ -98,7 +99,7 @@ export function CustomerAdminView() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [filters, query, router]);
+  }, [filters, query, router, selected]);
 
   const refreshList = useCallback(async () => {
     const request = ++listRequest.current;
@@ -204,6 +205,7 @@ export function CustomerAdminView() {
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    setSelected(undefined);
     router.push(buildCustomerListHref(customerQueryFromDraft(filters, query)), { scroll: false });
   }
 
@@ -232,6 +234,7 @@ export function CustomerAdminView() {
                 value === 'ACTIVE' || value === 'SUSPENDED' ? value : '';
               const next: CustomerFilterDraft = { ...filters, status };
               setFilters(next);
+              setSelected(undefined);
               router.push(buildCustomerListHref(customerQueryFromDraft(next, query)), {
                 scroll: false,
               });
@@ -247,6 +250,7 @@ export function CustomerAdminView() {
             onChange={(sortBy) => {
               const next = { ...filters, sortBy };
               setFilters(next);
+              setSelected(undefined);
               router.push(buildCustomerListHref(customerQueryFromDraft(next, query)), {
                 scroll: false,
               });

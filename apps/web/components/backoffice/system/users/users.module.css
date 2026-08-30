@@ -94,11 +94,15 @@
 
 .searchControl input:focus-visible,
 .selectControl select:focus-visible,
-.recordButton:focus-visible,
-.detailHeading h2:focus-visible {
+.recordButton:focus-visible {
   border-color: var(--color-primary);
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+.detailHeading h2:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .masterDetail {

@@ -119,6 +119,11 @@ export function EmployeeAdminView() {
   useEffect(() => {
     const expected = query.q ?? '';
     if (filters.q.trim() === expected) return;
+    if (mode === 'view') {
+      setSelected(undefined);
+      setDraft(EMPTY_EMPLOYEE_DRAFT);
+      setMode('empty');
+    }
     const timer = window.setTimeout(() => {
       router.replace(buildEmployeeListHref(employeeQueryFromDraft(filters, query)), {
         scroll: false,
@@ -127,7 +132,7 @@ export function EmployeeAdminView() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [filters, query, router]);
+  }, [filters, mode, query, router]);
 
   const refreshList = useCallback(async () => {
     const request = ++listRequest.current;
@@ -373,6 +378,11 @@ export function EmployeeAdminView() {
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mode === 'view') {
+      setSelected(undefined);
+      setDraft(EMPTY_EMPLOYEE_DRAFT);
+      setMode('empty');
+    }
     router.push(buildEmployeeListHref(employeeQueryFromDraft(filters, query)), { scroll: false });
   }
 
@@ -412,6 +422,11 @@ export function EmployeeAdminView() {
                   : '';
               const next: EmployeeFilterDraft = { ...filters, status };
               setFilters(next);
+              if (mode === 'view') {
+                setSelected(undefined);
+                setDraft(EMPTY_EMPLOYEE_DRAFT);
+                setMode('empty');
+              }
               router.push(buildEmployeeListHref(employeeQueryFromDraft(next, query)), {
                 scroll: false,
               });
@@ -508,7 +523,9 @@ export function EmployeeAdminView() {
                 onCancel={cancelEditor}
                 onChange={(field, value) => {
                   setDraft((current) => ({ ...current, [field]: value }));
-                  setFieldErrors((current) => ({ ...current, [field]: undefined }));
+                  setFieldErrors((current) =>
+                    Object.fromEntries(Object.entries(current).filter(([key]) => key !== field)),
+                  );
                 }}
                 onSubmit={(event) => {
                   void submitEmployee(event);
