@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import {
@@ -37,6 +37,7 @@ export default function InventoryStockPage() {
   const canLoad =
     status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN');
   const [query, setQuery] = useState<StockLevelQueryState>(() => currentQuery());
+  const queryRef = useRef(query);
   const [levels, setLevels] = useState<readonly InventoryStockLevel[]>([]);
   const [locations, setLocations] = useState<readonly InventoryLocation[]>([]);
   const [variants, setVariants] = useState<readonly StockVariantOption[]>([]);
@@ -47,7 +48,9 @@ export default function InventoryStockPage() {
 
   useEffect(() => {
     const syncFromBrowser = () => {
-      setQuery(currentQuery());
+      const next = currentQuery();
+      queryRef.current = next;
+      setQuery(next);
     };
     window.addEventListener('popstate', syncFromBrowser);
     return () => {
@@ -116,11 +119,10 @@ export default function InventoryStockPage() {
   }, [canLoad, loadLevels, queryKey]);
 
   const updateQuery = useCallback((overrides: StockLevelQueryOverrides) => {
-    setQuery((current) => {
-      const next = mergeStockLevelQuery(current, overrides);
-      window.history.pushState(null, '', buildStockLevelHref(next));
-      return next;
-    });
+    const next = mergeStockLevelQuery(queryRef.current, overrides);
+    queryRef.current = next;
+    setQuery(next);
+    window.history.pushState(null, '', buildStockLevelHref(next));
   }, []);
 
   const reconcile = useCallback(async () => {
