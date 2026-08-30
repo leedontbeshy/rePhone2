@@ -21,7 +21,12 @@ export interface ShellNavigationItem {
     | 'refunds'
     | 'after-sales'
     | 'warranties'
-    | 'warranty-policies';
+    | 'warranty-policies'
+    | 'employees'
+    | 'customers'
+    | 'settings'
+    | 'audit-logs'
+    | 'system-health';
   readonly isDisabled?: boolean;
   readonly isSeparated?: boolean;
 }

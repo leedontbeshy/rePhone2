@@ -1,0 +1,44 @@
+.surface {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.actor {
+  display: grid;
+  min-width: 0;
+  line-height: var(--line-height-small);
+}
+
+.actor strong,
+.actor span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actor strong {
+  color: var(--color-ink);
+  font-size: var(--font-size-small);
+}
+
+.actor span {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+}
+
+.accessState {
+  display: grid;
+  max-width: 42rem;
+  gap: var(--space-4);
+  justify-items: start;
+  padding: var(--space-8);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.accessState h1,
+.accessState p {
+  margin: 0;
+}
