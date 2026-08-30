@@ -33,7 +33,8 @@ Tài liệu này sẽ là bảng kiểm duy nhất của API surface P0. Một e
 | Warranty/after-sales | Customer/guest, staff/admin | Owner warranty/case/attachment; policy/warranty query; receive/inspect/approve/reject/typed resolution | Repair parts/order, accessory direct replacement |
 | Employees | Admin | List/create/update/invite/resend/disable/enable employee | Admin-account management, permission editor/custom roles |
 | Customers | Staff/admin | Safe list/detail; admin suspend/activate | Saved address, impersonation, role/email mutation |
-| Settings/Audit | Public store read, Admin manage | Store info; versioned settings/bank QR; audit list/detail | Secret/provider credentials, audit mutation |
+| Settings/Audit | Public store read, Admin manage | Store info; versioned settings/bank QR; audit list/detail; safe system-health snapshot | Secret/provider credentials, audit mutation |
+| Operations overview | Employee/Admin | Aggregate công việc cần ưu tiên, metric vận hành và đơn gần đây | Doanh thu/growth tự suy diễn, PII customer, gọi ghép nhiều list endpoint từ browser |
 
 Mỗi nhóm trong bảng có contract chi tiết được liên kết ở cuối file và trong [API index](readme.md). Khi code phát hiện thiếu một use case P0, phải cập nhật contract trước hoặc cùng commit; không tự mở generic CRUD/status mutation.
 
@@ -91,5 +92,6 @@ Endpoint mới phải trả lời được:
 - [Backoffice Order, Fulfillment và Refund endpoints](backoffice-order-fulfillment-refund-endpoints.md)
 - [Voucher endpoints](voucher-endpoints.md)
 - [User management, Settings và Audit endpoints](employee-settings-audit-endpoints.md)
+- [Backoffice overview và system health endpoints](backoffice-overview-system-health-endpoints.md)
 - [Warranty và After-sales endpoints](warranty-and-aftersales-endpoints.md)
 - [OpenAPI và typed client](openapi-and-client.md)

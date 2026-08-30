@@ -47,7 +47,9 @@ Không log toàn request/response body. Cho phép log allow-list như order ID, 
 
 ## 5. Health endpoints
 
-Không nằm dưới `/api/v1` và không bọc business envelope:
+### Public probes
+
+Hai probe public không nằm dưới `/api/v1` và không bọc business envelope:
 
 | Endpoint | Kết quả | Check |
 |---|---|---|
@@ -55,6 +57,21 @@ Không nằm dưới `/api/v1` và không bọc business envelope:
 | `GET /health/ready` | 200 hoặc 503 | Config hợp lệ, Prisma `SELECT 1`, migration đã deploy |
 
 Storage, SMTP và internet không làm readiness fail vì chúng là dependency có graceful error cho từng use case. Readiness có timeout 2 giây, không lộ URL/version/credential. Health endpoint public nhưng rate-limit nhẹ ở reverse proxy nếu hosted.
+
+### Snapshot quản trị
+
+`GET /api/v1/backoffice/system/health` là endpoint riêng cho `ADMIN`, dùng access token, response envelope `{ "data": ... }` và `Cache-Control: no-store`. Nó không thay public probe hay readiness gate; đây là ảnh chụp chẩn đoán cho màn hình vận hành.
+
+Các probe chạy song song, mỗi dependency có timeout 2 giây. Snapshot chỉ trả trạng thái ổn định (`healthy`, `degraded`, `unavailable`, `not_configured`), reason code, thời lượng, uptime/version API đã sanitize, số migration applied/incomplete và thời điểm quan sát. Ý nghĩa từng thành phần:
+
+| Thành phần | Probe | Diễn giải |
+|---|---|---|
+| API | Process hiện tại | Process đang trả snapshot; hiển thị uptime, version an toàn và thời lượng request. |
+| Database | Query read-only tới PostgreSQL và `_prisma_migrations` | `unavailable` nghĩa là không đọc được database; migration chưa hoàn tất hoặc chưa có migration applied làm snapshot `degraded`. |
+| Storage | Read-only bucket-list qua provider | Cho biết Supabase Storage có phản hồi cho thao tác metadata; không liệt kê bucket/object trong response. |
+| Mail | SMTP transport verification, không gửi mail | Cho biết có thể thiết lập transport gửi mail; `not_configured` khi môi trường không cấu hình provider. |
+
+Storage/SMTP `unavailable` hoặc `not_configured` làm snapshot chi tiết `degraded`, nhưng không làm `/health/ready` fail. Snapshot không trả provider URL/project reference, bucket name, SMTP host/user, key, connection string, biến môi trường, lỗi SQL/stack trace, địa chỉ nội bộ hay dữ liệu khách hàng.
 
 ## 6. Error reporting và alert P0
 
