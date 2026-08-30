@@ -12,7 +12,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-5': 'DONE',
   'FE-6': 'DONE',
   'FE-7': 'DONE',
-  'FE-8': 'NOT STARTED',
+  'FE-8': 'DONE',
   'FE-9': 'NOT STARTED',
 } as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
 
@@ -425,7 +425,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeAuditLog',
@@ -436,7 +436,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeCustomers',
@@ -447,7 +447,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeCustomer',
@@ -458,7 +458,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'activateCustomer',
@@ -469,7 +469,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command activateCustomer; pending, authoritative success, replay/conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'suspendCustomer',
@@ -480,7 +480,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command suspendCustomer; pending, authoritative success, replay/conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'listBackofficeEmployees',
@@ -491,7 +491,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc collection; loading, empty, error, filter/pagination',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'createBackofficeEmployee',
@@ -502,7 +502,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Tạo bằng createBackofficeEmployee; validation, pending, success, conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeEmployee',
@@ -513,7 +513,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeEmployee',
@@ -524,7 +524,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeEmployee; dirty, validation, pending, conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'disableEmployee',
@@ -535,7 +535,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Action disableEmployee; confirm/reason, pending, success, replay/conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'enableEmployee',
@@ -546,7 +546,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command enableEmployee; pending, authoritative success, replay/conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'resendEmployeeInvitation',
@@ -557,7 +557,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Command resendEmployeeInvitation; pending, authoritative success, replay/conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getBackofficeInventoryInspection',
@@ -1173,7 +1173,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Đọc detail; loading, 404/permission, error',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'updateBackofficeSettings',
@@ -1184,7 +1184,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Chỉnh sửa bằng updateBackofficeSettings; dirty, validation, pending, conflict',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'uploadBackofficeBankQr',
@@ -1195,7 +1195,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Upload; select, validate, progress, success, 413/415/503',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'handOverShipment',
@@ -1789,7 +1789,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Hiển thị healthy/degraded/unavailable; retry thủ công',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
   [
     'getReadiness',
@@ -1800,12 +1800,12 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Hiển thị healthy/degraded/unavailable; retry thủ công',
     'FE-8',
     'browser:system-admin-health',
-    'NOT STARTED',
+    'DONE',
   ],
 ] as const satisfies readonly FrontendOperationCoverage[];
 
-/** Route ownership baseline: 55 existing URLs and 1 approved P1 URL. */
-export const FRONTEND_ROUTE_COVERAGE = [
+/** Route ownership baseline: 56 existing URLs. */
+export const FRONTEND_ROUTE_COVERAGE: readonly FrontendRouteCoverage[] = [
   ['/', 'EXISTING', 'FE-1'],
   ['/login', 'EXISTING', 'FE-2'],
   ['/register', 'EXISTING', 'FE-2'],
@@ -1861,8 +1861,8 @@ export const FRONTEND_ROUTE_COVERAGE = [
   ['/backoffice/inventory/stock', 'EXISTING', 'FE-6'],
   ['/backoffice/inventory/stock/movements', 'EXISTING', 'FE-6'],
   ['/backoffice', 'EXISTING', 'FE-6'],
-  ['/backoffice/system/health', 'PLANNED', 'FE-8'],
-] as const satisfies readonly FrontendRouteCoverage[];
+  ['/backoffice/system/health', 'EXISTING', 'FE-8'],
+];
 
 export const FRONTEND_REQUIRED_STATES = [
   'loading',
