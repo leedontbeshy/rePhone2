@@ -58,6 +58,29 @@ describe('Slice 12 store, settings and audit HTTP contract', () => {
       .expect(200);
     expectNoStore(allowed);
     expect(successRecord(allowed)).toMatchObject({ version: 1, currency: 'VND' });
+
+    expectNoStore(await request(server).get('/api/v1/backoffice/system/health').expect(401));
+    expectNoStore(
+      await request(server)
+        .get('/api/v1/backoffice/system/health')
+        .set(bearer(employee))
+        .expect(403),
+    );
+    const response = await request(server)
+      .get('/api/v1/backoffice/system/health')
+      .set(bearer(admin))
+      .expect(200);
+    expectNoStore(response);
+    expect(successRecord(response)).toMatchObject({
+      state: 'degraded',
+      api: { state: 'healthy', reason: 'ok' },
+      database: { state: 'healthy', reason: 'ok' },
+      storage: { state: 'healthy', reason: 'ok' },
+      mail: { state: 'not_configured', reason: 'not_configured' },
+    });
+    expect(JSON.stringify(response.body)).not.toMatch(
+      /databaseUrl|serviceRole|bucket|smtp|password|secret|objectPath|stack/i,
+    );
   });
 
   it('uses compare-and-swap, returns the current version and audits only safe deltas', async () => {
