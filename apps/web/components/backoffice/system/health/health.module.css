@@ -125,7 +125,7 @@
 
 .summaryBand {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   margin: 0;
   border: var(--border-default);
@@ -167,6 +167,11 @@
 
 .summaryBand small {
   display: block;
+}
+
+.summaryBand small + small {
+  padding-top: var(--space-1);
+  border-top: var(--border-default);
 }
 
 .summaryBand [data-freshness='warning'] dd > span {
@@ -289,5 +294,20 @@
   .explanation,
   .guidance {
     padding: var(--space-4);
+  }
+}
+
+@media (min-width: 48rem) and (max-width: 79.99rem) {
+  .summaryBand {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryBand > div:nth-child(3) {
+    border-block-start: var(--border-default);
+    border-inline-start: 0;
+  }
+
+  .summaryBand > div:nth-child(4) {
+    border-block-start: var(--border-default);
   }
 }

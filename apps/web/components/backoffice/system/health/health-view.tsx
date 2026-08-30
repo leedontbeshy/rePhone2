@@ -13,6 +13,8 @@ import { Button, InlineAlert, Link, Skeleton, StatusChip } from '@/components/ui
 import { getSystemHealthSnapshot, type SystemHealthSnapshot } from '@/lib/system-admin-api';
 import {
   formatHealthCheckedAt,
+  formatLatency,
+  formatUptime,
   healthFreshness,
   healthGuidance,
   healthProbePresentation,
@@ -115,8 +117,10 @@ export function HealthStatusPanel({
   snapshot,
 }: Readonly<{ checking?: boolean; observedAt?: Date; snapshot: SystemHealthSnapshot }>) {
   const summary = healthSummary(snapshot);
-  const live = healthProbePresentation('live', snapshot.live.state);
-  const ready = healthProbePresentation('ready', snapshot.ready.state);
+  const api = healthProbePresentation('api', snapshot.api);
+  const database = healthProbePresentation('database', snapshot.database);
+  const storage = healthProbePresentation('storage', snapshot.storage);
+  const mail = healthProbePresentation('mail', snapshot.mail);
   const freshness = healthFreshness(snapshot.checkedAt, observedAt);
   const guidance = healthGuidance(snapshot);
   return (
@@ -143,38 +147,49 @@ export function HealthStatusPanel({
 
       <dl className={styles.summaryBand}>
         <div>
-          <dt>Hoạt động trực tiếp</dt>
+          <dt>API</dt>
           <dd>
-            <StatusChip label={live.label} tone={live.tone} />
-            <small>{live.description}</small>
+            <StatusChip label={api.label} tone={api.tone} />
+            <small>{api.description}</small>
+            <small>Phản hồi: {formatLatency(snapshot.api.latencyMs)}</small>
           </dd>
         </div>
         <div>
-          <dt>Khả năng phục vụ</dt>
+          <dt>Cơ sở dữ liệu</dt>
           <dd>
-            <StatusChip label={ready.label} tone={ready.tone} />
-            <small>{ready.description}</small>
+            <StatusChip label={database.label} tone={database.tone} />
+            <small>{database.description}</small>
+            <small>Phản hồi: {formatLatency(snapshot.database.latencyMs)}</small>
           </dd>
         </div>
-        <div data-freshness={freshness.tone}>
-          <dt>Độ mới kết quả</dt>
+        <div>
+          <dt>Kho tệp</dt>
           <dd>
-            <span>{freshness.label}</span>
-            <small>{freshness.description}</small>
+            <StatusChip label={storage.label} tone={storage.tone} />
+            <small>{storage.description}</small>
+            <small>Phản hồi: {formatLatency(snapshot.storage.latencyMs)}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Gửi email</dt>
+          <dd>
+            <StatusChip label={mail.label} tone={mail.tone} />
+            <small>{mail.description}</small>
+            <small>Phản hồi: {formatLatency(snapshot.mail.latencyMs)}</small>
           </dd>
         </div>
       </dl>
 
       <div className={styles.contentGrid}>
         <section className={styles.explanation} aria-labelledby="health-explanation-title">
-          <h3 id="health-explanation-title">Cách đọc hai tín hiệu</h3>
+          <h3 id="health-explanation-title">Thông tin lần kiểm tra</h3>
           <div>
             <span className={styles.probeIcon} aria-hidden="true">
               <HeartbeatIcon size={22} />
             </span>
             <p>
-              <strong>Hoạt động trực tiếp</strong>
-              cho biết dịch vụ có phản hồi ở lần kiểm tra gần nhất.
+              <strong>Thời gian API hoạt động</strong>
+              {formatUptime(snapshot.api.uptimeSeconds)} · phiên bản {snapshot.api.version}
             </p>
           </div>
           <div>
@@ -182,8 +197,18 @@ export function HealthStatusPanel({
               <HeartbeatIcon size={22} />
             </span>
             <p>
-              <strong>Khả năng phục vụ</strong>
-              cho biết hệ thống có sẵn sàng tiếp nhận yêu cầu mới hay không.
+              <strong>Cập nhật cơ sở dữ liệu</strong>
+              {snapshot.database.appliedMigrationCount.toString()} bản đã hoàn tất ·{' '}
+              {snapshot.database.incompleteMigrationCount.toString()} bản đang dở dang
+            </p>
+          </div>
+          <div>
+            <span className={styles.probeIcon} aria-hidden="true">
+              <HeartbeatIcon size={22} />
+            </span>
+            <p>
+              <strong>Toàn bộ lần kiểm tra</strong>
+              {formatLatency(snapshot.durationMs)} · {freshness.label}. {freshness.description}
             </p>
           </div>
         </section>
