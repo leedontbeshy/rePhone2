@@ -127,6 +127,80 @@ final result: passed
 
 ---
 
+# Design QA — FE-08 phân tầng và làm giàu nội dung
+
+Ngày kiểm tra: 2026-08-30
+
+### Nguồn và trạng thái đối chiếu
+
+- Hướng thiết kế được duyệt: **phương án 1 — Bảng điều hành phân tầng**.
+- Ảnh nguồn: [mockup Quản lý nhân viên đã chốt](docs/assets/ui/fe-08/employee-depth-direction-selected.png).
+- Ảnh triển khai chính: [Quản lý nhân viên ở desktop](docs/assets/ui/fe-08/refinement/01-employees-layered-desktop.png).
+- Hai ảnh được chuẩn hóa về cùng khung nhìn đầu trang `1440 × 900` trước khi đánh giá.
+- Bằng chứng đặt cạnh nhau: [mockup và bản triển khai](docs/assets/ui/fe-08/refinement/qa-employees-layered-comparison.png).
+- Dữ liệu trong mockup là dữ liệu minh họa; bản triển khai dùng dữ liệu vận hành thật nên tên,
+  email và trạng thái khác nhau. Việc đối chiếu tập trung vào phân cấp, nhịp lưới, trạng thái chọn
+  và khả năng đọc.
+
+### Ảnh triển khai
+
+- [Quản lý nhân viên](docs/assets/ui/fe-08/refinement/01-employees-layered-desktop.png).
+- [Quản lý khách hàng](docs/assets/ui/fe-08/refinement/02-customers-layered-desktop.png).
+- [Cấu hình cửa hàng](docs/assets/ui/fe-08/refinement/03-settings-layered-desktop.png).
+- [Nhật ký hoạt động](docs/assets/ui/fe-08/refinement/04-audit-layered-desktop.png).
+- [Trạng thái hệ thống](docs/assets/ui/fe-08/refinement/05-health-layered-desktop.png).
+- [Nhân viên ở vùng nhìn hẹp](docs/assets/ui/fe-08/refinement/01-employees-layered.png).
+- [Nhật ký ở vùng nhìn hẹp](docs/assets/ui/fe-08/refinement/04-audit-layered-narrow.png).
+- [Trạng thái hệ thống ở vùng nhìn hẹp](docs/assets/ui/fe-08/refinement/05-health-layered-narrow.png).
+
+### Kết quả đối chiếu
+
+- Nhân viên và khách hàng dùng cùng cấu trúc master–detail: hàng đang chọn, hero hồ sơ, dải
+  tóm tắt ba mục, nhóm thông tin và thanh hành động có thứ bậc rõ.
+- Cấu hình cửa hàng có bốn nhóm biểu mẫu và rail tóm tắt dùng chính dữ liệu đang áp dụng;
+  trạng thái đã lưu, chưa lưu, đang lưu và xung đột đều phân biệt được.
+- Nhật ký đưa ba bộ lọc chính và thao tác lên cùng hàng; bộ lọc chi tiết có số điều kiện đang
+  nhập. Chi tiết hoạt động được chuyển từ khối dữ liệu thô thành nhóm thông tin tiếng Việt;
+  dữ liệu lạ chỉ nằm trong vùng kỹ thuật thu gọn.
+- Trạng thái hệ thống có ba tín hiệu tóm tắt, hướng dẫn cách đọc và khuyến nghị vận hành;
+  độ mới kết quả cập nhật theo thời gian mà không gọi thêm máy chủ.
+- Điều hướng hệ thống ở màn hình hẹp tự đưa mục hiện tại vào vùng nhìn thấy và hiển thị dấu
+  hiệu cuộn ở đúng mép.
+
+### Các vòng sửa sau review
+
+- Ngăn bảng chi tiết tự chuyển sang tài khoản khác khi bản ghi vừa đổi trạng thái không còn
+  khớp bộ lọc; thông báo và hành động tiếp theo luôn gắn với đúng tài khoản vừa thao tác.
+- Sửa cấu trúc `dt`/`dd` để công cụ hỗ trợ giữ đúng quan hệ nhãn–giá trị.
+- Ngày chỉ có phần ngày không còn xuất hiện giờ giả; các trạng thái phổ biến trong nhật ký
+  được chuyển hoàn toàn sang tiếng Việt. Enum lạ và payload không phải object vẫn được giữ
+  trong vùng kỹ thuật, không bị báo nhầm là không có dữ liệu.
+- Bỏ thanh cuộn lồng của chi tiết nhật ký; toàn workspace chỉ dùng cuộn trang và cuộn sidebar.
+- Dòng nhật ký đang chọn có `aria-current="page"` thống nhất với danh sách người dùng.
+- Giảm một nhịp khoảng trắng nội bộ của thẻ Trạng thái hệ thống. Ở desktop, `scrollHeight`
+  và `clientHeight` đều bằng `900 px`; không còn thanh cuộn dọc thừa `6 px`.
+
+### Kiểm tra trực tiếp
+
+- Desktop `1440 × 900`: năm workspace không tràn ngang, không có lỗi hoặc cảnh báo console.
+- Vùng nhìn hẹp `679 × 675`: điều hướng hiện tại nằm trọn trong khung, form và các dải tóm
+  tắt chuyển thành một cột, tài liệu không tràn ngang.
+- Chọn bản ghi thứ hai ở Nhân viên, Khách hàng và Nhật ký cập nhật đúng URL, chi tiết và
+  trạng thái chọn.
+- Nút Kiểm tra lại cập nhật thời điểm; Cấu hình cửa hàng giữ đúng trạng thái chưa lưu/đã lưu.
+
+### Cổng chất lượng của lượt nâng cấp
+
+- Web test: `117/117` tệp, `544/544` bài kiểm tra đạt.
+- Web lint: đạt, không có cảnh báo.
+- Web typecheck: đạt.
+- Production build: đạt; đầy đủ sáu route FE-08.
+- Kiểm tra khoảng trắng thay đổi: đạt.
+
+final result: passed
+
+---
+
 # Design QA — FE-08 quản trị hệ thống
 
 Ngày kiểm tra: 2026-08-30
@@ -238,12 +312,12 @@ Mười một màn hình đã được kiểm tra:
 ## Ma trận responsive
 
 | Chiều rộng | Tràn ngang | Vùng nội dung chính | Tiêu đề trang | Nút xác nhận |
-| ---------: | :--------: | :-----------------: | :------------: | :-----------: |
-|    1440 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
-|    1024 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
-|     768 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
-|     390 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
-|     320 px |   Không    |        1 vùng        |   1 tiêu đề    | Trong khung   |
+| ---------: | :--------: | :-----------------: | :-----------: | :----------: |
+|    1440 px |   Không    |       1 vùng        |   1 tiêu đề   | Trong khung  |
+|    1024 px |   Không    |       1 vùng        |   1 tiêu đề   | Trong khung  |
+|     768 px |   Không    |       1 vùng        |   1 tiêu đề   | Trong khung  |
+|     390 px |   Không    |       1 vùng        |   1 tiêu đề   | Trong khung  |
+|     320 px |   Không    |       1 vùng        |   1 tiêu đề   | Trong khung  |
 
 ## Quyền truy cập và độ tin cậy
 
@@ -293,12 +367,12 @@ Ngày kiểm tra: 2026-08-29
 ### Kết quả đo trực tiếp trong trình duyệt
 
 | Chiều rộng | Hỗ trợ sau mua | Bảo hành | Tràn ngang | Chồng hàng |
-| ---------: | :------------: | :------: | :---------: | :---------: |
-|    1440 px |      Đạt       |   Đạt   |    Không    |    Không    |
-|    1024 px |      Đạt       |   Đạt   |    Không    |    Không    |
-|     768 px |      Đạt       |   Đạt   |    Không    |    Không    |
-|     390 px |      Đạt       |   Đạt   |    Không    |    Không    |
-|     320 px |      Đạt       |   Đạt   |    Không    |    Không    |
+| ---------: | :------------: | :------: | :--------: | :--------: |
+|    1440 px |      Đạt       |   Đạt    |   Không    |   Không    |
+|    1024 px |      Đạt       |   Đạt    |   Không    |   Không    |
+|     768 px |      Đạt       |   Đạt    |   Không    |   Không    |
+|     390 px |      Đạt       |   Đạt    |   Không    |   Không    |
+|     320 px |      Đạt       |   Đạt    |   Không    |   Không    |
 
 - Trên desktop, mọi nhãn trạng thái trong từng danh sách dùng chung một mép phải; nhãn
   “Còn hiệu lực” và “Không còn hiệu lực” đều cao `28 px`.
