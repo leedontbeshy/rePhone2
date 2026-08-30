@@ -94,6 +94,7 @@ describe('user admin presenter', () => {
 
     expect(recordAfterRefresh([first, second], second.id)).toBe(second);
     expect(recordAfterRefresh([first, second], 'employee-missing')).toBe(first);
+    expect(recordAfterRefresh([first, second], 'employee-missing', false)).toBeUndefined();
     expect(recordAfterRefresh<Employee>([], first.id)).toBeUndefined();
   });
 });

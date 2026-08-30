@@ -159,8 +159,11 @@ export function employeeEmailState(employee: Employee): string {
 export function recordAfterRefresh<T extends { readonly id: string }>(
   records: readonly T[],
   selectedId: string | undefined,
+  fallbackToFirst = true,
 ): T | undefined {
-  return records.find((record) => record.id === selectedId) ?? records[0];
+  return (
+    records.find((record) => record.id === selectedId) ?? (fallbackToFirst ? records[0] : undefined)
+  );
 }
 
 function isDateOnly(value: string): boolean {

@@ -251,10 +251,10 @@ export function UserDetailSummary({
           <span aria-hidden="true" className={styles.detailSummaryIcon}>
             {item.icon}
           </span>
-          <span className={styles.detailSummaryCopy}>
+          <div className={styles.detailSummaryCopy}>
             <dt>{item.label}</dt>
             <dd>{item.value}</dd>
-          </span>
+          </div>
         </div>
       ))}
     </dl>

@@ -121,25 +121,31 @@ export function CustomerAdminView() {
     };
   }, [filters, query, router]);
 
-  const refreshList = useCallback(async () => {
-    const request = ++listRequest.current;
-    setLoading(true);
-    setListError(undefined);
-    try {
-      const result = await listCustomers(client, query);
-      if (request !== listRequest.current) return;
-      setCustomers(result.data);
-      setPagination(result.pagination);
-      commitCustomerSelection(recordAfterRefresh(result.data, selectedId.current));
-      setHasLoaded(true);
-    } catch (caught) {
-      if (request !== listRequest.current) return;
-      setListError(messageFrom(caught, 'Không thể tải danh sách khách hàng.'));
-      setHasLoaded(true);
-    } finally {
-      if (request === listRequest.current) setLoading(false);
-    }
-  }, [client, commitCustomerSelection, query]);
+  const refreshList = useCallback(
+    async (fallbackToFirst = true) => {
+      const request = ++listRequest.current;
+      setLoading(true);
+      setListError(undefined);
+      try {
+        const result = await listCustomers(client, query);
+        if (request !== listRequest.current) return;
+        setCustomers(result.data);
+        setPagination(result.pagination);
+        const nextCustomer = recordAfterRefresh(result.data, selectedId.current, fallbackToFirst);
+        if (nextCustomer !== undefined || fallbackToFirst || selectedId.current === undefined) {
+          commitCustomerSelection(nextCustomer);
+        }
+        setHasLoaded(true);
+      } catch (caught) {
+        if (request !== listRequest.current) return;
+        setListError(messageFrom(caught, 'Không thể tải danh sách khách hàng.'));
+        setHasLoaded(true);
+      } finally {
+        if (request === listRequest.current) setLoading(false);
+      }
+    },
+    [client, commitCustomerSelection, query],
+  );
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isStaff) return;
@@ -193,7 +199,7 @@ export function CustomerAdminView() {
             }
           : { message: 'Đã kích hoạt lại khách hàng.', tone: 'success' },
       );
-      await refreshList();
+      await refreshList(false);
     } catch (caught) {
       if (isStateConflict(caught)) {
         setDialogOpen(false);
@@ -216,7 +222,7 @@ export function CustomerAdminView() {
         message: 'Tài khoản đã thay đổi ở nơi khác. Dữ liệu mới nhất đã được tải lại.',
         tone: 'warning',
       });
-      await refreshList();
+      await refreshList(false);
     } catch (caught) {
       setPanelError(
         messageFrom(caught, 'Tài khoản đã thay đổi nhưng chưa thể tải dữ liệu mới nhất.'),

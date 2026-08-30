@@ -151,28 +151,41 @@ export function EmployeeAdminView() {
     };
   }, [filters, query, router]);
 
-  const refreshList = useCallback(async () => {
-    const request = ++listRequest.current;
-    setLoading(true);
-    setListError(undefined);
-    try {
-      const result = await listEmployees(client, query);
-      if (request !== listRequest.current) return;
-      setEmployees(result.data);
-      setPagination(result.pagination);
-      if (panelState.current.mode === 'empty' || panelState.current.mode === 'view') {
-        const nextEmployee = recordAfterRefresh(result.data, panelState.current.selectedId);
-        commitEmployeePanel(nextEmployee, nextEmployee === undefined ? 'empty' : 'view');
+  const refreshList = useCallback(
+    async (fallbackToFirst = true) => {
+      const request = ++listRequest.current;
+      setLoading(true);
+      setListError(undefined);
+      try {
+        const result = await listEmployees(client, query);
+        if (request !== listRequest.current) return;
+        setEmployees(result.data);
+        setPagination(result.pagination);
+        if (panelState.current.mode === 'empty' || panelState.current.mode === 'view') {
+          const nextEmployee = recordAfterRefresh(
+            result.data,
+            panelState.current.selectedId,
+            fallbackToFirst,
+          );
+          if (
+            nextEmployee !== undefined ||
+            fallbackToFirst ||
+            panelState.current.mode === 'empty'
+          ) {
+            commitEmployeePanel(nextEmployee, nextEmployee === undefined ? 'empty' : 'view');
+          }
+        }
+        setHasLoaded(true);
+      } catch (caught) {
+        if (request !== listRequest.current) return;
+        setListError(messageFrom(caught, 'Không thể tải danh sách nhân viên.'));
+        setHasLoaded(true);
+      } finally {
+        if (request === listRequest.current) setLoading(false);
       }
-      setHasLoaded(true);
-    } catch (caught) {
-      if (request !== listRequest.current) return;
-      setListError(messageFrom(caught, 'Không thể tải danh sách nhân viên.'));
-      setHasLoaded(true);
-    } finally {
-      if (request === listRequest.current) setLoading(false);
-    }
-  }, [client, commitEmployeePanel, query]);
+    },
+    [client, commitEmployeePanel, query],
+  );
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isAdmin) return;
@@ -281,7 +294,7 @@ export function EmployeeAdminView() {
         setNotice({ message: 'Đã cập nhật hồ sơ nhân viên.', tone: 'success' });
       }
       setFieldErrors({});
-      await refreshList();
+      await refreshList(false);
     } catch (caught) {
       if (selected !== undefined && isStateConflict(caught)) {
         await reloadEmployeeAfterConflict(selected.id);
@@ -352,7 +365,7 @@ export function EmployeeAdminView() {
               }
             : { message: 'Đã kích hoạt lại nhân viên.', tone: 'success' },
       );
-      await refreshList();
+      await refreshList(false);
     } catch (caught) {
       if (isStateConflict(caught)) {
         setLifecycleAction(undefined);
@@ -375,7 +388,7 @@ export function EmployeeAdminView() {
         message: 'Tài khoản đã thay đổi ở nơi khác. Dữ liệu mới nhất đã được tải lại.',
         tone: 'warning',
       });
-      await refreshList();
+      await refreshList(false);
     } catch (caught) {
       setPanelError(
         messageFrom(caught, 'Tài khoản đã thay đổi nhưng chưa thể tải dữ liệu mới nhất.'),
