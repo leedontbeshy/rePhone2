@@ -6481,6 +6481,171 @@
         ],
         "type": "object"
       },
+      "OperationsOverviewDto": {
+        "properties": {
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/OperationsOverviewMetricsDto"
+          },
+          "priorities": {
+            "items": {
+              "$ref": "#/components/schemas/OperationsOverviewPriorityDto"
+            },
+            "type": "array"
+          },
+          "recentOrders": {
+            "items": {
+              "$ref": "#/components/schemas/OperationsOverviewRecentOrderDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "metrics",
+          "priorities",
+          "recentOrders"
+        ],
+        "type": "object"
+      },
+      "OperationsOverviewMetricsDto": {
+        "properties": {
+          "activeOrders": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "lowStockLevels": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "openAfterSales": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "paymentsUnderReview": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "activeOrders",
+          "paymentsUnderReview",
+          "openAfterSales",
+          "lowStockLevels"
+        ],
+        "type": "object"
+      },
+      "OperationsOverviewPriorityDto": {
+        "properties": {
+          "count": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "href": {
+            "type": "string"
+          },
+          "key": {
+            "enum": [
+              "PAYMENT_REVIEW_OVERDUE",
+              "PICKUP_OVERDUE",
+              "REFUND_REQUESTED",
+              "AFTER_SALES_REQUESTED"
+            ],
+            "type": "string"
+          },
+          "oldestAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "count",
+          "href"
+        ],
+        "type": "object"
+      },
+      "OperationsOverviewRecentOrderDto": {
+        "properties": {
+          "customerName": {
+            "type": "string"
+          },
+          "fulfillmentStatus": {
+            "enum": [
+              "PENDING",
+              "PREPARING",
+              "READY",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "FAILED",
+              "RETURNED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "grandTotal": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID",
+              "PARTIALLY_REFUNDED",
+              "REFUNDED"
+            ],
+            "type": "string"
+          },
+          "placedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PLACED",
+              "CONFIRMED",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "orderNumber",
+          "customerName",
+          "status",
+          "fulfillmentStatus",
+          "paymentStatus",
+          "grandTotal",
+          "placedAt"
+        ],
+        "type": "object"
+      },
+      "OperationsOverviewResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OperationsOverviewDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "OrderBankTransferInstructionsDto": {
         "properties": {
           "accountHolder": {
@@ -9038,6 +9203,180 @@
         ],
         "type": "object"
       },
+      "SystemApiHealthDto": {
+        "properties": {
+          "latencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "reason": {
+            "enum": [
+              "ok",
+              "timeout",
+              "unavailable",
+              "no_applied_migration",
+              "incomplete_migration",
+              "not_configured"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "unavailable",
+              "not_configured"
+            ],
+            "type": "string"
+          },
+          "uptimeSeconds": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "latencyMs",
+          "uptimeSeconds",
+          "version"
+        ],
+        "type": "object"
+      },
+      "SystemDatabaseHealthDto": {
+        "properties": {
+          "appliedMigrationCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "incompleteMigrationCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "latencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "reason": {
+            "enum": [
+              "ok",
+              "timeout",
+              "unavailable",
+              "no_applied_migration",
+              "incomplete_migration",
+              "not_configured"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "unavailable",
+              "not_configured"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "latencyMs",
+          "appliedMigrationCount",
+          "incompleteMigrationCount"
+        ],
+        "type": "object"
+      },
+      "SystemDependencyHealthDto": {
+        "properties": {
+          "latencyMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "reason": {
+            "enum": [
+              "ok",
+              "timeout",
+              "unavailable",
+              "no_applied_migration",
+              "incomplete_migration",
+              "not_configured"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "unavailable",
+              "not_configured"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "latencyMs"
+        ],
+        "type": "object"
+      },
+      "SystemHealthDetailDto": {
+        "properties": {
+          "api": {
+            "$ref": "#/components/schemas/SystemApiHealthDto"
+          },
+          "checkedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "database": {
+            "$ref": "#/components/schemas/SystemDatabaseHealthDto"
+          },
+          "durationMs": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "mail": {
+            "$ref": "#/components/schemas/SystemDependencyHealthDto"
+          },
+          "state": {
+            "enum": [
+              "healthy",
+              "degraded",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/SystemDependencyHealthDto"
+          }
+        },
+        "required": [
+          "state",
+          "checkedAt",
+          "durationMs",
+          "api",
+          "database",
+          "storage",
+          "mail"
+        ],
+        "type": "object"
+      },
+      "SystemHealthDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SystemHealthDetailDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "TerminalRefundDto": {
         "properties": {
           "reason": {
@@ -9463,7 +9802,7 @@
           },
           "defaultShippingFee": {
             "example": "30000",
-            "pattern": "^\\d+$",
+            "pattern": "^\\d{1,15}$",
             "type": "string"
           },
           "defaultWarrantyDays": {
@@ -9497,7 +9836,7 @@
           },
           "shippingDepositAmount": {
             "example": "500000",
-            "pattern": "^[1-9]\\d*$",
+            "pattern": "^[1-9]\\d{0,14}$",
             "type": "string"
           },
           "storeAddress": {
@@ -20527,6 +20866,63 @@
         ]
       }
     },
+    "/api/v1/backoffice/overview": {
+      "get": {
+        "operationId": "getBackofficeOperationsOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationsOverviewResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get the current operations overview snapshot",
+        "tags": [
+          "backoffice-overview"
+        ]
+      }
+    },
     "/api/v1/backoffice/payments": {
       "get": {
         "operationId": "listBackofficePayments",
@@ -25533,6 +25929,72 @@
         "summary": "",
         "tags": [
           "backoffice-stock"
+        ]
+      }
+    },
+    "/api/v1/backoffice/system/health": {
+      "get": {
+        "operationId": "getBackofficeSystemHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemHealthDetailResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "RATE_LIMITED",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the current rate-limit window permits a retry.",
+                "schema": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get safe detailed backend health information",
+        "tags": [
+          "system-health"
         ]
       }
     },
