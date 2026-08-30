@@ -178,3 +178,66 @@ Route page
 4. Store settings, QR lifecycle và version conflict.
 5. Audit list/detail và safe health view.
 6. Tests, browser scenarios, responsive/design QA và tài liệu đóng FE-08.
+
+## 10. Lượt nâng cấp chiều sâu giao diện
+
+### 10.1 Understanding summary
+
+- Giữ nguyên phạm vi nghiệp vụ, sáu route, quyền truy cập và toàn bộ contract FE-08.
+- Khắc phục hai vấn đề đã được xác nhận: giao diện thiếu phân tầng thị giác và nội
+  dung mỗi trang chưa tận dụng hết dữ liệu sẵn có.
+- Tiếp tục dùng master–detail cho Nhân viên, Khách hàng và Nhật ký hoạt động; không
+  đổi thành dashboard hoặc điều hướng sang trang chi tiết mới.
+- Làm giàu giao diện bằng dữ liệu hiện có như ngày vào làm, đăng nhập gần nhất,
+  trạng thái email, số đơn hàng, đơn gần nhất và thời điểm kiểm tra hệ thống.
+- Không tạo thống kê giả, không suy diễn dữ liệu lịch sử và không thêm request chỉ
+  để trang trông đầy hơn.
+- Giữ tiếng Việt tự nhiên, hành động có thứ bậc, chặn quyền trước khi render và bộ
+  lọc không tải lại document.
+
+### 10.2 Phương án đã chọn
+
+Nguồn thiết kế mới: [employee-depth-direction-selected.png](../assets/ui/fe-08/employee-depth-direction-selected.png).
+
+Ngôn ngữ **Bảng điều hành phân tầng** được áp dụng như sau:
+
+- Hồ sơ được chọn có vùng nhận diện với nền teal rất nhạt và dải tóm tắt ba thông
+  tin quan trọng; các trường còn lại chia thành nhóm dễ quét.
+- Danh sách vẫn là một mặt phẳng liên tục có phân cách hàng; không biến từng hàng
+  hoặc từng trường thành card.
+- Chỉ dùng elevation cho bề mặt chính. Chiều sâu đến từ khoảng cách, màu nền phân
+  tầng, typography và đường phân cách trước khi dùng thêm shadow.
+- Hành động chính, phụ và nguy hiểm có trọng lượng khác nhau; không kéo mọi nút
+  thành cùng chiều rộng khi không cần thiết.
+
+### 10.3 Áp dụng theo route
+
+| Khu vực | Nội dung làm giàu bằng dữ liệu hiện có |
+| --- | --- |
+| Nhân viên | Dải ngày vào làm, đăng nhập gần nhất, trạng thái email; nhóm Liên hệ và Tài khoản; giữ lựa chọn hợp lệ |
+| Khách hàng | Dải số đơn hàng, đơn gần nhất, đăng nhập gần nhất; nhóm Liên hệ và Hoạt động tài khoản |
+| Cấu hình | Tóm tắt phí giao hàng, thời gian giữ máy, bảo hành; nhóm form có điểm neo và trạng thái lưu rõ |
+| Nhật ký | Bộ lọc gọn hơn; nhận diện hành động/đối tượng rõ; trình bày thay đổi theo nhãn tiếng Việt thay cho khối dữ liệu thô khi có thể |
+| Trạng thái hệ thống | Tổng quan 2/2 phép kiểm tra, độ mới kết quả, hướng xử lý theo trạng thái và giải thích ngắn về hai phép kiểm tra |
+| Điều hướng | Mục hiện tại luôn nằm trọn trong vùng nhìn; thanh ngang có dấu hiệu cuộn trên màn hình hẹp |
+
+### 10.4 Assumptions và giới hạn
+
+- Không bổ sung chức danh, phòng ban, địa điểm làm việc, quyền chi tiết, ảnh nhân
+  viên, lịch sử gửi lời mời, tổng chi tiêu khách hàng, uptime, latency hoặc nguyên
+  nhân hạ tầng vì contract không cung cấp.
+- Không dựng tổng số theo từng trạng thái từ một trang dữ liệu phân trang.
+- Có thể sinh nhãn và tóm tắt từ chính payload hiện tại, nhưng API vẫn là nguồn sự
+  thật duy nhất cho trạng thái và lifecycle.
+- Responsive bắt buộc từ 320 đến 1440px; ở layout dọc phải có đường quay lại danh
+  sách và không để thanh điều hướng cắt chữ mà không có affordance.
+
+### 10.5 Decision log bổ sung
+
+| Quyết định | Phương án đã cân nhắc | Lý do |
+| --- | --- | --- |
+| Chọn phương án trực quan số 1 | hồ sơ có callout lớn; hồ sơ theo timeline | Giữ gần nhất với master–detail đã duyệt, giàu thông tin nhưng ít rủi ro bịa dữ liệu |
+| Dùng dải tóm tắt ba thông tin | card KPI toàn trang; biểu đồ | Tận dụng đúng field hiện có và tạo điểm nhấn mà không biến UI thành dashboard |
+| Chia nhóm chi tiết | definition list phẳng; mỗi field một card | Dễ quét hơn, giảm khoảng trống và tránh card lồng card |
+| Không mở rộng backend | thêm aggregate/history endpoint | Người dùng yêu cầu nâng UI; contract hiện tại đủ cho mục tiêu và giảm rủi ro scope |
+| Giữ shell hiện có | thiết kế lại toàn bộ backoffice | Bảo toàn tính nhất quán với FE-05–FE-07 và giảm hồi quy điều hướng/quyền |
