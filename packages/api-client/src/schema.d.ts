@@ -4094,7 +4094,7 @@ export interface components {
             /** @enum {string} */
             key: "PAYMENT_REVIEW_OVERDUE" | "PICKUP_OVERDUE" | "REFUND_REQUESTED" | "AFTER_SALES_REQUESTED";
             /** Format: date-time */
-            oldestAt?: string | null;
+            oldestAt: string | null;
         };
         OperationsOverviewRecentOrderDto: {
             customerName: string;

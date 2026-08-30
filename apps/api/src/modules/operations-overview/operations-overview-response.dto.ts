@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export const OVERVIEW_PRIORITY_KEYS = [
   'PAYMENT_REVIEW_OVERDUE',
@@ -19,7 +19,7 @@ export class OperationsOverviewMetricsDto {
 export class OperationsOverviewPriorityDto {
   @ApiProperty({ enum: OVERVIEW_PRIORITY_KEYS }) public key!: OverviewPriorityKey;
   @ApiProperty({ type: Number, minimum: 0 }) public count!: number;
-  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   public oldestAt!: string | null;
   @ApiProperty({ type: String }) public href!: string;
 }
