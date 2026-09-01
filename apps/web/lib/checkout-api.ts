@@ -3,6 +3,28 @@ import { checkoutChangedPreview } from './order-access';
 
 export type CheckoutPreview = components['schemas']['CheckoutPreviewDto'];
 
+export interface CheckoutRequestEpoch {
+  begin: () => number;
+  invalidate: () => void;
+  isCurrent: (requestId: number) => boolean;
+}
+
+export function createCheckoutRequestEpoch(): CheckoutRequestEpoch {
+  let currentRequestId = 0;
+  return {
+    begin() {
+      currentRequestId += 1;
+      return currentRequestId;
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    isCurrent(requestId) {
+      return requestId === currentRequestId;
+    },
+  };
+}
+
 export function parseChangedCheckoutPreview(value: unknown): CheckoutPreview | undefined {
   const candidate = checkoutChangedPreview(value);
   return isCheckoutPreview(candidate) ? candidate : undefined;

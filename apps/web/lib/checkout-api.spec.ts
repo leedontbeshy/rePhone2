@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { checkoutWarningMessage, parseChangedCheckoutPreview } from './checkout-api';
+import {
+  checkoutWarningMessage,
+  createCheckoutRequestEpoch,
+  parseChangedCheckoutPreview,
+} from './checkout-api';
 
 const preview = {
   calculatedAt: '2026-08-27T00:00:00.000Z',
@@ -107,5 +111,20 @@ describe('checkoutWarningMessage', () => {
   it('uses natural Vietnamese for known and unknown warnings', () => {
     expect(checkoutWarningMessage('PRICE_CHANGED')).toContain('Giá của một sản phẩm');
     expect(checkoutWarningMessage('INTERNAL_WARNING')).not.toContain('INTERNAL_WARNING');
+  });
+});
+
+describe('createCheckoutRequestEpoch', () => {
+  it('rejects responses from a replaced or invalidated checkout request', () => {
+    const epoch = createCheckoutRequestEpoch();
+    const first = epoch.begin();
+    expect(epoch.isCurrent(first)).toBe(true);
+
+    const second = epoch.begin();
+    expect(epoch.isCurrent(first)).toBe(false);
+    expect(epoch.isCurrent(second)).toBe(true);
+
+    epoch.invalidate();
+    expect(epoch.isCurrent(second)).toBe(false);
   });
 });

@@ -17,8 +17,10 @@ import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import {
   checkoutWarningMessage,
+  createCheckoutRequestEpoch,
   parseChangedCheckoutPreview,
   type CheckoutPreview,
+  type CheckoutRequestEpoch,
 } from '@/lib/checkout-api';
 import { customerApiError } from '@/lib/order-access';
 import styles from './checkout-experience.module.css';
@@ -118,18 +120,30 @@ function CheckoutSession() {
   const [createUncertain, setCreateUncertain] = useState(false);
   const [form, setForm] = useState<CheckoutFormData>(EMPTY_FORM);
   const reviewRef = useRef<HTMLDivElement>(null);
-  const previewRequestId = useRef(0);
+  const previewRequests = useRef<CheckoutRequestEpoch | null>(null);
+  const createRequests = useRef<CheckoutRequestEpoch | null>(null);
   const actionLock = useRef<PendingAction>(null);
   const previousCartFingerprint = useRef<string | null>(null);
   const populatedSession = useRef<string | null>(null);
+  if (previewRequests.current === null) previewRequests.current = createCheckoutRequestEpoch();
+  if (createRequests.current === null) createRequests.current = createCheckoutRequestEpoch();
 
   useEffect(() => {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, []);
 
+  useEffect(
+    () => () => {
+      previewRequests.current?.invalidate();
+      createRequests.current?.invalidate();
+      actionLock.current = null;
+    },
+    [],
+  );
+
   const invalidatePreview = useCallback(() => {
-    previewRequestId.current += 1;
+    previewRequests.current?.invalidate();
     if (actionLock.current === 'preview') actionLock.current = null;
     setPendingAction((current) => (current === 'preview' ? null : current));
     setPreview(null);
@@ -231,7 +245,9 @@ function CheckoutSession() {
       actionLock.current !== null
     )
       return;
-    const requestId = ++previewRequestId.current;
+    const requestEpoch = previewRequests.current;
+    if (requestEpoch === null) return;
+    const requestId = requestEpoch.begin();
     actionLock.current = 'preview';
     setPendingAction('preview');
     setPageError(null);
@@ -243,18 +259,18 @@ function CheckoutSession() {
           ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
         },
       });
-      if (requestId !== previewRequestId.current) return;
+      if (!requestEpoch.isCurrent(requestId)) return;
       if (result.data === undefined) {
         throw new Error(customerApiError(result.error, 'Chưa thể kiểm tra đơn hàng.'));
       }
       setPreview(result.data.data);
       setReviewRequired(false);
     } catch (caught) {
-      if (requestId === previewRequestId.current) {
+      if (requestEpoch.isCurrent(requestId)) {
         setPageError(caught instanceof Error ? caught.message : 'Chưa thể kiểm tra đơn hàng.');
       }
     } finally {
-      if (requestId === previewRequestId.current) {
+      if (requestEpoch.isCurrent(requestId)) {
         actionLock.current = null;
         setPendingAction(null);
       }
@@ -273,6 +289,13 @@ function CheckoutSession() {
     actionLock.current = 'create';
     setPendingAction('create');
     setPageError(null);
+    const requestEpoch = createRequests.current;
+    if (requestEpoch === null) {
+      actionLock.current = null;
+      setPendingAction(null);
+      return;
+    }
+    const requestId = requestEpoch.begin();
     try {
       const shippingAddress =
         fulfillmentType === 'SHIPPING'
@@ -306,10 +329,12 @@ function CheckoutSession() {
           },
         });
       } catch {
+        if (!requestEpoch.isCurrent(requestId)) return;
         setCreateUncertain(true);
         setPageError(null);
         return;
       }
+      if (!requestEpoch.isCurrent(requestId)) return;
       if (result.data === undefined) {
         const current = parseChangedCheckoutPreview(result.error);
         if (current !== undefined) {
@@ -327,16 +352,21 @@ function CheckoutSession() {
       }
       const order = result.data.data.order;
       const token = result.data.data.guestAccessToken;
+      if (!requestEpoch.isCurrent(requestId)) return;
       window.location.assign(
         token === undefined
           ? `/orders/${order.orderNumber}`
           : `/orders/${order.orderNumber}#token=${encodeURIComponent(token)}`,
       );
     } catch (caught) {
-      setPageError(caught instanceof Error ? caught.message : 'Chưa thể tạo đơn hàng.');
+      if (requestEpoch.isCurrent(requestId)) {
+        setPageError(caught instanceof Error ? caught.message : 'Chưa thể tạo đơn hàng.');
+      }
     } finally {
-      actionLock.current = null;
-      setPendingAction(null);
+      if (requestEpoch.isCurrent(requestId)) {
+        actionLock.current = null;
+        setPendingAction(null);
+      }
     }
   };
 
