@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { CatalogVoucherShell, VOUCHERS_ROOT } from '@/components/backoffice';
 import { Button, InlineAlert, Link } from '@/components/ui';
@@ -16,9 +16,11 @@ export function VoucherCreateView() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const operationInFlightRef = useRef(false);
 
   function submit(input: CreateVoucherInput) {
-    if (pending) return;
+    if (pending || operationInFlightRef.current) return;
+    operationInFlightRef.current = true;
     setPending(true);
     setError(null);
     void createVoucher(client, input)
@@ -29,6 +31,7 @@ export function VoucherCreateView() {
         setError(errorMessage(caught, 'Không thể tạo mã ưu đãi.'));
       })
       .finally(() => {
+        operationInFlightRef.current = false;
         setPending(false);
       });
   }
