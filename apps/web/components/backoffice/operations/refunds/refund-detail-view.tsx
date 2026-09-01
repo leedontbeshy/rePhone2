@@ -23,6 +23,7 @@ import {
 } from '@/components/backoffice/operations/operations-primitives';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
 import { Button, ErrorSummary, IconButton, InlineAlert, Skeleton, Textarea } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import {
   cancelRefund,
   completeBankTransferRefund,
@@ -72,7 +73,6 @@ export function RefundDetailView() {
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const decisionTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const loadRefund = useCallback(async () => {
     const next = await getBackofficeRefund(client, refundId);
@@ -102,8 +102,7 @@ export function RefundDetailView() {
     };
   }, [isStaff, loadRefund, status]);
 
-  function openDecision(next: RefundDecision, trigger: HTMLButtonElement) {
-    decisionTriggerRef.current = trigger;
+  function openDecision(next: RefundDecision) {
     setFieldError(null);
     setDecision(next);
   }
@@ -111,7 +110,6 @@ export function RefundDetailView() {
   function closeDecision() {
     setDecision(null);
     setFieldError(null);
-    queueMicrotask(() => decisionTriggerRef.current?.focus());
   }
 
   function clearEvidenceFile() {
@@ -262,7 +260,7 @@ export function RefundRecord({
   busy: 'evidence' | RefundDecision | null;
   detail: RefundDetail;
   onEvidence: () => void;
-  onOpenDecision: (decision: RefundDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: RefundDecision) => void;
 }>) {
   const refundState = refundStatusPresentation(detail.status);
   const primaryAction = refundPrimaryAction(detail.availableActions);
@@ -480,14 +478,14 @@ function RefundActionButton({
   action: RefundDecision;
   busy: 'evidence' | RefundDecision | null;
   supporting?: boolean;
-  onOpenDecision: (decision: RefundDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: RefundDecision) => void;
 }>) {
   return (
     <Button
       disabled={busy !== null}
       variant={action === 'REJECT' ? 'destructive' : supporting ? 'secondary' : 'primary'}
-      onClick={(event) => {
-        onOpenDecision(action, event.currentTarget);
+      onClick={() => {
+        onOpenDecision(action);
       }}
     >
       {refundActionLabel(action)}
@@ -528,8 +526,7 @@ export function RefundActionDialog({
   onRemoveEvidence: () => void;
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useModalDialog(dialogRef);
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const asksForReason = decision === 'REJECT' || decision === 'CANCEL';
   const asksForEvidence = decision === 'COMPLETE_BANK_TRANSFER';
   const asksForNote = !asksForReason;
@@ -539,6 +536,7 @@ export function RefundActionDialog({
       aria-labelledby="refund-action-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onClose();
@@ -739,19 +737,6 @@ function validRequiredText(value: string, label: string): string | null {
   if (length < 5) return `${label} cần ít nhất 5 ký tự.`;
   if (length > 500) return `${label} không được vượt quá 500 ký tự.`;
   return null;
-}
-
-function useModalDialog(dialogRef: RefObject<HTMLDialogElement | null>) {
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-    dialog.querySelector<HTMLElement>('input, textarea, button')?.focus();
-    return () => {
-      if (dialog.open && typeof dialog.close === 'function') dialog.close();
-    };
-  }, [dialogRef]);
 }
 
 function RefundDetailSkeleton() {

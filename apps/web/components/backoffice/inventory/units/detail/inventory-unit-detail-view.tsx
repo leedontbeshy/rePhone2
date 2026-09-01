@@ -9,7 +9,7 @@ import {
   ShieldCheckIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ChangeEvent, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import {
   BackofficeActionDialog,
   inspectionResultPresentation,
@@ -27,6 +27,7 @@ import {
   Textarea,
   formatVnd,
 } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import type {
   EphemeralInventoryIdentifiers,
   InventoryInspectionSummary,
@@ -985,29 +986,25 @@ function TransferDialog({
   open: boolean;
   pending: boolean;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const candidates = locations.filter(
-    (location) => location.status === 'ACTIVE' && location.id !== currentLocationId,
+  const candidates = useMemo(
+    () =>
+      locations.filter(
+        (location) => location.status === 'ACTIVE' && location.id !== currentLocationId,
+      ),
+    [currentLocationId, locations],
   );
   const [toLocationId, setToLocationId] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (open && !dialog.open) {
-      setToLocationId(candidates[0]?.id ?? '');
-      setReason('');
-      setError(null);
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    if (!open && dialog.open) {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    }
+    if (!open) return;
+    setToLocationId(candidates[0]?.id ?? '');
+    setReason('');
+    setError(null);
   }, [candidates, open]);
+
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(open);
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1029,6 +1026,7 @@ function TransferDialog({
       aria-labelledby="transfer-unit-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!pending) onCancel();

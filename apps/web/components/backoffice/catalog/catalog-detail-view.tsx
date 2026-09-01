@@ -10,15 +10,9 @@ import {
   UploadSimpleIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type ReactNode,
-  type SyntheticEvent,
-} from 'react';
+import { useRef, useState, type ChangeEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { BackofficeActionDialog, CatalogVoucherStatusChip } from '@/components/backoffice';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import { CatalogMediaImage, type CatalogMediaSource } from './catalog-media';
 import type { CatalogWarrantyChoice } from './catalog-product-form';
 import {
@@ -811,7 +805,7 @@ function CatalogVariantDialog({
   onCancel: () => void;
   onSubmit: (input: CatalogVariantInput) => void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const [draft, setDraft] = useState(() => variantDraftFrom(variant));
   const [error, setError] = useState<string | null>(null);
   function submit(event: SyntheticEvent<HTMLFormElement>) {
@@ -853,6 +847,7 @@ function CatalogVariantDialog({
       aria-labelledby="variant-dialog-title"
       className={styles.dialogPanel}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
@@ -1187,7 +1182,7 @@ function CatalogProductEditDialog({
   onCancel: () => void;
   onSubmit: (input: CatalogProductUpdateInput) => void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const [draft, setDraft] = useState(() => ({
     brand: product.brand,
     chipset: product.chipset ?? '',
@@ -1230,6 +1225,7 @@ function CatalogProductEditDialog({
       aria-labelledby="product-edit-title"
       className={styles.dialogPanel}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
@@ -1416,7 +1412,7 @@ function CatalogMediaEditDialog({
   onCancel: () => void;
   onSubmit: (input: CatalogMediaMetadataInput) => void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const [altText, setAltText] = useState(media.altText ?? '');
   const [sortOrder, setSortOrder] = useState(String(media.sortOrder));
   return (
@@ -1424,6 +1420,7 @@ function CatalogMediaEditDialog({
       aria-labelledby="media-edit-title"
       className={styles.dialogPanel}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
@@ -1479,24 +1476,6 @@ function CatalogMediaEditDialog({
       </form>
     </dialog>
   );
-}
-
-function useOpenCatalogDialog() {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (!dialog.open) {
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    return () => {
-      if (!dialog.open) return;
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    };
-  }, []);
-  return dialogRef;
 }
 
 function CatalogDescription({ label, value }: Readonly<{ label: string; value: string }>) {

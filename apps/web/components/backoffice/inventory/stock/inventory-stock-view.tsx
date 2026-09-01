@@ -8,7 +8,7 @@ import {
   SlidersHorizontalIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from 'react';
+import { useEffect, useState, type MouseEvent, type SyntheticEvent } from 'react';
 import {
   BackofficeDataBoard,
   BackofficePagination,
@@ -16,6 +16,7 @@ import {
   type BackofficeDataColumn,
 } from '@/components/backoffice';
 import { Button, InlineAlert, Input, Select, StatusChip, Textarea } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import type {
   InventoryLocation,
   InventoryStockLevel,
@@ -325,32 +326,24 @@ function StockCommandDialog({
   onCommand,
   variants,
 }: StockCommandDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<StockCommandDraft>(() => emptyStockCommandDraft());
   const [errors, setErrors] = useState<Partial<Record<StockCommandField, string>>>({});
   const [pending, setPending] = useState(false);
   const [commandError, setCommandError] = useState<string | null>(null);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (command !== null && !dialog.open) {
-      setDraft(
-        emptyStockCommandDraft({
-          ...(defaultVariantId === undefined ? {} : { variantId: defaultVariantId }),
-          ...(defaultLocationId === undefined ? {} : { locationId: defaultLocationId }),
-        }),
-      );
-      setErrors({});
-      setCommandError(null);
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    if (command === null && dialog.open) {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    }
+    if (command === null) return;
+    setDraft(
+      emptyStockCommandDraft({
+        ...(defaultVariantId === undefined ? {} : { variantId: defaultVariantId }),
+        ...(defaultLocationId === undefined ? {} : { locationId: defaultLocationId }),
+      }),
+    );
+    setErrors({});
+    setCommandError(null);
   }, [command, defaultLocationId, defaultVariantId]);
+
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(command !== null);
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -376,6 +369,7 @@ function StockCommandDialog({
       aria-labelledby="stock-command-title"
       className={styles.commandDialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!pending) onClose();

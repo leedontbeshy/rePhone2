@@ -3,14 +3,7 @@
 import { FileArrowUpIcon, XIcon } from '@phosphor-icons/react/ssr';
 import NextLink from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-  type SyntheticEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   OperationsActionRail,
@@ -31,6 +24,7 @@ import {
   Skeleton,
   Textarea,
 } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import {
   getBackofficePayment,
   getPaymentEvidenceUrl,
@@ -68,7 +62,6 @@ export function PaymentDetailView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
-  const decisionTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const loadPayment = useCallback(async () => {
     const next = await getBackofficePayment(client, paymentId);
@@ -99,8 +92,7 @@ export function PaymentDetailView() {
     };
   }, [isStaff, loadPayment, status]);
 
-  function openDecision(next: PaymentDecision, trigger: HTMLButtonElement) {
-    decisionTriggerRef.current = trigger;
+  function openDecision(next: PaymentDecision) {
     setFieldError(null);
     setDecision(next);
   }
@@ -108,7 +100,6 @@ export function PaymentDetailView() {
   function closeDecision() {
     setDecision(null);
     setFieldError(null);
-    queueMicrotask(() => decisionTriggerRef.current?.focus());
   }
 
   async function openEvidence() {
@@ -254,7 +245,7 @@ export function PaymentRecord({
   busy: 'evidence' | PaymentDecision | null;
   detail: BackofficePaymentDetail;
   onEvidence: () => void;
-  onOpenDecision: (decision: PaymentDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: PaymentDecision) => void;
 }>) {
   const paymentState = paymentStatusPresentation(detail.payment.status);
   const canVerify = detail.availableActions.includes('VERIFY');
@@ -406,8 +397,8 @@ export function PaymentRecord({
                 canVerify ? (
                   <Button
                     disabled={busy !== null}
-                    onClick={(event) => {
-                      onOpenDecision('verify', event.currentTarget);
+                    onClick={() => {
+                      onOpenDecision('verify');
                     }}
                   >
                     Xác nhận thanh toán
@@ -416,8 +407,8 @@ export function PaymentRecord({
                   <Button
                     disabled={busy !== null}
                     variant="destructive"
-                    onClick={(event) => {
-                      onOpenDecision('reject', event.currentTarget);
+                    onClick={() => {
+                      onOpenDecision('reject');
                     }}
                   >
                     Từ chối minh chứng
@@ -430,8 +421,8 @@ export function PaymentRecord({
                     <Button
                       disabled={busy !== null}
                       variant="secondary"
-                      onClick={(event) => {
-                        onOpenDecision('reject', event.currentTarget);
+                      onClick={() => {
+                        onOpenDecision('reject');
                       }}
                     >
                       Từ chối minh chứng
@@ -499,8 +490,7 @@ function PaymentDecisionDialog({
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => Promise<void>;
   onVerifyNote: (value: string) => void;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useModalDialog(dialogRef);
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const verify = decision === 'verify';
   return (
     <dialog
@@ -508,6 +498,7 @@ function PaymentDecisionDialog({
       aria-labelledby="payment-decision-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onClose();
@@ -596,19 +587,6 @@ function PaymentDecisionDialog({
       </form>
     </dialog>
   );
-}
-
-function useModalDialog(dialogRef: RefObject<HTMLDialogElement | null>) {
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-    dialog.querySelector<HTMLElement>('input, textarea, button')?.focus();
-    return () => {
-      if (dialog.open && typeof dialog.close === 'function') dialog.close();
-    };
-  }, [dialogRef]);
 }
 
 function PaymentDetailSkeleton() {

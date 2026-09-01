@@ -81,6 +81,17 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(page.getByRole('heading', { name: 'Giá vốn nội bộ' })).toHaveCount(0);
     await page.waitForTimeout(150);
     expect(probe.costRequests).toBe(0);
+
+    const transferButton = page.getByRole('button', { name: 'Chuyển địa điểm', exact: true });
+    await transferButton.click();
+    const transferDialog = page.getByRole('dialog', {
+      name: 'Chuyển máy sang địa điểm khác',
+    });
+    await expect(transferDialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(transferDialog).toHaveCount(0);
+    await expect(transferButton).toBeFocused();
+
     await expectSingleMainAndNoOverflow(page);
   });
 
@@ -334,6 +345,13 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(receiveButton).toHaveCSS('color', 'rgb(255, 255, 255)');
     await receiveButton.click();
     const dialog = page.getByRole('dialog', { name: 'Nhận hàng' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(receiveButton).toBeFocused();
+
+    await receiveButton.click();
+    await expect(dialog).toBeVisible();
     await dialog.getByLabel('Phụ kiện').selectOption(ACCESSORY_VARIANT_ID);
     await dialog.getByLabel('Nhận tại').selectOption(STORE_ID);
     await dialog.getByLabel('Số lượng').fill('3');
