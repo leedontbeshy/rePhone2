@@ -309,6 +309,7 @@ describe('backoffice inventory typed-client adapter', () => {
   });
 
   it('loads ordinary detail separately from audited reveal and admin-only cost operations', async () => {
+    const controller = new AbortController();
     const get = vi
       .fn()
       .mockResolvedValueOnce({ data: { data: DETAIL_UNIT } })
@@ -329,7 +330,7 @@ describe('backoffice inventory typed-client adapter', () => {
     });
     const client = mockClient({ GET: get, POST: post, PATCH: patch });
 
-    const detail = await getInventoryUnit(client, UNIT_ID);
+    const detail = await getInventoryUnit(client, UNIT_ID, { signal: controller.signal });
     const identifiers = await revealInventoryUnitIdentifiers(
       client,
       UNIT_ID,
@@ -339,6 +340,7 @@ describe('backoffice inventory typed-client adapter', () => {
     expect(get).toHaveBeenCalledTimes(1);
     expect(get).toHaveBeenCalledWith('/api/v1/backoffice/inventory-units/{id}', {
       params: { path: { id: UNIT_ID } },
+      signal: controller.signal,
     });
     expect(detail).toMatchObject({
       media: [{ id: MEDIA_ID }],
@@ -513,6 +515,12 @@ describe('backoffice inventory typed-client adapter', () => {
       signal: controller.signal,
     });
     expect(validateInventoryMediaFile(image)).toBeNull();
+    expect(validateInventoryMediaFile(new Blob([], { type: 'image/webp' }))).toContain('trống');
+    expect(
+      validateInventoryMediaFile(
+        new Blob([new Uint8Array(8 * 1024 * 1024 + 1)], { type: 'image/webp' }),
+      ),
+    ).toContain('8 MB');
     expect(validateInventoryMediaFile(new Blob(['data'], { type: 'text/plain' }))).toContain(
       'JPEG',
     );

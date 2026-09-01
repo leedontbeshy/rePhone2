@@ -6,6 +6,7 @@ import { InventoryShell } from '@/components/backoffice';
 import {
   InventoryUnitListView,
   buildInventoryUnitHref,
+  clampInventoryUnitPage,
   looksLikeProtectedIdentifier,
   type InventoryUnitListRecord,
   type InventoryUnitQueryOverrides,
@@ -94,6 +95,14 @@ export default function InventoryUnitsPage() {
       { signal: controller.signal },
     )
       .then((page) => {
+        const clampedPage = clampInventoryUnitPage(query.page, page.pagination.totalPages);
+        if (clampedPage !== query.page) {
+          const next = mergeQuery(queryRef.current, { page: clampedPage });
+          queryRef.current = next;
+          setQuery(next);
+          window.history.replaceState(null, '', buildInventoryUnitHref(next));
+          return;
+        }
         setUnits(page.data.map(toViewRecord));
         setPagination(page.pagination);
       })

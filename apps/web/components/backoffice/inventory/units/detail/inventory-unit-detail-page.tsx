@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import { Button, InlineAlert, Skeleton } from '@/components/ui';
@@ -57,12 +57,21 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const sessionGeneration = useRef(0);
 
-  const readCoreProjection = useCallback(async (): Promise<InventoryUnitCoreProjection> => {
+  useEffect(() => {
+    sessionGeneration.current += 1;
+    return () => {
+      sessionGeneration.current += 1;
+    };
+  }, [client, status, unitId, user?.role]);
+
+  const readCoreProjection = useCallback(async (signal?: AbortSignal): Promise<InventoryUnitCoreProjection> => {
+    const options = signal === undefined ? {} : { signal };
     const [nextUnit, inspectionPage, nextLocations] = await Promise.all([
-      getInventoryUnit(client, unitId),
-      listInventoryUnitInspections(client, unitId, { page: 1, pageSize: 50 }),
-      listInventoryLocations(client),
+      getInventoryUnit(client, unitId, options),
+      listInventoryUnitInspections(client, unitId, { page: 1, pageSize: 50 }, options),
+      listInventoryLocations(client, options),
     ]);
     return {
       inspections: inspectionPage.data,
@@ -77,15 +86,27 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
     setLocations(projection.locations);
   }, []);
 
-  const refetchCore = useCallback(async () => {
+  const refetchCore = useCallback(async (expectedGeneration?: number) => {
     setIdentifiers(null);
     const projection = await readCoreProjection();
+    if (
+      expectedGeneration !== undefined &&
+      expectedGeneration !== sessionGeneration.current
+    )
+      return;
     applyCoreProjection(projection);
   }, [applyCoreProjection, readCoreProjection]);
 
   useEffect(() => {
-    if (!canLoad) return;
+    if (!canLoad) {
+      setIdentifiers(null);
+      setUnit(null);
+      setInspections([]);
+      setLocations([]);
+      return;
+    }
     let active = true;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
     setNotice(null);
@@ -93,7 +114,7 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
     setUnit(null);
     setInspections([]);
     setLocations([]);
-    void readCoreProjection()
+    void readCoreProjection(controller.signal)
       .then((projection) => {
         if (active) applyCoreProjection(projection);
       })
@@ -105,6 +126,7 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
       });
     return () => {
       active = false;
+      controller.abort();
     };
   }, [applyCoreProjection, canLoad, readCoreProjection]);
 
@@ -124,15 +146,18 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
     successMessage: string,
   ): Promise<boolean> {
     if (busyAction !== null) return false;
+    const generation = sessionGeneration.current;
     setBusyAction(action);
     setError(null);
     setNotice(null);
     try {
       try {
         await operation();
+        if (generation !== sessionGeneration.current) return false;
       } catch (caught: unknown) {
+        if (generation !== sessionGeneration.current) return false;
         try {
-          await refetchAfterInventoryConflict(caught, refetchCore);
+          await refetchAfterInventoryConflict(caught, () => refetchCore(generation));
         } catch {
           // Preserve the original mutation error; a retry remains available in the page header.
         }
@@ -141,8 +166,10 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
       }
 
       try {
-        await refetchCore();
+        await refetchCore(generation);
+        if (generation !== sessionGeneration.current) return false;
       } catch (caught: unknown) {
+        if (generation !== sessionGeneration.current) return false;
         setError(
           errorMessage(
             caught,
@@ -154,39 +181,45 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
       setNotice(successMessage);
       return true;
     } finally {
-      setBusyAction(null);
+      if (generation === sessionGeneration.current) setBusyAction(null);
     }
   }
 
   async function refresh(): Promise<void> {
     if (busyAction !== null) return;
+    const generation = sessionGeneration.current;
     setBusyAction('refresh');
     setError(null);
     setNotice(null);
     try {
-      await refetchCore();
+      await refetchCore(generation);
+      if (generation !== sessionGeneration.current) return;
     } catch (caught: unknown) {
+      if (generation !== sessionGeneration.current) return;
       setError(errorMessage(caught, 'Không thể tải lại hồ sơ máy.'));
     } finally {
-      setBusyAction(null);
+      if (generation === sessionGeneration.current) setBusyAction(null);
     }
   }
 
   async function revealIdentifiers(reason: string): Promise<boolean> {
     if (busyAction !== null) return false;
+    const generation = sessionGeneration.current;
     setBusyAction('reveal');
     setError(null);
     setNotice(null);
     setIdentifiers(null);
     try {
       const revealed = await revealInventoryUnitIdentifiers(client, unitId, reason);
+      if (generation !== sessionGeneration.current) return false;
       setIdentifiers(revealed);
       return true;
     } catch (caught: unknown) {
+      if (generation !== sessionGeneration.current) return false;
       setError(errorMessage(caught, 'Không thể xem mã định danh.'));
       return false;
     } finally {
-      setBusyAction(null);
+      if (generation === sessionGeneration.current) setBusyAction(null);
     }
   }
 
@@ -195,23 +228,26 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
       setError('Máy không còn cho phép tạo phiếu kiểm định mới. Hãy tải lại hồ sơ.');
       return false;
     }
+    const generation = sessionGeneration.current;
     setBusyAction('create-inspection');
     setError(null);
     setNotice(null);
     try {
       const inspection = await createInventoryUnitInspection(client, unitId, { inspectionType });
+      if (generation !== sessionGeneration.current) return false;
       router.push(`/backoffice/inventory/inspections/${inspection.id}`);
       return true;
     } catch (caught: unknown) {
+      if (generation !== sessionGeneration.current) return false;
       try {
-        await refetchAfterInventoryConflict(caught, refetchCore);
+        await refetchAfterInventoryConflict(caught, () => refetchCore(generation));
       } catch {
         // Keep the create error visible even if the best-effort refresh also fails.
       }
       setError(errorMessage(caught, 'Không thể tạo phiếu kiểm định.'));
       return false;
     } finally {
-      setBusyAction(null);
+      if (generation === sessionGeneration.current) setBusyAction(null);
     }
   }
 

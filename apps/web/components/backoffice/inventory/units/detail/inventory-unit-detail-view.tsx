@@ -28,15 +28,16 @@ import {
   formatVnd,
 } from '@/components/ui';
 import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
-import type {
-  EphemeralInventoryIdentifiers,
-  InventoryInspectionSummary,
-  InventoryInspectionType,
-  InventoryLocation,
-  InventoryMediaUploadInput,
-  InventoryUnitAction,
-  InventoryUnitDetail,
-  UpdateInventoryUnitInput,
+import {
+  validateInventoryMediaFile,
+  type EphemeralInventoryIdentifiers,
+  type InventoryInspectionSummary,
+  type InventoryInspectionType,
+  type InventoryLocation,
+  type InventoryMediaUploadInput,
+  type InventoryUnitAction,
+  type InventoryUnitDetail,
+  type UpdateInventoryUnitInput,
 } from '@/lib/backoffice-inventory-api';
 import {
   buildIdentifierCorrection,
@@ -471,8 +472,11 @@ function MediaSection({
             required
             selectedFileName={file?.name ?? null}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setFile(event.target.files?.[0] ?? null);
-              setFileError(null);
+              const selectedFile = event.target.files?.[0] ?? null;
+              const validationMessage =
+                selectedFile === null ? null : validateInventoryMediaFile(selectedFile);
+              setFile(validationMessage === null ? selectedFile : null);
+              setFileError(validationMessage);
               setFormError(null);
             }}
           />

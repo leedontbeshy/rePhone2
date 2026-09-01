@@ -81,7 +81,7 @@ export default function InventoryInspectionPage() {
           ? [{ href: intakeReturnHref, label: 'Nhập máy' }, { label: 'Kiểm định' }]
           : showIntakeChrome
             ? [{ label: 'Nhập máy' }, { label: 'Kiểm định' }]
-          : [{ href: INVENTORY_UNITS_ROOT, label: 'Máy vật lý' }, { label: 'Phiếu kiểm định' }]
+            : [{ href: INVENTORY_UNITS_ROOT, label: 'Máy vật lý' }, { label: 'Phiếu kiểm định' }]
       }
     >
       <InventoryInspectionLoader

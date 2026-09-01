@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildInventoryUnitHref,
+  clampInventoryUnitPage,
   looksLikeProtectedIdentifier,
   type InventoryUnitQueryState,
 } from './inventory-unit-list-view';
@@ -35,5 +36,11 @@ describe('inventory unit list presenter', () => {
     expect(looksLikeProtectedIdentifier('iPhone 15 Pro')).toBe(false);
     expect(looksLikeProtectedIdentifier('RPH-20260828-001')).toBe(false);
     expect(looksLikeProtectedIdentifier('5678')).toBe(false);
+  });
+
+  it('clamps a stale page after filters reduce the result count', () => {
+    expect(clampInventoryUnitPage(8, 3)).toBe(3);
+    expect(clampInventoryUnitPage(2, 0)).toBe(1);
+    expect(clampInventoryUnitPage(2, 5)).toBe(2);
   });
 });
