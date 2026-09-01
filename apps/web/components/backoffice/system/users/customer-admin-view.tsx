@@ -57,6 +57,10 @@ import {
   UserSortSelect,
   UserStatusSelect,
 } from './user-admin-primitives';
+import {
+  createSystemAdminMutationLock,
+  runSystemAdminMutation,
+} from '../system-admin-mutation-lock';
 import styles from './users.module.css';
 
 interface CustomerNotice {
@@ -93,6 +97,7 @@ export function CustomerAdminView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [dialogError, setDialogError] = useState<string>();
+  const [mutationLock] = useState(createSystemAdminMutationLock);
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
   const selectedId = useRef<string | undefined>(undefined);
@@ -179,40 +184,42 @@ export function CustomerAdminView() {
   }
 
   async function transition(reasonValue?: string) {
-    if (!isAdmin || selected === undefined || reasonValue === undefined || busy) return;
-    setBusy(true);
-    setDialogError(undefined);
-    setNotice(undefined);
-    try {
-      const updated =
-        selected.status === 'ACTIVE'
-          ? await suspendCustomer(client, selected.id, reasonValue)
-          : await activateCustomer(client, selected.id, reasonValue);
-      commitCustomerSelection(updated);
-      setCustomers((current) =>
-        current.map((customer) => (customer.id === updated.id ? updated : customer)),
-      );
-      setDialogOpen(false);
-      setReason('');
-      setNotice(
-        updated.status === 'SUSPENDED'
-          ? {
-              message: 'Đã tạm khóa khách hàng và thu hồi toàn bộ phiên đăng nhập.',
-              tone: 'success',
-            }
-          : { message: 'Đã kích hoạt lại khách hàng.', tone: 'success' },
-      );
-      void refreshList(false);
-    } catch (caught) {
-      if (isStateConflict(caught)) {
+    await runSystemAdminMutation(mutationLock, async () => {
+      if (!isAdmin || selected === undefined || reasonValue === undefined || busy) return;
+      setBusy(true);
+      setDialogError(undefined);
+      setNotice(undefined);
+      try {
+        const updated =
+          selected.status === 'ACTIVE'
+            ? await suspendCustomer(client, selected.id, reasonValue)
+            : await activateCustomer(client, selected.id, reasonValue);
+        commitCustomerSelection(updated);
+        setCustomers((current) =>
+          current.map((customer) => (customer.id === updated.id ? updated : customer)),
+        );
         setDialogOpen(false);
-        await reloadCustomerAfterConflict(selected.id);
-      } else {
-        setDialogError(messageFrom(caught, 'Không thể đổi trạng thái khách hàng.'));
+        setReason('');
+        setNotice(
+          updated.status === 'SUSPENDED'
+            ? {
+                message: 'Đã tạm khóa khách hàng và thu hồi toàn bộ phiên đăng nhập.',
+                tone: 'success',
+              }
+            : { message: 'Đã kích hoạt lại khách hàng.', tone: 'success' },
+        );
+        void refreshList(false);
+      } catch (caught) {
+        if (isStateConflict(caught)) {
+          setDialogOpen(false);
+          await reloadCustomerAfterConflict(selected.id);
+        } else {
+          setDialogError(messageFrom(caught, 'Không thể đổi trạng thái khách hàng.'));
+        }
+      } finally {
+        setBusy(false);
       }
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
   async function reloadCustomerAfterConflict(id: string) {

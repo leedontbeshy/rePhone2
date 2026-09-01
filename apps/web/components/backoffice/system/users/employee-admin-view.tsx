@@ -72,6 +72,10 @@ import {
   UserRecordButton,
   UserStatusSelect,
 } from './user-admin-primitives';
+import {
+  createSystemAdminMutationLock,
+  runSystemAdminMutation,
+} from '../system-admin-mutation-lock';
 import styles from './users.module.css';
 
 type EmployeePanelMode = 'empty' | 'view' | 'create' | 'edit';
@@ -114,6 +118,7 @@ export function EmployeeAdminView() {
   const [lifecycleAction, setLifecycleAction] = useState<EmployeeLifecycleAction>();
   const [lifecycleReason, setLifecycleReason] = useState('');
   const [dialogError, setDialogError] = useState<string>();
+  const [mutationLock] = useState(createSystemAdminMutationLock);
   const listRequest = useRef(0);
   const detailRequest = useRef(0);
   const panelState = useRef<{
@@ -251,86 +256,91 @@ export function EmployeeAdminView() {
 
   async function submitEmployee(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    if ((mode !== 'create' && mode !== 'edit') || formLocked) return;
-    const errors = validateEmployeeDraft(draft, mode);
-    setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      setPanelError('Một số thông tin chưa hợp lệ. Hãy kiểm tra các trường được đánh dấu.');
-      return;
-    }
-    const normalized = normalizeEmployeeDraft(draft);
-    if (mode === 'edit' && selected !== undefined && !employeeDraftChanged(selected, draft)) {
-      setNotice({ message: 'Chưa có thay đổi nào cần lưu.', tone: 'warning' });
-      commitEmployeePanel(selected, 'view');
-      return;
-    }
+    await runSystemAdminMutation(mutationLock, async () => {
+      if ((mode !== 'create' && mode !== 'edit') || formLocked) return;
+      const errors = validateEmployeeDraft(draft, mode);
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        setPanelError('Một số thông tin chưa hợp lệ. Hãy kiểm tra các trường được đánh dấu.');
+        return;
+      }
+      const normalized = normalizeEmployeeDraft(draft);
+      if (mode === 'edit' && selected !== undefined && !employeeDraftChanged(selected, draft)) {
+        setNotice({ message: 'Chưa có thay đổi nào cần lưu.', tone: 'warning' });
+        commitEmployeePanel(selected, 'view');
+        return;
+      }
 
-    setBusy(mode === 'create' ? 'create' : 'update');
-    setPanelError(undefined);
-    setNotice(undefined);
-    try {
-      if (mode === 'create') {
-        const created = await createEmployee(client, {
-          email: normalized.email,
-          employeeCode: normalized.employeeCode,
-          fullName: normalized.fullName,
-          ...(normalized.phone === '' ? {} : { phone: normalized.phone }),
-          ...(normalized.hiredAt === '' ? {} : { hiredAt: normalized.hiredAt }),
-        });
-        commitEmployeePanel(created.employee, 'view');
-        setNotice(
-          created.deliveryStatus === 'SENT'
-            ? { message: 'Đã tạo nhân viên và gửi lời mời kích hoạt.', tone: 'success' }
-            : {
-                message:
-                  'Đã tạo nhân viên, nhưng email lời mời chưa gửi được. Bạn có thể gửi lại khi dịch vụ email ổn định.',
-                tone: 'warning',
-              },
-        );
-      } else if (selected !== undefined) {
-        const updated = await updateEmployee(
-          client,
-          selected.id,
-          employeeUpdateInput(selected, draft),
-        );
-        commitEmployeePanel(updated, 'view');
-        setNotice({ message: 'Đã cập nhật hồ sơ nhân viên.', tone: 'success' });
+      setBusy(mode === 'create' ? 'create' : 'update');
+      setPanelError(undefined);
+      setNotice(undefined);
+      try {
+        if (mode === 'create') {
+          const created = await createEmployee(client, {
+            email: normalized.email,
+            employeeCode: normalized.employeeCode,
+            fullName: normalized.fullName,
+            ...(normalized.phone === '' ? {} : { phone: normalized.phone }),
+            ...(normalized.hiredAt === '' ? {} : { hiredAt: normalized.hiredAt }),
+          });
+          commitEmployeePanel(created.employee, 'view');
+          setNotice(
+            created.deliveryStatus === 'SENT'
+              ? { message: 'Đã tạo nhân viên và gửi lời mời kích hoạt.', tone: 'success' }
+              : {
+                  message:
+                    'Đã tạo nhân viên, nhưng email lời mời chưa gửi được. Bạn có thể gửi lại khi dịch vụ email ổn định.',
+                  tone: 'warning',
+                },
+          );
+        } else if (selected !== undefined) {
+          const updated = await updateEmployee(
+            client,
+            selected.id,
+            employeeUpdateInput(selected, draft),
+          );
+          commitEmployeePanel(updated, 'view');
+          setNotice({ message: 'Đã cập nhật hồ sơ nhân viên.', tone: 'success' });
+        }
+        setFieldErrors({});
+        void refreshList(false);
+      } catch (caught) {
+        if (selected !== undefined && isStateConflict(caught)) {
+          await reloadEmployeeAfterConflict(selected.id);
+        } else {
+          setPanelError(messageFrom(caught, 'Không thể lưu hồ sơ nhân viên.'));
+        }
+      } finally {
+        setBusy(undefined);
       }
-      setFieldErrors({});
-      void refreshList(false);
-    } catch (caught) {
-      if (selected !== undefined && isStateConflict(caught)) {
-        await reloadEmployeeAfterConflict(selected.id);
-      } else {
-        setPanelError(messageFrom(caught, 'Không thể lưu hồ sơ nhân viên.'));
-      }
-    } finally {
-      setBusy(undefined);
-    }
+    });
   }
 
   async function resend() {
-    if (selected === undefined || selected.status !== 'PENDING_VERIFICATION' || formLocked) return;
-    setBusy('resend');
-    setPanelError(undefined);
-    setNotice(undefined);
-    try {
-      const delivery = await resendInvitation(client, selected.id);
-      setNotice(
-        delivery === 'SENT'
-          ? { message: 'Đã gửi lại lời mời kích hoạt.', tone: 'success' }
-          : {
-              message:
-                'Đã làm mới lời mời, nhưng email chưa gửi được. Hãy thử lại khi dịch vụ email ổn định.',
-              tone: 'warning',
-            },
-      );
-    } catch (caught) {
-      if (isStateConflict(caught)) await reloadEmployeeAfterConflict(selected.id);
-      else setPanelError(messageFrom(caught, 'Không thể gửi lại lời mời.'));
-    } finally {
-      setBusy(undefined);
-    }
+    await runSystemAdminMutation(mutationLock, async () => {
+      if (selected === undefined || selected.status !== 'PENDING_VERIFICATION' || formLocked)
+        return;
+      setBusy('resend');
+      setPanelError(undefined);
+      setNotice(undefined);
+      try {
+        const delivery = await resendInvitation(client, selected.id);
+        setNotice(
+          delivery === 'SENT'
+            ? { message: 'Đã gửi lại lời mời kích hoạt.', tone: 'success' }
+            : {
+                message:
+                  'Đã làm mới lời mời, nhưng email chưa gửi được. Hãy thử lại khi dịch vụ email ổn định.',
+                tone: 'warning',
+              },
+        );
+      } catch (caught) {
+        if (isStateConflict(caught)) await reloadEmployeeAfterConflict(selected.id);
+        else setPanelError(messageFrom(caught, 'Không thể gửi lại lời mời.'));
+      } finally {
+        setBusy(undefined);
+      }
+    });
   }
 
   function askLifecycle(action: EmployeeLifecycleAction) {
@@ -340,45 +350,48 @@ export function EmployeeAdminView() {
   }
 
   async function confirmLifecycle(reason?: string) {
-    if (selected === undefined || lifecycleAction === undefined || reason === undefined) return;
-    const action = lifecycleAction;
-    setBusy(action);
-    setDialogError(undefined);
-    try {
-      const updated =
-        action === 'disable'
-          ? await disableEmployee(client, selected.id, reason)
-          : await enableEmployee(client, selected.id, reason);
-      commitEmployeePanel(updated, 'view');
-      setEmployees((current) =>
-        current.map((employee) => (employee.id === updated.id ? updated : employee)),
-      );
-      setLifecycleAction(undefined);
-      setLifecycleReason('');
-      setNotice(
-        updated.status === 'DISABLED'
-          ? {
-              message: 'Đã vô hiệu hóa nhân viên và thu hồi toàn bộ phiên đăng nhập.',
-              tone: 'success',
-            }
-          : updated.status === 'PENDING_VERIFICATION'
-            ? {
-                message: 'Tài khoản đã chuyển sang chờ kích hoạt. Có thể gửi lại lời mời nếu cần.',
-                tone: 'warning',
-              }
-            : { message: 'Đã kích hoạt lại nhân viên.', tone: 'success' },
-      );
-      void refreshList(false);
-    } catch (caught) {
-      if (isStateConflict(caught)) {
+    await runSystemAdminMutation(mutationLock, async () => {
+      if (selected === undefined || lifecycleAction === undefined || reason === undefined) return;
+      const action = lifecycleAction;
+      setBusy(action);
+      setDialogError(undefined);
+      try {
+        const updated =
+          action === 'disable'
+            ? await disableEmployee(client, selected.id, reason)
+            : await enableEmployee(client, selected.id, reason);
+        commitEmployeePanel(updated, 'view');
+        setEmployees((current) =>
+          current.map((employee) => (employee.id === updated.id ? updated : employee)),
+        );
         setLifecycleAction(undefined);
-        await reloadEmployeeAfterConflict(selected.id);
-      } else {
-        setDialogError(messageFrom(caught, 'Không thể đổi trạng thái nhân viên.'));
+        setLifecycleReason('');
+        setNotice(
+          updated.status === 'DISABLED'
+            ? {
+                message: 'Đã vô hiệu hóa nhân viên và thu hồi toàn bộ phiên đăng nhập.',
+                tone: 'success',
+              }
+            : updated.status === 'PENDING_VERIFICATION'
+              ? {
+                  message:
+                    'Tài khoản đã chuyển sang chờ kích hoạt. Có thể gửi lại lời mời nếu cần.',
+                  tone: 'warning',
+                }
+              : { message: 'Đã kích hoạt lại nhân viên.', tone: 'success' },
+        );
+        void refreshList(false);
+      } catch (caught) {
+        if (isStateConflict(caught)) {
+          setLifecycleAction(undefined);
+          await reloadEmployeeAfterConflict(selected.id);
+        } else {
+          setDialogError(messageFrom(caught, 'Không thể đổi trạng thái nhân viên.'));
+        }
+      } finally {
+        setBusy(undefined);
       }
-    } finally {
-      setBusy(undefined);
-    }
+    });
   }
 
   async function reloadEmployeeAfterConflict(id: string) {
