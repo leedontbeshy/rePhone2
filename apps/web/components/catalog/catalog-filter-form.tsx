@@ -19,7 +19,7 @@ export function CatalogFilterForm({ current, idPrefix, pageSize }: CatalogFilter
           type="search"
           maxLength={100}
           defaultValue={searchParamValue(current, 'q')}
-          placeholder="Tên model hoặc cấu hình"
+          placeholder="Tên dòng máy hoặc cấu hình"
         />
       </FilterField>
       <FilterField id={`${idPrefix}-type`} label="Loại sản phẩm">

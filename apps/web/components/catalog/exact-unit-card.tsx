@@ -50,7 +50,7 @@ export function ExactUnitCard({
       </Link>
       <div className={styles.unitCardBody}>
         <div className={styles.cardMeta}>
-          <Badge>Grade {unit.conditionGrade}</Badge>
+          <Badge>Ngoại hình loại {unit.conditionGrade}</Badge>
           {unit.batteryHealthPercent === null || unit.batteryHealthPercent === undefined ? null : (
             <span className={styles.batteryMetric}>
               <BatteryHighIcon aria-hidden="true" size={17} weight="bold" />

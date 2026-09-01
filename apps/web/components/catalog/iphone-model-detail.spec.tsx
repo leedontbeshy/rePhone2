@@ -8,7 +8,7 @@ describe('iPhone model detail', () => {
     const markup = renderToStaticMarkup(<IphoneModelDetail product={product()} sort="PRICE_ASC" />);
 
     expect(markup).toContain('<h1 id="model-title">iPhone 15 Pro Max</h1>');
-    expect(markup).toContain('Ảnh minh họa model');
+    expect(markup).toContain('Ảnh minh họa dòng máy');
     expect(markup).toContain(
       'Khám phá iPhone 15 Pro Max cũ tại rePhone; giá và tình trạng được ghi rõ cho từng máy đang có sẵn.',
     );
@@ -44,9 +44,12 @@ describe('iPhone model detail', () => {
       />,
     );
 
-    expect(markup).toContain('Model này đang tạm hết máy');
+    expect(markup).toContain('Dòng máy này đang tạm hết máy');
     expect(markup).toContain('href="/products?productType=IPHONE&amp;inStock=true"');
     expect(markup).toContain('iPhone 15 Pro Max');
+    expect(markup).not.toContain(
+      'Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.',
+    );
   });
 
   it('uses the source-backed profile to keep a sparse iPhone 15 Pro at four model facts', () => {

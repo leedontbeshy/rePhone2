@@ -27,7 +27,7 @@ export function IphoneGenerationCatalog({
     return (
       <section className={styles.state} aria-labelledby="catalog-empty-title">
         <h2 id="catalog-empty-title">Chưa có dòng iPhone nào</h2>
-        <p>Danh mục công khai hiện chưa có model để hiển thị.</p>
+        <p>Danh mục công khai hiện chưa có dòng máy để hiển thị.</p>
       </section>
     );
   }
