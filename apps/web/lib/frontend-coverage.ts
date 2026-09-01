@@ -1,6 +1,8 @@
 export type FrontendPhase =
   'FE-0' | 'FE-1' | 'FE-2' | 'FE-3' | 'FE-4' | 'FE-5' | 'FE-6' | 'FE-7' | 'FE-8' | 'FE-9';
 
+export type FrontendBusinessPhase = Exclude<FrontendPhase, 'FE-0' | 'FE-9'>;
+
 export type FrontendCoverageStatus = 'NOT STARTED' | 'IN PROGRESS' | 'DONE';
 
 export const FRONTEND_PHASE_STATUS = {
@@ -23,15 +25,15 @@ export type FrontendOperationCoverage = readonly [
   accessMode: string,
   targetRoute: string,
   actionState: string,
-  phase: Exclude<FrontendPhase, 'FE-0' | 'FE-9'>,
-  automatedTest: string,
+  phase: FrontendBusinessPhase,
+  browserOwner: `browser:${string}`,
   status: FrontendCoverageStatus,
 ];
 
 export type FrontendRouteCoverage = readonly [
   route: string,
   kind: 'EXISTING' | 'PLANNED',
-  phase: Exclude<FrontendPhase, 'FE-0' | 'FE-9'>,
+  phase: FrontendBusinessPhase,
 ];
 
 /**
@@ -1901,3 +1903,5 @@ export const FRONTEND_REQUIRED_STATES = [
   'provider-error',
   'upload-progress',
 ] as const;
+
+export type FrontendRequiredState = (typeof FRONTEND_REQUIRED_STATES)[number];
