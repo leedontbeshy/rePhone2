@@ -315,6 +315,18 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/cart'],
         ownsStates: ['error', 'pending', 'success'],
       },
+      'wishlist-role-state-matrix': {
+        title: 'keeps wishlist states customer-only across anonymous, customer and staff roles',
+        ownsRoutes: [],
+        coversRoutes: ['/wishlist'],
+        ownsStates: ['empty', 'error', 'permission', 'success'],
+      },
+      'wishlist-mutation-lifecycle': {
+        title: 'handles wishlist add and remove lifecycles without reducing accessory quantity',
+        ownsRoutes: [],
+        coversRoutes: ['/wishlist', '/cart'],
+        ownsStates: ['error', 'pending', 'success'],
+      },
     },
   },
   'browser:catalog-voucher-admin': {

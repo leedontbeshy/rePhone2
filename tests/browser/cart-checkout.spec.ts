@@ -5,6 +5,14 @@ const CUSTOMER = {
   email: 'customer@rephone.local',
   password: 'CustomerDemo123',
 } as const;
+const EMPLOYEE = {
+  email: 'employee@rephone.local',
+  password: 'EmployeeDemo123',
+} as const;
+const ADMIN = {
+  email: 'admin@rephone.local',
+  password: 'AdminDemo123',
+} as const;
 const GUEST_UNIT = {
   code: 'IP14P-128-001',
   path: '/products/iphone-14-pro/units/IP14P-128-001',
@@ -380,6 +388,160 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expect(cartSummary).toBeVisible();
     expect(cartRefreshes).toBe(2);
   });
+
+  test(bt('browser:cart-checkout', 'wishlist-role-state-matrix'), async ({ browser, page }) => {
+    const anonymousWishlistRequests = collectWishlistRequests(page);
+    await page.goto('/wishlist');
+    await expect(
+      page.getByRole('heading', { name: 'Đăng nhập để xem sản phẩm ưa thích' }),
+    ).toBeVisible();
+    expect(anonymousWishlistRequests).toEqual([]);
+
+    for (const account of [EMPLOYEE, ADMIN]) {
+      const context = await browser.newContext();
+      const staffPage = await context.newPage();
+      const staffWishlistRequests = collectWishlistRequests(staffPage);
+      await loginAs(staffPage, account, '/backoffice');
+      await staffPage.goto('/wishlist');
+      await expect(
+        staffPage.getByRole('heading', { name: 'Mục này dành cho khách hàng' }),
+      ).toBeVisible();
+      expect(staffWishlistRequests).toEqual([]);
+      await context.close();
+    }
+
+    await loginAs(page, CUSTOMER, '/wishlist');
+    await clearWishlist(page);
+    await expect(page.getByRole('heading', { name: 'Chưa có sản phẩm ưa thích' })).toBeVisible();
+
+    await addUnitToWishlist(page, GUEST_UNIT);
+    await page.goto('/wishlist');
+    const savedCard = page.locator('article').filter({ hasText: GUEST_UNIT.code });
+    await expect(savedCard).toBeVisible();
+    await savedCard
+      .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
+      .click();
+    await expect(savedCard).toHaveCount(0);
+
+    await page.route('**/api/v1/wishlist', async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'SERVICE_UNAVAILABLE', message: 'Dịch vụ đang tạm gián đoạn.' },
+        }),
+      });
+    });
+    await page.goto('/wishlist');
+    await expect(page.getByText('Chưa thể tải sản phẩm ưa thích', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tải lại', exact: true })).toBeVisible();
+    await page.unroute('**/api/v1/wishlist');
+    await page.getByRole('button', { name: 'Tải lại', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Chưa có sản phẩm ưa thích' })).toBeVisible();
+  });
+
+  test(bt('browser:cart-checkout', 'wishlist-mutation-lifecycle'), async ({ page }) => {
+    await loginAs(page, CUSTOMER, '/wishlist');
+    await clearWishlist(page);
+    await clearCart(page);
+    await addUnitToWishlist(page, GUEST_UNIT);
+    await page.goto('/wishlist');
+
+    const iphoneCard = page.locator('article').filter({ hasText: GUEST_UNIT.code });
+    await expect(iphoneCard).toBeVisible();
+    const addStarted = deferred();
+    const releaseAdd = deferred();
+    await page.route('**/api/v1/cart/items', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      addStarted.resolve();
+      await releaseAdd.promise;
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'SERVICE_UNAVAILABLE', message: 'Chưa thể thêm sản phẩm lúc này.' },
+        }),
+      });
+    });
+    await iphoneCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    await addStarted.promise;
+    await expect(
+      iphoneCard.getByRole('button', { name: 'Đang thêm vào giỏ hàng', exact: true }),
+    ).toHaveAttribute('aria-busy', 'true');
+    releaseAdd.resolve();
+    await expect(iphoneCard.getByRole('alert')).toContainText(
+      'Dịch vụ đang tạm gián đoạn. Vui lòng thử lại sau.',
+    );
+    await page.unroute('**/api/v1/cart/items');
+    await iphoneCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    await expect(iphoneCard.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
+
+    const removeStarted = deferred();
+    const releaseRemove = deferred();
+    await page.route('**/api/v1/wishlist/items/*', async (route) => {
+      if (route.request().method() !== 'DELETE') {
+        await route.continue();
+        return;
+      }
+      removeStarted.resolve();
+      await releaseRemove.promise;
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'SERVICE_UNAVAILABLE', message: 'Dịch vụ đang tạm gián đoạn.' },
+        }),
+      });
+    });
+    await iphoneCard
+      .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
+      .click();
+    await removeStarted.promise;
+    await expect(
+      iphoneCard.getByRole('button', { name: 'Đang xóa sản phẩm', exact: true }),
+    ).toHaveAttribute('aria-busy', 'true');
+    releaseRemove.resolve();
+    await expect(iphoneCard.getByRole('alert')).toContainText(
+      'Chưa thể xóa sản phẩm khỏi danh sách.',
+    );
+    await page.unroute('**/api/v1/wishlist/items/*');
+    await iphoneCard
+      .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
+      .click();
+    await expect(iphoneCard).toHaveCount(0);
+
+    await page.goto('/products/cu-sac-usb-c-20w');
+    await page.getByRole('spinbutton', { name: 'Số lượng' }).fill('3');
+    await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
+    await expect(page.getByText('Đã lưu phụ kiện vào danh sách.', { exact: true })).toBeVisible();
+
+    await page.goto('/wishlist');
+    const accessoryCard = page.locator('article').filter({ hasText: 'Củ sạc USB-C 20W' });
+    const accessoryAddButton = accessoryCard.getByRole('button', {
+      name: 'Thêm vào giỏ',
+      exact: true,
+    });
+    await expect(accessoryAddButton).toBeEnabled();
+    await accessoryAddButton.click();
+    await expect(accessoryCard.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
+
+    await page.goto('/cart');
+    const accessoryRow = page.locator('article').filter({ hasText: 'Củ sạc USB-C 20W' });
+    await expect(accessoryRow.getByRole('spinbutton', { name: 'Số lượng phụ kiện' })).toHaveValue(
+      '3',
+    );
+    await clearWishlist(page);
+    await clearCart(page);
+  });
 });
 
 async function addUnitToCart(
@@ -393,11 +555,65 @@ async function addUnitToCart(
 }
 
 async function login(page: Page, returnTo: string): Promise<void> {
+  await loginAs(page, CUSTOMER, returnTo);
+}
+
+async function loginAs(
+  page: Page,
+  credentials: { readonly email: string; readonly password: string },
+  returnTo: string,
+): Promise<void> {
   await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
-  await page.getByLabel('Email').fill(CUSTOMER.email);
-  await page.locator('#password').fill(CUSTOMER.password);
+  await page.getByLabel('Email').fill(credentials.email);
+  await page.locator('#password').fill(credentials.password);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await page.waitForURL(returnTo);
+}
+
+async function addUnitToWishlist(
+  page: Page,
+  unit: { readonly code: string; readonly path: string },
+): Promise<void> {
+  await page.goto(unit.path);
+  await expect(page.getByText(`Ảnh thật · Mã máy ${unit.code}`, { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
+  await expect(page.getByText('Đã lưu máy vào danh sách.', { exact: true })).toBeVisible();
+}
+
+async function clearWishlist(page: Page): Promise<void> {
+  await page.goto('/wishlist');
+  await expect(page.getByLabel('Đang tải sản phẩm ưa thích')).toHaveCount(0);
+  const removeButtons = page.getByRole('button', {
+    name: /^Xóa .+ khỏi danh sách ưa thích$/,
+  });
+  while ((await removeButtons.count()) > 0) {
+    const previousCount = await removeButtons.count();
+    await removeButtons.first().click();
+    await expect(removeButtons).toHaveCount(previousCount - 1);
+  }
+  await expect(page.getByRole('heading', { name: 'Chưa có sản phẩm ưa thích' })).toBeVisible();
+}
+
+async function clearCart(page: Page): Promise<void> {
+  await page.goto('/cart');
+  await expect(page.getByLabel('Đang tải giỏ hàng')).toHaveCount(0);
+  const removeButtons = page.getByRole('button', { name: 'Xóa', exact: true });
+  while ((await removeButtons.count()) > 0) {
+    const previousCount = await removeButtons.count();
+    await removeButtons.first().click();
+    await expect(removeButtons).toHaveCount(previousCount - 1);
+  }
+}
+
+function collectWishlistRequests(page: Page): string[] {
+  const requests: string[] = [];
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith('/api/v1/wishlist') && request.method() !== 'OPTIONS') {
+      requests.push(`${request.method()} ${pathname}`);
+    }
+  });
+  return requests;
 }
 
 async function removeCartUnit(page: Page, inventoryCode: string): Promise<void> {
