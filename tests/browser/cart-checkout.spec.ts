@@ -209,6 +209,112 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await page.waitForURL(`/orders/${orderNumber}`);
     expect(createRequests).toBe(2);
   });
+
+  test(bt('browser:cart-checkout', 'checkout-entry-scroll'), async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 480 });
+    await addUnitToCart(page, GUEST_UNIT);
+    await page.goto('/cart');
+
+    await expect(page.getByRole('heading', { name: 'Kiểm tra sản phẩm đã chọn' })).toBeVisible();
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight);
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+    await page.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click();
+    await page.waitForURL('/checkout');
+
+    const checkoutHeading = page.getByRole('heading', { level: 1, name: 'Hoàn tất đơn hàng' });
+    await expect(checkoutHeading).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => Math.max(document.documentElement.scrollTop, document.body.scrollTop)),
+      )
+      .toBeLessThanOrEqual(1);
+
+    const [headerBox, headingBox] = await Promise.all([
+      requiredBox(page.getByRole('banner')),
+      requiredBox(checkoutHeading),
+    ]);
+    expect(headingBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height - 1);
+  });
+
+  test(bt('browser:cart-checkout', 'checkout-summary-fallback-layout'), async ({ page }) => {
+    await addUnitToCart(page, GUEST_UNIT);
+    await page.route('**/api/v1/cart', async (route) => {
+      const requestUrl = new URL(route.request().url());
+      if (route.request().method() !== 'GET' || requestUrl.pathname !== '/api/v1/cart') {
+        await route.continue();
+        return;
+      }
+
+      const response = await route.fetch();
+      await route.fulfill({ response, json: cartEnvelopeWithoutMedia(await response.json()) });
+    });
+
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+      { width: 320, height: 720 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/checkout');
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Hoàn tất đơn hàng' }),
+      ).toBeVisible();
+
+      const summary = page.getByRole('complementary', { name: 'Đơn hàng của bạn' });
+      const summaryItem = summary.locator('article').filter({ hasText: GUEST_UNIT.code });
+      const fallback = summaryItem.getByRole('img', { name: 'Ảnh iPhone 14 Pro', exact: true });
+      await expect(fallback).toBeVisible();
+      await fallback.scrollIntoViewIfNeeded();
+
+      const layout = await fallback.evaluate((element) => {
+        const article = element.closest('article');
+        const copy = element.nextElementSibling;
+        const label = element.querySelector('span');
+        if (article === null || copy === null || label === null) {
+          throw new Error('Expected the checkout fallback, copy and article layout');
+        }
+        const fallbackBox = element.getBoundingClientRect();
+        const articleBox = article.getBoundingClientRect();
+        const copyBox = copy.getBoundingClientRect();
+        return {
+          articleBottom: articleBox.bottom,
+          articleRight: articleBox.right,
+          copyLeft: copyBox.left,
+          documentClientWidth: document.documentElement.clientWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          fallbackBottom: fallbackBox.bottom,
+          fallbackClientHeight: element.clientHeight,
+          fallbackClientWidth: element.clientWidth,
+          fallbackRight: fallbackBox.right,
+          fallbackScrollHeight: element.scrollHeight,
+          fallbackScrollWidth: element.scrollWidth,
+          labelDisplay: window.getComputedStyle(label).display,
+          viewportWidth: window.innerWidth,
+        };
+      });
+
+      expect(layout.viewportWidth, `${String(viewport.width)}px viewport`).toBe(viewport.width);
+      expect(
+        layout.documentScrollWidth,
+        `${String(viewport.width)}px document overflow`,
+      ).toBeLessThanOrEqual(layout.documentClientWidth);
+      expect(
+        layout.fallbackScrollWidth,
+        `${String(viewport.width)}px fallback width`,
+      ).toBeLessThanOrEqual(layout.fallbackClientWidth);
+      expect(
+        layout.fallbackScrollHeight,
+        `${String(viewport.width)}px fallback height`,
+      ).toBeLessThanOrEqual(layout.fallbackClientHeight);
+      expect(layout.fallbackRight).toBeLessThanOrEqual(layout.articleRight + 1);
+      expect(layout.fallbackBottom).toBeLessThanOrEqual(layout.articleBottom + 1);
+      expect(layout.copyLeft).toBeGreaterThanOrEqual(layout.fallbackRight - 1);
+      expect(layout.labelDisplay).toBe('none');
+    }
+  });
 });
 
 async function addUnitToCart(
@@ -292,4 +398,34 @@ function checkoutPreviewWithChangedTotal(preview: Record<string, unknown>): {
 
 function formatVnd(value: string): string {
   return `${new Intl.NumberFormat('vi-VN').format(BigInt(value))} ₫`;
+}
+
+async function requiredBox(locator: ReturnType<Page['getByRole']>) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  if (box === null) throw new Error('Expected a rendered element box');
+  return box;
+}
+
+function cartEnvelopeWithoutMedia(value: unknown): Record<string, unknown> {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('data' in value) ||
+    typeof value.data !== 'object' ||
+    value.data === null ||
+    !('items' in value.data) ||
+    !Array.isArray(value.data.items)
+  ) {
+    throw new Error('Expected a cart response envelope');
+  }
+  return {
+    ...value,
+    data: {
+      ...value.data,
+      items: (value.data.items as unknown[]).map((item) =>
+        typeof item === 'object' && item !== null ? { ...item, media: null } : item,
+      ),
+    },
+  };
 }

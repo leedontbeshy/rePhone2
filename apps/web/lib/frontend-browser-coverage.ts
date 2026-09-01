@@ -297,6 +297,18 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/checkout'],
         ownsStates: ['warning', 'conflict', 'pending'],
       },
+      'checkout-entry-scroll': {
+        title: 'opens checkout at the page start with its heading clear of the sticky header',
+        ownsRoutes: [],
+        coversRoutes: ['/cart', '/checkout'],
+        ownsStates: ['success'],
+      },
+      'checkout-summary-fallback-layout': {
+        title: 'contains the compact checkout image fallback from desktop down to 320px',
+        ownsRoutes: [],
+        coversRoutes: ['/checkout'],
+        ownsStates: ['success'],
+      },
     },
   },
   'browser:catalog-voucher-admin': {
