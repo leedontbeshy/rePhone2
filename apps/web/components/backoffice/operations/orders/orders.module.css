@@ -718,7 +718,8 @@
 }
 
 .actionDisclosure summary:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
   box-shadow: inset var(--focus-ring);
 }
 
@@ -1096,5 +1097,10 @@
   .orderRow:hover,
   .orderRow:focus-visible {
     outline: 2px solid CanvasText;
+  }
+
+  .actionDisclosure summary:focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
   }
 }
