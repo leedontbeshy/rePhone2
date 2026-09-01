@@ -7,13 +7,14 @@
 .filters {
   display: grid;
   grid-template-columns: minmax(15rem, 1.7fr) repeat(3, minmax(10rem, 0.75fr)) auto;
-  align-items: end;
+  align-items: start;
   gap: var(--space-4);
 }
 
 .filterActions {
   display: flex;
   gap: var(--space-2);
+  padding-block-start: calc(var(--line-height-small) + var(--space-2));
 }
 
 .advancedFilters {
@@ -295,6 +296,7 @@
 
   .filterActions {
     align-self: end;
+    padding-block-start: 0;
   }
 
   .queueList {

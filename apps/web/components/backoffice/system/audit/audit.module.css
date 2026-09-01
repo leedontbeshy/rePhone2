@@ -76,7 +76,7 @@
 
 .filterGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  align-items: end;
+  align-items: start;
 }
 
 .advancedFilters {
@@ -118,6 +118,7 @@
 .filterActions {
   flex-wrap: nowrap;
   justify-content: flex-end;
+  padding-block-start: calc(var(--line-height-small) + var(--space-2));
 }
 
 .alertContent {
@@ -535,6 +536,7 @@
 
   .filterActions {
     grid-column: auto;
+    padding-block-start: 0;
   }
 
   .auditList {
