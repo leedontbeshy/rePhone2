@@ -83,6 +83,7 @@ khi kiểm tra đủ sáu viewport artifact.
 | `pnpm fe:a11y` | 0 | 15/15 |
 | `pnpm build` | 0 | 4/4 Turbo tasks; 56 route Next build thành công |
 | `pnpm verify:generated` | 0 | OpenAPI và generated client không drift |
+| System-admin fixture follow-up tại `0a7d85a` | 0 | 1/1; tên cửa hàng luôn được khôi phục bằng `finally` |
 
 Một lượt `typecheck`/`test` chạy đồng thời đã tranh chấp thư mục Prisma generated
 trên Windows và cho lỗi giả `ENOTEMPTY`. Sau khi chạy `db:generate` độc lập, toàn

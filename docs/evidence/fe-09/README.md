@@ -39,7 +39,7 @@ cookie, database URL, production PII hoặc signed URL vào thư mục này.
 
 ## Coverage truth và release automation WP-01
 
-Tree kết thúc tại `d21bd07` có registry thực thi cho **11 browser suite / 48 test**,
+Tree WP-01 kết thúc tại `0a7d85a` có registry thực thi cho **11 browser suite / 48 test**,
 sở hữu chính xác **56/56 route** và đủ 13 state đã khóa. Hai suite FE-07/FE-08
 không còn là nhãn mô tả: chúng chạy thật trên route matrix backoffice và backend
 projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài registry, dùng
