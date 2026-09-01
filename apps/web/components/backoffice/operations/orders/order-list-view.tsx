@@ -90,6 +90,7 @@ export function OrderListView() {
   const [reloadKey, setReloadKey] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
   const listRequestRef = useRef(0);
+  const pendingFocusIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     setDraft(orderDraftFromQuery(query));
@@ -98,6 +99,15 @@ export function OrderListView() {
   useEffect(() => {
     if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
+
+  useEffect(() => {
+    if (loading || pendingFocusIdRef.current === null) return;
+    const focusId = pendingFocusIdRef.current;
+    pendingFocusIdRef.current = null;
+    window.requestAnimationFrame(() => {
+      document.getElementById(focusId)?.focus({ preventScroll: true });
+    });
+  }, [loading]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff) return;
@@ -130,12 +140,20 @@ export function OrderListView() {
   }, [client, isStaff, query, queryKey, reloadKey, router, status]);
 
   function navigate(next: BackofficeOrderListQuery) {
+    rememberQueueFocus();
     const href = orderListHref(next);
     if (`${pathname}${queryKey === '' ? '' : `?${queryKey}`}` === href) {
       setReloadKey((current) => current + 1);
       return;
     }
     router.push(href, { scroll: false });
+  }
+
+  function rememberQueueFocus() {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.id.startsWith('order-')) {
+      pendingFocusIdRef.current = active.id;
+    }
   }
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
@@ -177,9 +195,11 @@ export function OrderListView() {
               </span>
               <Button
                 disabled={loading}
+                id="order-list-retry"
                 size="compact"
                 variant="secondary"
                 onClick={() => {
+                  rememberQueueFocus();
                   setReloadKey((current) => current + 1);
                 }}
               >
@@ -215,6 +235,7 @@ export function OrderListView() {
           <nav className={styles.pagination} aria-label="Phân trang đơn hàng">
             <Button
               disabled={loading || pagination.page <= 1}
+              id="order-page-previous"
               iconLeading={<ArrowLeftIcon aria-hidden="true" size={18} />}
               variant="secondary"
               onClick={() => {
@@ -228,6 +249,7 @@ export function OrderListView() {
             </span>
             <Button
               disabled={loading || pagination.page >= pagination.totalPages}
+              id="order-page-next"
               iconTrailing={<ArrowRightIcon aria-hidden="true" size={18} />}
               variant="secondary"
               onClick={() => {
@@ -417,12 +439,19 @@ function OrderFilters({
       <div className={styles.filterActions}>
         <Button
           disabled={loading}
+          id="order-filter-submit"
           iconLeading={<MagnifyingGlassIcon aria-hidden="true" size={18} />}
           type="submit"
         >
           Lọc đơn hàng
         </Button>
-        <Button disabled={loading} type="button" variant="secondary" onClick={onReset}>
+        <Button
+          disabled={loading}
+          id="order-filter-reset"
+          type="button"
+          variant="secondary"
+          onClick={onReset}
+        >
           Đặt lại
         </Button>
       </div>
