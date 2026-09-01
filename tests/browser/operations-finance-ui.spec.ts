@@ -4,10 +4,11 @@ import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-cove
 const ID = '0199d009-0000-7000-8000-000000000071';
 
 interface FinanceProbe {
+  conflictNext: boolean;
   evidenceMode: 'provider' | 'safe' | 'unsafe';
   evidenceRequests: number;
   mutations: string[];
-  paymentStatus: 'UNDER_REVIEW' | 'VERIFIED';
+  paymentStatus: 'REJECTED' | 'UNDER_REVIEW' | 'VERIFIED';
   refundMethod: 'BANK_TRANSFER' | 'CASH';
   refundStatus: 'PROCESSING' | 'REQUESTED' | 'COMPLETED';
   refundEvidence: boolean;
@@ -48,6 +49,36 @@ test.describe('WP09 finance operations through the rendered UI', () => {
     ).toHaveCount(0);
     expect(probe.mutations.filter((path) => path.endsWith('/verify'))).toHaveLength(1);
     expect(probe.paymentStatus).toBe('VERIFIED');
+
+    const rejectPage = await context.newPage();
+    const reject = await installFinanceFixture(rejectPage, context, 'payment');
+    await rejectPage.goto(`/backoffice/payments/${ID}`, { waitUntil: 'domcontentloaded' });
+    await rejectPage.getByRole('button', { name: 'Từ chối minh chứng' }).first().click();
+    const rejectDialog = rejectPage.getByRole('dialog', { name: 'Từ chối minh chứng' });
+    await rejectDialog.getByLabel('Lý do từ chối').fill('Nội dung chuyển khoản không khớp');
+    await rejectDialog.getByRole('button', { name: 'Từ chối minh chứng' }).dblclick();
+    await expect(rejectPage.getByText('Đã từ chối minh chứng.')).toBeVisible();
+    await expect(rejectPage.getByRole('button', { name: 'Từ chối minh chứng' })).toHaveCount(0);
+    expect(reject.mutations.filter((path) => path.endsWith('/reject'))).toHaveLength(1);
+    expect(reject.paymentStatus).toBe('REJECTED');
+    await rejectPage.close();
+
+    const conflictPage = await context.newPage();
+    const conflict = await installFinanceFixture(conflictPage, context, 'payment');
+    conflict.conflictNext = true;
+    await conflictPage.goto(`/backoffice/payments/${ID}`, { waitUntil: 'domcontentloaded' });
+    await conflictPage.getByRole('button', { name: 'Xác nhận thanh toán', exact: true }).click();
+    const conflictDialog = conflictPage.getByRole('dialog', { name: 'Xác nhận thanh toán' });
+    await conflictDialog.getByLabel('Số tiền đã nhận (đồng)').fill('3000000');
+    await conflictDialog.getByRole('button', { name: 'Xác nhận thanh toán' }).click();
+    await expect(conflictDialog).toContainText('Dữ liệu vừa được cập nhật');
+    await expect(conflictDialog.getByRole('button', { name: 'Xác nhận thanh toán' })).toBeEnabled();
+    expect(conflict.paymentStatus).toBe('UNDER_REVIEW');
+    await conflictDialog.getByRole('button', { name: 'Xác nhận thanh toán' }).dblclick();
+    await expect(conflictPage.getByText('Đã xác nhận khoản thanh toán.')).toBeVisible();
+    expect(conflict.mutations.filter((path) => path.endsWith('/verify'))).toHaveLength(2);
+    expect(conflict.paymentStatus).toBe('VERIFIED');
+    await conflictPage.close();
   });
 
   test(
@@ -97,6 +128,7 @@ async function installFinanceFixture(
   scenario: 'payment' | 'refund-bank' | 'refund-cash',
 ): Promise<FinanceProbe> {
   const probe: FinanceProbe = {
+    conflictNext: false,
     evidenceMode: 'safe',
     evidenceRequests: 0,
     mutations: [],
@@ -147,7 +179,12 @@ async function installFinanceFixture(
     if (method !== 'GET') {
       probe.mutations.push(path);
       await delay(80);
+      if (probe.conflictNext) {
+        probe.conflictNext = false;
+        return json(route, error('CONCURRENT_MODIFICATION'), 409);
+      }
       if (path.endsWith('/verify')) probe.paymentStatus = 'VERIFIED';
+      if (path.endsWith('/reject')) probe.paymentStatus = 'REJECTED';
       if (path.endsWith('/start-processing')) probe.refundStatus = 'PROCESSING';
       if (path.endsWith('/complete-cash')) probe.refundStatus = 'COMPLETED';
       if (path.endsWith('/complete-bank-transfer')) {
@@ -163,8 +200,10 @@ async function installFinanceFixture(
 
 function payment(probe: FinanceProbe) {
   const verified = probe.paymentStatus === 'VERIFIED';
+  const rejected = probe.paymentStatus === 'REJECTED';
   return {
-    availableActions: verified ? ['VIEW_EVIDENCE'] : ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'],
+    availableActions:
+      verified || rejected ? ['VIEW_EVIDENCE'] : ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'],
     evidenceAvailable: true,
     order: {
       orderNumber: 'RPH-FE09-FINANCE',
@@ -193,7 +232,7 @@ function payment(probe: FinanceProbe) {
       submittedAt: '2026-09-02T08:00:00.000Z',
       reviewSlaDueAt: null,
       reviewOverdue: false,
-      rejectionReason: null,
+      rejectionReason: rejected ? 'Nội dung chuyển khoản không khớp' : null,
     },
     reviewedAt: verified ? '2026-09-02T08:10:00.000Z' : null,
     reviewer: verified ? { id: 'staff-fe09', fullName: 'Nhân viên FE09' } : null,
