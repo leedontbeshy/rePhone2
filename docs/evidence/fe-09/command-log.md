@@ -298,3 +298,50 @@ Browser matrix phủ đủ sáu route catalog/voucher ở 1440/360 px, đo khôn
 media flow dùng file picker có nhãn riêng thay cho control tải tệp mặc định.
 `f72fd6e` chỉ là formatting-only cho năm tệp catalog;
 typecheck và targeted gate được chạy lại sau format, không thay đổi browser behavior.
+
+## WP-08 verification — tree `3028e3e`
+
+### Commit ledger
+
+| Nhóm | Commit |
+| --- | --- |
+| Lookup, intake, inspection và unit refresh | `b76cd3f`, `46c252a`, `fb2c936`, `5e2e5fa`, `75f0a6c`, `5139ef5` |
+| Stock, projection privacy và layout | `1083b41`, `bc38d00`, `4a5dd49`, `32c523b` |
+| Contrast và focus remediation | `3cfe27f`, `a0a6550`, `21ceafd`, `fff6929`, `7a4ffb2`, `237ddfe` |
+| Browser audit và capture hygiene | `adeb3a2`, `3028e3e` |
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 134 file, 646/646 test |
+| `pnpm --filter @rephone/api test -- src/modules/inventory` | 0 | 9 file, 125/125 test |
+| `pnpm exec prettier --check docs/evidence/fe-09/*.md` | 0 | PASS |
+| `git diff --check` | 0 | PASS |
+
+Targeted API inventory chạy controller/service/repository/gateway/validator thật
+với dependency test double. Nó là backend service-boundary evidence; không được đánh
+đồng với browser suite, nơi toàn bộ `/api/v1/backoffice/**` được route-intercept để
+giữ journey và hình ảnh xác định.
+
+### Browser, responsive và accessibility gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Inventory-stock cuối A, có capture | 0 | 9/9, Chromium; tạo 14 ảnh current-run |
+| Inventory-stock cuối B | 0 | 9/9, Chromium; lượt xanh liên tiếp thứ hai trên cùng final tree |
+| Axe | 0 | Zero serious/critical |
+| Responsive/overflow | 0 | 9 route ở 1440×1000 và 360×800; không overflow |
+| Visual review | 0 | 14/14 ảnh trong `.local/fe09/wp08-audit/` được kiểm tra và chấp nhận |
+
+Browser audit trước final gate đã dẫn tới các remediation contrast/focus tại
+`3cfe27f`, `a0a6550`, `21ceafd`, `fff6929`, `7a4ffb2`, `237ddfe`. Dev overlay được
+loại khỏi capture tại `3028e3e`; chỉ 14 ảnh current-run sau commit này được review và
+chấp nhận. Không dùng screenshot như bằng chứng accessibility duy nhất: Axe và
+assertion về focus, forced colors, landmark, active item và overflow cung cấp
+automated evidence.
+
+Media validation hiện chỉ áp dụng từng tệp: không rỗng, JPEG/PNG/WebP, tối đa 8 MiB.
+Không có backend total media-count cap nên command log không ghi một giới hạn tổng giả
+định. Việc không có trường lookup reason là quyết định sản phẩm trước WP-08, không
+phải regression.

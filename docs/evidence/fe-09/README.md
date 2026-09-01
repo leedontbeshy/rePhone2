@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-07 — PASS; tiếp theo WP-08**<br>
+> Con trỏ triển khai: **WP-08 — PASS; tiếp theo WP-09**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -23,6 +23,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-05 commerce evidence](./wp-05-commerce.md)
 - [WP-06 customer post-purchase evidence](./wp-06-post-purchase.md)
 - [WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md)
+- [WP-08 inventory/stock evidence](./wp-08-inventory-stock.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -129,6 +130,23 @@ accessibility.
 Chi tiết commit, lịch sử lỗi và acceptance nằm tại
 [WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md).
 
+## Inventory và stock hardening WP-08
+
+WP-08 kết thúc tại `3028e3e` với lookup POST không lộ mã thô qua URL/DOM, intake
+resume không flash bước một, inspection review/confirmation đúng nguồn, EMPLOYEE
+cost privacy, stock local refresh/stale isolation và ledger chỉ đọc. Full web unit
+đạt `646/646`; targeted API inventory đạt `125/125`; browser inventory-stock đạt
+`9/9` hai lượt liên tiếp. Cả chín route đều xanh ở 1440/360 px, không overflow và
+Axe zero serious/critical. Mười bốn ảnh current-run đã được review sau khi loại dev
+overlay khỏi capture.
+
+Upload chỉ có giới hạn **theo từng tệp**: JPEG/PNG/WebP, không rỗng, tối đa 8 MiB;
+backend chưa có giới hạn tổng số ảnh theo máy. Lookup reason cố ý không có theo quyết
+định trước của người dùng.
+
+Chi tiết browser fixture/API service boundary, commit và acceptance nằm tại
+[WP-08 inventory/stock evidence](./wp-08-inventory-stock.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -141,7 +159,8 @@ Chi tiết commit, lịch sử lỗi và acceptance nằm tại
 | WP-05 | Commerce evidence + 20 snapshot | BLOCKED — FE9-R14 |
 | WP-06 | Customer post-purchase browser/ownership/responsive evidence | PASS |
 | WP-07 | Catalog/voucher browser/responsive/accessibility evidence | PASS |
-| WP-08–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
+| WP-09–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -157,7 +176,7 @@ Chi tiết commit, lịch sử lỗi và acceptance nằm tại
 
 ## Bước tiếp theo
 
-Triển khai WP-08 cho inventory và stock hardening. Song song, vẫn cần chốt
+Triển khai WP-09 cho operations hardening. Song song, vẫn cần chốt
 `FE9-R14`: phê duyệt fingerprint/version cho checkout preview ở backend/OpenAPI,
 hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước WP-14. Chưa chuyển WP-05
 sang PASS cho đến khi quyết định này được ghi nhận.
