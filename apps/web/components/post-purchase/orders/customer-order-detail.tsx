@@ -71,15 +71,18 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
   const errorRef = useRef<HTMLDivElement>(null);
   const requestGeneration = useRef(0);
   const accessKeyRef = useRef<string | null>(null);
+  const operationRef = useRef<string | null>(null);
 
   useEffect(() => {
     requestGeneration.current += 1;
     accessKeyRef.current = null;
+    operationRef.current = null;
     setAccess(null);
     setOrder(null);
     setError(null);
     setNotFound(false);
     setLoading(true);
+    setPending(false);
     if (status === 'loading') return;
     const hash = window.location.hash;
     if (hash) {
@@ -109,7 +112,6 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
     setLoading(true);
     setError(null);
     setNotFound(false);
-    setOrder(null);
     try {
       const next = await getCustomerOrder(client, orderNumber, access.credential);
       if (requestGeneration.current !== generation || accessKeyRef.current !== accessKey) return;
@@ -139,12 +141,14 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
       setCancelError('Lý do cần từ 5 đến 500 ký tự.');
       return;
     }
+    if (access === null || operationRef.current !== null) return;
+    const actionAccessKey = access.key;
+    const operation = `${actionAccessKey}:cancel`;
+    operationRef.current = operation;
     setPending(true);
     setCancelError(null);
     setError(null);
-    const actionAccessKey = access?.key;
     try {
-      if (access === null) return;
       await cancelCustomerOrder(client, orderNumber, reason, access.credential);
       if (accessKeyRef.current !== actionAccessKey) return;
       await load();
@@ -161,7 +165,10 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
         setNotice('Đơn hàng vừa được cập nhật. Bạn hãy xem trạng thái mới nhất.');
       } else setCancelError(caught instanceof Error ? caught.message : 'Không thể hủy đơn hàng.');
     } finally {
-      setPending(false);
+      if (operationRef.current === operation) {
+        operationRef.current = null;
+        if (accessKeyRef.current === actionAccessKey) setPending(false);
+      }
     }
   };
 
@@ -183,12 +190,14 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
       setError(validation);
       return;
     }
+    if (access === null || operationRef.current !== null) return;
+    const actionAccessKey = access.key;
+    const operation = `${actionAccessKey}:proof`;
+    operationRef.current = operation;
     setPending(true);
     setError(null);
     setNotice(null);
-    const actionAccessKey = access?.key;
     try {
-      if (access === null) return;
       await submitPaymentProof(client, proofPayment.id, proofFile, access.credential);
       if (accessKeyRef.current !== actionAccessKey) return;
       setProofFile(null);
@@ -206,11 +215,14 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
         setNotice('Thanh toán vừa được cập nhật. Bạn hãy xem trạng thái mới nhất.');
       } else setError(message);
     } finally {
-      setPending(false);
+      if (operationRef.current === operation) {
+        operationRef.current = null;
+        if (accessKeyRef.current === actionAccessKey) setPending(false);
+      }
     }
   };
 
-  if (status === 'loading' || (!notFound && !accessMatchesContext) || loading)
+  if (status === 'loading' || (!notFound && !accessMatchesContext) || (loading && order === null))
     return (
       <section>
         <PostPurchasePageHeader
@@ -258,6 +270,11 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
               </StatusPill>
             }
           />
+          {loading ? (
+            <p className={styles.refreshStatus} role="status">
+              Đang cập nhật thông tin đơn hàng…
+            </p>
+          ) : null}
           <LifecycleJourney
             title="Hành trình đơn hàng"
             ariaLabel="Tiến độ đơn hàng"
@@ -348,7 +365,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
                       </div>
                       {safeHttpsUrl(order.shipment.trackingUrl ?? null) ? (
                         <div>
-                          <dt></dt>
+                          <dt>Tra cứu</dt>
                           <dd>
                             <a
                               className={styles.textLink}
@@ -524,6 +541,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
               {order.availableActions.includes('CANCEL') ? (
                 <Button
                   variant="destructive"
+                  disabled={pending}
                   onClick={() => {
                     setCancelOpen(true);
                   }}
