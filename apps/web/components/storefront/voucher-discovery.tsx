@@ -15,11 +15,12 @@ interface VoucherDiscoveryProps {
 export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProps) {
   const { client, status, user } = useAuth();
   const [response, setResponse] = useState(initialResponse);
-  const [loading, setLoading] = useState(initialResponse === null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialResponse === null);
 
   const load = useCallback(async () => {
     if (status === 'loading') return;
+    setError(false);
     setLoading(true);
     const result = await client.GET('/api/v1/vouchers', {
       params: { query: { page, pageSize: 12 } },
@@ -42,6 +43,8 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
   const vouchers = response?.data ?? [];
   const pagination = response?.meta.pagination;
   const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+  const view = voucherDiscoveryView({ error, hasResponse: response !== null, loading });
+  const reloadHref = page > 1 ? '/vouchers?page=' + String(page) : '/vouchers';
 
   return (
     <div className={styles.page}>
@@ -65,30 +68,30 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
         </aside>
       ) : null}
 
-      {loading && response === null ? (
+      {view === 'loading' ? (
         <section className={styles.state} role="status">
           <h2>Đang tải ưu đãi</h2>
           <p>Danh sách ưu đãi sẽ xuất hiện trong giây lát.</p>
         </section>
       ) : null}
 
-      {error ? (
+      {view === 'error' ? (
         <section className={styles.state} role="alert">
           <h2>Chưa tải được ưu đãi</h2>
           <p>Bạn có thể thử lại mà không ảnh hưởng đến giỏ hàng.</p>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => {
+          <Link
+            href={reloadHref}
+            onClick={(event) => {
+              event.preventDefault();
               void load();
             }}
           >
-            {loading ? 'Đang tải lại' : 'Tải lại'}
-          </button>
+            Tải lại
+          </Link>
         </section>
       ) : null}
 
-      {!loading && !error && vouchers.length === 0 ? (
+      {view === 'ready' && vouchers.length === 0 ? (
         <section className={styles.state}>
           <h2>Chưa có ưu đãi phù hợp</h2>
           <p>Hãy quay lại sau hoặc tiếp tục xem các máy đang bán.</p>
@@ -121,6 +124,19 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
       ) : null}
     </div>
   );
+}
+
+export function voucherDiscoveryView({
+  error,
+  hasResponse,
+  loading,
+}: Readonly<{ error: boolean; hasResponse: boolean; loading: boolean }>):
+  | 'error'
+  | 'loading'
+  | 'ready' {
+  if (loading && !hasResponse) return 'loading';
+  if (error) return 'error';
+  return 'ready';
 }
 
 function VoucherCard({ voucher }: Readonly<{ voucher: PublicVoucher }>) {
