@@ -7,6 +7,7 @@ import {
   OperationsActionRail,
   OperationsDetailLayout,
   OperationsPageHeader,
+  OperationsPagination,
   OperationsPanel,
 } from '../operations-primitives';
 import { OperationsShell } from '../operations-shell';
@@ -325,29 +326,17 @@ export function WarrantyPolicyView() {
                   }}
                 />
               )}
-              <div className={styles.pagination}>
-                <Button
-                  disabled={loading || pagination.page <= 1}
-                  size="compact"
-                  variant="secondary"
-                  onClick={() => {
-                    navigate(filters, pagination.page - 1, null);
-                  }}
-                >
-                  Trang trước
-                </Button>
-                <span>{String(pagination.totalItems)} kết quả</span>
-                <Button
-                  disabled={loading || pagination.page >= pagination.totalPages}
-                  size="compact"
-                  variant="secondary"
-                  onClick={() => {
-                    navigate(filters, pagination.page + 1, null);
-                  }}
-                >
-                  Trang sau
-                </Button>
-              </div>
+              <OperationsPagination
+                className={styles.pagination}
+                disabled={loading}
+                label="Phân trang danh sách chính sách bảo hành"
+                page={pagination.page}
+                totalItems={pagination.totalItems}
+                totalPages={pagination.totalPages}
+                onPageChange={(nextPage) => {
+                  navigate(filters, nextPage, null);
+                }}
+              />
             </OperationsPanel>
           }
           rail={rail}

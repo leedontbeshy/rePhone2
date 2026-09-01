@@ -5,6 +5,7 @@ import {
   OperationsActionRail,
   OperationsDetailLayout,
   OperationsMoneySummary,
+  OperationsPagination,
   OperationsPageHeader,
   OperationsPanel,
   OperationsStatusAxes,
@@ -82,5 +83,24 @@ describe('FE-07 operations primitives', () => {
     const markup = renderToStaticMarkup(<OperationsTimeline items={[{ label: 'Đã đặt hàng' }]} />);
 
     expect(markup).toContain('data-orientation="vertical"');
+  });
+
+  it('renders list pagination as a named navigation landmark', () => {
+    const markup = renderToStaticMarkup(
+      <OperationsPagination
+        disabled={false}
+        label="Phân trang hồ sơ hỗ trợ"
+        page={2}
+        totalItems={42}
+        totalPages={3}
+        onPageChange={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain('<nav');
+    expect(markup).toContain('aria-label="Phân trang hồ sơ hỗ trợ"');
+    expect(markup).toContain('aria-live="polite">42 kết quả');
+    expect(markup).toContain('Trang trước');
+    expect(markup).toContain('Trang sau');
   });
 });

@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { OperationsPageHeader, OperationsPanel } from '../operations-primitives';
+import {
+  OperationsPageHeader,
+  OperationsPagination,
+  OperationsPanel,
+} from '../operations-primitives';
 import { OperationsShell } from '../operations-shell';
 import {
   Button,
@@ -288,29 +292,17 @@ export function AfterSalesQueueView() {
           ) : (
             <AfterSalesQueueList items={items} />
           )}
-          <div className={styles.pagination}>
-            <Button
-              disabled={loading || pagination.page <= 1}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page - 1);
-              }}
-            >
-              Trang trước
-            </Button>
-            <span>{String(pagination.totalItems)} kết quả</span>
-            <Button
-              disabled={loading || pagination.page >= pagination.totalPages}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page + 1);
-              }}
-            >
-              Trang sau
-            </Button>
-          </div>
+          <OperationsPagination
+            className={styles.pagination}
+            disabled={loading}
+            label="Phân trang hồ sơ hỗ trợ sau mua"
+            page={pagination.page}
+            totalItems={pagination.totalItems}
+            totalPages={pagination.totalPages}
+            onPageChange={(nextPage) => {
+              navigate(filters, nextPage);
+            }}
+          />
         </OperationsPanel>
       </div>
     </OperationsShell>
