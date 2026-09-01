@@ -11,6 +11,7 @@ export { AnonymousAuthGate, authDestination, safeAuthReturnTo } from './auth-rou
 export {
   EMPTY_AUTH_ISSUE,
   authIssueFromError,
+  withoutAuthFieldIssue,
   issueFromFields,
   type AuthFlow,
   type AuthFormIssue,
@@ -25,6 +26,6 @@ export {
   type AuthFieldErrors,
   type AuthFieldName,
 } from './auth-validation';
-export { PasswordFields } from './password-fields';
+export { PasswordFields, PasswordInput } from './password-fields';
 export { useAuthFormIssue } from './use-auth-form-issue';
 export { useFragmentAuthToken } from './use-fragment-auth-token';

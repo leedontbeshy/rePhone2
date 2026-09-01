@@ -11,6 +11,7 @@ import {
   confirmationError,
   passwordPolicyError,
   safeAuthReturnTo,
+  withoutAuthFieldIssue,
 } from './index';
 
 describe('auth UI foundation', () => {
@@ -29,8 +30,29 @@ describe('auth UI foundation', () => {
     expect(html).toContain('id="password"');
     expect(html).toContain('id="confirmation"');
     expect(html).toContain('aria-invalid="true"');
+    expect(html).toContain('aria-label="Hiện mật khẩu"');
+    expect(html).toContain('aria-controls="password"');
     expect(html).toContain('role="alert"');
     expect(html).toContain('noValidate=""');
+  });
+
+  it('clears only the edited field issue while preserving unrelated and global errors', () => {
+    expect(
+      withoutAuthFieldIssue(
+        {
+          errors: [
+            { href: '#email', message: 'Email chưa đúng' },
+            { href: '#password', message: 'Mật khẩu chưa đúng' },
+            { message: 'Lỗi chung' },
+          ],
+          fields: { email: 'Email chưa đúng', password: 'Mật khẩu chưa đúng' },
+        },
+        'email',
+      ),
+    ).toEqual({
+      errors: [{ href: '#password', message: 'Mật khẩu chưa đúng' }, { message: 'Lỗi chung' }],
+      fields: { password: 'Mật khẩu chưa đúng' },
+    });
   });
 
   it('enforces the accepted password policy and confirmation', () => {
@@ -51,9 +73,12 @@ describe('auth UI foundation', () => {
       authIssueFromError(new AuthActionError('ACCOUNT_UNAVAILABLE', 'raw'), 'login').errors[0]
         ?.message,
     ).toContain('tạm khóa');
-    expect(
-      authIssueFromError(new AuthActionError('DUPLICATE_RESOURCE', 'raw'), 'register').fields.email,
-    ).toContain('đã được dùng');
+    const duplicateRegistration = authIssueFromError(
+      new AuthActionError('DUPLICATE_RESOURCE', 'raw'),
+      'register',
+    );
+    expect(duplicateRegistration.fields).toEqual({});
+    expect(duplicateRegistration.errors[0]?.message).not.toContain('đã được dùng');
     expect(
       authIssueFromError(new AuthActionError('RATE_LIMITED', 'raw'), 'forgot').errors[0]?.message,
     ).toContain('quá nhiều');

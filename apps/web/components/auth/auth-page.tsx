@@ -60,4 +60,5 @@ export const authStyles = {
   passwordFields: styles.passwordFields,
   policyList: styles.policyList,
   primaryAction: styles.primaryAction,
+  terminalState: styles.terminalState,
 };

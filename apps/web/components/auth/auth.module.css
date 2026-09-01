@@ -66,6 +66,17 @@
   gap: var(--space-3);
 }
 
+.terminalState {
+  display: grid;
+  gap: var(--space-3);
+  border-radius: var(--radius-control);
+}
+
+.terminalState:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+
 @media (max-width: 30rem) {
   .form {
     gap: var(--space-4);

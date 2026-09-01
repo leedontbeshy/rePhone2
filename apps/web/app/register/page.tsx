@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '../auth-provider';
 import {
   AnonymousAuthGate,
@@ -26,13 +26,19 @@ const description = 'Tạo tài khoản khách hàng để lưu đơn hàng, b�
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
+  const { clearFieldIssue, clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const submittingRef = useRef(false);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (completed) window.requestAnimationFrame(() => successRef.current?.focus());
+  }, [completed]);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     const form = new FormData(event.currentTarget);
     const email = formString(form, 'email').trim();
@@ -53,6 +59,7 @@ export default function RegisterPage() {
     }
 
     clearIssue();
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       await register({
@@ -65,6 +72,7 @@ export default function RegisterPage() {
     } catch (caught) {
       showIssue(authIssueFromError(caught, 'register'));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -72,7 +80,7 @@ export default function RegisterPage() {
   const content = (
     <AuthPage title="Tạo tài khoản" description={description}>
       {completed ? (
-        <div aria-live="polite">
+        <div ref={successRef} className={authStyles.terminalState} tabIndex={-1}>
           <InlineAlert tone="success" title="Tài khoản đã được tạo">
             Tài khoản đã được tạo nhưng bạn chưa đăng nhập. Hãy đăng nhập để tiếp tục.
           </InlineAlert>
@@ -89,32 +97,48 @@ export default function RegisterPage() {
             id="fullName"
             name="fullName"
             autoComplete="name"
+            disabled={submitting}
             autoFocus
             label="Họ và tên"
             required
             maxLength={255}
             error={issue.fields.fullName}
+            onChange={() => {
+              clearFieldIssue('fullName');
+            }}
           />
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
+            disabled={submitting}
             label="Email"
             required
             maxLength={320}
             error={issue.fields.email}
+            onChange={() => {
+              clearFieldIssue('email');
+            }}
           />
           <Input
             id="phone"
             name="phone"
             type="tel"
             autoComplete="tel"
+            disabled={submitting}
             label="Số điện thoại (không bắt buộc)"
             maxLength={32}
             error={issue.fields.phone}
+            onChange={() => {
+              clearFieldIssue('phone');
+            }}
           />
-          <PasswordFields errors={issue.fields} />
+          <PasswordFields
+            disabled={submitting}
+            errors={issue.fields}
+            onFieldChange={clearFieldIssue}
+          />
           <AuthFormActions>
             <Button
               className={authStyles.primaryAction}

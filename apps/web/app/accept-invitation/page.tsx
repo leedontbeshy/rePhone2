@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { authErrorFromResponse, toAuthActionError, useAuth } from '../auth-provider';
 import {
   AuthForm,
@@ -24,13 +24,19 @@ import { Button, ErrorSummary, InlineAlert, Link } from '@/components/ui';
 export default function AcceptInvitationPage() {
   const { client } = useAuth();
   const { loaded, setToken, token } = useFragmentAuthToken();
-  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
+  const { clearFieldIssue, clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const submittingRef = useRef(false);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (completed) window.requestAnimationFrame(() => successRef.current?.focus());
+  }, [completed]);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    if (submitting || token === undefined) return;
+    if (submittingRef.current || token === undefined) return;
     const form = new FormData(event.currentTarget);
     const password = formString(form, 'password');
     const confirmation = formString(form, 'confirmation');
@@ -45,6 +51,7 @@ export default function AcceptInvitationPage() {
     }
 
     clearIssue();
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const result = await client.POST('/api/v1/auth/accept-employee-invitation', {
@@ -60,13 +67,14 @@ export default function AcceptInvitationPage() {
       setToken(undefined);
       setCompleted(true);
     } catch (caught) {
-      showIssue(
-        authIssueFromError(
-          toAuthActionError(caught, 'Không thể kết nối để kích hoạt tài khoản.'),
-          'invitation',
-        ),
-      );
+      const actionError = toAuthActionError(caught, 'Không thể kết nối để kích hoạt tài khoản.');
+      if (actionError.code === 'ONE_TIME_TOKEN_INVALID') {
+        setToken(undefined);
+      } else {
+        showIssue(authIssueFromError(actionError, 'invitation'));
+      }
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -86,7 +94,11 @@ export default function AcceptInvitationPage() {
       {token === undefined || completed ? null : (
         <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
           <ErrorSummary ref={summaryRef} errors={issue.errors} />
-          <PasswordFields errors={issue.fields} />
+          <PasswordFields
+            disabled={submitting}
+            errors={issue.fields}
+            onFieldChange={clearFieldIssue}
+          />
           <AuthFormActions>
             <Button
               className={authStyles.primaryAction}
@@ -104,7 +116,7 @@ export default function AcceptInvitationPage() {
         </AuthForm>
       )}
       {completed ? (
-        <div aria-live="polite">
+        <div ref={successRef} className={authStyles.terminalState} tabIndex={-1}>
           <InlineAlert tone="success" title="Tài khoản đã được kích hoạt">
             Lời mời đã được sử dụng. Hãy đăng nhập riêng bằng mật khẩu vừa tạo.
           </InlineAlert>

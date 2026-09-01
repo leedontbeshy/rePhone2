@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { authErrorFromResponse, toAuthActionError, useAuth } from '../auth-provider';
 import {
   AuthForm,
@@ -22,15 +22,21 @@ import {
 import { Button, ErrorSummary, InlineAlert, Link } from '@/components/ui';
 
 export default function ResetPasswordPage() {
-  const { client } = useAuth();
+  const { client, logout } = useAuth();
   const { loaded, setToken, token } = useFragmentAuthToken();
-  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
+  const { clearFieldIssue, clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const submittingRef = useRef(false);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (completed) window.requestAnimationFrame(() => successRef.current?.focus());
+  }, [completed]);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    if (submitting || token === undefined) return;
+    if (submittingRef.current || token === undefined) return;
     const form = new FormData(event.currentTarget);
     const password = formString(form, 'password');
     const confirmation = formString(form, 'confirmation');
@@ -45,6 +51,7 @@ export default function ResetPasswordPage() {
     }
 
     clearIssue();
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const result = await client.POST('/api/v1/auth/reset-password', {
@@ -58,15 +65,22 @@ export default function ResetPasswordPage() {
         );
       }
       setToken(undefined);
+      try {
+        await logout();
+      } catch {
+        // Resetting the password already revokes every session server-side. The provider
+        // clears its in-memory token before attempting to clear the refresh cookie.
+      }
       setCompleted(true);
     } catch (caught) {
-      showIssue(
-        authIssueFromError(
-          toAuthActionError(caught, 'Không thể kết nối để đặt lại mật khẩu.'),
-          'reset',
-        ),
-      );
+      const actionError = toAuthActionError(caught, 'Không thể kết nối để đặt lại mật khẩu.');
+      if (actionError.code === 'ONE_TIME_TOKEN_INVALID') {
+        setToken(undefined);
+      } else {
+        showIssue(authIssueFromError(actionError, 'reset'));
+      }
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -77,7 +91,10 @@ export default function ResetPasswordPage() {
       description="Hãy tạo mật khẩu mới để tiếp tục sử dụng tài khoản."
     >
       {!loaded ? <AuthPending>Đang kiểm tra liên kết…</AuthPending> : null}
-      {loaded && token === undefined && !completed ? (
+      {loaded && submitting && token === undefined && !completed ? (
+        <AuthPending>Đang hoàn tất đổi mật khẩu…</AuthPending>
+      ) : null}
+      {loaded && token === undefined && !completed && !submitting ? (
         <InlineAlert tone="danger" title="Liên kết không dùng được">
           Liên kết này bị thiếu thông tin, đã hết hạn hoặc đã được sử dụng.{' '}
           <Link href="/forgot-password">Yêu cầu liên kết mới</Link>.
@@ -86,7 +103,11 @@ export default function ResetPasswordPage() {
       {token === undefined || completed ? null : (
         <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
           <ErrorSummary ref={summaryRef} errors={issue.errors} />
-          <PasswordFields errors={issue.fields} />
+          <PasswordFields
+            disabled={submitting}
+            errors={issue.fields}
+            onFieldChange={clearFieldIssue}
+          />
           <AuthFormActions>
             <Button
               className={authStyles.primaryAction}
@@ -106,7 +127,7 @@ export default function ResetPasswordPage() {
         </AuthForm>
       )}
       {completed ? (
-        <div aria-live="polite">
+        <div ref={successRef} className={authStyles.terminalState} tabIndex={-1}>
           <InlineAlert tone="success" title="Mật khẩu đã được cập nhật">
             Mọi thiết bị đã được đăng xuất. Hãy đăng nhập lại bằng mật khẩu mới.
           </InlineAlert>

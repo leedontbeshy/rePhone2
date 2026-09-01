@@ -138,6 +138,23 @@
   height: var(--control-height);
 }
 
+.controlFrame {
+  position: relative;
+  min-width: 0;
+}
+
+.controlFrame .control {
+  padding-inline-end: calc(var(--control-height) + var(--space-2));
+}
+
+.controlEndAction {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: flex;
+  align-items: center;
+}
+
 select.control {
   padding-block: var(--space-2);
 }
@@ -388,9 +405,25 @@ select.control {
   background: var(--color-warning-soft);
 }
 
+.warning .link {
+  color: var(--color-warning);
+}
+
+.warning .link:hover {
+  color: var(--color-ink);
+}
+
 .danger {
   border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
   background: var(--color-danger-soft);
+}
+
+.danger .link {
+  color: var(--color-danger-hover);
+}
+
+.danger .link:hover {
+  color: var(--color-ink);
 }
 
 .errorSummary {

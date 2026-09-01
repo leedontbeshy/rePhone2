@@ -88,6 +88,7 @@ export function Field({
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
+  endAction?: ReactNode;
   error?: ReactNode;
   hint?: ReactNode;
   id: string;
@@ -97,6 +98,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function Input({
   className,
   containerClassName,
+  endAction,
   error,
   hint,
   id,
@@ -106,6 +108,16 @@ export function Input({
 }: InputProps) {
   const messages = fieldMessages(id, hint, error);
   const callerDescribedBy = props['aria-describedby'];
+  const control = (
+    <input
+      {...props}
+      aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
+      aria-invalid={error ? true : undefined}
+      className={classNames(styles.control, className)}
+      id={id}
+      required={required}
+    />
+  );
 
   return (
     <Field
@@ -118,14 +130,14 @@ export function Input({
       label={label}
       required={required}
     >
-      <input
-        {...props}
-        aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
-        aria-invalid={error ? true : undefined}
-        className={classNames(styles.control, className)}
-        id={id}
-        required={required}
-      />
+      {endAction ? (
+        <div className={styles.controlFrame}>
+          {control}
+          <span className={styles.controlEndAction}>{endAction}</span>
+        </div>
+      ) : (
+        control
+      )}
     </Field>
   );
 }
