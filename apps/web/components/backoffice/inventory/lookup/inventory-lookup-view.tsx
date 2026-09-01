@@ -201,7 +201,14 @@ export function lookupErrorMessage(
 ): string {
   const label = identifierTypeLabel(identifierType);
   const detail = cause instanceof Error ? cause.message : 'Chưa thể tra cứu mã máy.';
-  return `${label} chưa khớp với máy nào. ${detail}`;
+  return inventoryLookupErrorCode(cause) === 'RESOURCE_NOT_FOUND'
+    ? `${label} chưa khớp với máy nào. Hãy kiểm tra lại mã đã nhập.`
+    : detail;
+}
+
+function inventoryLookupErrorCode(value: unknown): string | null {
+  if (typeof value !== 'object' || value === null || !('code' in value)) return null;
+  return typeof value.code === 'string' ? value.code : null;
 }
 
 function LookupResultCard({ result }: Readonly<{ result: InventoryLookupResult }>) {

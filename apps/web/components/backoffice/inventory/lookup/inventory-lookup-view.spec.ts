@@ -44,9 +44,18 @@ describe('inventory identifier lookup', () => {
   });
 
   it('identifies the invalid field and reason without echoing the submitted value', () => {
-    const message = lookupErrorMessage('IMEI', new Error('Kiểm tra định dạng rồi thử lại.'));
+    const notFound = Object.assign(new Error('Dữ liệu không tồn tại.'), {
+      code: 'RESOURCE_NOT_FOUND',
+    });
+    const message = lookupErrorMessage('IMEI', notFound);
 
-    expect(message).toBe('IMEI chưa khớp với máy nào. Kiểm tra định dạng rồi thử lại.');
+    expect(message).toBe('IMEI chưa khớp với máy nào. Hãy kiểm tra lại mã đã nhập.');
     expect(message).not.toContain('490154203237518');
+  });
+
+  it('keeps provider and network failures distinct from an invalid identifier', () => {
+    expect(lookupErrorMessage('SERIAL', new Error('Không thể kết nối tới rePhone.'))).toBe(
+      'Không thể kết nối tới rePhone.',
+    );
   });
 });
