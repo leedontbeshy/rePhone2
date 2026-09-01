@@ -129,6 +129,7 @@ function WishlistSession() {
     });
 
   const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+  const initialLoading = status === 'loading' || (loading && isCustomer && items.length === 0);
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -144,7 +145,7 @@ function WishlistSession() {
         {pageStatus}
       </p>
 
-      {status === 'loading' || (loading && isCustomer) ? <WishlistLoading /> : null}
+      {initialLoading ? <WishlistLoading /> : null}
       {status === 'anonymous' ? (
         <EmptyWishlistState
           title="Đăng nhập để xem sản phẩm ưa thích"
@@ -187,13 +188,21 @@ function WishlistSession() {
         />
       ) : null}
 
-      {isCustomer && !loading && items.length > 0 ? (
-        <section className={styles.wishlistSection} aria-labelledby="wishlist-items-title">
+      {isCustomer && items.length > 0 ? (
+        <section
+          className={styles.wishlistSection}
+          aria-busy={loading}
+          aria-labelledby="wishlist-items-title"
+        >
           <div className={styles.sectionHeading}>
             <h2 id="wishlist-items-title" ref={listHeadingRef} tabIndex={-1}>
               {items.length} sản phẩm đã lưu
             </h2>
-            <span>Giá và tình trạng được cập nhật theo thông tin mới nhất</span>
+            <span>
+              {loading
+                ? 'Đang cập nhật giá và tình trạng'
+                : 'Giá và tình trạng được cập nhật theo thông tin mới nhất'}
+            </span>
           </div>
           <div className={styles.wishlistGrid}>
             {items.map((item) => (

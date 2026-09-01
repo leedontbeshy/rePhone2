@@ -33,6 +33,7 @@ export function CartView() {
       mergeError !== null,
     [cart, mergeError],
   );
+  const initialLoading = cartLoading && cart === null;
 
   return (
     <div className={styles.page}>
@@ -60,7 +61,7 @@ export function CartView() {
           <AlertAction message={cartError} label="Tải lại" action={commerce.refreshCart} />
         </InlineAlert>
       )}
-      {cartLoading ? <CartLoading /> : null}
+      {initialLoading ? <CartLoading /> : null}
       {!cartLoading && cartError === null && (cart === null || cart.items.length === 0) ? (
         <EmptyState
           icon={<ShoppingBagOpenIcon aria-hidden="true" size={34} />}
@@ -69,7 +70,7 @@ export function CartView() {
         />
       ) : null}
 
-      {!cartLoading && cart !== null && cart.items.length > 0 ? (
+      {cart !== null && cart.items.length > 0 ? (
         <>
           {cart.warnings.length > 0 ? (
             <section className={styles.cartNotices} aria-labelledby="cart-notices-title">
@@ -84,7 +85,7 @@ export function CartView() {
               </ul>
             </section>
           ) : null}
-          <div className={styles.cartLayout}>
+          <div className={styles.cartLayout} aria-busy={cartLoading}>
             <section className={styles.cartItems} aria-label="Sản phẩm trong giỏ hàng">
               <div className={styles.sectionHeading}>
                 <h2 ref={cartHeadingRef} tabIndex={-1}>
