@@ -1,4 +1,4 @@
-import type { CartItem } from '@/app/commerce-provider';
+import type { Cart, CartItem } from '@/app/commerce-provider';
 
 export type CartWarning = CartItem['warnings'][number];
 
@@ -25,4 +25,11 @@ export function cartItemHref(item: CartItem): string {
   return item.target.inventoryCode
     ? `/products/${item.target.productSlug}/units/${item.target.inventoryCode}`
     : `/products/${item.target.productSlug}`;
+}
+
+export function wishlistAccessoryQuantity(cart: Cart | null, variantId: string): number {
+  const existing = cart?.items.find(
+    (item) => item.itemType === 'ACCESSORY' && item.target.variantId === variantId,
+  );
+  return existing?.quantity ?? 1;
 }

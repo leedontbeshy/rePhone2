@@ -14,6 +14,7 @@ import { useCommerce } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, InlineAlert, Price, Skeleton, StatusChip } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
+import { wishlistAccessoryQuantity } from './cart-wishlist-presenter';
 import styles from './cart-wishlist.module.css';
 
 type WishlistItem = components['schemas']['WishlistItemDto'];
@@ -31,7 +32,7 @@ export function WishlistView() {
 
 function WishlistSession() {
   const { client, status, user } = useAuth();
-  const { addAccessory, addIphone } = useCommerce();
+  const { addAccessory, addIphone, cart } = useCommerce();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -102,7 +103,10 @@ function WishlistSession() {
           throw new Error('Chiếc máy này hiện không thể thêm vào giỏ hàng.');
         await addIphone(item.target.inventoryCode);
       } else {
-        await addAccessory(item.target.variantId, 1);
+        await addAccessory(
+          item.target.variantId,
+          wishlistAccessoryQuantity(cart, item.target.variantId),
+        );
       }
       setMessages((current) => ({
         ...current,
