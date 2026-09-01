@@ -83,7 +83,10 @@ export function InventoryIntakeWizard() {
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [intakeOptionsStatus, setIntakeOptionsStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'failed'
+  >('idle');
+  const [productLoading, setProductLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intakeErrors, setIntakeErrors] = useState<IntakeFieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export function InventoryIntakeWizard() {
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff || unitId !== null) return;
     let active = true;
-    setLoading(true);
+    setIntakeOptionsStatus('loading');
     setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/products', {
@@ -127,12 +130,12 @@ export function InventoryIntakeWizard() {
           productId: current.productId || nextProducts[0]?.id || '',
           locationId: current.locationId || nextLocations[0]?.id || '',
         }));
+        if (nextProducts.length === 0) setIntakeOptionsStatus('ready');
       })
       .catch((cause: unknown) => {
-        if (active) setError(messageOf(cause));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setIntakeOptionsStatus('failed');
+        setError(messageOf(cause));
       });
     return () => {
       active = false;
@@ -142,6 +145,7 @@ export function InventoryIntakeWizard() {
   useEffect(() => {
     if (!isStaff || unitId !== null || intake.productId === '') return;
     let active = true;
+    setProductLoading(true);
     void client
       .GET('/api/v1/backoffice/products/{id}', {
         params: { path: { id: intake.productId } },
@@ -158,10 +162,16 @@ export function InventoryIntakeWizard() {
             ? current.variantId
             : variants[0]?.id || '',
         }));
+        setIntakeOptionsStatus('ready');
         clearIntakeErrors('variantId');
       })
       .catch((cause: unknown) => {
-        if (active) setError(messageOf(cause));
+        if (!active) return;
+        setIntakeOptionsStatus((current) => (current === 'ready' ? current : 'failed'));
+        setError(messageOf(cause));
+      })
+      .finally(() => {
+        if (active) setProductLoading(false);
       });
     return () => {
       active = false;
@@ -175,7 +185,6 @@ export function InventoryIntakeWizard() {
       return;
     }
     let active = true;
-    setLoading(true);
     setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/inventory-units/{id}', {
@@ -214,9 +223,6 @@ export function InventoryIntakeWizard() {
       })
       .catch((cause: unknown) => {
         if (active) setError(messageOf(cause));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -317,7 +323,11 @@ export function InventoryIntakeWizard() {
     window.requestAnimationFrame(() => {
       const control = document.getElementById(`intake-${firstField}`);
       control?.focus({ preventScroll: true });
-      control?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      control?.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
     });
   }
 
@@ -451,6 +461,11 @@ export function InventoryIntakeWizard() {
     unitId !== null &&
     (unit?.id !== unitId || (inspectionId !== null && inspection?.id !== inspectionId));
   const isRestoringExistingUnit = hasRequestedExistingUnit && error === null;
+  const isPreparingNewIntake =
+    unitId === null &&
+    unit === null &&
+    (intakeOptionsStatus === 'idle' || intakeOptionsStatus === 'loading') &&
+    error === null;
   const completedWorkflowSteps: InventoryWorkflowStep[] = [];
   if (unit !== null) completedWorkflowSteps.push(1);
   if ((unit?.mediaCount ?? 0) > 0) completedWorkflowSteps.push(2);
@@ -491,12 +506,10 @@ export function InventoryIntakeWizard() {
           {notice}
         </div>
       ) : null}
-      {loading && !isRestoringExistingUnit ? (
-        <div className="status">Đang tải dữ liệu tiếp nhận máy…</div>
-      ) : null}
-
       {hasRequestedExistingUnit ? (
         <ExistingUnitLoadingState failed={error !== null} />
+      ) : isPreparingNewIntake ? (
+        <InitialIntakeLoadingState />
       ) : unit === null ? (
         <div className={styles.intakeWorkbench}>
           <section className={styles.intakePanel} aria-labelledby="intake-title">
@@ -541,6 +554,8 @@ export function InventoryIntakeWizard() {
                   ))}
                 </Select>
                 <Select
+                  aria-busy={productLoading}
+                  disabled={productLoading}
                   error={intakeErrors.variantId}
                   id="intake-variantId"
                   label="Biến thể đang bán"
@@ -550,14 +565,17 @@ export function InventoryIntakeWizard() {
                   }}
                   required
                 >
-                  {variants.length === 0 ? (
+                  {productLoading ? <option value="">Đang cập nhật cấu hình…</option> : null}
+                  {!productLoading && variants.length === 0 ? (
                     <option value="">Chưa có cấu hình đang bán</option>
                   ) : null}
-                  {variants.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.displayName} · {item.sku}
-                    </option>
-                  ))}
+                  {productLoading
+                    ? null
+                    : variants.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.displayName} · {item.sku}
+                        </option>
+                      ))}
                 </Select>
                 <Select
                   containerClassName={styles.fieldWide ?? ''}
@@ -1146,6 +1164,48 @@ function ExistingUnitLoadingState({ failed }: { failed: boolean }) {
         </>
       )}
     </section>
+  );
+}
+
+function InitialIntakeLoadingState() {
+  return (
+    <div
+      className={styles.intakeWorkbench}
+      aria-label="Đang chuẩn bị biểu mẫu tiếp nhận máy"
+      role="status"
+    >
+      <section
+        aria-hidden="true"
+        className={classNames(styles.intakePanel, styles.intakeLoadingPanel)}
+      >
+        <div className={styles.intakeLoadingHeading}>
+          <Skeleton height="2.625rem" width="2.625rem" />
+          <div>
+            <Skeleton height="1.5rem" width="12rem" />
+            <Skeleton height="1rem" width="min(100%, 28rem)" />
+          </div>
+        </div>
+        <div className={styles.intakeLoadingFields}>
+          {Array.from({ length: 8 }, (_, index) => (
+            <div key={index}>
+              <Skeleton height="0.875rem" width="7.5rem" />
+              <Skeleton height="3rem" width="100%" />
+            </div>
+          ))}
+        </div>
+      </section>
+      <aside
+        aria-hidden="true"
+        className={classNames(styles.intakeSummary, styles.intakeLoadingSummary)}
+      >
+        <Skeleton height="2rem" width="10rem" />
+        <Skeleton height="9rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+      </aside>
+      <span className="rp-visually-hidden">Đang chuẩn bị biểu mẫu tiếp nhận máy…</span>
+    </div>
   );
 }
 

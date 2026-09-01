@@ -45,6 +45,27 @@ describe('inventory intake form layout', () => {
     expect(wizard).toContain('router.push(intakeInspectionHref(result.data.data.id));');
   });
 
+  it('shows a stable initial skeleton and limits later product refresh to the variant field', () => {
+    const wizardPath = fileURLToPath(new URL('./wizard.tsx', import.meta.url));
+    const wizard = readFileSync(wizardPath, 'utf8');
+
+    expect(wizard).toContain("'idle' | 'loading' | 'ready' | 'failed'");
+    expect(wizard).toContain('isPreparingNewIntake ? (');
+    expect(wizard).toContain('<InitialIntakeLoadingState />');
+    expect(wizard).toContain('aria-label="Đang chuẩn bị biểu mẫu tiếp nhận máy"');
+    expect(wizard).toContain('aria-busy={productLoading}');
+    expect(wizard).toContain('disabled={productLoading}');
+    expect(wizard).not.toContain('Đang tải dữ liệu tiếp nhận máy…');
+  });
+
+  it('honors reduced-motion preferences when focusing the first invalid field', () => {
+    const wizardPath = fileURLToPath(new URL('./wizard.tsx', import.meta.url));
+    const wizard = readFileSync(wizardPath, 'utf8');
+
+    expect(wizard).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
+    expect(wizard).toContain("behavior: reducedMotion ? 'auto' : 'smooth'");
+  });
+
   it('balances all five summary facts and replaces the native file control visually', () => {
     const stylesheetPath = fileURLToPath(new URL('./intake.module.css', import.meta.url));
     const stylesheet = readFileSync(stylesheetPath, 'utf8');
