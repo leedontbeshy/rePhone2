@@ -82,6 +82,15 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await page.waitForTimeout(150);
     expect(probe.costRequests).toBe(0);
 
+    const unitMediaInput = page.locator('#unit-media-file');
+    const unitMediaPicker = unitMediaInput.locator('..');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await unitMediaInput.focus();
+    await expect(unitMediaPicker).toHaveCSS('outline-style', 'solid');
+    await expect(unitMediaPicker).toHaveCSS('outline-width', '3px');
+    await expect(unitMediaPicker.locator('span').first()).toHaveCSS('outline-style', 'none');
+    await page.emulateMedia({ forcedColors: 'none' });
+
     const transferButton = page.getByRole('button', { name: 'Chuyển địa điểm', exact: true });
     await transferButton.click();
     const transferDialog = page.getByRole('dialog', {
@@ -261,6 +270,12 @@ test.describe('FE-06 inventory and stock workspace', () => {
     const fileInput = page.locator('#inventory-media-file');
     await expect(fileInput).toHaveCSS('width', '1px');
     await expect(fileInput).toHaveCSS('height', '1px');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await fileInput.focus();
+    const filePicker = page.locator('label[for="inventory-media-file"]');
+    await expect(filePicker).toHaveCSS('outline-style', 'solid');
+    await expect(filePicker).toHaveCSS('outline-width', '3px');
+    await page.emulateMedia({ forcedColors: 'none' });
     const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
     await expect(uploadButton).toBeDisabled();
     await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
