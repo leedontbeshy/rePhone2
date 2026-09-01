@@ -5,7 +5,7 @@ import { installDeterministicPublicMedia } from '../browser/support/deterministi
 
 const RUN_COUNT = 3;
 const VIEWPORT = { width: 390, height: 844 } as const;
-const API_BASE_URL = 'http://127.0.0.1:4001/api/v1';
+const API_BASE_URL = 'http://localhost:4001/api/v1';
 const WEB_ORIGIN = 'http://localhost:3001';
 const PERFORMANCE_UNIT_CODE = 'IP14P-128-001';
 const ROUTES = [

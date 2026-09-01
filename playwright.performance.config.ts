@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const webOrigin = 'http://127.0.0.1:3001';
-const apiBaseUrl = 'http://127.0.0.1:4001/api/v1';
+const webOrigin = 'http://localhost:3001';
+const apiBaseUrl = 'http://localhost:4001/api/v1';
 
 export default defineConfig({
   testDir: './tests/performance',
