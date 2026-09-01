@@ -55,6 +55,24 @@ import {
 import styles from './refunds.module.css';
 
 export type RefundDecision = Exclude<RefundAction, 'VIEW_EVIDENCE'>;
+type RefundOperation = 'evidence' | RefundDecision;
+type RefundOperationLock = { current: RefundOperation | null };
+
+export async function runExclusiveRefundOperation(
+  lock: RefundOperationLock,
+  operation: RefundOperation,
+  allowed: boolean,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  if (!allowed || lock.current !== null) return false;
+  lock.current = operation;
+  try {
+    await task();
+    return true;
+  } finally {
+    if (lock.current === operation) lock.current = null;
+  }
+}
 
 export function RefundDetailView() {
   const params = useParams<{ id: string }>();
@@ -73,6 +91,7 @@ export function RefundDetailView() {
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const operationRef = useRef<RefundOperation>(null);
 
   const loadRefund = useCallback(async () => {
     const next = await getBackofficeRefund(client, refundId);
@@ -118,24 +137,30 @@ export function RefundDetailView() {
   }
 
   async function openEvidence() {
-    if (!detail?.availableActions.includes('VIEW_EVIDENCE')) return;
-    const evidenceWindow = window.open('about:blank', '_blank');
-    if (evidenceWindow === null) {
-      setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
-      return;
-    }
-    evidenceWindow.opener = null;
-    setBusy('evidence');
-    setError(null);
-    try {
-      const evidence = await getRefundEvidenceUrl(client, refundId);
-      evidenceWindow.location.replace(evidence.url);
-    } catch (caught) {
-      evidenceWindow.close();
-      setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
-    } finally {
-      setBusy(null);
-    }
+    await runExclusiveRefundOperation(
+      operationRef,
+      'evidence',
+      detail?.availableActions.includes('VIEW_EVIDENCE') === true,
+      async () => {
+        const evidenceWindow = window.open('about:blank', '_blank');
+        if (evidenceWindow === null) {
+          setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
+          return;
+        }
+        evidenceWindow.opener = null;
+        setBusy('evidence');
+        setError(null);
+        try {
+          const evidence = await getRefundEvidenceUrl(client, refundId);
+          evidenceWindow.location.replace(evidence.url);
+        } catch (caught) {
+          evidenceWindow.close();
+          setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
+        } finally {
+          setBusy(null);
+        }
+      },
+    );
   }
 
   async function submitDecision(event: SyntheticEvent<HTMLFormElement>) {
@@ -147,30 +172,39 @@ export function RefundDetailView() {
       return;
     }
 
-    setBusy(decision);
-    setFieldError(null);
-    setError(null);
-    setNotice(null);
-    try {
-      const next = await runRefundDecision(client, refundId, decision, note, reason, evidenceFile);
-      setDetail(next);
-      setNotice(refundDecisionNotice(decision));
-      if (decision === 'COMPLETE_BANK_TRANSFER') clearEvidenceFile();
-      setNote('');
-      setReason('');
-      closeDecision();
-    } catch (caught) {
-      setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật hoàn tiền.');
-      if (shouldRefetchRefund(caught)) {
-        try {
-          await loadRefund();
-        } catch {
-          // Giữ lỗi thao tác và dữ liệu biểu mẫu để nhân viên có thể thử tải lại toàn hồ sơ.
+    await runExclusiveRefundOperation(operationRef, decision, true, async () => {
+      setBusy(decision);
+      setFieldError(null);
+      setError(null);
+      setNotice(null);
+      try {
+        const next = await runRefundDecision(
+          client,
+          refundId,
+          decision,
+          note,
+          reason,
+          evidenceFile,
+        );
+        setDetail(next);
+        setNotice(refundDecisionNotice(decision));
+        if (decision === 'COMPLETE_BANK_TRANSFER') clearEvidenceFile();
+        setNote('');
+        setReason('');
+        closeDecision();
+      } catch (caught) {
+        setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật hoàn tiền.');
+        if (shouldRefetchRefund(caught)) {
+          try {
+            await loadRefund();
+          } catch {
+            // Giữ lỗi thao tác và dữ liệu biểu mẫu để nhân viên có thể thử tải lại toàn hồ sơ.
+          }
         }
+      } finally {
+        setBusy(null);
       }
-    } finally {
-      setBusy(null);
-    }
+    });
   }
 
   return (

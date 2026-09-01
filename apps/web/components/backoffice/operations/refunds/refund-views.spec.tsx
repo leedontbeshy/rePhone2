@@ -2,7 +2,12 @@ import { createRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { RefundDetail, RefundListItem } from '@/lib/refund-api';
-import { RefundActionDialog, RefundRecord, validateRefundDecision } from './refund-detail-view';
+import {
+  RefundActionDialog,
+  RefundRecord,
+  runExclusiveRefundOperation,
+  validateRefundDecision,
+} from './refund-detail-view';
 import { RefundQueueTable } from './refund-queue-view';
 
 describe('FE-07 refund views', () => {
@@ -157,7 +162,52 @@ describe('FE-07 refund views', () => {
       'Hãy chọn minh chứng chuyển khoản.',
     );
   });
+
+  it.each(['COMPLETE_BANK_TRANSFER', 'evidence'] as const)(
+    'locks a deferred %s request against a same-frame duplicate',
+    async (operation) => {
+      const lock: {
+        current:
+          | 'START_PROCESSING'
+          | 'COMPLETE_BANK_TRANSFER'
+          | 'COMPLETE_CASH'
+          | 'REJECT'
+          | 'CANCEL'
+          | 'evidence'
+          | null;
+      } = { current: null };
+      const response = deferred<undefined>();
+      const request = vi.fn(() => response.promise);
+
+      const first = runExclusiveRefundOperation(lock, operation, true, request);
+      const duplicate = runExclusiveRefundOperation(lock, operation, true, request);
+
+      expect(request).toHaveBeenCalledOnce();
+      await expect(duplicate).resolves.toBe(false);
+      response.resolve(undefined);
+      await expect(first).resolves.toBe(true);
+      expect(lock.current).toBeNull();
+    },
+  );
+
+  it('does not call a refund request when the authoritative action is unavailable', async () => {
+    const request = vi.fn(() => Promise.resolve());
+
+    await expect(
+      runExclusiveRefundOperation({ current: null }, 'COMPLETE_CASH', false, request),
+    ).resolves.toBe(false);
+
+    expect(request).not.toHaveBeenCalled();
+  });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 function refundListItem(overrides: Partial<RefundListItem> = {}): RefundListItem {
   return {
