@@ -520,6 +520,11 @@ test.describe('FE-2 authentication and account', () => {
       await expectNoHorizontalOverflow(page);
       await expectNoSeriousAccessibilityViolations(page, `${route.path} (390px)`);
     }
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.goto('/account/security');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bảo mật' })).toBeVisible();
+    await expectNoHorizontalOverflow(page);
   });
 
   test(bt('browser:auth-account', 'account-load-recovery'), async ({ page }) => {
