@@ -294,6 +294,7 @@ anonymous, staff, converted guest cookie và forged guest header cho warranty.
 | Browser cuối trên logic `ef5708f`, lượt 1 | 0 | 4/4, Chromium, 1 worker, 1,2 phút |
 | Browser cuối trên logic `ef5708f`, lượt 2 | 0 | 4/4, Chromium, 1 worker, 1,2 phút |
 
-Browser matrix phủ đủ sáu route catalog/voucher ở 1440/360 px, đo không overflow
-và không lộ control mặc định. `f72fd6e` chỉ là formatting-only cho năm tệp catalog;
+Browser matrix phủ đủ sáu route catalog/voucher ở 1440/360 px, đo không overflow;
+media flow dùng file picker có nhãn riêng thay cho control tải tệp mặc định.
+`f72fd6e` chỉ là formatting-only cho năm tệp catalog;
 typecheck và targeted gate được chạy lại sau format, không thay đổi browser behavior.

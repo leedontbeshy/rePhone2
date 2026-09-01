@@ -23,7 +23,7 @@
 | Voucher pagination | `99d9798` | Trang vượt phạm vi tự trở về trang hợp lệ mà không flash empty state |
 | Unsaved product changes | `9de968a` | Create/edit có dirty baseline, custom discard dialog, `beforeunload` và chặn link nội bộ khi chưa lưu |
 | A11y remediation | `3d8d18c`, `781bf41`, `16457ba`, `d2e566a` | Sửa tương phản helper/selected option/header bảng và thêm nhãn cho mobile context link |
-| Product browser contract | `3b2663f` | Khóa lifecycle product, media, responsive, Axe và conflict flow bằng dữ liệu/API thật |
+| Product browser contract | `3b2663f` | Khóa lifecycle product, media, responsive, Axe và conflict flow bằng route fixture bám contract; service API được kiểm riêng ở targeted gate |
 | Voucher browser contract | `ef5708f` | Khóa lifecycle voucher, quyền employee, validation, responsive và accessibility |
 | Format gate | `f72fd6e` | Chuẩn hóa năm tệp catalog; không đổi logic, targeted gate và typecheck được chạy lại sau format |
 
@@ -48,16 +48,17 @@
   lỗi validation nằm cạnh đúng trường và không làm đổi nghĩa dữ liệu.
 - Collection/detail giữ snapshot hợp lệ trong refresh; stale response của action cũ
   không đóng dialog hoặc ghi đè kết quả mutation mới.
-- Voucher page vượt phạm vi tự clamp. Lifecycle create, update và archive được browser
-  chạy qua API thật, gồm cả recovery/error state.
-- EMPLOYEE đọc được projection vận hành được cấp nhưng không thấy hoặc gọi thành công
-  mutation chỉ dành cho ADMIN. Browser negative flow xác nhận hành động bị chặn.
+- Voucher page vượt phạm vi tự clamp. Browser chạy create, activate, edit và pause qua
+  route fixture bám contract, gồm cả recovery/error state; service API được kiểm riêng
+  ở targeted gate.
+- EMPLOYEE bị chặn trước khi tải projection voucher và không phát request voucher.
+  Browser negative flow xác nhận cả list, create và detail đều fail-closed.
 
 ## Responsive và accessibility evidence
 
 Browser matrix kiểm đủ sáu route ở `1440 px` và `360 px`. Mỗi route được đo
-`scrollWidth <= clientWidth`, không lộ input/file control mặc định, và chạy Axe với
-ngưỡng zero serious/critical.
+`scrollWidth <= clientWidth`; media flow thao tác qua file picker có nhãn riêng và
+không lộ control tải tệp mặc định; Axe chạy với ngưỡng zero serious/critical.
 
 Lượt browser đầu không bị xóa khỏi lịch sử: nó phát hiện bốn lỗi accessibility thật:
 
@@ -91,7 +92,7 @@ typecheck được chạy lại trên cây đã format.
 | --- | --- |
 | Sáu route dùng được ở 360/1440 px, không overflow hoặc lộ UI mặc định | **PASS** — đủ sáu route, hai viewport, overflow measurement và Axe sau remediation |
 | Employee không truy cập admin-only voucher mutation | **PASS** — browser negative role flow xác nhận mutation bị chặn |
-| Product/voucher lifecycle và conflict test xanh | **PASS** — product/media/conflict và voucher create/update/archive đạt 4/4 hai lượt liên tiếp |
+| Product/voucher lifecycle và conflict test xanh | **PASS** — product/media/conflict và voucher create/activate/edit/pause đạt 4/4 hai lượt liên tiếp |
 
 WP-07 không còn blocker trong phạm vi. `FE9-R14` của checkout vẫn mở độc lập;
 kết quả catalog/voucher không đóng WP-05 hoặc toàn bộ FE-09.
