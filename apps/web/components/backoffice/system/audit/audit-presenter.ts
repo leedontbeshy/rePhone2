@@ -47,6 +47,10 @@ export interface AuditPayloadPresentation {
   readonly groups: readonly AuditPayloadGroup[];
 }
 
+interface AuditFocusTarget {
+  focus(options?: FocusOptions): void;
+}
+
 export const AUDIT_ACTION_FILTERS = [
   { label: 'Tất cả hành động', value: '' },
   { label: 'Nhân viên', value: 'employee.*' },
@@ -420,6 +424,10 @@ export function auditListQueryKey(params: Pick<URLSearchParams, 'toString'>): st
   const listParams = new URLSearchParams(params.toString());
   listParams.delete('selected');
   return listParams.toString();
+}
+
+export function focusAuditDetailHeading(target: AuditFocusTarget | null | undefined): void {
+  target?.focus({ preventScroll: true });
 }
 
 export function projectAuditListItem(item: AuditLogListItem): AuditListRow {
