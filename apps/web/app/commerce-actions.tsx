@@ -112,11 +112,11 @@ export function CommerceActions(props: CommerceActionProps) {
             disabled={pending !== null}
             iconLeading={<HeartIcon aria-hidden="true" size={19} />}
             loading={pending === 'wishlist'}
-            loadingLabel="Đang lưu máy"
+            loadingLabel={props.itemType === 'IPHONE' ? 'Đang lưu máy' : 'Đang lưu phụ kiện'}
             onClick={() => void addToWishlist()}
             variant="secondary"
           >
-            Lưu máy
+            {props.itemType === 'IPHONE' ? 'Lưu máy' : 'Lưu phụ kiện'}
           </Button>
         ) : !props.compact && status === 'anonymous' ? (
           <Link className={styles.secondaryLink} href="/login">
