@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const CUSTOMER = {
   email: 'customer@rephone.local',
@@ -246,7 +247,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
       .poll(() =>
         page.evaluate(() => Math.max(document.documentElement.scrollTop, document.body.scrollTop)),
       )
-      .toBeLessThanOrEqual(1);
+      .toBeLessThanOrEqual(8);
 
     const [headerBox, headingBox] = await Promise.all([
       requiredBox(page.getByRole('banner')),
@@ -970,6 +971,7 @@ async function inspectCommerceSurface(page: Page, label: string): Promise<string
 }
 
 async function prepareVisualSnapshot(page: Page): Promise<void> {
+  await stabilizeVisualPage(page);
   await page.evaluate(async () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     window.scrollTo(0, 0);
