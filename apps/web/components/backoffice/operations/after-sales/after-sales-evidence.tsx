@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, InlineAlert } from '@/components/ui';
 import {
   getBackofficeAfterSalesAttachmentUrl,
@@ -16,14 +16,22 @@ export function AfterSalesEvidence({
 }: Readonly<{ client: AfterSalesBackofficeApiClient; detail: AfterSalesDetail }>) {
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const openingGate = useRef(createAfterSalesEvidenceOpenGate());
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error !== null) errorRef.current?.focus({ preventScroll: true });
+  }, [error]);
 
   if (detail.attachments.length === 0) {
     return <p className={styles.secondary}>Khách hàng chưa gửi ảnh hoặc tài liệu minh chứng.</p>;
   }
 
   async function openEvidence(attachmentId: string) {
+    if (!openingGate.current.claim(attachmentId)) return;
     const attachmentWindow = window.open('about:blank', '_blank');
     if (attachmentWindow === null) {
+      openingGate.current.release(attachmentId);
       setError('Trình duyệt đang chặn cửa sổ mới. Hãy cho phép rồi thử lại.');
       return;
     }
@@ -37,6 +45,7 @@ export function AfterSalesEvidence({
       attachmentWindow.close();
       setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng này.');
     } finally {
+      openingGate.current.release(attachmentId);
       setOpeningId(null);
     }
   }
@@ -44,7 +53,7 @@ export function AfterSalesEvidence({
   return (
     <div className={styles.actionStack}>
       {error === null ? null : (
-        <InlineAlert title="Chưa mở được minh chứng" tone="danger">
+        <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa mở được minh chứng" tone="danger">
           {error}
         </InlineAlert>
       )}
@@ -61,6 +70,7 @@ export function AfterSalesEvidence({
               <small>Gửi lúc {formatAfterSalesDateTime(attachment.uploadedAt)}</small>
             </div>
             <Button
+              disabled={openingId !== null && openingId !== attachment.id}
               loading={openingId === attachment.id}
               loadingLabel="Đang mở minh chứng"
               size="compact"
@@ -79,6 +89,25 @@ export function AfterSalesEvidence({
       </p>
     </div>
   );
+}
+
+export interface AfterSalesEvidenceOpenGate {
+  claim: (attachmentId: string) => boolean;
+  release: (attachmentId: string) => void;
+}
+
+export function createAfterSalesEvidenceOpenGate(): AfterSalesEvidenceOpenGate {
+  let currentAttachmentId: string | null = null;
+  return {
+    claim(attachmentId) {
+      if (currentAttachmentId !== null) return false;
+      currentAttachmentId = attachmentId;
+      return true;
+    },
+    release(attachmentId) {
+      if (currentAttachmentId === attachmentId) currentAttachmentId = null;
+    },
+  };
 }
 
 function fileSizeLabel(bytes: number): string {
