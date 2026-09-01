@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 export async function stabilizeVisualPage(page: Page): Promise<void> {
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0 }));
   await page.evaluate(async () => document.fonts.ready);
   await page.locator('img').evaluateAll((images) => {
     for (const image of images) image.loading = 'eager';
@@ -14,7 +15,7 @@ export async function stabilizeVisualPage(page: Page): Promise<void> {
   await page.addStyleTag({
     content: `
       nextjs-portal,
-      [data-shell='storefront'] > a[href^='#'] {
+      [data-shell] > a[href^='#'] {
         display: none !important;
       }
 

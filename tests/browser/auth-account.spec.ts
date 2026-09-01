@@ -5,6 +5,7 @@ import {
   BROWSER_INVITATION_ACCOUNT,
   BROWSER_RESET_ACCOUNT,
 } from '../../apps/api/test/browser/auth-fixtures';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const BROWSER_CUSTOMER = {
   email: 'browser-account@rephone.local',
@@ -39,10 +40,36 @@ const SECOND_ADDRESS = {
 
 const CHECKOUT_INVENTORY_PATH = '/products/iphone-13/units/IP13-BLU-001';
 
+const BROWSER_RECOVERY_CUSTOMER = {
+  email: 'browser-account-recovery@rephone.local',
+  password: 'BrowserRecovery123',
+  fullName: 'Khách kiểm tra phục hồi',
+} as const;
+
 test.describe('FE-2 authentication and account', () => {
   test.describe.configure({ mode: 'serial' });
 
   test(bt('browser:auth-account', 'reset-password-fragment'), async ({ page }) => {
+    await login(page, BROWSER_RESET_ACCOUNT.email, BROWSER_RESET_ACCOUNT.oldPassword, '/account');
+    let releaseLogout!: () => void;
+    const logoutGate = new Promise<void>((resolve) => {
+      releaseLogout = resolve;
+    });
+    await page.route('**/api/v1/auth/logout', async (route) => {
+      await logoutGate;
+      await route.continue();
+    });
+    let resetCompleted = false;
+    const authenticatedRequestsAfterReset: string[] = [];
+    page.on('request', (request) => {
+      if (
+        resetCompleted &&
+        apiPath(request.url()).startsWith('/api/v1/') &&
+        request.headers()['authorization'] !== undefined
+      ) {
+        authenticatedRequestsAfterReset.push(apiPath(request.url()));
+      }
+    });
     await page.goto(`/reset-password#token=${encodeURIComponent(BROWSER_RESET_ACCOUNT.token)}`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Đặt mật khẩu mới' })).toBeVisible();
@@ -61,13 +88,187 @@ test.describe('FE-2 authentication and account', () => {
     );
     await page.getByRole('button', { name: 'Đổi mật khẩu', exact: true }).click();
     expect((await resetResponse).status()).toBe(204);
+    await expect(page.getByText('Đang hoàn tất đổi mật khẩu…', { exact: true })).toBeVisible();
+    await expect(page.getByText('Liên kết không dùng được', { exact: true })).toHaveCount(0);
+    releaseLogout();
+    resetCompleted = true;
 
     await expect(page.getByText('Mật khẩu đã được cập nhật', { exact: true })).toBeVisible();
+    await expect(
+      page.locator('div[tabindex="-1"]').filter({ hasText: 'Mật khẩu đã được cập nhật' }),
+    ).toBeFocused();
     await expectNoRefreshCookie(page);
     await expectNoBrowserAuthSecrets(page, BROWSER_RESET_ACCOUNT.token);
+    await page.locator('body').press('Enter');
+    await expect(page.getByRole('button', { name: 'Đổi mật khẩu', exact: true })).toHaveCount(0);
+
+    await page.goto('/account');
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Đăng nhập để quản lý tài khoản' }),
+    ).toBeVisible();
+    expect(authenticatedRequestsAfterReset).toEqual([]);
 
     await login(page, BROWSER_RESET_ACCOUNT.email, BROWSER_RESET_ACCOUNT.newPassword, '/account');
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
+  });
+
+  test(bt('browser:auth-account', 'auth-submit-lock'), async ({ page }) => {
+    let releaseLogin!: () => void;
+    const loginReleased = new Promise<void>((resolve) => {
+      releaseLogin = resolve;
+    });
+    let loginMutations = 0;
+    await page.route('**/api/v1/auth/login', async (route) => {
+      loginMutations += 1;
+      await loginReleased;
+      await route.continue();
+    });
+
+    await page.goto('/login');
+    await page.locator('#email').fill(BROWSER_RESET_ACCOUNT.email);
+    await page.locator('#password').fill(BROWSER_RESET_ACCOUNT.newPassword);
+    const form = page.locator('form');
+    const submit = form.locator('button[type="submit"]');
+    const firstSubmit = submit.click();
+
+    await expect(form).toHaveAttribute('aria-busy', 'true');
+    await expect(submit).toBeDisabled();
+    await expect(page.locator('#email')).toBeDisabled();
+    await expect(page.locator('#password')).toBeDisabled();
+    await page.locator('#password').press('Enter');
+    await submit.evaluate((button: HTMLButtonElement) => {
+      button.click();
+    });
+    await expect.poll(() => loginMutations).toBe(1);
+
+    releaseLogin();
+    await firstSubmit;
+    await page.waitForURL('/account');
+    expect(loginMutations).toBe(1);
+  });
+
+  test(bt('browser:auth-account', 'one-time-token-invalid'), async ({ page }) => {
+    let oneTimeMutations = 0;
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        ['/api/v1/auth/reset-password', '/api/v1/auth/accept-employee-invitation'].includes(
+          apiPath(request.url()),
+        )
+      ) {
+        oneTimeMutations += 1;
+      }
+    });
+
+    for (const path of [
+      '/reset-password',
+      '/reset-password#token=invalid',
+      '/accept-invitation',
+      '/accept-invitation#token=invalid',
+    ]) {
+      await page.goto(path);
+      await expectFragmentTokenCleared(page, 'invalid');
+      await expect(page.locator('#password')).toHaveCount(0);
+      await page.locator('body').press('Enter');
+    }
+    expect(oneTimeMutations).toBe(0);
+
+    const unknownToken = 'unknown-one-time-token-1234567890';
+    for (const flow of [
+      {
+        path: `/reset-password#token=${unknownToken}`,
+        action: 'Đổi mật khẩu',
+        endpoint: '/api/v1/auth/reset-password',
+        terminal: 'Liên kết không dùng được',
+      },
+      {
+        path: `/accept-invitation#token=${unknownToken}`,
+        action: 'Kích hoạt tài khoản',
+        endpoint: '/api/v1/auth/accept-employee-invitation',
+        terminal: 'Lời mời không dùng được',
+      },
+    ] as const) {
+      await page.goto(flow.path);
+      await expectFragmentTokenCleared(page, unknownToken);
+      await page.locator('#password').fill('UnknownToken123');
+      await page.locator('#confirmation').fill('UnknownToken123');
+      const response = page.waitForResponse(
+        (candidate) =>
+          apiPath(candidate.url()) === flow.endpoint && candidate.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: flow.action, exact: true }).click();
+      expect((await response).status()).not.toBe(204);
+      await expect(page.getByText(flow.terminal, { exact: true })).toBeVisible();
+      await expect(page.locator('#password')).toHaveCount(0);
+      const mutationCount = oneTimeMutations;
+      await page.locator('body').press('Enter');
+      expect(oneTimeMutations).toBe(mutationCount);
+    }
+    expect(oneTimeMutations).toBe(2);
+  });
+
+  test(bt('browser:auth-account', 'registration-enumeration'), async ({ page }) => {
+    await page.goto('/register');
+    await page.locator('#fullName').fill('Khách đăng ký trùng');
+    await page.locator('#email').fill(BROWSER_RESET_ACCOUNT.email);
+    await page.locator('#password').fill('BrowserDuplicate123');
+    await page.locator('#confirmation').fill('BrowserDuplicate123');
+    const responsePromise = page.waitForResponse(
+      (response) =>
+        apiPath(response.url()) === '/api/v1/auth/register' &&
+        response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
+    expect((await responsePromise).status()).toBe(409);
+
+    const error = page.getByRole('alert').filter({ hasText: 'Không thể hoàn tất đăng ký.' });
+    await expect(error).toContainText('Không thể hoàn tất đăng ký.');
+    await expect(error).not.toContainText('đã được dùng');
+    await expect(error).not.toContainText('đã tồn tại');
+    await expect(page.locator('#email')).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  test(bt('browser:auth-account', 'auth-route-state-matrix'), async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/login');
+    await page.locator('#email').press('Enter');
+    const summary = page.getByRole('alert').filter({ hasText: 'Kiểm tra lại thông tin' });
+    await expect(summary).toBeFocused();
+    await expect(page.locator('#email')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#password')).toHaveAttribute('aria-invalid', 'true');
+
+    await page.locator('#email').fill('keyboard-customer@rephone.local');
+    await expect(page.locator('#email')).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(summary.getByRole('link', { name: /email/i })).toHaveCount(0);
+
+    const password = page.locator('#password');
+    const toggle = page.getByRole('button', { name: 'Hiện mật khẩu', exact: true });
+    await toggle.click();
+    await expect(password).toHaveAttribute('type', 'text');
+    const hidePassword = page.getByRole('button', { name: 'Ẩn mật khẩu', exact: true });
+    await expect(hidePassword).toHaveAttribute('aria-pressed', 'true');
+    await hidePassword.click();
+    await expect(password).toHaveAttribute('type', 'password');
+    await expectNoHorizontalOverflow(page);
+    await expectNoSeriousAccessibilityViolations(page, '/login error (390px)');
+    await stabilizeVisualPage(page);
+    await expect(page).toHaveScreenshot('fe2-login-error-mobile-390.png', {
+      animations: 'disabled',
+      caret: 'hide',
+      fullPage: true,
+    });
+
+    for (const route of [
+      { path: '/register', heading: 'Tạo tài khoản' },
+      { path: '/forgot-password', heading: 'Quên mật khẩu' },
+      { path: '/reset-password', heading: 'Đặt mật khẩu mới' },
+      { path: '/accept-invitation', heading: 'Kích hoạt tài khoản nhân viên' },
+    ] as const) {
+      await page.goto(route.path);
+      await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible();
+      await expectNoHorizontalOverflow(page);
+      await expectNoSeriousAccessibilityViolations(page, `${route.path} (390px)`);
+    }
   });
 
   test(bt('browser:auth-account', 'staff-invitation'), async ({ page }) => {
@@ -93,6 +294,9 @@ test.describe('FE-2 authentication and account', () => {
     expect((await invitationResponse).status()).toBe(204);
 
     await expect(page.getByText('Tài khoản đã được kích hoạt', { exact: true })).toBeVisible();
+    await expect(
+      page.locator('div[tabindex="-1"]').filter({ hasText: 'Tài khoản đã được kích hoạt' }),
+    ).toBeFocused();
     await expect(page).toHaveURL('/accept-invitation');
     await expectNoRefreshCookie(page);
     await expectNoBrowserAuthSecrets(page, BROWSER_INVITATION_ACCOUNT.token);
@@ -104,6 +308,14 @@ test.describe('FE-2 authentication and account', () => {
       '/backoffice',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan vận hành' })).toBeVisible();
+
+    let addressRequests = 0;
+    page.on('request', (request) => {
+      if (apiPath(request.url()) === '/api/v1/account/addresses') addressRequests += 1;
+    });
+    await page.goto('/account/addresses');
+    await expect(page.getByText('Khu vực dành cho khách hàng', { exact: true })).toBeVisible();
+    expect(addressRequests).toBe(0);
 
     await page.goto('/');
     await expect(page.getByRole('link', { name: 'Quản trị', exact: true })).toHaveAttribute(
@@ -139,6 +351,9 @@ test.describe('FE-2 authentication and account', () => {
     expect((await registerResponse).status()).toBe(201);
 
     await expect(page.getByText('Tài khoản đã được tạo', { exact: true })).toBeVisible();
+    await expect(
+      page.locator('div[tabindex="-1"]').filter({ hasText: 'Tài khoản đã được tạo' }),
+    ).toBeFocused();
     await expect(page).toHaveURL('/register');
     await expectNoRefreshCookie(page);
 
@@ -186,6 +401,9 @@ test.describe('FE-2 authentication and account', () => {
 
     await page.goto('/account/addresses');
     await expect(page.getByRole('heading', { level: 1, name: 'Sổ địa chỉ' })).toBeVisible();
+    const addressNavigationCount = await page.evaluate(
+      () => performance.getEntriesByType('navigation').length,
+    );
     await createAddress(page, FIRST_ADDRESS, false, 'Thêm địa chỉ đầu tiên');
     await createAddress(page, SECOND_ADDRESS, true, 'Thêm địa chỉ');
 
@@ -226,12 +444,30 @@ test.describe('FE-2 authentication and account', () => {
     await expect(
       addressCard(page, SECOND_ADDRESS.label).getByText('Mặc định', { exact: true }),
     ).toHaveCount(0);
+    expect(await page.evaluate(() => performance.getEntriesByType('navigation').length)).toBe(
+      addressNavigationCount,
+    );
 
+    let logoutAttempts = 0;
+    await page.route('**/api/v1/auth/logout', async (route) => {
+      logoutAttempts += 1;
+      if (logoutAttempts === 1) {
+        await route.abort('failed');
+        return;
+      }
+      await route.continue();
+    });
     const logoutRequestPromise = page.waitForRequest(isLogoutRequest);
     await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
     const logoutRequest = await logoutRequestPromise;
     await expectCookieMutationRequest(logoutRequest, true);
+    await expect(page.getByText('Chưa xác nhận được đăng xuất', { exact: true })).toBeVisible();
+    await expectNoSeriousAccessibilityViolations(page, '/account logout warning');
+    const retryLogoutRequest = page.waitForRequest(isLogoutRequest);
+    await page.getByRole('button', { name: 'Thử đăng xuất lại', exact: true }).click();
+    await retryLogoutRequest;
     await page.waitForURL('/login');
+    expect(logoutAttempts).toBe(2);
     await expectNoRefreshCookie(page);
 
     await login(
@@ -286,6 +522,92 @@ test.describe('FE-2 authentication and account', () => {
     }
   });
 
+  test(bt('browser:auth-account', 'account-load-recovery'), async ({ page }) => {
+    const registration = await page.request.post('http://localhost:4001/api/v1/auth/register', {
+      data: BROWSER_RECOVERY_CUSTOMER,
+    });
+    expect(registration.status()).toBe(201);
+
+    let releaseProfileFailure!: () => void;
+    const profileFailureGate = new Promise<void>((resolve) => {
+      releaseProfileFailure = resolve;
+    });
+    let failProfile = true;
+    await page.route('**/api/v1/account', async (route) => {
+      if (route.request().method() === 'GET' && failProfile) {
+        await profileFailureGate;
+        await route.abort('failed');
+        return;
+      }
+      await route.continue();
+    });
+
+    await login(
+      page,
+      BROWSER_RECOVERY_CUSTOMER.email,
+      BROWSER_RECOVERY_CUSTOMER.password,
+      '/account',
+    );
+    await expect(page.getByRole('status', { name: 'Đang tải hồ sơ tài khoản' })).toBeVisible();
+    releaseProfileFailure();
+    await expect(page.getByText('Chưa tải được dữ liệu', { exact: true })).toBeVisible();
+    failProfile = false;
+    await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
+    await expect(page.locator('#account-fullName')).toHaveValue(BROWSER_RECOVERY_CUSTOMER.fullName);
+
+    await page.unroute('**/api/v1/account');
+    let releaseProfileUpdate!: () => void;
+    const profileUpdateGate = new Promise<void>((resolve) => {
+      releaseProfileUpdate = resolve;
+    });
+    let profileMutations = 0;
+    await page.route('**/api/v1/account', async (route) => {
+      if (route.request().method() === 'PATCH') {
+        profileMutations += 1;
+        await profileUpdateGate;
+      }
+      await route.continue();
+    });
+    const navigationCount = await page.evaluate(
+      () => performance.getEntriesByType('navigation').length,
+    );
+    await page.locator('#account-fullName').fill('Khách phục hồi đã cập nhật');
+    const profileForm = page.getByRole('region', { name: 'Thông tin liên hệ' }).locator('form');
+    await profileForm.evaluate((form) => {
+      form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+      form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+    });
+    await expect(profileForm).toHaveAttribute('aria-busy', 'true');
+    await expect.poll(() => profileMutations).toBe(1);
+    releaseProfileUpdate();
+    await expect(page.getByText('Đã lưu hồ sơ', { exact: true })).toBeVisible();
+    expect(profileMutations).toBe(1);
+    expect(await page.evaluate(() => performance.getEntriesByType('navigation').length)).toBe(
+      navigationCount,
+    );
+    await stabilizeVisualPage(page);
+    await expect(page).toHaveScreenshot('fe2-account-profile-success-desktop.png', {
+      animations: 'disabled',
+      caret: 'hide',
+      fullPage: true,
+    });
+
+    await page.unroute('**/api/v1/account');
+    let failAddresses = true;
+    await page.route('**/api/v1/account/addresses', async (route) => {
+      if (route.request().method() === 'GET' && failAddresses) {
+        await route.abort('failed');
+        return;
+      }
+      await route.continue();
+    });
+    await page.goto('/account/addresses');
+    await expect(page.getByText('Chưa tải được dữ liệu', { exact: true })).toBeVisible();
+    failAddresses = false;
+    await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
+    await expect(page.getByText('Chưa có địa chỉ đã lưu', { exact: true })).toBeVisible();
+  });
+
   test(bt('browser:auth-account', 'forgot-password-enumeration'), async ({ page }) => {
     const knownResponse = await submitForgotPassword(page, BROWSER_RESET_ACCOUNT.email);
     const unknownResponse = await submitForgotPassword(
@@ -293,7 +615,7 @@ test.describe('FE-2 authentication and account', () => {
       'missing-browser-account@rephone.local',
     );
 
-    expect(knownResponse).toContain('Nếu tài khoản phù hợp');
+    expect(knownResponse).toContain('Nếu thông tin phù hợp');
     expect(unknownResponse).toBe(knownResponse);
   });
 });
@@ -358,6 +680,7 @@ async function submitForgotPassword(page: Page, email: string): Promise<string> 
   expect((await responsePromise).status()).toBe(202);
   const message = page.getByRole('status');
   await expect(message).toBeVisible();
+  await expect(page.locator('div[tabindex="-1"]').filter({ has: message })).toBeFocused();
   return (await message.innerText()).replace(/\s+/g, ' ').trim();
 }
 
@@ -383,6 +706,8 @@ async function expectNoBrowserAuthSecrets(page: Page, oneTimeToken?: string): Pr
       /(?:access|refresh|bearer|auth)[-_ ]?token|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+\./i;
     return {
       hasAuthShapedStorage: entries.some(([key, value]) => authPattern.test(`${key}:${value}`)),
+      hasOneTimeTokenInHtml:
+        token !== undefined && document.documentElement.outerHTML.includes(token),
       hasOneTimeTokenInStorage:
         token !== undefined && entries.some(([, value]) => value.includes(token)),
       hash: window.location.hash,
@@ -392,6 +717,7 @@ async function expectNoBrowserAuthSecrets(page: Page, oneTimeToken?: string): Pr
 
   expect(result).toEqual({
     hasAuthShapedStorage: false,
+    hasOneTimeTokenInHtml: false,
     hasOneTimeTokenInStorage: false,
     hash: '',
     tokenInQuery: false,
