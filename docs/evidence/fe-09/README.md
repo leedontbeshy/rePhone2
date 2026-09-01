@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Work package hiện tại: **WP-03**
+> Work package hiện tại: **WP-04**
 
 ## Phạm vi bằng chứng
 
@@ -17,6 +17,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 
 - [Command log và baseline](./command-log.md)
 - [Residual-risk log](./residual-risks.md)
+- [WP-03 storefront evidence](./wp-03-storefront.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -65,6 +66,16 @@ không còn P0/P1/P2 sau remediation. Full web unit đạt `588/588`, shared a11
 Chi tiết command, ảnh trước/sau và acceptance mapping nằm tại
 [WP-02 foundation evidence](./wp-02-foundation.md).
 
+## Storefront hardening WP-03
+
+WP-03 kết thúc tại `3bc763a` với sáu route public được Việt hóa, filter giữ shell,
+gợi ý tìm kiếm desktop/mobile, voucher account-safe, media fallback và menu di
+động toàn màn hình. Full web unit đạt `597/597`; storefront browser đạt `17/17`
+hai lượt liên tiếp và hai route đại diện đều nằm trong performance budget.
+
+Chi tiết browser review, visual baseline, performance profile và acceptance nằm
+tại [WP-03 storefront evidence](./wp-03-storefront.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -72,7 +83,8 @@ Chi tiết command, ảnh trước/sau và acceptance mapping nằm tại
 | WP-00 | Evidence index, command log, residual risks | Có |
 | WP-01 | Browser ownership registry và release workflow | Có; CI URL chờ push |
 | WP-02 | Foundation/browser/visual evidence | PASS |
-| WP-03–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-03 | Storefront browser/visual/performance evidence | PASS |
+| WP-04–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -88,6 +100,6 @@ Chi tiết command, ảnh trước/sau và acceptance mapping nằm tại
 
 ## Bước tiếp theo
 
-Thực hiện WP-03 cho sáu surface storefront: nội dung và media public, filter/history,
-SSR, unavailable recovery, responsive và accessibility. Mỗi thay đổi tiếp tục tách
-theo concern và giữ browser regression của owner xanh.
+Thực hiện WP-04 cho auth/account: không tiết lộ email đã tồn tại, khóa submit lặp,
+gắn profile/address state với đúng phiên khách hàng và giữ form/list ổn định khi
+chỉ một vùng đang cập nhật.

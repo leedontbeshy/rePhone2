@@ -126,3 +126,30 @@ Review đầu không được xóa khỏi lịch sử: nó phát hiện stale va
 máy gặp lỗi, focus dialog có điều kiện trong React Strict Mode, focus forced-colors
 và lỗi tệp động chưa được thông báo. Bốn concern đã được sửa riêng và kiểm thử lại
 trước full browser cuối.
+
+## WP-03 verification — tree `3bc763a`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 126 file, 597/597 test |
+| `pnpm fe:coverage` | 0 | 9/9 executable coverage contract |
+| `pnpm typecheck` | 0 | 4/4 Turbo tasks |
+| `pnpm lint` | 0 | PASS, zero warning |
+| `pnpm format:check` | 0 | PASS |
+| `pnpm build` | 0 | API/web production build; Next sinh đủ 56 route |
+| `git diff --check` | 0 | PASS |
+
+### Browser, visual và performance gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Storefront browser trước contract refresh | 1 | 11/17; lộ một assertion geometry quá cứng và năm contract/snapshot cũ |
+| Storefront browser + reviewed snapshot update | 0 | 17/17; cập nhật 4 visual baseline đã review |
+| Storefront browser cuối, không update | 0 | 17/17, Chromium, 1 worker, 1,5 phút |
+| Production performance cuối | 0 | 1/1; model LCP 508 ms, exact unit 596 ms, CLS 0 |
+
+Browser review trực tiếp phát hiện media treo/broken-alt và menu fixed bị sticky
+header cắt còn 81 px. Hai lỗi được sửa bằng commit độc lập rồi khóa bằng browser
+regression; raw screenshot nằm trong `.local/fe09-wp03-audit/`.
