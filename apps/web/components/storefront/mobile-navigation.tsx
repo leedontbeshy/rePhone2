@@ -10,6 +10,7 @@ import {
   isStorefrontNavigationCurrent,
   STOREFRONT_NAVIGATION,
 } from './storefront-navigation';
+import { StorefrontSearch } from './storefront-search';
 import styles from './mobile-navigation.module.css';
 
 export function MobileNavigation() {
@@ -110,19 +111,13 @@ export function MobileNavigation() {
               </button>
             </div>
 
-            <form className={styles.search} action="/products" method="get" role="search">
-              <label htmlFor="mobile-storefront-search">Tìm iPhone hoặc phụ kiện</label>
-              <div>
-                <input
-                  id="mobile-storefront-search"
-                  name="q"
-                  type="search"
-                  maxLength={100}
-                  placeholder="Nhập tên sản phẩm"
-                />
-                <button type="submit">Tìm</button>
-              </div>
-            </form>
+            <div className={styles.searchSlot}>
+              <StorefrontSearch
+                id="mobile-storefront-search"
+                onNavigate={closeNavigation}
+                variant="mobile"
+              />
+            </div>
 
             <nav aria-label="Danh mục sản phẩm">
               <Suspense
