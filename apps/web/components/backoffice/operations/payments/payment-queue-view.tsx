@@ -272,15 +272,7 @@ export function PaymentQueueView() {
       {readPresentation.initialLoading ? (
         <PaymentQueueSkeleton />
       ) : (
-        <BackofficeDataBoard
-          ariaLabel="Danh sách thanh toán"
-          columns={paymentColumns}
-          emptyDescription="Hãy thay đổi bộ lọc hoặc kiểm tra lại sau."
-          emptyTitle="Không có khoản thanh toán phù hợp"
-          getRowKey={(payment) => payment.id}
-          loading={loading}
-          rows={payments}
-        />
+        <PaymentQueueTable loading={loading} payments={payments} />
       )}
 
       <BackofficePagination
@@ -291,6 +283,23 @@ export function PaymentQueueView() {
         totalPages={pagination.totalPages}
       />
     </OperationsShell>
+  );
+}
+
+export function PaymentQueueTable({
+  loading = false,
+  payments,
+}: Readonly<{ loading?: boolean; payments: readonly PaymentQueueItem[] }>) {
+  return (
+    <BackofficeDataBoard
+      ariaLabel="Danh sách thanh toán"
+      columns={paymentColumns}
+      emptyDescription="Hãy thay đổi bộ lọc hoặc kiểm tra lại sau."
+      emptyTitle="Không có khoản thanh toán phù hợp"
+      getRowKey={(payment) => payment.id}
+      loading={loading}
+      rows={payments}
+    />
   );
 }
 
