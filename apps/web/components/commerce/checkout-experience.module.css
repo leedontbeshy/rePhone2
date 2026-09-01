@@ -182,7 +182,7 @@
 
 .appliedVoucher {
   margin: calc(var(--space-2) * -1) 0 var(--space-4);
-  color: var(--color-success);
+  color: var(--color-success-strong);
   font-size: var(--font-size-small);
 }
 
@@ -281,7 +281,7 @@
 }
 
 .priceLine .discount {
-  color: var(--color-success);
+  color: var(--color-success-strong);
 }
 
 .grandTotal {
@@ -300,7 +300,7 @@
 .voucherSuccess,
 .pickupStore {
   margin: 0;
-  color: var(--color-success);
+  color: var(--color-success-strong);
   font-size: var(--font-size-small);
 }
 
