@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Button } from './button';
-import { FilePicker, Input, RadioCard, RadioGroup } from './field';
+import { Checkbox, FilePicker, Input, RadioCard, RadioGroup, Select, Textarea } from './field';
 import { ErrorSummary } from './feedback';
 import { Link } from './link';
 
@@ -31,6 +31,69 @@ describe('frontend primitive accessibility contracts', () => {
     expect(markup).toContain('aria-invalid="true"');
     expect(markup).toContain('required=""');
     expect(markup).toContain('(bắt buộc)');
+  });
+
+  it('describes select validation without losing caller context', () => {
+    const markup = renderToStaticMarkup(
+      <Select
+        aria-describedby="stock-context"
+        error="Chọn địa điểm nhận"
+        hint="Chỉ hiện địa điểm đang hoạt động"
+        id="stock-location"
+        label="Địa điểm nhận"
+        required
+      >
+        <option value="">Chọn địa điểm</option>
+      </Select>,
+    );
+
+    expect(markup).toContain(
+      'aria-describedby="stock-context stock-location-hint stock-location-error"',
+    );
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('<select');
+    expect(markup).toContain('required=""');
+  });
+
+  it('describes textarea validation and keeps the entered value', () => {
+    const markup = renderToStaticMarkup(
+      <Textarea
+        aria-describedby="reason-context"
+        error="Ghi chú cần ít nhất 5 ký tự"
+        hint="Mô tả ngắn gọn tình trạng"
+        id="support-reason"
+        label="Ghi chú"
+        required
+        value="Máy lỗi"
+        readOnly
+      />,
+    );
+
+    expect(markup).toContain(
+      'aria-describedby="reason-context support-reason-hint support-reason-error"',
+    );
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('>Máy lỗi</textarea>');
+  });
+
+  it('associates checkbox description and validation with its native control', () => {
+    const markup = renderToStaticMarkup(
+      <Checkbox
+        aria-describedby="policy-context"
+        description="Xác nhận đã kiểm tra thông tin"
+        error="Cần xác nhận trước khi tiếp tục"
+        id="policy-confirmation"
+        label="Tôi xác nhận"
+        required
+      />,
+    );
+
+    expect(markup).toContain('type="checkbox"');
+    expect(markup).toContain(
+      'aria-describedby="policy-context policy-confirmation-hint policy-confirmation-error"',
+    );
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('required=""');
   });
 
   it('groups radio options with a required legend and descriptive error', () => {
