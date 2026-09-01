@@ -10,9 +10,17 @@ import {
   UploadSimpleIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useRef, useState, type ChangeEvent, type ReactNode, type SyntheticEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+  type SyntheticEvent,
+} from 'react';
 import { BackofficeActionDialog, CatalogVoucherStatusChip } from '@/components/backoffice';
 import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
+import { validateCatalogMediaFile } from '@/lib/backoffice-catalog-api';
 import { CatalogMediaImage, type CatalogMediaSource } from './catalog-media';
 import type { CatalogWarrantyChoice } from './catalog-product-form';
 import {
@@ -25,6 +33,8 @@ import {
   type CatalogRecordStatus,
 } from './catalog-presenter';
 import styles from './catalog.module.css';
+
+export { validateCatalogMediaFile } from '@/lib/backoffice-catalog-api';
 
 export interface CatalogMediaRecord extends CatalogMediaSource {
   readonly id: string;
@@ -111,6 +121,7 @@ interface CatalogDetailViewProps {
   readonly busy?: string | null;
   readonly error?: string | null;
   readonly notice?: string | null;
+  readonly resetDialogsVersion?: number;
   readonly product: CatalogProductDetailRecord;
   readonly warranties: readonly CatalogWarrantyChoice[];
   readonly onActivateVariant: (variantId: string) => Promise<void> | void;
@@ -149,6 +160,7 @@ export function CatalogDetailView({
   busy = null,
   error = null,
   notice = null,
+  resetDialogsVersion = 0,
   product,
   warranties,
   onActivateVariant,
@@ -169,6 +181,12 @@ export function CatalogDetailView({
   const ready = catalogPublishReadiness(product);
   const currentError = localError ?? error;
 
+  useEffect(() => {
+    setDialog(null);
+    setReason('');
+    setLocalError(null);
+  }, [resetDialogsVersion]);
+
   async function upload(
     owner: 'product' | 'variant',
     ownerId: string,
@@ -178,15 +196,16 @@ export function CatalogDetailView({
     event.target.value = '';
     if (file === undefined) return;
     const message = validateCatalogMediaFile(file);
-    if (message !== undefined) {
+    if (message !== null) {
       setLocalError(message);
       return;
     }
     setLocalError(null);
-    const sortOrder =
+    const ownerMedia =
       owner === 'product'
-        ? product.media.length
-        : (product.variants.find((variant) => variant.id === ownerId)?.media.length ?? 0);
+        ? product.media
+        : (product.variants.find((variant) => variant.id === ownerId)?.media ?? []);
+    const sortOrder = nextCatalogMediaSortOrder(ownerMedia);
     try {
       await onUploadMedia(owner, ownerId, file, {
         sortOrder,
@@ -381,6 +400,12 @@ export function CatalogDetailView({
                     }}
                     onEdit={() => {
                       setDialog({ kind: 'edit-variant', variant });
+                    }}
+                    onDeleteMedia={(media) => {
+                      setDialog({ kind: 'delete-media', media });
+                    }}
+                    onEditMedia={(media) => {
+                      setDialog({ kind: 'edit-media', media });
                     }}
                     onUpload={(event) => upload('variant', variant.id, event)}
                   />
@@ -702,6 +727,8 @@ function CatalogVariantRow({
   onActivate,
   onArchive,
   onEdit,
+  onDeleteMedia,
+  onEditMedia,
   onUpload,
 }: Readonly<{
   busy: string | null;
@@ -710,6 +737,8 @@ function CatalogVariantRow({
   onActivate: () => void;
   onArchive: () => void;
   onEdit: () => void;
+  onDeleteMedia: (media: CatalogMediaRecord) => void;
+  onEditMedia: (media: CatalogMediaRecord) => void;
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void> | void;
 }>) {
   const fileId = `variant-media-${variant.id}`;
@@ -784,6 +813,44 @@ function CatalogVariantRow({
           </>
         )}
       </div>
+      {variant.media.length === 0 ? null : (
+        <div className={styles.variantMediaGrid} aria-label={`Hình ảnh ${variant.displayName}`}>
+          {variant.media.map((media, index) => (
+            <article className={styles.variantMediaCard} key={media.id}>
+              <CatalogMediaImage
+                className={styles.variantMediaThumbnail}
+                fallbackLabel={`Không tải được ảnh ${String(index + 1)} của ${variant.displayName}`}
+                media={media}
+              />
+              <div className={styles.variantMediaCopy}>
+                <strong>{media.altText?.trim() || `Ảnh ${String(index + 1)}`}</strong>
+                <span>Thứ tự {String(media.sortOrder + 1)}</span>
+              </div>
+              <div className={styles.mediaActions}>
+                <button
+                  className={styles.textButton}
+                  type="button"
+                  onClick={() => {
+                    onEditMedia(media);
+                  }}
+                >
+                  Sửa
+                </button>
+                <button
+                  className={styles.textButton}
+                  disabled={busy !== null}
+                  type="button"
+                  onClick={() => {
+                    onDeleteMedia(media);
+                  }}
+                >
+                  Xóa
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -1541,12 +1608,10 @@ export function catalogPublishReadiness(product: CatalogProductDetailRecord) {
   };
 }
 
-export function validateCatalogMediaFile(file: Pick<File, 'size' | 'type'>): string | undefined {
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    return 'Chỉ nhận ảnh JPEG, PNG hoặc WebP.';
-  }
-  if (file.size > 8 * 1024 * 1024) return 'Ảnh không được lớn hơn 8 MB.';
-  return undefined;
+export function nextCatalogMediaSortOrder(
+  media: readonly Pick<CatalogMediaRecord, 'sortOrder'>[],
+): number {
+  return media.reduce((maximum, item) => Math.max(maximum, item.sortOrder), -1) + 1;
 }
 
 export function variantDraftFrom(variant?: CatalogVariantRecord): VariantDraft {
