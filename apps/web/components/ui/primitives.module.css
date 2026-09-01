@@ -330,6 +330,10 @@ select.control {
   background: var(--color-brand-soft);
 }
 
+.radioCard:has(.radio:checked) .hint {
+  color: var(--color-primary-hover);
+}
+
 .fieldGroup {
   min-width: 0;
   margin: 0;
