@@ -123,6 +123,11 @@ function CheckoutSession() {
   const previousCartFingerprint = useRef<string | null>(null);
   const populatedSession = useRef<string | null>(null);
 
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const invalidatePreview = useCallback(() => {
     previewRequestId.current += 1;
     if (actionLock.current === 'preview') actionLock.current = null;
