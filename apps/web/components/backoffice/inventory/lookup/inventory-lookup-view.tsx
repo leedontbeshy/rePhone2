@@ -70,6 +70,8 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
     } catch (cause) {
       if (!requestGate.current.isCurrent(requestId)) return;
       setError(lookupErrorMessage(identifierType, cause));
+      setIdentifier('');
+      setAttempted(false);
     } finally {
       if (requestGate.current.isCurrent(requestId)) setPending(false);
     }
