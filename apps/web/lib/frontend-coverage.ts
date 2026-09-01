@@ -13,7 +13,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-6': 'DONE',
   'FE-7': 'DONE',
   'FE-8': 'DONE',
-  'FE-9': 'NOT STARTED',
+  'FE-9': 'IN PROGRESS',
 } as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
 
 export type FrontendOperationCoverage = readonly [

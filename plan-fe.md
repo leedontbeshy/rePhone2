@@ -6,11 +6,11 @@
 > Backend contract: [docs/readme.md](docs/readme.md)  
 > Design contract: [design.md](design.md)  
 > Frontend baseline SHA: `801ad26`  
-> Ngày cập nhật: `2026-08-28`<br>
-> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE · FE-5 DONE · FE-6 DONE**<br>
+> Ngày cập nhật: `2026-09-01`<br>
+> Trạng thái triển khai: **FE-0 DONE · FE-1 DONE · FE-2 DONE · FE-3 DONE · FE-4 DONE · FE-5 DONE · FE-6 DONE · FE-7 DONE · FE-8 DONE · FE-9 IN PROGRESS**<br>
 > HTTP baseline: `apps/api/openapi/openapi.json` — **162 operations**
 
-Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đã hoàn thành storefront discovery; FE-2 đã hoàn thành auth và self-service account; FE-3 đã hoàn thành cart, wishlist và checkout; FE-4 đã hoàn thành customer post-purchase portal; FE-5 đã hoàn thành catalog, media và mã ưu đãi trong backoffice; FE-6 đã hoàn thành kho máy, kiểm định, địa điểm và tồn phụ kiện.
+Tài liệu điều phối triển khai toàn bộ frontend rePhone. FE-0 đã khóa foundation và contract coverage; FE-1 đến FE-8 đã hoàn thành các surface nghiệp vụ; FE-9 đang hoàn thiện toàn diện FE-0–FE-8, củng cố accessibility, responsive, hiệu năng, coverage thực thi và release gate.
 
 ## 1. Vai trò tài liệu và thứ tự nguồn sự thật
 
@@ -395,7 +395,7 @@ Contract chung cho mọi phase:
 
 | Thuộc tính        | Nội dung                                                                                                                                                             |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **NOT STARTED**                                                                                                                                                      |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                                      |
 | Mục tiêu          | Chứng minh 162/162 coverage, xóa legacy có kiểm soát và đạt release quality trên desktop/mobile/keyboard.                                                            |
 | Non-goal          | Không thêm capability backend mới hoặc polish che lấp lỗi contract.                                                                                                  |
 | Dependency        | C1–C8 hoàn tất.                                                                                                                                                      |
@@ -508,6 +508,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-28 | FE-6              | DONE                   | Khóa tám route máy vật lý, kiểm định, địa điểm và tồn phụ kiện                                     | Code đến SHA `c9ca675`; 26/26 operation `DONE`; web `324/324`, API `625/625`, browser FE-6 `6/6`; lint/typecheck/build/OpenAPI/client/a11y xanh; QA 1440/360 không tràn ngang, console sạch; Docker integration chưa chạy vì Docker Desktop đang tắt |
 | 2026-08-29 | FE-7              | DONE                   | Khóa workspace vận hành đơn hàng, tài chính, bảo hành và hỗ trợ sau mua                            | 53/53 operation `DONE`; frontend coverage `4/4` xanh; các route FE-7 có queue/detail/action theo contract                                                                                                                                            |
 | 2026-08-30 | FE-8              | DONE                   | Khóa quản trị nhân viên, khách hàng, cấu hình, nhật ký và trạng thái hệ thống                      | 20/20 operation `DONE`; ledger 162/162 `DONE`; role/CAS/redaction smoke; browser QA 5 workspace và đối chiếu mockup phương án 2 đạt                                                                                                                  |
+| 2026-09-01 | FE-9              | IN PROGRESS            | Bắt đầu hoàn thiện toàn diện FE-0–FE-8 và release hardening                                        | Product baseline `3e79db7`; baseline run `1b6f4b2`; evidence index `docs/evidence/fe-09/README.md`; operation/route ownership tiếp tục thuộc FE-1–FE-8                                                                                               |
 
 ## 12. Operation coverage ledger — 162/162
 

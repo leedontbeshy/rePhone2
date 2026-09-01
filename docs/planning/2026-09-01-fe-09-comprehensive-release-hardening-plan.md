@@ -1,7 +1,7 @@
 # FE-09 — Kế hoạch hoàn thiện toàn diện frontend và release hardening
 
-> Trạng thái tài liệu: **PLANNED**  
-> Trạng thái phase trong coverage manifest: **NOT STARTED**  
+> Trạng thái tài liệu: **ACTIVE**<br>
+> Trạng thái phase trong coverage manifest: **IN PROGRESS**<br>
 > Ngày khóa phạm vi: **01/09/2026**  
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
