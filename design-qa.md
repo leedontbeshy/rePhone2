@@ -427,15 +427,15 @@ scale về cùng khung 1440 × 1024 cho bước so sánh cuối.
 
 ## Kết quả theo rubric
 
-| Bề mặt | Kết quả |
-| --- | --- |
-| Bố cục và phân cấp | Dải tổng quan, sản phẩm, khách hàng, timeline, action rail và tài chính đúng thứ tự của phương án 1. Rail sticky trên desktop, chuyển lên trước main ở màn hẹp. |
-| Typography và khoảng cách | Không còn nhãn/chip bị cắt; mã đơn desktop không xuống dòng; panel dùng cùng token chữ và khoảng cách của rePhone. |
-| Màu và trạng thái | Dùng token brand/surface hiện có; chip trạng thái giữ tone success/warning/danger từ projection, không hiển thị enum thô. |
-| Hình ảnh và icon | DTO đơn hàng không có URL ảnh sản phẩm. Bản triển khai dùng `DeviceMobileIcon` trung tính từ Phosphor, không tự dựng hoặc gán sai ảnh máy. |
-| Tương tác | Action chỉ lấy từ `availableActions`; biểu mẫu dùng disclosure native, đóng mặc định, mở/đóng được và giữ nguyên validation/submit hiện có. |
-| Responsive | Desktop 1440 × 1024 và mobile 390 × 844 không chồng lấn hay cắt control; timeline ngang tự chuyển dọc dưới 48 rem. |
-| Accessibility | Một `h1`; trạng thái có chữ và màu; timeline là `ol`; thông tin là `dl/dt/dd`; disclosure dùng `details/summary`; focus-visible và vùng bấm tối thiểu được giữ. |
+| Bề mặt                    | Kết quả                                                                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bố cục và phân cấp        | Dải tổng quan, sản phẩm, khách hàng, timeline, action rail và tài chính đúng thứ tự của phương án 1. Rail sticky trên desktop, chuyển lên trước main ở màn hẹp. |
+| Typography và khoảng cách | Không còn nhãn/chip bị cắt; mã đơn desktop không xuống dòng; panel dùng cùng token chữ và khoảng cách của rePhone.                                              |
+| Màu và trạng thái         | Dùng token brand/surface hiện có; chip trạng thái giữ tone success/warning/danger từ projection, không hiển thị enum thô.                                       |
+| Hình ảnh và icon          | DTO đơn hàng không có URL ảnh sản phẩm. Bản triển khai dùng `DeviceMobileIcon` trung tính từ Phosphor, không tự dựng hoặc gán sai ảnh máy.                      |
+| Tương tác                 | Action chỉ lấy từ `availableActions`; biểu mẫu dùng disclosure native, đóng mặc định, mở/đóng được và giữ nguyên validation/submit hiện có.                     |
+| Responsive                | Desktop 1440 × 1024 và mobile 390 × 844 không chồng lấn hay cắt control; timeline ngang tự chuyển dọc dưới 48 rem.                                              |
+| Accessibility             | Một `h1`; trạng thái có chữ và màu; timeline là `ol`; thông tin là `dl/dt/dd`; disclosure dùng `details/summary`; focus-visible và vùng bấm tối thiểu được giữ. |
 
 ## Sai khác có chủ đích so với ảnh chuẩn
 

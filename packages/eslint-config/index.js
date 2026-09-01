@@ -7,6 +7,7 @@ export function createConfig({ tsconfigRootDir }) {
       ignores: [
         '**/node_modules/**',
         '**/.next/**',
+        '**/.local/**',
         '**/.turbo/**',
         '**/dist/**',
         '**/coverage/**',
@@ -40,6 +41,12 @@ export function createConfig({ tsconfigRootDir }) {
     {
       files: ['**/*.js', '**/*.mjs'],
       ...tseslint.configs.disableTypeChecked,
+      languageOptions: {
+        ...tseslint.configs.disableTypeChecked.languageOptions,
+        globals: {
+          URL: 'readonly',
+        },
+      },
     },
   );
 }
