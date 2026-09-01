@@ -90,6 +90,10 @@
   grid-template-columns: minmax(10rem, 0.6fr) minmax(0, 1.4fr);
 }
 
+.fieldGrid > * {
+  min-block-size: 6.75rem;
+}
+
 .formActions {
   align-items: center;
   border-top: var(--border-default);

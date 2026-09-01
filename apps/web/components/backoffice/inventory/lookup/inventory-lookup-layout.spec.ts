@@ -10,5 +10,8 @@ describe('inventory lookup form layout', () => {
     expect(stylesheet).toContain(`.fieldGrid {
   align-items: start;
 `);
+    expect(stylesheet).toContain(`.fieldGrid > * {
+  min-block-size: 6.75rem;
+}`);
   });
 });
