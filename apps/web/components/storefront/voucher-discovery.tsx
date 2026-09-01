@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import type { PublicVoucher, PublicVoucherListResponse } from '@/lib/public-voucher-api';
 import { Price, StatusChip } from '@/components/ui';
@@ -12,38 +12,114 @@ interface VoucherDiscoveryProps {
   readonly page: number;
 }
 
+interface VoucherResponseState {
+  readonly ownerId: string | null;
+  readonly page: number;
+  readonly response: PublicVoucherListResponse | null;
+}
+
 export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProps) {
   const { client, status, user } = useAuth();
-  const [response, setResponse] = useState(initialResponse);
+  const [responseState, setResponseState] = useState<VoucherResponseState>({
+    ownerId: null,
+    page,
+    response: initialResponse,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialResponse === null);
+  const requestGeneration = useRef(0);
+  const activeController = useRef<AbortController | null>(null);
+  const customerId = status === 'authenticated' && user?.role === 'CUSTOMER' ? user.id : null;
 
   const load = useCallback(async () => {
-    if (status === 'loading') return;
+    if (status === 'loading') return false;
+    const generation = ++requestGeneration.current;
+    activeController.current?.abort();
+    const controller = new AbortController();
+    activeController.current = controller;
+    const ownerId = status === 'authenticated' && user?.role === 'CUSTOMER' ? user.id : null;
     setError(false);
     setLoading(true);
-    const result = await client.GET('/api/v1/vouchers', {
-      params: { query: { page, pageSize: 12 } },
-    });
-    if (result.data === undefined) {
-      setError(true);
-      setLoading(false);
-      return;
+    try {
+      const result = await client.GET('/api/v1/vouchers', {
+        params: { query: { page, pageSize: 12 } },
+        signal: controller.signal,
+      });
+      if (requestGeneration.current !== generation || controller.signal.aborted) return true;
+      if (result.data === undefined) {
+        setError(true);
+        return true;
+      }
+      setResponseState({ ownerId, page, response: result.data });
+      setError(false);
+    } catch (caught) {
+      if (
+        requestGeneration.current === generation &&
+        !controller.signal.aborted &&
+        !isAbortError(caught)
+      ) {
+        setError(true);
+      }
+    } finally {
+      if (requestGeneration.current === generation) {
+        if (activeController.current === controller) activeController.current = null;
+        setLoading(false);
+      }
     }
-    setResponse(result.data);
-    setError(false);
+    return true;
+  }, [client, page, status, user?.id, user?.role]);
+
+  useEffect(() => {
+    requestGeneration.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
+    setResponseState({ ownerId: null, page, response: initialResponse });
+    setError(initialResponse === null);
     setLoading(false);
-  }, [client, page, status, user?.id]);
+  }, [initialResponse, page]);
+
+  useEffect(() => {
+    requestGeneration.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
+    setLoading(false);
+    if (status === 'anonymous') setError(initialResponse === null);
+  }, [initialResponse, status, user?.id]);
 
   useEffect(() => {
     if (status === 'authenticated') void load();
     if (status === 'anonymous' && initialResponse === null) void load();
   }, [initialResponse, load, status]);
 
+  useEffect(
+    () => () => {
+      requestGeneration.current += 1;
+      activeController.current?.abort();
+    },
+    [],
+  );
+
+  const response = voucherResponseForSession(responseState, {
+    customerId,
+    initialResponse,
+    page,
+  });
+  const effectiveError = voucherErrorForPage({
+    error,
+    initialResponse,
+    page,
+    responsePage: responseState.page,
+  });
   const vouchers = response?.data ?? [];
   const pagination = response?.meta.pagination;
   const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
-  const view = voucherDiscoveryView({ error, hasResponse: response !== null, loading });
+  const accountResponseReady =
+    isCustomer && responseState.ownerId === customerId && responseState.page === page;
+  const view = voucherDiscoveryView({
+    error: effectiveError,
+    hasResponse: response !== null,
+    loading,
+  });
   const reloadHref = page > 1 ? '/vouchers?page=' + String(page) : '/vouchers';
 
   return (
@@ -59,7 +135,7 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
 
       {isCustomer ? (
         <aside className={styles.accountNote}>
-          Bạn đang thấy cả ưu đãi công khai và ưu đãi dành cho tài khoản.
+          {voucherAccountNote({ accountResponseReady, error: effectiveError })}
         </aside>
       ) : status === 'anonymous' ? (
         <aside className={styles.accountNote}>
@@ -82,6 +158,7 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
           <Link
             href={reloadHref}
             onClick={(event) => {
+              if (!canRetryVouchersInPlace(status)) return;
               event.preventDefault();
               void load();
             }}
@@ -126,17 +203,65 @@ export function VoucherDiscovery({ initialResponse, page }: VoucherDiscoveryProp
   );
 }
 
+export function canRetryVouchersInPlace(status: 'anonymous' | 'authenticated' | 'loading') {
+  return status !== 'loading';
+}
+
+export function voucherResponseForSession(
+  state: VoucherResponseState,
+  current: Readonly<{
+    customerId: string | null;
+    initialResponse: PublicVoucherListResponse | null;
+    page: number;
+  }>,
+): PublicVoucherListResponse | null {
+  if (state.page !== current.page) return current.initialResponse;
+  if (state.ownerId !== null && state.ownerId !== current.customerId) {
+    return current.initialResponse;
+  }
+  return state.response;
+}
+
+export function voucherErrorForPage({
+  error,
+  initialResponse,
+  page,
+  responsePage,
+}: Readonly<{
+  error: boolean;
+  initialResponse: PublicVoucherListResponse | null;
+  page: number;
+  responsePage: number;
+}>): boolean {
+  return error || (responsePage !== page && initialResponse === null);
+}
+
+export function voucherAccountNote({
+  accountResponseReady,
+  error,
+}: Readonly<{ accountResponseReady: boolean; error: boolean }>): string {
+  if (accountResponseReady) {
+    return 'Danh sách đã bao gồm ưu đãi dành riêng cho tài khoản nếu có.';
+  }
+  if (error) {
+    return 'Chưa kiểm tra được ưu đãi riêng của tài khoản; các ưu đãi công khai vẫn được giữ lại.';
+  }
+  return 'Đang kiểm tra thêm ưu đãi dành riêng cho tài khoản.';
+}
+
 export function voucherDiscoveryView({
   error,
   hasResponse,
   loading,
 }: Readonly<{ error: boolean; hasResponse: boolean; loading: boolean }>):
-  | 'error'
-  | 'loading'
-  | 'ready' {
+  'error' | 'loading' | 'ready' {
   if (loading && !hasResponse) return 'loading';
   if (error) return 'error';
   return 'ready';
+}
+
+function isAbortError(value: unknown): boolean {
+  return value instanceof DOMException && value.name === 'AbortError';
 }
 
 function VoucherCard({ voucher }: Readonly<{ voucher: PublicVoucher }>) {
