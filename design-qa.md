@@ -393,3 +393,65 @@ Ngày kiểm tra: 2026-08-29
 - Kiểm tra khoảng trắng của thay đổi: đạt.
 
 final result: passed
+
+---
+
+# Design QA — Làm rõ chi tiết đơn hàng backoffice
+
+Ngày kiểm tra: 2026-09-01
+
+Route: `/backoffice/orders/[id]`
+
+Ảnh chuẩn: `docs/assets/ui/fe-08/order-detail-refinement/reference.png`
+
+## Bằng chứng trực quan
+
+- Bản triển khai desktop: `docs/assets/ui/fe-08/order-detail-refinement/implementation-1440.png`.
+- So sánh ảnh chuẩn và bản triển khai trong cùng một khung: `docs/assets/ui/fe-08/order-detail-refinement/comparison.png`.
+- Trạng thái mở biểu mẫu xử lý: `docs/assets/ui/fe-08/order-detail-refinement/action-open-1440.png`.
+- Bản responsive 390 × 844: `docs/assets/ui/fe-08/order-detail-refinement/mobile-390.png`.
+
+Ảnh chuẩn 1487 × 1058 được đặt cạnh ảnh chụp từ viewport kiểm tra 1440 × 1024 và
+scale về cùng khung 1440 × 1024 cho bước so sánh cuối.
+
+## Các vòng sửa sau đối chiếu
+
+1. Dải tổng quan ban đầu làm mã đơn và chip trạng thái xuống dòng. Đã giảm padding theo
+   token, phân bổ lại cột và khóa chip trạng thái trên một dòng.
+2. Nội dung chính ban đầu thấp hơn ảnh chuẩn vì panel còn quá thoáng. Đã giảm khoảng cách
+   header cục bộ, nới cột nội dung và giữ rail ở mật độ vận hành.
+3. Nhãn mở biểu mẫu trong rail bị xuống dòng. Đã dùng cỡ label, giảm gap/padding và giữ
+   vùng bấm tối thiểu 44 px.
+4. Ở 390 px, dải tổng quan một cột đẩy hành động xuống quá sâu. Đã dùng bố cục hai cột với
+   mã đơn chiếm toàn hàng; rail hành động xuất hiện trước phần nội dung dài.
+
+## Kết quả theo rubric
+
+| Bề mặt | Kết quả |
+| --- | --- |
+| Bố cục và phân cấp | Dải tổng quan, sản phẩm, khách hàng, timeline, action rail và tài chính đúng thứ tự của phương án 1. Rail sticky trên desktop, chuyển lên trước main ở màn hẹp. |
+| Typography và khoảng cách | Không còn nhãn/chip bị cắt; mã đơn desktop không xuống dòng; panel dùng cùng token chữ và khoảng cách của rePhone. |
+| Màu và trạng thái | Dùng token brand/surface hiện có; chip trạng thái giữ tone success/warning/danger từ projection, không hiển thị enum thô. |
+| Hình ảnh và icon | DTO đơn hàng không có URL ảnh sản phẩm. Bản triển khai dùng `DeviceMobileIcon` trung tính từ Phosphor, không tự dựng hoặc gán sai ảnh máy. |
+| Tương tác | Action chỉ lấy từ `availableActions`; biểu mẫu dùng disclosure native, đóng mặc định, mở/đóng được và giữ nguyên validation/submit hiện có. |
+| Responsive | Desktop 1440 × 1024 và mobile 390 × 844 không chồng lấn hay cắt control; timeline ngang tự chuyển dọc dưới 48 rem. |
+| Accessibility | Một `h1`; trạng thái có chữ và màu; timeline là `ol`; thông tin là `dl/dt/dd`; disclosure dùng `details/summary`; focus-visible và vùng bấm tối thiểu được giữ. |
+
+## Sai khác có chủ đích so với ảnh chuẩn
+
+- Không dùng ảnh iPhone trong panel sản phẩm vì dữ liệu authoritative hiện tại không cung
+  cấp media cho order item. Dùng icon trung tính để tránh trình bày sai chiếc máy.
+- Giữ sidebar, breadcrumb, token và primitive hiện hành của backoffice thay vì thay shell
+  theo ảnh tạo mẫu.
+
+## Kiểm tra mã nguồn
+
+- ESLint: đạt.
+- TypeScript: đạt.
+- Next.js production build: đạt.
+- Vitest tập trung: 4 file, 33 test đạt.
+- `git diff --check`: đạt.
+
+Không còn finding P0, P1 hoặc P2 trong phạm vi màn chi tiết đơn hàng.
+
+final result: passed
