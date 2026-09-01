@@ -946,6 +946,14 @@
   cursor: pointer;
 }
 
+.uploadLabel:has(+ .hiddenFileInput:focus-visible) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+
 .uploadHelp {
   margin: 0;
   color: var(--color-muted);

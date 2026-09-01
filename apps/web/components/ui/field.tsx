@@ -5,6 +5,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
+import { forwardRef } from 'react';
 import { classNames } from './class-names';
 import styles from './primitives.module.css';
 
@@ -126,6 +127,85 @@ export function Input({
     </Field>
   );
 }
+
+export interface FilePickerProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'value'
+> {
+  buttonLabel?: ReactNode;
+  containerClassName?: string;
+  emptyLabel?: ReactNode;
+  error?: ReactNode;
+  hint?: ReactNode;
+  id: string;
+  label: ReactNode;
+  selectedFileName?: string | null;
+}
+
+export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function FilePicker(
+  {
+    buttonLabel = 'Chọn tệp',
+    className,
+    containerClassName,
+    disabled,
+    emptyLabel = 'Chưa chọn tệp',
+    error,
+    hint,
+    id,
+    label,
+    required,
+    selectedFileName,
+    ...props
+  },
+  ref,
+) {
+  const messages = fieldMessages(id, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
+  const hasSelection = Boolean(selectedFileName?.trim());
+
+  return (
+    <Field
+      className={containerClassName}
+      error={error}
+      errorId={messages.errorId}
+      hint={hint}
+      hintId={messages.hintId}
+      id={id}
+      label={label}
+      required={required}
+    >
+      <div
+        className={classNames(styles.filePicker, className)}
+        data-disabled={disabled ? 'true' : undefined}
+        data-invalid={error ? 'true' : undefined}
+      >
+        <input
+          {...props}
+          ref={ref}
+          aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
+          aria-invalid={error ? true : undefined}
+          className={styles.fileInput}
+          disabled={disabled}
+          id={id}
+          required={required}
+          type="file"
+        />
+        <span aria-hidden="true" className={styles.filePickerAction}>
+          {buttonLabel}
+        </span>
+        <span
+          aria-atomic="true"
+          aria-live="polite"
+          className={styles.filePickerName}
+          data-empty={hasSelection ? undefined : 'true'}
+          title={typeof selectedFileName === 'string' ? selectedFileName : undefined}
+        >
+          {hasSelection ? selectedFileName : emptyLabel}
+        </span>
+      </div>
+    </Field>
+  );
+});
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   containerClassName?: string;

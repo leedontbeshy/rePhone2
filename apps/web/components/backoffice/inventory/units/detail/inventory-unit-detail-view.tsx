@@ -19,6 +19,7 @@ import {
 } from '@/components/backoffice';
 import {
   Button,
+  FilePicker,
   InlineAlert,
   Input,
   Select,
@@ -370,6 +371,7 @@ function MediaSection({
 }>) {
   const [selectedId, setSelectedId] = useState<string | null>(unit.media[0]?.id ?? null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [altText, setAltText] = useState('');
   const [sortOrder, setSortOrder] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -386,8 +388,9 @@ function MediaSection({
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setFileError(null);
     if (file === null) {
-      setFormError('Chọn một ảnh trước khi tải lên.');
+      setFileError('Chọn một ảnh trước khi tải lên.');
       return;
     }
     const normalizedOrder = sortOrder.trim();
@@ -403,6 +406,7 @@ function MediaSection({
     });
     if (succeeded) {
       setFile(null);
+      setFileError(null);
       setAltText('');
       setSortOrder('');
       setFileInputKey((current) => current + 1);
@@ -452,17 +456,22 @@ function MediaSection({
       </div>
 
       {canUpload ? (
-        <form className={styles.uploadForm} onSubmit={(event) => void submit(event)}>
-          <Input
+        <form className={styles.uploadForm} noValidate onSubmit={(event) => void submit(event)}>
+          <FilePicker
             accept="image/jpeg,image/png,image/webp"
+            buttonLabel="Chọn ảnh"
             disabled={busy}
+            emptyLabel="Chưa chọn ảnh"
+            error={fileError}
+            hint="Dùng ảnh JPG, PNG hoặc WebP; tối đa 8 MB."
             id="unit-media-file"
             key={fileInputKey}
-            label="Chọn ảnh"
+            label="Ảnh tải lên"
             required
-            type="file"
+            selectedFileName={file?.name ?? null}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
               setFile(event.target.files?.[0] ?? null);
+              setFileError(null);
               setFormError(null);
             }}
           />

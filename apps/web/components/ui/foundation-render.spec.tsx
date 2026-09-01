@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Button } from './button';
-import { Input, RadioCard, RadioGroup } from './field';
+import { FilePicker, Input, RadioCard, RadioGroup } from './field';
 import { ErrorSummary } from './feedback';
 import { Link } from './link';
 
@@ -44,6 +44,31 @@ describe('frontend primitive accessibility contracts', () => {
     expect(markup).toContain('<legend');
     expect(markup).toContain('aria-describedby="fulfillment-error"');
     expect(markup).toContain('aria-invalid="true"');
+  });
+
+  it('gives custom file pickers a native focus target and descriptive state', () => {
+    const markup = renderToStaticMarkup(
+      <FilePicker
+        accept="image/jpeg,image/png"
+        aria-describedby="upload-context"
+        error="Ảnh không hợp lệ"
+        hint="Dùng ảnh JPG hoặc PNG"
+        id="product-image"
+        label="Ảnh sản phẩm"
+        required
+        selectedFileName="iphone-15-mat-truoc.png"
+      />,
+    );
+
+    expect(markup).toContain('type="file"');
+    expect(markup).toContain('accept="image/jpeg,image/png"');
+    expect(markup).toContain(
+      'aria-describedby="upload-context product-image-hint product-image-error"',
+    );
+    expect(markup).toContain('aria-invalid="true"');
+    expect(markup).toContain('required=""');
+    expect(markup).toContain('iphone-15-mat-truoc.png');
+    expect(markup).toContain('aria-live="polite"');
   });
 
   it('keeps error summaries programmatically focusable and links to fields', () => {

@@ -158,6 +158,96 @@ select.control {
   border-color: var(--color-danger);
 }
 
+.filePicker {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.filePicker:hover:not([data-disabled='true']) {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.filePicker:has(.fileInput:focus-visible) {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+
+.filePicker[data-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.filePicker[data-disabled='true'] {
+  border-color: var(--color-border);
+  background: var(--color-disabled-surface);
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.fileInput {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileInput:disabled {
+  cursor: not-allowed;
+}
+
+.filePickerAction {
+  display: inline-flex;
+  min-height: calc(var(--control-height) - 2px);
+  align-items: center;
+  padding-inline: var(--space-4);
+  border-inline-end: var(--border-default);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
+  white-space: nowrap;
+}
+
+.filePickerName {
+  min-width: 0;
+  overflow: hidden;
+  padding-inline: var(--space-3);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePickerName[data-empty='true'] {
+  color: var(--color-muted);
+}
+
+.filePicker[data-disabled='true'] .filePickerAction,
+.filePicker[data-disabled='true'] .filePickerName {
+  color: var(--color-disabled-text);
+  background: transparent;
+}
+
 .textarea {
   min-height: 7.5rem;
   resize: vertical;
@@ -416,7 +506,8 @@ select.control {
 
 @media (prefers-reduced-motion: reduce) {
   .button,
-  .control {
+  .control,
+  .filePicker {
     transition: none;
   }
 
@@ -433,6 +524,7 @@ select.control {
 @media (forced-colors: active) {
   .button,
   .control,
+  .filePicker,
   .radioCard,
   .alert,
   .badge,

@@ -8,6 +8,9 @@ describe('FE-06 InventoryUnitDetailView', () => {
     const markup = render(unit());
 
     expect(markup).toContain('Hình ảnh của máy');
+    expect(markup).toContain('Ảnh tải lên');
+    expect(markup).toContain('Chưa chọn ảnh');
+    expect(markup).toContain('Dùng ảnh JPG, PNG hoặc WebP; tối đa 8 MB.');
     expect(markup).toContain('https://cdn.example.test/unit-front.webp');
     expect(markup).toContain('***********1111');
     expect(markup).not.toContain('351111111111111');

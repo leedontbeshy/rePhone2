@@ -15,7 +15,7 @@ import {
   SafeNotFoundState,
   StatusPill,
 } from '@/components/post-purchase';
-import { Button, InlineAlert } from '@/components/ui';
+import { Button, FilePicker, InlineAlert } from '@/components/ui';
 import {
   AfterSalesCustomerError,
   cancelAfterSalesRequest,
@@ -52,6 +52,7 @@ export function AfterSalesDetail() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -106,6 +107,7 @@ export function AfterSalesDetail() {
     operationRef.current = null;
     setRetryAttachment(null);
     setFile(null);
+    setFileError(null);
     setCancelOpen(false);
     setCancelReason('');
     setCancelError(null);
@@ -174,7 +176,7 @@ export function AfterSalesDetail() {
     event.preventDefault();
     if (operationRef.current !== null) return;
     if (file === null) {
-      setError('Hãy chọn một ảnh hoặc tài liệu PDF.');
+      setFileError('Hãy chọn một ảnh hoặc tài liệu PDF.');
       return;
     }
     if ((visibleDetail?.attachments.length ?? 0) >= 5) {
@@ -183,7 +185,7 @@ export function AfterSalesDetail() {
     }
     const validation = validateAfterSalesAttachment(file);
     if (validation) {
-      setError(validation);
+      setFileError(validation);
       return;
     }
     const generation = generationRef.current;
@@ -192,11 +194,13 @@ export function AfterSalesDetail() {
     operationRef.current = operation;
     setBusy('upload');
     setError(null);
+    setFileError(null);
     setNotice(null);
     try {
       await uploadAfterSalesAttachment(client, requestNumber, file, token);
       if (generationRef.current !== generation) return;
       setFile(null);
+      setFileError(null);
       if (fileRef.current) fileRef.current.value = '';
       await loadDetail();
       if (generationRef.current !== generation) return;
@@ -444,23 +448,24 @@ export function AfterSalesDetail() {
                 </div>
                 {detail.availableActions.includes('UPLOAD_ATTACHMENT') &&
                 detail.attachments.length < 5 ? (
-                  <form className={styles.form} onSubmit={(event) => void upload(event)}>
-                    <label className={styles.field}>
-                      Thêm ảnh hoặc tài liệu
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        required
-                        accept="image/jpeg,image/png,image/webp,application/pdf"
-                        disabled={busy !== null}
-                        onChange={(event) => {
-                          setFile(event.target.files?.[0] ?? null);
-                        }}
-                      />
-                    </label>
-                    <p className={styles.attachmentHint}>
-                      Mỗi lần một tệp, tối đa 10 MB; tối đa 5 tệp.
-                    </p>
+                  <form className={styles.form} noValidate onSubmit={(event) => void upload(event)}>
+                    <FilePicker
+                      ref={fileRef}
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      buttonLabel="Chọn tệp"
+                      disabled={busy !== null}
+                      emptyLabel="Chưa chọn ảnh hoặc tài liệu"
+                      error={fileError}
+                      hint="Mỗi lần một tệp, tối đa 10 MB; tối đa 5 tệp."
+                      id="after-sales-attachment"
+                      label="Thêm ảnh hoặc tài liệu"
+                      required
+                      selectedFileName={file?.name ?? null}
+                      onChange={(event) => {
+                        setFile(event.target.files?.[0] ?? null);
+                        setFileError(null);
+                      }}
+                    />
                     <Button type="submit" loading={busy === 'upload'} loadingLabel="Đang tải tệp">
                       Thêm tệp
                     </Button>
