@@ -214,6 +214,14 @@
   object-fit: contain;
 }
 
+.summaryImage[role='img'] {
+  padding: var(--space-2);
+}
+
+.summaryImage[role='img'] > span {
+  display: none;
+}
+
 .summaryItemCopy {
   display: grid;
   min-inline-size: 0;
