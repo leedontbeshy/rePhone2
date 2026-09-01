@@ -27,9 +27,18 @@ const browserRoot = join(repositoryRoot, 'tests/browser');
 describe('FE-09 browser ownership contract', () => {
   it('keeps every browser spec and test registered exactly once', () => {
     const discovery = discoverBrowserTests();
-    const expectedSpecFiles = Object.values(FRONTEND_BROWSER_SUITES)
-      .map(({ specFile }) => specFile)
-      .sort();
+    const expectedSpecFiles = [
+      ...new Set(
+        Object.values(FRONTEND_BROWSER_SUITES).flatMap((suite) => [
+          suite.specFile,
+          ...Object.values(
+            suite.tests as Readonly<Record<string, FrontendBrowserTestDefinition>>,
+          ).flatMap((definition) =>
+            definition.specFile === undefined ? [] : [definition.specFile],
+          ),
+        ]),
+      ),
+    ].sort();
     const expectedReferences = registeredTestReferences();
 
     expect(discovery.disallowedCalls).toEqual([]);
@@ -248,11 +257,13 @@ function readPlaywrightTestIdentifiers(sourceFile: ts.SourceFile): ReadonlySet<s
 
 function registeredTestReferences(): BrowserTestReference[] {
   return Object.entries(FRONTEND_BROWSER_SUITES).flatMap(([suiteId, suite]) =>
-    Object.keys(suite.tests).map((testId) => ({
-      specFile: suite.specFile,
-      suiteId,
-      testId,
-    })),
+    Object.entries(suite.tests as Readonly<Record<string, FrontendBrowserTestDefinition>>).map(
+      ([testId, definition]) => ({
+        specFile: definition.specFile ?? suite.specFile,
+        suiteId,
+        testId,
+      }),
+    ),
   );
 }
 

@@ -13,6 +13,8 @@ export interface FrontendBrowserTestDefinition {
   readonly ownsRoutes: readonly string[];
   readonly coversRoutes: readonly string[];
   readonly ownsStates: readonly FrontendRequiredState[];
+  /** Optional shard file for large suites; defaults to the suite's primary spec file. */
+  readonly specFile?: string;
 }
 
 export interface FrontendBrowserSuiteDefinition {
@@ -540,7 +542,84 @@ export const FRONTEND_BROWSER_SUITES = {
           '/backoffice/warranty-policies',
         ],
         coversRoutes: [],
-        ownsStates: ['loading', 'empty', 'error', 'success'],
+        ownsStates: ['empty', 'success'],
+      },
+      'order-pickup-lifecycle': {
+        title:
+          'confirms, prepares, extends, readies and completes a pickup order without duplicate commands',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/orders', '/backoffice/orders/[id]'],
+        ownsStates: ['conflict', 'pending', 'success'],
+      },
+      'order-shipping-lifecycle': {
+        title:
+          'creates and advances a shipment through hand-over, failure, return and delivery projections',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/orders/[id]'],
+        ownsStates: ['pending', 'success'],
+      },
+      'queue-local-refresh': {
+        title:
+          'keeps the loaded order queue, scroll position and document while a filter refreshes locally',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/orders'],
+        ownsStates: ['loading', 'success'],
+      },
+      'payment-review-evidence': {
+        title:
+          'reviews payment evidence and verifies or rejects only from the latest authoritative projection',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/payments', '/backoffice/payments/[id]'],
+        ownsStates: ['conflict', 'pending', 'provider-error', 'success'],
+        specFile: 'operations-finance-ui.spec.ts',
+      },
+      'refund-processing-lifecycle': {
+        title:
+          'processes cash and bank-transfer refunds with validated evidence and duplicate-submit protection',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/refunds', '/backoffice/refunds/[id]'],
+        ownsStates: ['pending', 'success', 'upload-progress'],
+        specFile: 'operations-finance-ui.spec.ts',
+      },
+      'after-sales-intake-decision': {
+        title:
+          'assigns, receives, inspects and decides an after-sales request from authoritative actions',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/after-sales', '/backoffice/after-sales/[id]'],
+        ownsStates: ['conflict', 'pending', 'success'],
+        specFile: 'operations-after-sales-ui.spec.ts',
+      },
+      'after-sales-resolution-matrix': {
+        title:
+          'resolves after-sales requests through repaired, replaced, refunded, returned and administrator-only outcomes',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/after-sales/[id]'],
+        ownsStates: ['permission', 'pending', 'success'],
+        specFile: 'operations-after-sales-ui.spec.ts',
+      },
+      'after-sales-evidence-refresh': {
+        title:
+          'opens each after-sales attachment with a fresh safe URL and recovers provider failures locally',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/after-sales/[id]'],
+        ownsStates: ['error', 'pending', 'provider-error', 'success'],
+        specFile: 'operations-after-sales-ui.spec.ts',
+      },
+      'warranty-void-boundary': {
+        title:
+          'keeps warranty records role-safe and voids them only after administrator confirmation',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/warranties', '/backoffice/warranties/[id]'],
+        ownsStates: ['conflict', 'permission', 'pending', 'success'],
+        specFile: 'operations-warranty-ui.spec.ts',
+      },
+      'warranty-policy-lifecycle': {
+        title:
+          'creates, edits, activates, deactivates and archives warranty policies with authoritative conflict recovery',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/warranty-policies'],
+        ownsStates: ['conflict', 'pending', 'success'],
+        specFile: 'operations-warranty-ui.spec.ts',
       },
     },
   },
