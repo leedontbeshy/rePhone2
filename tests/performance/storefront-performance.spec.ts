@@ -5,9 +5,14 @@ import { installDeterministicPublicMedia } from '../browser/support/deterministi
 
 const RUN_COUNT = 3;
 const VIEWPORT = { width: 390, height: 844 } as const;
+const API_BASE_URL = 'http://127.0.0.1:4001/api/v1';
+const WEB_ORIGIN = 'http://localhost:3001';
+const PERFORMANCE_UNIT_CODE = 'IP14P-128-001';
 const ROUTES = [
   { name: 'model-detail', path: '/products/iphone-14-pro' },
   { name: 'exact-unit-detail', path: '/products/iphone-14-pro/units/IP14P-128-001' },
+  { name: 'cart', path: '/cart', guestCart: true, readyText: `Mã máy: ${PERFORMANCE_UNIT_CODE}` },
+  { name: 'checkout', path: '/checkout', guestCart: true, readyHeading: 'Hoàn tất đơn hàng' },
 ] as const;
 const THRESHOLDS = {
   lcpMs: 2_500,
@@ -54,11 +59,11 @@ test('storefront production performance budgets', async ({ browser }) => {
     passed: boolean;
   }> = [];
   for (const route of ROUTES) {
-    await measureRoute(browser, route.path, false);
+    await measureRoute(browser, route, false);
 
     const samples: Sample[] = [];
     for (let run = 0; run < RUN_COUNT; run += 1) {
-      samples.push(await measureRoute(browser, route.path, true));
+      samples.push(await measureRoute(browser, route, true));
     }
 
     const medians = summarize(samples);
@@ -110,14 +115,25 @@ test('storefront production performance budgets', async ({ browser }) => {
   }
 });
 
-async function measureRoute(browser: Browser, path: string, collect: boolean): Promise<Sample> {
+async function measureRoute(
+  browser: Browser,
+  route: (typeof ROUTES)[number],
+  collect: boolean,
+): Promise<Sample> {
   const context = await browser.newContext({ viewport: VIEWPORT });
   try {
+    if ('guestCart' in route) await prepareGuestCart(context);
     await installDeterministicPublicMedia(context);
     await installMetricObservers(context);
     const page = await context.newPage();
     await applyFixedProfile(context, page);
-    await page.goto(path, { waitUntil: 'load' });
+    await page.goto(route.path, { waitUntil: 'load' });
+    if ('readyHeading' in route) {
+      await expect(page.getByRole('heading', { name: route.readyHeading })).toBeVisible();
+    }
+    if ('readyText' in route) {
+      await expect(page.getByText(route.readyText, { exact: true })).toBeVisible();
+    }
     await page.evaluate(async () => {
       await document.fonts.ready;
     });
@@ -127,6 +143,19 @@ async function measureRoute(browser: Browser, path: string, collect: boolean): P
     return await readSample(page, interactionProxyMs);
   } finally {
     await context.close();
+  }
+}
+
+async function prepareGuestCart(context: BrowserContext): Promise<void> {
+  const response = await context.request.post(`${API_BASE_URL}/cart/items`, {
+    data: { itemType: 'IPHONE', inventoryCode: PERFORMANCE_UNIT_CODE },
+    headers: {
+      Origin: WEB_ORIGIN,
+      'X-Rephone-CSRF': '1',
+    },
+  });
+  if (!response.ok()) {
+    throw new Error(`Unable to prepare performance cart: HTTP ${String(response.status())}`);
   }
 }
 
