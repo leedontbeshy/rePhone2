@@ -66,6 +66,14 @@ export function voucherQueriesEqual(left: VoucherQuery, right: VoucherQuery): bo
   );
 }
 
+export function voucherPageWithinTotal(page: number, totalPages: number): number {
+  const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
+  const normalizedTotalPages = Number.isFinite(totalPages)
+    ? Math.max(1, Math.trunc(totalPages))
+    : 1;
+  return Math.min(normalizedPage, normalizedTotalPages);
+}
+
 export function voucherFilterDraftsEqual(
   left: VoucherFilterDraft,
   right: VoucherFilterDraft,

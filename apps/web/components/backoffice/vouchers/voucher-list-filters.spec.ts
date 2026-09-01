@@ -3,6 +3,7 @@ import {
   buildVoucherListHref,
   voucherDraftFromQuery,
   voucherFilterDraftsEqual,
+  voucherPageWithinTotal,
   voucherQueriesEqual,
   voucherQueryFromDraft,
   voucherQueryFromSearch,
@@ -60,5 +61,11 @@ describe('voucher list filters', () => {
     expect(voucherQueriesEqual(query, { ...sameQuery, page: 3 })).toBe(false);
     expect(voucherFilterDraftsEqual(draft, { ...draft })).toBe(true);
     expect(voucherFilterDraftsEqual(draft, { ...draft, q: 'phụ kiện' })).toBe(false);
+  });
+
+  it('clamps stale pages to the last authoritative page', () => {
+    expect(voucherPageWithinTotal(7, 2)).toBe(2);
+    expect(voucherPageWithinTotal(3, 0)).toBe(1);
+    expect(voucherPageWithinTotal(Number.NaN, 8)).toBe(1);
   });
 });

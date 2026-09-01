@@ -29,6 +29,7 @@ import {
   VOUCHER_LIST_PAGE_SIZE,
   voucherDraftFromQuery,
   voucherFilterDraftsEqual,
+  voucherPageWithinTotal,
   voucherQueriesEqual,
   voucherQueryFromDraft,
   voucherQueryFromSearch,
@@ -122,6 +123,19 @@ export function VoucherListView() {
     try {
       const result = await listVouchers(client, query);
       if (request !== latestRequest.current) return;
+      const authoritativePage = voucherPageWithinTotal(query.page, result.pagination.totalPages);
+      if (authoritativePage !== query.page) {
+        const correctedQuery = { ...query, page: authoritativePage };
+        setQuery(correctedQuery);
+        if (typeof window !== 'undefined') {
+          const href = buildVoucherListHref(VOUCHERS_ROOT, {
+            ...voucherDraftFromQuery(correctedQuery),
+            page: authoritativePage,
+          });
+          window.history.replaceState(window.history.state, '', href);
+        }
+        return;
+      }
       setVouchers(result.data);
       setPagination(result.pagination);
     } catch (caught: unknown) {
