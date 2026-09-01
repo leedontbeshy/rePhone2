@@ -152,12 +152,19 @@ export interface OperationsTimelineItem {
   readonly state?: 'complete' | 'current' | 'pending' | 'danger';
 }
 
+export interface OperationsTimelineProps {
+  readonly items: readonly OperationsTimelineItem[];
+  readonly label?: string;
+  readonly orientation?: 'vertical' | 'horizontal';
+}
+
 export function OperationsTimeline({
   items,
   label = 'Lịch sử xử lý',
-}: Readonly<{ items: readonly OperationsTimelineItem[]; label?: string }>) {
+  orientation = 'vertical',
+}: OperationsTimelineProps) {
   return (
-    <ol className={styles.timeline} aria-label={label}>
+    <ol className={styles.timeline} aria-label={label} data-orientation={orientation}>
       {items.map((item, index) => (
         <li data-state={item.state ?? 'complete'} key={`${item.label}:${item.at ?? String(index)}`}>
           <span className={styles.timelineMarker} aria-hidden="true">
