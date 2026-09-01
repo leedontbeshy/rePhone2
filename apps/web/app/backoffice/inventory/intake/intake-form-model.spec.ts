@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   firstInventoryIntakeErrorField,
+  inventoryIntakeProductForSelection,
+  inventoryIntakeProductSelection,
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
+  inventoryIntakeVariantIsSelectable,
   validateInventoryIntakeDraft,
   type InventoryIntakeDraft,
 } from './intake-form-model';
@@ -31,6 +34,28 @@ describe('inventory intake validation', () => {
 
     expect(validateInventoryIntakeDraft(draft)).toEqual({});
     expect(draft).toEqual(VALID_DRAFT);
+  });
+
+  it('blocks an old product variant when loading the newly selected product fails', () => {
+    const productA = {
+      id: 'product-a',
+      variants: [{ id: 'variant-a' }],
+    };
+    const switchedDraft = {
+      ...VALID_DRAFT,
+      ...inventoryIntakeProductSelection('product-b'),
+    };
+
+    const productAfterProductBFailure = inventoryIntakeProductForSelection(
+      productA,
+      switchedDraft.productId,
+    );
+    const selectableVariants = productAfterProductBFailure?.variants ?? [];
+
+    expect(switchedDraft).toMatchObject({ productId: 'product-b', variantId: '' });
+    expect(selectableVariants).toEqual([]);
+    expect(inventoryIntakeVariantIsSelectable(selectableVariants, 'variant-a')).toBe(false);
+    expect(validateInventoryIntakeDraft(switchedDraft).variantId).toBe('Hãy chọn cấu hình máy.');
   });
 
   it('returns a precise message for every invalid field', () => {

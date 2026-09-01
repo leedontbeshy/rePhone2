@@ -37,6 +37,24 @@ export interface InventoryIntakeDraft {
   readonly warrantyDaysOverride: string;
 }
 
+export function inventoryIntakeProductSelection(productId: string) {
+  return { productId, variantId: '' } as const;
+}
+
+export function inventoryIntakeProductForSelection<Product extends { readonly id: string }>(
+  product: Product | null,
+  productId: string,
+): Product | null {
+  return product?.id === productId ? product : null;
+}
+
+export function inventoryIntakeVariantIsSelectable(
+  variants: readonly { readonly id: string }[],
+  variantId: string,
+): boolean {
+  return variantId !== '' && variants.some((variant) => variant.id === variantId);
+}
+
 const MONEY_PATTERN = /^\d{1,15}$/;
 const WARRANTY_PATTERN = /^\d+$/;
 const SIM_LOCK_STATUSES = new Set(['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN']);

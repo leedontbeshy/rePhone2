@@ -32,8 +32,11 @@ import { intakeInspectionHref } from '../../../../lib/inventory-workflow-routes'
 import {
   INTAKE_FIELD_ORDER,
   firstInventoryIntakeErrorField,
+  inventoryIntakeProductForSelection,
+  inventoryIntakeProductSelection,
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
+  inventoryIntakeVariantIsSelectable,
   validateInventoryIntakeDraft,
   type IntakeField,
   type IntakeFieldErrors,
@@ -146,6 +149,7 @@ export function InventoryIntakeWizard() {
     if (!isStaff || unitId !== null || intake.productId === '') return;
     let active = true;
     setProductLoading(true);
+    setProduct((current) => inventoryIntakeProductForSelection(current, intake.productId));
     void client
       .GET('/api/v1/backoffice/products/{id}', {
         params: { path: { id: intake.productId } },
@@ -243,6 +247,14 @@ export function InventoryIntakeWizard() {
   function submitIntake(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationErrors = validateInventoryIntakeDraft(intake);
+    const intakeProduct = inventoryIntakeProductForSelection(product, intake.productId);
+    const selectableVariants = intakeProduct === null ? [] : sellableVariants(intakeProduct);
+    if (
+      intake.variantId !== '' &&
+      !inventoryIntakeVariantIsSelectable(selectableVariants, intake.variantId)
+    ) {
+      validationErrors.variantId = 'Cấu hình không thuộc dòng iPhone đang chọn. Hãy chọn lại.';
+    }
     if (firstInventoryIntakeErrorField(validationErrors) !== undefined) {
       applyIntakeErrors(validationErrors);
       return;
@@ -439,7 +451,8 @@ export function InventoryIntakeWizard() {
 
   if (status !== 'authenticated' || !isStaff) return null;
 
-  const variants = product === null ? [] : sellableVariants(product);
+  const selectedProduct = inventoryIntakeProductForSelection(product, intake.productId);
+  const variants = selectedProduct === null ? [] : sellableVariants(selectedProduct);
   const completedPassed =
     inspection?.status === 'COMPLETED' && inspection.overallResult === 'PASSED';
   const inspectionNeedsAttention =
@@ -537,8 +550,7 @@ export function InventoryIntakeWizard() {
                   onChange={(event) => {
                     setIntake((current) => ({
                       ...current,
-                      productId: event.target.value,
-                      variantId: '',
+                      ...inventoryIntakeProductSelection(event.target.value),
                     }));
                     clearIntakeErrors('productId', 'variantId');
                   }}
