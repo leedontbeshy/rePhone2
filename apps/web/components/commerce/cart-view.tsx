@@ -16,6 +16,7 @@ import { useCommerce, type CartItem } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, formatVnd, InlineAlert, Price, Skeleton } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
+import { createSynchronousActionLock } from '@/lib/synchronous-action-lock';
 import { cartItemHref, cartWarningLabel, isBlockingCartWarning } from './cart-wishlist-presenter';
 import styles from './cart-wishlist.module.css';
 
@@ -153,21 +154,23 @@ function CartRow({
   const [quantity, setQuantity] = useState(item.quantity);
   const [pending, setPending] = useState<'update' | 'remove' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionLock] = useState(() => createSynchronousActionLock<'row'>());
   useEffect(() => {
     setQuantity(item.quantity);
   }, [item.quantity]);
 
-  const run = async (kind: 'update' | 'remove', operation: () => Promise<void>) => {
-    setPending(kind);
-    setError(null);
-    try {
-      await operation();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Chưa thể cập nhật giỏ hàng.');
-    } finally {
-      setPending(null);
-    }
-  };
+  const run = (kind: 'update' | 'remove', operation: () => Promise<void>) =>
+    actionLock.run('row', async () => {
+      setPending(kind);
+      setError(null);
+      try {
+        await operation();
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Chưa thể cập nhật giỏ hàng.');
+      } finally {
+        setPending(null);
+      }
+    });
   const priceChanged = item.warnings.includes('PRICE_CHANGED');
   return (
     <article

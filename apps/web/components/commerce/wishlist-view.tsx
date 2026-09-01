@@ -14,6 +14,7 @@ import { useCommerce } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, InlineAlert, Price, Skeleton, StatusChip } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
+import { createSynchronousActionLock } from '@/lib/synchronous-action-lock';
 import { wishlistAccessoryQuantity } from './cart-wishlist-presenter';
 import styles from './cart-wishlist.module.css';
 
@@ -39,6 +40,7 @@ function WishlistSession() {
   const [pending, setPending] = useState<Record<string, ItemAction | undefined>>({});
   const [messages, setMessages] = useState<Record<string, ItemFeedback | undefined>>({});
   const [pageStatus, setPageStatus] = useState('');
+  const [actionLock] = useState(() => createSynchronousActionLock<string>());
   const loadSequence = useRef(0);
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -81,49 +83,50 @@ function WishlistSession() {
     };
   }, [load]);
 
-  const runAction = async (item: WishlistItem, action: ItemAction) => {
-    setPending((current) => ({ ...current, [item.id]: action }));
-    setMessages((current) => ({ ...current, [item.id]: undefined }));
-    try {
-      if (action === 'remove') {
-        const result = await client.DELETE('/api/v1/wishlist/items/{itemId}', {
-          params: { path: { itemId: item.id } },
-        });
-        if (result.response.status !== 204)
-          throw new Error('Chưa thể xóa sản phẩm khỏi danh sách.');
-        setItems((current) => current.filter((candidate) => candidate.id !== item.id));
-        setPageStatus(`Đã xóa ${item.target.productName} khỏi danh sách ưa thích.`);
-        requestAnimationFrame(() => {
-          (listHeadingRef.current ?? pageHeadingRef.current)?.focus();
-        });
-        return;
+  const runAction = (item: WishlistItem, action: ItemAction) =>
+    actionLock.run(item.id, async () => {
+      setPending((current) => ({ ...current, [item.id]: action }));
+      setMessages((current) => ({ ...current, [item.id]: undefined }));
+      try {
+        if (action === 'remove') {
+          const result = await client.DELETE('/api/v1/wishlist/items/{itemId}', {
+            params: { path: { itemId: item.id } },
+          });
+          if (result.response.status !== 204)
+            throw new Error('Chưa thể xóa sản phẩm khỏi danh sách.');
+          setItems((current) => current.filter((candidate) => candidate.id !== item.id));
+          setPageStatus(`Đã xóa ${item.target.productName} khỏi danh sách ưa thích.`);
+          requestAnimationFrame(() => {
+            (listHeadingRef.current ?? pageHeadingRef.current)?.focus();
+          });
+          return;
+        }
+        if (item.itemType === 'IPHONE') {
+          if (item.target.inventoryCode === undefined)
+            throw new Error('Chiếc máy này hiện không thể thêm vào giỏ hàng.');
+          await addIphone(item.target.inventoryCode);
+        } else {
+          await addAccessory(
+            item.target.variantId,
+            wishlistAccessoryQuantity(cart, item.target.variantId),
+          );
+        }
+        setMessages((current) => ({
+          ...current,
+          [item.id]: { text: 'Đã thêm vào giỏ hàng.', tone: 'success' },
+        }));
+      } catch (caught) {
+        setMessages((current) => ({
+          ...current,
+          [item.id]: {
+            text: caught instanceof Error ? caught.message : 'Chưa thể thực hiện thao tác này.',
+            tone: 'error',
+          },
+        }));
+      } finally {
+        setPending((current) => ({ ...current, [item.id]: undefined }));
       }
-      if (item.itemType === 'IPHONE') {
-        if (item.target.inventoryCode === undefined)
-          throw new Error('Chiếc máy này hiện không thể thêm vào giỏ hàng.');
-        await addIphone(item.target.inventoryCode);
-      } else {
-        await addAccessory(
-          item.target.variantId,
-          wishlistAccessoryQuantity(cart, item.target.variantId),
-        );
-      }
-      setMessages((current) => ({
-        ...current,
-        [item.id]: { text: 'Đã thêm vào giỏ hàng.', tone: 'success' },
-      }));
-    } catch (caught) {
-      setMessages((current) => ({
-        ...current,
-        [item.id]: {
-          text: caught instanceof Error ? caught.message : 'Chưa thể thực hiện thao tác này.',
-          tone: 'error',
-        },
-      }));
-    } finally {
-      setPending((current) => ({ ...current, [item.id]: undefined }));
-    }
-  };
+    });
 
   const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
   return (
