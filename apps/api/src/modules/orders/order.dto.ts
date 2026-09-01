@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsDefined,
   IsEmail,
   IsIn,
   IsInt,
@@ -109,6 +110,7 @@ export class CheckoutShippingAddressDto {
 
 export class CreateCheckoutRequestDto extends CheckoutPreviewRequestDto {
   @ApiProperty({ type: () => CheckoutContactDto })
+  @IsDefined()
   @ValidateNested()
   @Type(() => CheckoutContactDto)
   public contact!: CheckoutContactDto;

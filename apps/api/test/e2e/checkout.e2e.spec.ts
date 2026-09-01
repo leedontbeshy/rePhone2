@@ -40,6 +40,37 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
     await app.close();
   });
 
+  it.each([
+    ['missing', undefined],
+    ['null', null],
+  ])('rejects checkout when contact is %s', async (_case, contact) => {
+    const response = await request(server)
+      .post('/api/v1/checkouts')
+      .set(MUTATION_HEADERS)
+      .send({
+        fulfillmentType: 'PICKUP',
+        expectedCartUpdatedAt: '2026-09-02T00:00:00.000Z',
+        expectedGrandTotal: '1000000',
+        expectedDepositRequired: '0',
+        ...(contact === undefined ? {} : { contact }),
+      })
+      .expect(400);
+
+    const error = record(record(response.body)['error']);
+    const details = Array.isArray(error['details']) ? error['details'] : [];
+    expect(error['code']).toBe('VALIDATION_FAILED');
+    expect(
+      details.some(
+        (detail) =>
+          typeof detail === 'object' &&
+          detail !== null &&
+          !Array.isArray(detail) &&
+          record(detail)['field'] === 'contact' &&
+          record(detail)['code'] === 'IS_DEFINED',
+      ),
+    ).toBe(true);
+  });
+
   it('creates, replays, reads and cancels a guest shipping order without leaking token storage', async () => {
     const variant = await accessoryVariant(prisma);
     const agent = request.agent(server);
