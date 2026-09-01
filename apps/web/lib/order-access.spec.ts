@@ -55,6 +55,29 @@ describe('guest order access', () => {
     );
   });
 
+  it('fails closed without crashing when browser storage is unavailable', () => {
+    const blocked = {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+      setItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+      removeItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+    };
+
+    expect(readGuestOrderToken('RPH-1', blocked)).toBeUndefined();
+    expect(resolveGuestOrderToken('anonymous', 'RPH-1', '', blocked)).toBeUndefined();
+    expect(() => {
+      removeGuestOrderToken('RPH-1', blocked);
+    }).not.toThrow();
+    expect(resolveGuestOrderToken('anonymous', 'RPH-1', `#token=${'C'.repeat(43)}`, blocked)).toBe(
+      'C'.repeat(43),
+    );
+  });
+
   it('extracts the authoritative preview from a review-required error', () => {
     const current = { pricing: { grandTotal: '100000' } };
     expect(

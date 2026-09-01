@@ -1,5 +1,10 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { apiError, customerApiError, orderTokenStorageKey } from './order-access';
+import {
+  apiError,
+  customerApiError,
+  readGuestOrderToken,
+  removeGuestOrderToken,
+} from './order-access';
 
 export type WarrantyApiClient = ReturnType<typeof createApiClient>;
 export type WarrantyListItem = components['schemas']['WarrantyListItemDto'];
@@ -99,7 +104,7 @@ export function resolveWarrantyGuestCredential(
   }
   const normalized = orderNumber.trim().toUpperCase();
   if (!ORDER_NUMBER_PATTERN.test(normalized)) return undefined;
-  const token = storage.getItem(orderTokenStorageKey(normalized)) ?? undefined;
+  const token = readGuestOrderToken(normalized, storage);
   return token !== undefined && TOKEN_PATTERN.test(token) ? token : undefined;
 }
 
@@ -110,7 +115,7 @@ export function clearWarrantyGuestCredential(
   if (orderNumber === null || orderNumber === undefined) return;
   const normalized = orderNumber.trim().toUpperCase();
   if (!ORDER_NUMBER_PATTERN.test(normalized)) return;
-  storage.removeItem(orderTokenStorageKey(normalized));
+  removeGuestOrderToken(normalized, storage);
 }
 
 export function warrantyAccessKey(

@@ -11,26 +11,37 @@ export function captureGuestOrderToken(
 ): string | undefined {
   const token = new URLSearchParams(hash.replace(/^#/, '')).get('token') ?? undefined;
   if (token !== undefined && TOKEN_PATTERN.test(token)) {
-    storage.setItem(orderTokenStorageKey(orderNumber), token);
+    try {
+      storage.setItem(orderTokenStorageKey(orderNumber), token);
+    } catch {
+      // The fragment credential still authorizes this view when browser storage is unavailable.
+    }
     return token;
   }
-  const stored = storage.getItem(orderTokenStorageKey(orderNumber)) ?? undefined;
-  return stored !== undefined && TOKEN_PATTERN.test(stored) ? stored : undefined;
+  return readGuestOrderToken(orderNumber, storage);
 }
 
 export function readGuestOrderToken(
   orderNumber: string,
   storage: Pick<Storage, 'getItem'>,
 ): string | undefined {
-  const stored = storage.getItem(orderTokenStorageKey(orderNumber)) ?? undefined;
-  return stored !== undefined && TOKEN_PATTERN.test(stored) ? stored : undefined;
+  try {
+    const stored = storage.getItem(orderTokenStorageKey(orderNumber)) ?? undefined;
+    return stored !== undefined && TOKEN_PATTERN.test(stored) ? stored : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function removeGuestOrderToken(
   orderNumber: string,
   storage: Pick<Storage, 'removeItem'>,
 ): void {
-  storage.removeItem(orderTokenStorageKey(orderNumber));
+  try {
+    storage.removeItem(orderTokenStorageKey(orderNumber));
+  } catch {
+    // A blocked storage provider must not crash the customer route.
+  }
 }
 
 export function resolveGuestOrderToken(

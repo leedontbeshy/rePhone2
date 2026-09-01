@@ -1,5 +1,5 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { customerApiError, orderTokenStorageKey } from './order-access';
+import { customerApiError, readGuestOrderToken } from './order-access';
 
 export type AfterSalesApiClient = ReturnType<typeof createApiClient>;
 export type AfterSalesType = components['schemas']['AfterSalesDetailDto']['type'];
@@ -271,7 +271,7 @@ export function resolveGuestOrderToken(
   if (orderNumber === null || orderNumber === undefined) return undefined;
   const normalized = orderNumber.trim().toUpperCase();
   if (!ORDER_NUMBER_PATTERN.test(normalized)) return undefined;
-  const token = storage.getItem(orderTokenStorageKey(normalized)) ?? undefined;
+  const token = readGuestOrderToken(normalized, storage);
   return token !== undefined && TOKEN_PATTERN.test(token) ? token : undefined;
 }
 
