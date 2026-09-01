@@ -8,6 +8,17 @@ const databaseName = target.pathname.replace(/^\//, '');
 if (!databaseName.endsWith('_test')) {
   throw new Error(`Refusing test migration for non-test database ${databaseName || '<empty>'}`);
 }
+const normalizedHostname = target.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+const isLocalTestHost =
+  normalizedHostname === 'localhost' ||
+  normalizedHostname === '::1' ||
+  normalizedHostname === 'postgres-test' ||
+  /^127(?:\.\d{1,3}){3}$/.test(normalizedHostname);
+if (!isLocalTestHost) {
+  throw new Error(
+    `Refusing destructive test migration for remote database host ${target.hostname}`,
+  );
+}
 
 if (process.env.TEST_DATABASE_URL === undefined) {
   const compose = spawnSync(

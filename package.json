@@ -25,7 +25,7 @@
     "lint": "eslint . --max-warnings 0",
     "format:check": "prettier --check .",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test && node --test scripts/*.spec.mjs",
     "test:integration": "pnpm --filter @rephone/api test:integration",
     "test:e2e": "pnpm --filter @rephone/api test:e2e",
     "test:coverage": "pnpm --filter @rephone/api test:coverage",
@@ -75,7 +75,9 @@
     "fe:coverage": "pnpm --filter @rephone/web test:coverage-contract",
     "fe:a11y": "pnpm --filter @rephone/web test:a11y-contract",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db:prepare && pnpm test:integration && pnpm test:e2e && pnpm api:openapi && pnpm api:client && pnpm build",
-    "verify:release": "pnpm verify && pnpm test:coverage && pnpm test:browser",
+    "verify:generated": "git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts",
+    "verify:release:once": "pnpm verify && pnpm verify:generated && pnpm test:coverage && pnpm test:browser",
+    "verify:release": "node scripts/run-release-verification.mjs",
     "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"
   },
   "devDependencies": {
