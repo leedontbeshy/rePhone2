@@ -224,7 +224,7 @@ async function addUnitToCart(
 async function login(page: Page, returnTo: string): Promise<void> {
   await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
   await page.getByLabel('Email').fill(CUSTOMER.email);
-  await page.getByLabel('Mật khẩu').fill(CUSTOMER.password);
+  await page.locator('#password').fill(CUSTOMER.password);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await page.waitForURL(returnTo);
 }
