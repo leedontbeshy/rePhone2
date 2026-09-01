@@ -211,6 +211,7 @@
   display: block;
   overflow: hidden;
   color: inherit;
+  text-decoration: none;
 }
 
 .productMedia {

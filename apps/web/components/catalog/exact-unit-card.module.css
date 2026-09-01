@@ -26,6 +26,7 @@
   overflow: hidden;
   color: inherit;
   background: var(--color-surface);
+  text-decoration: none;
 }
 
 .actualUnitLabel {

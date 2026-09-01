@@ -378,7 +378,9 @@
   position: relative;
   display: block;
   padding: var(--space-4);
+  color: inherit;
   background: var(--color-surface-subtle);
+  text-decoration: none;
 }
 
 .relatedGrade {

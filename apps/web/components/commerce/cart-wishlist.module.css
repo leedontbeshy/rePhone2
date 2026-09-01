@@ -131,7 +131,9 @@
   display: block;
   overflow: hidden;
   border-radius: var(--radius-small);
+  color: inherit;
   background: var(--color-surface-subtle);
+  text-decoration: none;
 }
 .cartMedia {
   width: 100%;
