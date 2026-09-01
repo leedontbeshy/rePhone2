@@ -41,8 +41,9 @@
 
 .rowAction:focus-visible {
   border-radius: var(--radius-control);
-  outline: 3px solid var(--color-focus-ring);
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
+  box-shadow: var(--focus-ring);
 }
 
 .queueSkeleton {
@@ -227,8 +228,9 @@
 }
 
 .fileInput:focus-visible + .filePicker {
-  outline: 3px solid var(--color-focus-ring);
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
+  box-shadow: var(--focus-ring);
 }
 
 .filePicker:hover {

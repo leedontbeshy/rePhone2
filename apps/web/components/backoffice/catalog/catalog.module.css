@@ -1065,7 +1065,7 @@
 .removeAttributeButton:hover,
 .addAttributeButton:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-soft);
+  background: var(--color-brand-soft);
 }
 
 .readOnlyField {

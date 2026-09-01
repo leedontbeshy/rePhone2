@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { classNames } from './class-names';
 import { formatVnd } from './money';
@@ -35,7 +36,41 @@ describe('frontend design foundation', () => {
     expect(primitives).not.toContain('min-height: 2.5rem;');
     expect(contrastRatio('#006780', '#e2f5f9')).toBeGreaterThanOrEqual(4.5);
   });
+
+  it('does not reference undefined global color tokens without a fallback', () => {
+    const webRoot = fileURLToPath(new URL('../..', import.meta.url));
+    const tokensPath = join(webRoot, 'styles', 'tokens.css');
+    const tokenDefinitions = new Set(
+      [...readFileSync(tokensPath, 'utf8').matchAll(/(--color-[a-z0-9-]+)\s*:/g)].map(
+        ([, token]) => token,
+      ),
+    );
+    const unresolved: string[] = [];
+
+    for (const path of listCssFiles(webRoot)) {
+      const source = readFileSync(path, 'utf8');
+      for (const match of source.matchAll(/var\((--color-[a-z0-9-]+)(\s*,)?/g)) {
+        const [, token, fallbackMarker] = match;
+        if (token !== undefined && fallbackMarker === undefined && !tokenDefinitions.has(token)) {
+          unresolved.push(`${path.replaceAll('\\', '/')}: ${token}`);
+        }
+      }
+    }
+
+    expect(unresolved).toEqual([]);
+  });
 });
+
+function listCssFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') return [];
+      return listCssFiles(path);
+    }
+    return entry.name.endsWith('.css') ? [path] : [];
+  });
+}
 
 function contrastRatio(foreground: string, background: string) {
   const foregroundLuminance = relativeLuminance(foreground);
