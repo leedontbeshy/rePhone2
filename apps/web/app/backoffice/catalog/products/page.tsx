@@ -6,6 +6,7 @@ import { useAuth } from '@/app/auth-provider';
 import { CatalogVoucherShell } from '@/components/backoffice';
 import {
   CatalogListView,
+  clampCatalogPage,
   catalogListQueryFromUrl,
   type CatalogListProduct,
   type CatalogPagination,
@@ -32,6 +33,18 @@ const EMPTY_PAGINATION: CatalogPagination = {
   totalPages: 0,
 };
 
+interface CatalogSnapshot {
+  readonly ownerKey: string;
+  readonly pagination: CatalogPagination;
+  readonly products: readonly CatalogListProduct[];
+  readonly queryKey: string;
+}
+
+interface CatalogLoadError {
+  readonly message: string;
+  readonly queryKey: string;
+}
+
 export default function CatalogProductsPage() {
   return (
     <Suspense fallback={<CatalogProductsPageFallback />}>
@@ -50,11 +63,14 @@ function CatalogProductsPageContent() {
   );
   const [query, setQuery] = useState(queryFromUrl);
   const queryRef = useRef(query);
-  const [products, setProducts] = useState<CatalogListProduct[]>([]);
-  const [pagination, setPagination] = useState<CatalogPagination>(EMPTY_PAGINATION);
+  const ownerKey = status === 'authenticated' && isStaff ? user.id : null;
+  const queryKey = useMemo(() => buildCatalogListHref(query, {}), [query]);
+  const [snapshot, setSnapshot] = useState<CatalogSnapshot | null>(null);
   const [counts, setCounts] = useState<CatalogStatusCounts>(EMPTY_COUNTS);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<CatalogLoadError | null>(null);
+  const pendingBoardFocusRef = useRef(false);
+  const [focusBoardRequest, setFocusBoardRequest] = useState(0);
   const countFilters = useMemo(
     () => ({
       ...(query.q === undefined ? {} : { q: query.q }),
@@ -71,6 +87,7 @@ function CatalogProductsPageContent() {
   useEffect(() => {
     setQuery((current) => {
       if (catalogQueriesEqual(current, queryFromUrl)) return current;
+      pendingBoardFocusRef.current = false;
       queryRef.current = queryFromUrl;
       return queryFromUrl;
     });
@@ -80,6 +97,7 @@ function CatalogProductsPageContent() {
     const handleHistoryChange = () => {
       const next = catalogListQueryFromUrl(new URLSearchParams(window.location.search));
       if (catalogQueriesEqual(queryRef.current, next)) return;
+      pendingBoardFocusRef.current = false;
       queryRef.current = next;
       setQuery(next);
     };
@@ -94,6 +112,7 @@ function CatalogProductsPageContent() {
       const href = buildCatalogListHref(queryRef.current, overrides);
       const next = catalogListQueryFromUrl(new URL(href, window.location.origin).searchParams);
       if (catalogQueriesEqual(queryRef.current, next)) return;
+      pendingBoardFocusRef.current = options.focusBoard === true;
       queryRef.current = next;
       window.history[options.history === 'replace' ? 'replaceState' : 'pushState'](null, '', href);
       setQuery(next);
@@ -121,27 +140,52 @@ function CatalogProductsPageContent() {
   );
 
   useEffect(() => {
-    if (status !== 'authenticated' || !isStaff) return;
+    if (status !== 'authenticated' || !isStaff || ownerKey === null) {
+      setSnapshot(null);
+      setLoadError(null);
+      setLoading(status === 'loading');
+      return;
+    }
     const controller = new AbortController();
+    let clamping = false;
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     void listCatalogProducts(client, adapterQuery(query), { signal: controller.signal })
       .then((page) => {
         if (controller.signal.aborted) return;
-        setProducts(page.data.map(presentListProduct));
-        setPagination(page.pagination);
+        const validPage = clampCatalogPage(query.page, page.pagination.totalPages);
+        if (validPage !== query.page) {
+          clamping = true;
+          pendingBoardFocusRef.current = false;
+          updateQuery({ page: validPage }, { history: 'replace' });
+          return;
+        }
+        setSnapshot({
+          ownerKey,
+          pagination: page.pagination,
+          products: page.data.map(presentListProduct),
+          queryKey,
+        });
+        if (pendingBoardFocusRef.current) {
+          pendingBoardFocusRef.current = false;
+          setFocusBoardRequest((current) => current + 1);
+        }
       })
       .catch((caught: unknown) => {
         if (controller.signal.aborted || isAbortError(caught)) return;
-        setError(caught instanceof Error ? caught.message : 'Không thể tải danh mục sản phẩm.');
+        setLoadError({
+          message: caught instanceof Error ? caught.message : 'Không thể tải danh mục sản phẩm.',
+          queryKey,
+        });
+        pendingBoardFocusRef.current = false;
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted && !clamping) setLoading(false);
       });
     return () => {
       controller.abort();
     };
-  }, [client, isStaff, query, status]);
+  }, [client, isStaff, ownerKey, query, queryKey, status, updateQuery]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff) return;
@@ -171,24 +215,34 @@ function CatalogProductsPageContent() {
       })
       .catch((caught: unknown) => {
         if (controller.signal.aborted || isAbortError(caught)) return;
-        setError(caught instanceof Error ? caught.message : 'Không thể tải số lượng sản phẩm.');
+        // Status totals are supporting information. Keep the last successful totals instead of
+        // replacing a valid product-list state with an unrelated count error.
       });
     return () => {
       controller.abort();
     };
   }, [client, countFilters, isStaff, status]);
 
+  const ownedSnapshot = snapshot?.ownerKey === ownerKey ? snapshot : null;
+  const currentError = loadError?.queryKey === queryKey ? loadError.message : null;
+  const showingPreviousResults =
+    currentError !== null && ownedSnapshot !== null && ownedSnapshot.queryKey !== queryKey;
+  const pagination =
+    ownedSnapshot?.pagination ?? { ...EMPTY_PAGINATION, page: query.page, pageSize: query.pageSize };
+
   return (
     <CatalogVoucherShell breadcrumbs={[{ label: 'Vận hành' }, { label: 'Danh mục' }]}>
       <CatalogListView
         counts={counts}
-        error={error}
+        error={currentError}
+        focusBoardRequest={focusBoardRequest}
         loading={loading}
         pagination={pagination}
-        products={products}
+        products={ownedSnapshot?.products ?? []}
         loadSuggestions={loadSuggestions}
         onQueryChange={updateQuery}
         query={query}
+        showingPreviousResults={showingPreviousResults}
       />
     </CatalogVoucherShell>
   );

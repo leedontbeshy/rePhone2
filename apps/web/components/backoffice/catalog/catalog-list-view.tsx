@@ -62,12 +62,14 @@ export interface CatalogSuggestion {
 }
 
 export interface CatalogQueryChangeOptions {
+  readonly focusBoard?: boolean;
   readonly history?: 'push' | 'replace';
 }
 
 interface CatalogListViewProps {
   readonly counts: CatalogStatusCounts;
   readonly error?: string | null;
+  readonly focusBoardRequest?: number;
   readonly loading?: boolean;
   readonly pagination: CatalogPagination;
   readonly products: readonly CatalogListProduct[];
@@ -80,6 +82,7 @@ interface CatalogListViewProps {
     overrides: Parameters<typeof buildCatalogListHref>[1],
     options?: CatalogQueryChangeOptions,
   ) => void;
+  readonly showingPreviousResults?: boolean;
 }
 
 const STATUS_TABS: ReadonlyArray<{ label: string; status?: CatalogRecordStatus }> = [
@@ -92,13 +95,22 @@ const STATUS_TABS: ReadonlyArray<{ label: string; status?: CatalogRecordStatus }
 export function CatalogListView({
   counts,
   error = null,
+  focusBoardRequest = 0,
   loading = false,
   pagination,
   products,
   query,
   loadSuggestions,
   onQueryChange,
+  showingPreviousResults = false,
 }: CatalogListViewProps) {
+  const boardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (focusBoardRequest <= 0) return;
+    boardRef.current?.focus();
+  }, [focusBoardRequest]);
+
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
@@ -114,7 +126,10 @@ export function CatalogListView({
 
       {error === null ? null : (
         <div className={styles.errorBanner} role="alert">
-          {error}
+          <strong>{error}</strong>
+          {showingPreviousResults ? (
+            <span> Danh sách bên dưới vẫn là kết quả của bộ lọc trước đó.</span>
+          ) : null}
         </div>
       )}
 
@@ -152,6 +167,8 @@ export function CatalogListView({
         className={styles.board}
         aria-busy={loading || undefined}
         aria-label="Danh sách sản phẩm"
+        ref={boardRef}
+        tabIndex={-1}
       >
         {loading && products.length === 0 ? <CatalogListLoading /> : null}
         {loading && products.length > 0 ? (
@@ -159,7 +176,7 @@ export function CatalogListView({
             Đang cập nhật danh sách…
           </p>
         ) : null}
-        {!loading && products.length === 0 ? (
+        {!loading && error === null && products.length === 0 ? (
           <div className={styles.emptyState}>
             <h2>Chưa có sản phẩm phù hợp</h2>
             <p>Thay đổi bộ lọc hoặc thêm một sản phẩm mới.</p>
@@ -181,7 +198,7 @@ export function CatalogListView({
           const page = Number(new URL(anchor.href).searchParams.get('page') ?? '1');
           if (!Number.isSafeInteger(page) || page < 1) return;
           event.preventDefault();
-          onQueryChange({ page });
+          onQueryChange({ page }, { focusBoard: true });
         }}
       >
         <BackofficePagination
@@ -342,7 +359,9 @@ function CatalogSearchCombobox({
   const [activeIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<readonly CatalogSuggestion[]>([]);
+  const [suggestionsError, setSuggestionsError] = useState(false);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [retryRequest, setRetryRequest] = useState(0);
   const normalized = value.trim();
 
   useEffect(() => {
@@ -350,11 +369,13 @@ function CatalogSearchCombobox({
     setActiveIndex(-1);
     if (normalized.length < 2 || loadSuggestions === undefined) {
       setSuggestions([]);
+      setSuggestionsError(false);
       setSuggestionsLoading(false);
       return;
     }
 
     setSuggestions([]);
+    setSuggestionsError(false);
     setSuggestionsLoading(true);
     let controller: AbortController | undefined;
     const timer = window.setTimeout(() => {
@@ -363,10 +384,14 @@ function CatalogSearchCombobox({
         .then((items) => {
           if (requestId.current !== currentRequest || controller?.signal.aborted === true) return;
           setSuggestions(items.slice(0, 6));
+          setSuggestionsError(false);
         })
         .catch((caught: unknown) => {
           if (controller?.signal.aborted === true || isAbortError(caught)) return;
-          if (requestId.current === currentRequest) setSuggestions([]);
+          if (requestId.current === currentRequest) {
+            setSuggestions([]);
+            setSuggestionsError(true);
+          }
         })
         .finally(() => {
           if (requestId.current === currentRequest && controller?.signal.aborted !== true) {
@@ -379,7 +404,7 @@ function CatalogSearchCombobox({
       window.clearTimeout(timer);
       controller?.abort();
     };
-  }, [loadSuggestions, normalized]);
+  }, [loadSuggestions, normalized, retryRequest]);
 
   const visible = open && normalized.length >= 2;
   const activeSuggestion = activeIndex < 0 ? undefined : suggestions[activeIndex];
@@ -440,67 +465,87 @@ function CatalogSearchCombobox({
         value={value}
       />
       {visible ? (
-        <div
-          aria-busy={suggestionsLoading || undefined}
-          aria-label="Gợi ý sản phẩm"
-          aria-live="polite"
-          className={styles.suggestionPanel}
-          id={listId}
-          role="listbox"
-        >
-          {suggestionsLoading ? (
-            <div
-              aria-disabled="true"
-              aria-selected="false"
-              className={styles.suggestionMessage}
-              role="option"
-            >
-              Đang tìm sản phẩm…
-            </div>
-          ) : null}
-          {!suggestionsLoading && suggestions.length === 0 ? (
-            <div
-              aria-disabled="true"
-              aria-selected="false"
-              className={styles.suggestionMessage}
-              role="option"
-            >
-              Không tìm thấy sản phẩm phù hợp.
-            </div>
-          ) : null}
-          {suggestions.map((suggestion, index) => (
-            <Link
-              aria-selected={index === activeIndex}
-              className={styles.suggestionOption}
-              href={`/backoffice/catalog/products/${suggestion.id}`}
-              id={`${listId}-${suggestion.id}`}
-              key={suggestion.id}
-              onMouseEnter={() => {
-                setActiveIndex(index);
-              }}
-              ref={(node) => {
-                optionRefs.current[index] = node;
-              }}
-              role="option"
-              tabIndex={-1}
-            >
-              <CatalogMediaImage
-                className={styles.suggestionThumbnail}
-                fallbackLabel={`Chưa có ảnh cho ${suggestion.name}`}
-                media={suggestion.primaryMedia}
-              />
-              <span className={styles.suggestionCopy}>
-                <strong>{suggestion.name}</strong>
-                <span>
-                  {catalogProductTypeLabel(suggestion.type)}
-                  {suggestion.releaseYear === null || suggestion.releaseYear === undefined
-                    ? ''
-                    : ` · ${String(suggestion.releaseYear)}`}
+        <div className={styles.suggestionPanel}>
+          <div
+            aria-busy={suggestionsLoading || undefined}
+            aria-label="Gợi ý sản phẩm"
+            aria-live="polite"
+            id={listId}
+            role="listbox"
+          >
+            {suggestionsLoading ? (
+              <div
+                aria-disabled="true"
+                aria-selected="false"
+                className={styles.suggestionMessage}
+                role="option"
+              >
+                Đang tìm sản phẩm…
+              </div>
+            ) : null}
+            {!suggestionsLoading && !suggestionsError && suggestions.length === 0 ? (
+              <div
+                aria-disabled="true"
+                aria-selected="false"
+                className={styles.suggestionMessage}
+                role="option"
+              >
+                Không tìm thấy sản phẩm phù hợp.
+              </div>
+            ) : null}
+            {suggestions.map((suggestion, index) => (
+              <Link
+                aria-selected={index === activeIndex}
+                className={styles.suggestionOption}
+                href={`/backoffice/catalog/products/${suggestion.id}`}
+                id={`${listId}-${suggestion.id}`}
+                key={suggestion.id}
+                onMouseEnter={() => {
+                  setActiveIndex(index);
+                }}
+                ref={(node) => {
+                  optionRefs.current[index] = node;
+                }}
+                role="option"
+                tabIndex={-1}
+              >
+                <CatalogMediaImage
+                  className={styles.suggestionThumbnail}
+                  fallbackLabel={`Chưa có ảnh cho ${suggestion.name}`}
+                  media={suggestion.primaryMedia}
+                />
+                <span className={styles.suggestionCopy}>
+                  <strong>{suggestion.name}</strong>
+                  <span>
+                    {catalogProductTypeLabel(suggestion.type)}
+                    {suggestion.releaseYear === null || suggestion.releaseYear === undefined
+                      ? ''
+                      : ` · ${String(suggestion.releaseYear)}`}
+                  </span>
                 </span>
-              </span>
-              <ArrowRightIcon aria-hidden="true" size={18} />
-            </Link>
-          ))}
+                <ArrowRightIcon aria-hidden="true" size={18} />
+              </Link>
+            ))}
+          </div>
+          {!suggestionsLoading && suggestionsError ? (
+            <div className={styles.suggestionMessage} role="presentation">
+              <span role="alert">
+                Không thể tải gợi ý. Nhấn Enter để tìm theo từ khóa hoặc thử lại.
+              </span>{' '}
+              <button
+                className={styles.secondaryLink}
+                onClick={() => {
+                  setRetryRequest((current) => current + 1);
+                }}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                type="button"
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -515,6 +560,10 @@ export function nextSuggestionIndex(
   if (total <= 0) return -1;
   if (direction === 'ArrowDown') return current >= total - 1 ? 0 : current + 1;
   return current <= 0 ? total - 1 : current - 1;
+}
+
+export function clampCatalogPage(requestedPage: number, totalPages: number): number {
+  return Math.min(Math.max(1, requestedPage), Math.max(1, totalPages));
 }
 
 function normalizedReleaseYear(value: string): number | undefined {
