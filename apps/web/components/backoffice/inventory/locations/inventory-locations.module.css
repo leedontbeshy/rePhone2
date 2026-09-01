@@ -24,9 +24,12 @@
 }
 
 .header > p:last-child,
-.summary p,
 .loading {
   color: var(--color-muted);
+}
+
+.summary p {
+  color: var(--color-body);
 }
 
 .eyebrow {
@@ -115,7 +118,7 @@
   gap: var(--space-1);
 }
 
-.cardHeading span {
+.cardHeading > div > span {
   color: var(--color-primary);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
