@@ -327,6 +327,25 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/wishlist', '/cart'],
         ownsStates: ['error', 'pending', 'success'],
       },
+      'checkout-validation-preview-authority': {
+        title:
+          'focuses the first invalid field and renders pricing, voucher and fulfillment from preview',
+        ownsRoutes: [],
+        coversRoutes: ['/checkout'],
+        ownsStates: ['error', 'success'],
+      },
+      'checkout-conflict-recovery': {
+        title: 'clears stale preview authority after a non-review checkout conflict',
+        ownsRoutes: [],
+        coversRoutes: ['/checkout'],
+        ownsStates: ['conflict', 'error', 'success'],
+      },
+      'checkout-uncertain-manual-replay': {
+        title: 'replays a lost checkout response only after explicit customer recovery',
+        ownsRoutes: [],
+        coversRoutes: ['/checkout', '/orders/[orderNumber]'],
+        ownsStates: ['pending', 'success', 'warning'],
+      },
     },
   },
   'browser:catalog-voucher-admin': {

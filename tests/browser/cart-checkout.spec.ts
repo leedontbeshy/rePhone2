@@ -521,7 +521,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await page.getByRole('spinbutton', { name: 'Số lượng' }).fill('3');
     await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
     await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
+    await page.getByRole('button', { name: 'Lưu phụ kiện', exact: true }).click();
     await expect(page.getByText('Đã lưu phụ kiện vào danh sách.', { exact: true })).toBeVisible();
 
     await page.goto('/wishlist');
@@ -541,6 +541,166 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     );
     await clearWishlist(page);
     await clearCart(page);
+  });
+
+  test(bt('browser:cart-checkout', 'checkout-validation-preview-authority'), async ({ page }) => {
+    await addUnitToCart(page, GUEST_UNIT);
+    await page.goto('/checkout');
+    let previewRequests = 0;
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/api/v1/checkouts/preview'
+      ) {
+        previewRequests += 1;
+      }
+    });
+
+    await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+    await expect(page.locator('#checkout-fullName')).toBeFocused();
+    await expect(page.locator('#checkout-fullName')).toHaveAttribute('aria-invalid', 'true');
+    expect(previewRequests).toBe(0);
+
+    await fillContact(page, 'Khách xem trước FE-09', 'preview-fe09@rephone.local');
+    await page.getByLabel('Nhận tại cửa hàng').check();
+    await page.locator('#checkout-voucher').fill('welcome100');
+    await page.getByRole('button', { name: 'Áp dụng', exact: true }).click();
+    await expect(page.getByText('Mã WELCOME100 sẽ được kiểm tra cùng đơn hàng.')).toBeVisible();
+
+    const previewResponsePromise = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/checkouts/preview',
+    );
+    await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+    const previewResponse = await previewResponsePromise;
+    expect(previewResponse.status()).toBe(200);
+    expect(previewRequests).toBe(1);
+    const preview = checkoutPreviewEnvelope(await previewResponse.json()).data;
+    const pricing = recordProperty(preview, 'pricing');
+    const voucher = recordProperty(preview, 'voucher');
+    const fulfillment = recordProperty(preview, 'fulfillmentSummary');
+    const pickupStore = recordProperty(fulfillment, 'pickupStore');
+    expect(fulfillment['type']).toBe('PICKUP');
+    expect(voucher['code']).toBe('WELCOME100');
+
+    const summary = page.getByRole('complementary', { name: 'Đơn hàng của bạn' });
+    await expect(
+      summary.getByText(`${String(voucher['name'])} (WELCOME100)`, { exact: true }),
+    ).toBeVisible();
+    await expectSummaryPrice(summary, 'Tạm tính', stringProperty(pricing, 'subtotal'));
+    await expectSummaryPrice(summary, 'Giảm giá', stringProperty(pricing, 'voucherDiscountAmount'));
+    await expectSummaryPrice(summary, 'Phí giao hàng', stringProperty(pricing, 'shippingFee'));
+    await expectSummaryPrice(summary, 'Đặt cọc', stringProperty(pricing, 'depositRequired'));
+    await expectSummaryPrice(summary, 'Tổng thanh toán', stringProperty(pricing, 'grandTotal'));
+    await expect(
+      summary.getByText(`Nhận tại ${stringProperty(pickupStore, 'name')}`, { exact: true }),
+    ).toBeVisible();
+  });
+
+  test(bt('browser:cart-checkout', 'checkout-conflict-recovery'), async ({ page }) => {
+    await addUnitToCart(page, GUEST_UNIT);
+    await page.goto('/checkout');
+    await fillContact(page, 'Khách xung đột FE-09', 'conflict-fe09@rephone.local');
+    await page.getByLabel('Nhận tại cửa hàng').check();
+    await requestCheckoutPreview(page);
+
+    let createRequests = 0;
+    await page.route('**/api/v1/checkouts', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      createRequests += 1;
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 'CONCURRENT_MODIFICATION',
+            message: 'Checkout authority changed.',
+          },
+        }),
+      });
+    });
+
+    await page.getByRole('button', { name: 'Đặt hàng', exact: true }).evaluate((button) => {
+      if (!(button instanceof HTMLButtonElement)) throw new Error('Expected checkout button');
+      button.click();
+      button.click();
+    });
+    const conflictAlert = page.getByRole('alert').filter({
+      hasText: 'Thông tin vừa thay đổi. Hãy tải lại trang rồi thử lại.',
+    });
+    await expect(conflictAlert).toBeVisible();
+    await expect(conflictAlert).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Đặt hàng', exact: true })).toHaveCount(0);
+    await expect(page.getByText('Tổng thanh toán', { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }),
+    ).toBeVisible();
+    await page.waitForTimeout(250);
+    expect(createRequests).toBe(1);
+
+    const nextPreview = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/checkouts/preview',
+    );
+    await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+    expect((await nextPreview).status()).toBe(200);
+    await expect(page.getByRole('button', { name: 'Đặt hàng', exact: true })).toBeVisible();
+  });
+
+  test(bt('browser:cart-checkout', 'checkout-uncertain-manual-replay'), async ({ page }) => {
+    await loginAs(page, CUSTOMER, '/wishlist');
+    await clearCart(page);
+    await addAccessoryToCart(page, 1);
+    await page.goto('/checkout');
+    await fillContact(page, 'Khách phục hồi FE-09', 'recover-fe09@rephone.local');
+    await page.getByLabel('Nhận tại cửa hàng').check();
+    await requestCheckoutPreview(page);
+
+    let createRequests = 0;
+    let createdOrderNumber = '';
+    await page.route('**/api/v1/checkouts', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      createRequests += 1;
+      if (createRequests === 1) {
+        const response = await route.fetch();
+        expect(response.status()).toBe(201);
+        const payload = checkoutCreateEnvelope(await response.json());
+        createdOrderNumber = stringProperty(recordProperty(payload, 'order'), 'orderNumber');
+        await route.abort('failed');
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.getByRole('button', { name: 'Đặt hàng', exact: true }).evaluate((button) => {
+      if (!(button instanceof HTMLButtonElement)) throw new Error('Expected checkout button');
+      button.click();
+      button.click();
+    });
+    await expect(page.getByText('Chưa nhận được xác nhận đơn hàng', { exact: true })).toBeVisible();
+    const recoverButton = page.getByRole('button', {
+      name: 'Kiểm tra trạng thái đơn hàng',
+      exact: true,
+    });
+    await expect(recoverButton).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(createRequests).toBe(1);
+    expect(createdOrderNumber).not.toBe('');
+    await recoverButton.evaluate((button) => {
+      if (!(button instanceof HTMLButtonElement)) throw new Error('Expected recovery button');
+      button.click();
+      button.click();
+    });
+    await page.waitForURL(`/orders/${createdOrderNumber}`);
+    expect(createRequests).toBe(2);
   });
 });
 
@@ -603,6 +763,64 @@ async function clearCart(page: Page): Promise<void> {
     await removeButtons.first().click();
     await expect(removeButtons).toHaveCount(previousCount - 1);
   }
+}
+
+async function addAccessoryToCart(page: Page, quantity: number): Promise<void> {
+  await page.goto('/products/cu-sac-usb-c-20w');
+  await page.getByRole('spinbutton', { name: 'Số lượng' }).fill(String(quantity));
+  await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+  await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
+}
+
+async function requestCheckoutPreview(page: Page): Promise<Record<string, unknown>> {
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/checkouts/preview',
+  );
+  await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+  await expect(page.getByRole('button', { name: 'Đặt hàng', exact: true })).toBeVisible();
+  return checkoutPreviewEnvelope(await response.json()).data;
+}
+
+async function expectSummaryPrice(
+  summary: ReturnType<Page['getByRole']>,
+  label: string,
+  value: string,
+): Promise<void> {
+  await expect(summary.getByText(label, { exact: true }).locator('..')).toContainText(
+    formatVnd(value),
+  );
+}
+
+function checkoutCreateEnvelope(value: unknown): Record<string, unknown> {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('data' in value) ||
+    typeof value.data !== 'object' ||
+    value.data === null ||
+    Array.isArray(value.data)
+  ) {
+    throw new Error('Expected checkout create response data');
+  }
+  return value.data as Record<string, unknown>;
+}
+
+function recordProperty(value: Record<string, unknown>, key: string): Record<string, unknown> {
+  const property = value[key];
+  if (typeof property !== 'object' || property === null || Array.isArray(property)) {
+    throw new Error(`Expected ${key} to be an object`);
+  }
+  return property as Record<string, unknown>;
+}
+
+function stringProperty(value: Record<string, unknown>, key: string): string {
+  const property = value[key];
+  if (typeof property !== 'string') throw new Error(`Expected ${key} to be a string`);
+  return property;
 }
 
 function collectWishlistRequests(page: Page): string[] {
