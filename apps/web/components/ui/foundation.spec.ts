@@ -74,7 +74,7 @@ describe('frontend design foundation', () => {
     );
 
     expect(base).toMatch(
-      /@media \(forced-colors: active\)[\s\S]*input\[type='file'\]:focus-visible \+ \*[\s\S]*outline:\s*3px solid Highlight;/,
+      /@media \(forced-colors: active\)[\s\S]*input\[type='file'\]:not\(\[data-rp-file-picker-control\]\):focus-visible \+ \*[\s\S]*outline:\s*3px solid Highlight;/,
     );
     expect(base).toMatch(/label:has\(\+ input\[type='file'\]:focus-visible\)/);
     expect(base).toMatch(/label:has\(> input\[type='file'\]:focus-visible\)/);

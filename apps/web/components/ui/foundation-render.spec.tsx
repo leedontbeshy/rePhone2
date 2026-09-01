@@ -115,6 +115,7 @@ describe('frontend primitive accessibility contracts', () => {
         accept="image/jpeg,image/png"
         aria-describedby="upload-context"
         error="Ảnh không hợp lệ"
+        errorRole="alert"
         hint="Dùng ảnh JPG hoặc PNG"
         id="product-image"
         label="Ảnh sản phẩm"
@@ -124,6 +125,7 @@ describe('frontend primitive accessibility contracts', () => {
     );
 
     expect(markup).toContain('type="file"');
+    expect(markup).toContain('data-rp-file-picker-control="true"');
     expect(markup).toContain('accept="image/jpeg,image/png"');
     expect(markup).toContain(
       'aria-describedby="upload-context product-image-hint product-image-error"',
@@ -132,6 +134,7 @@ describe('frontend primitive accessibility contracts', () => {
     expect(markup).toContain('required=""');
     expect(markup).toContain('iphone-15-mat-truoc.png');
     expect(markup).toContain('aria-live="polite"');
+    expect(markup).toContain('role="alert"');
   });
 
   it('keeps error summaries programmatically focusable and links to fields', () => {

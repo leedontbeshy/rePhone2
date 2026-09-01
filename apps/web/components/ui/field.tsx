@@ -38,6 +38,7 @@ export interface FieldProps {
   className?: string | undefined;
   error?: ReactNode | undefined;
   errorId?: string | undefined;
+  errorRole?: 'alert' | 'status' | undefined;
   hint?: ReactNode | undefined;
   hintId?: string | undefined;
   id: string;
@@ -50,6 +51,7 @@ export function Field({
   className,
   error,
   errorId,
+  errorRole,
   hint,
   hintId,
   id,
@@ -76,7 +78,7 @@ export function Field({
         </p>
       ) : null}
       {error ? (
-        <p className={styles.error} id={errorId}>
+        <p className={styles.error} id={errorId} role={errorRole}>
           {error}
         </p>
       ) : null}
@@ -136,6 +138,7 @@ export interface FilePickerProps extends Omit<
   containerClassName?: string;
   emptyLabel?: ReactNode;
   error?: ReactNode;
+  errorRole?: 'alert' | 'status';
   hint?: ReactNode;
   id: string;
   label: ReactNode;
@@ -150,6 +153,7 @@ export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function
     disabled,
     emptyLabel = 'Chưa chọn tệp',
     error,
+    errorRole,
     hint,
     id,
     label,
@@ -168,6 +172,7 @@ export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function
       className={containerClassName}
       error={error}
       errorId={messages.errorId}
+      errorRole={errorRole}
       hint={hint}
       hintId={messages.hintId}
       id={id}
@@ -185,6 +190,7 @@ export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function
           aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
           aria-invalid={error ? true : undefined}
           className={styles.fileInput}
+          data-rp-file-picker-control="true"
           disabled={disabled}
           id={id}
           required={required}

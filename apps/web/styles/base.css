@@ -199,7 +199,7 @@ body {
     box-shadow: none;
   }
 
-  input[type='file']:focus-visible + *,
+  input[type='file']:not([data-rp-file-picker-control]):focus-visible + *,
   label:has(+ input[type='file']:focus-visible),
   label:has(> input[type='file']:focus-visible) {
     outline: 3px solid Highlight;

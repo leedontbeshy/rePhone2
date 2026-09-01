@@ -456,6 +456,7 @@ export function AfterSalesDetail() {
                       disabled={busy !== null}
                       emptyLabel="Chưa chọn ảnh hoặc tài liệu"
                       error={fileError}
+                      errorRole="alert"
                       hint="Mỗi lần một tệp, tối đa 10 MB; tối đa 5 tệp."
                       id="after-sales-attachment"
                       label="Thêm ảnh hoặc tài liệu"
