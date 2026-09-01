@@ -481,7 +481,7 @@ test.describe('FE-1 storefront discovery', () => {
     await page.keyboard.press('Tab');
 
     const skipLink = page.getByRole('link', {
-      name: 'Bỏ qua đến nội dung chính',
+      name: 'Chuyển đến nội dung chính',
       exact: true,
     });
     await expect(skipLink).toBeFocused();
