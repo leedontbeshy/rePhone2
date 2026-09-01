@@ -4,6 +4,8 @@ import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-cove
 
 const PRODUCT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe0';
 const VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe1';
+const PRODUCT_B_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe9';
+const VARIANT_B_ID = '0199c346-f8d2-79d8-b90b-e462bd717fea';
 const CREATED_VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe4';
 const PRODUCT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe5';
 const VARIANT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe6';
@@ -12,6 +14,7 @@ const UPLOADED_VARIANT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe8';
 const POLICY_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe3';
 const VOUCHER_ID = '0199c9aa-a258-74c8-a35f-9cd11c562aa1';
 const PRODUCT_NAME = 'iPhone 15 Pro FE05';
+const PRODUCT_B_NAME = 'iPhone 16 Pro FE09';
 const VOUCHER_NAME = 'Ưu đãi iPhone tháng 9';
 
 type StaffRole = 'ADMIN' | 'EMPLOYEE';
@@ -22,15 +25,25 @@ interface ApiProbe {
   catalogQueries: string[];
   catalogStatus: RecordStatus;
   conflictNextProductUpdate: boolean;
+  conflictNextVoucherUpdate: boolean;
   detailRequests: number;
+  failNextVoucherUsage: boolean;
   mediaDeletes: number;
   mediaUploads: number;
   productMedia: ReturnType<typeof mediaFixture>[];
   pauseReason: string | null;
   productCreateBody: Record<string, unknown> | null;
   voucherCreateBody: Record<string, unknown> | null;
+  voucherCreateRequests: number;
+  voucherDescription: string;
+  voucherDetailRequests: number;
+  voucherName: string;
   voucherRequests: number;
   voucherStatus: VoucherStatus;
+  voucherTransitionRequests: number;
+  voucherUpdateBodies: Record<string, unknown>[];
+  voucherUpdateRequests: number;
+  voucherUsageRequests: number;
   variantMedia: ReturnType<typeof mediaFixture>[];
   variants: ReturnType<typeof variantFixture>[];
 }
@@ -284,6 +297,29 @@ test.describe('FE-05 catalog and voucher administration', () => {
   test(bt('browser:catalog-voucher-admin', 'voucher-lifecycle'), async ({ page }) => {
     const probe = await installFe05Api(page, 'ADMIN', { catalogStatus: 'ACTIVE' });
 
+    let markProductAStarted: (() => void) | undefined;
+    let markProductACompleted: (() => void) | undefined;
+    let releaseProductA: (() => void) | undefined;
+    const productAStarted = new Promise<void>((resolve) => {
+      markProductAStarted = resolve;
+    });
+    const productARelease = new Promise<void>((resolve) => {
+      releaseProductA = resolve;
+    });
+    const productACompleted = new Promise<void>((resolve) => {
+      markProductACompleted = resolve;
+    });
+    await page.route(`**/api/v1/backoffice/products/${PRODUCT_ID}`, async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      markProductAStarted?.();
+      await productARelease;
+      await route.fallback();
+      markProductACompleted?.();
+    });
+
     await page.goto('/backoffice/vouchers');
     await expect(page.getByRole('heading', { level: 1, name: 'Mã ưu đãi' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: VOUCHER_NAME })).toBeVisible();
@@ -296,39 +332,122 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await page.getByLabel('Mức giảm (%)').fill('10');
     await page.getByLabel('Giảm tối đa (đ)').fill('1500000');
     await page.getByLabel('Giá trị đơn hàng tối thiểu (đ)').fill('10000000');
-    await page.getByLabel('Sản phẩm cụ thể').check();
-    await expect(page.getByLabel('Chọn sản phẩm áp dụng')).toBeVisible();
-    await page.getByRole('checkbox', { name: new RegExp(PRODUCT_NAME) }).check();
+    await page.getByLabel('Biến thể cụ thể').check();
+    const variantProduct = page.getByLabel('Chọn sản phẩm để xem biến thể');
+    await variantProduct.selectOption(PRODUCT_ID);
+    await productAStarted;
+    await variantProduct.selectOption(PRODUCT_B_ID);
+    await expect(page.getByRole('checkbox', { name: '256 GB · Titan sa mạc' })).toBeVisible();
+    releaseProductA?.();
+    await productACompleted;
+    await page.waitForTimeout(50);
+    await expect(page.getByRole('checkbox', { name: '128 GB · Đen' })).toHaveCount(0);
+    await expect(page.getByRole('checkbox', { name: '256 GB · Titan sa mạc' })).toBeVisible();
+    await page.getByRole('checkbox', { name: '256 GB · Titan sa mạc' }).check();
     await page.getByLabel('Bắt đầu').fill('2026-09-01T08:00');
     await page.getByLabel('Kết thúc').fill('2026-09-30T23:00');
     await page.getByLabel('Tổng lượt sử dụng').fill('300');
     await page.getByLabel('Chỉ dành cho tài khoản').check();
     await page.getByLabel('Mỗi khách hàng').fill('1');
-    await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+    await page.locator('#create-voucher-form').evaluate((form) => {
+      const voucherForm = form as HTMLFormElement;
+      voucherForm.requestSubmit();
+      voucherForm.requestSubmit();
+    });
 
     await page.waitForURL(`/backoffice/vouchers/${VOUCHER_ID}?created=1`);
     await expect(page.getByRole('heading', { level: 1, name: VOUCHER_NAME })).toBeVisible();
+    expect(probe.voucherCreateRequests).toBe(1);
     expect(probe.voucherCreateBody).toMatchObject({
       code: 'FE05DEMO',
+      endsAt: '2026-09-30T16:00:00.000Z',
       name: VOUCHER_NAME,
-      scopeConfig: { productIds: [PRODUCT_ID] },
-      scopeType: 'PRODUCTS',
+      scopeConfig: { variantIds: [VARIANT_B_ID] },
+      scopeType: 'VARIANTS',
+      startsAt: '2026-09-01T01:00:00.000Z',
       visibility: 'ACCOUNT_ONLY',
     });
+    const usageRow = page.getByText('RPH-20260828-FE050001', { exact: true });
+    await expect(usageRow).toBeVisible();
 
     await page.getByRole('button', { name: 'Mở áp dụng', exact: true }).click();
     const activateDialog = page.getByRole('dialog', { name: 'Mở áp dụng mã ưu đãi?' });
     await expect(activateDialog).toBeVisible();
-    await activateDialog.getByRole('button', { name: 'Mở áp dụng', exact: true }).click();
+    const transitionsBeforeActivation = probe.voucherTransitionRequests;
+    const usagesBeforeActivation = probe.voucherUsageRequests;
+    await activateDialog
+      .getByRole('button', { name: 'Mở áp dụng', exact: true })
+      .evaluate((button) => {
+        (button as HTMLButtonElement).click();
+        (button as HTMLButtonElement).click();
+      });
     await expect(page.getByText('Mã ưu đãi đang được áp dụng.', { exact: true })).toBeVisible();
     await expect(page.getByText('Đang áp dụng', { exact: true }).first()).toBeVisible();
+    await expect.poll(() => probe.voucherTransitionRequests).toBe(transitionsBeforeActivation + 1);
+    await expect.poll(() => probe.voucherUsageRequests).toBe(usagesBeforeActivation + 1);
+    await page.waitForTimeout(100);
+    expect(probe.voucherUsageRequests).toBe(usagesBeforeActivation + 1);
+
+    await page.getByRole('button', { name: 'Chỉnh sửa', exact: true }).click();
+    const activeName = `${VOUCHER_NAME} mới`;
+    const activeDescription = 'Nội dung giới thiệu đã được cập nhật.';
+    await page.getByLabel('Tên chương trình').fill(activeName);
+    await page.getByLabel('Mô tả').fill(activeDescription);
+    probe.failNextVoucherUsage = true;
+    const updatesBeforeActiveEdit = probe.voucherUpdateRequests;
+    const usagesBeforeActiveEdit = probe.voucherUsageRequests;
+    await page.locator('#edit-voucher-form').evaluate((form) => {
+      const voucherForm = form as HTMLFormElement;
+      voucherForm.requestSubmit();
+      voucherForm.requestSubmit();
+    });
+    await expect(page.getByText('Đã lưu thay đổi của mã ưu đãi.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Chưa tải được lịch sử sử dụng', { exact: true })).toBeVisible();
+    await expect(usageRow).toBeVisible();
+    await expect(page.getByText('Chưa thể hoàn tất', { exact: true })).toHaveCount(0);
+    expect(probe.voucherUpdateRequests).toBe(updatesBeforeActiveEdit + 1);
+    expect(probe.voucherUpdateBodies[probe.voucherUpdateBodies.length - 1]).toEqual({
+      description: activeDescription,
+      name: activeName,
+    });
+    await expect.poll(() => probe.voucherUsageRequests).toBe(usagesBeforeActiveEdit + 1);
+    await page.waitForTimeout(100);
+    expect(probe.voucherUsageRequests).toBe(usagesBeforeActiveEdit + 1);
+    await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
+    await expect.poll(() => probe.voucherUsageRequests).toBe(usagesBeforeActiveEdit + 2);
+    await expect(page.getByText('Chưa tải được lịch sử sử dụng', { exact: true })).toHaveCount(0);
+    await expect(usageRow).toBeVisible();
+
+    const authoritativeName = 'Ưu đãi đã được cập nhật ở nơi khác';
+    probe.voucherName = authoritativeName;
+    probe.conflictNextVoucherUpdate = true;
+    const detailsBeforeConflict = probe.voucherDetailRequests;
+    await page.getByRole('button', { name: 'Chỉnh sửa', exact: true }).click();
+    await page.getByLabel('Tên chương trình').fill('Nội dung chỉnh sửa đã cũ');
+    await page.locator('#edit-voucher-form').evaluate((form) => {
+      (form as HTMLFormElement).requestSubmit();
+    });
+    await expect(page.locator('#edit-voucher-form')).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: authoritativeName })).toBeVisible();
+    await expect(
+      page
+        .locator('main')
+        .getByRole('alert')
+        .filter({ hasText: 'Mã ưu đãi vừa được cập nhật. Hãy tải lại dữ liệu mới nhất.' }),
+    ).toBeVisible();
+    expect(probe.voucherDetailRequests).toBeGreaterThan(detailsBeforeConflict);
 
     await page.getByRole('button', { name: 'Tạm dừng', exact: true }).click();
     const pauseDialog = page.getByRole('dialog', { name: 'Tạm dừng mã ưu đãi?' });
     await pauseDialog.getByLabel('Lý do tạm dừng').fill('Điều chỉnh nội dung chương trình');
-    await pauseDialog.getByRole('button', { name: 'Tạm dừng', exact: true }).click();
+    const transitionsBeforePause = probe.voucherTransitionRequests;
+    await pauseDialog.getByRole('button', { name: 'Tạm dừng', exact: true }).evaluate((button) => {
+      (button as HTMLButtonElement).click();
+      (button as HTMLButtonElement).click();
+    });
     await expect(page.getByText('Đã tạm dừng mã ưu đãi.', { exact: true })).toBeVisible();
     await expect(page.getByText('Tạm dừng', { exact: true }).first()).toBeVisible();
+    expect(probe.voucherTransitionRequests).toBe(transitionsBeforePause + 1);
     expect(probe.pauseReason).toBe('Điều chỉnh nội dung chương trình');
     expect(probe.voucherStatus).toBe('PAUSED');
     await expectNaturalVietnameseMain(page);
@@ -371,6 +490,18 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await expect(page.getByRole('dialog', { name: 'Chỉnh sửa hình ảnh' })).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
     await expectAccessible(page);
+    await page.keyboard.press('Escape');
+
+    await page.goto(`/backoffice/vouchers/${VOUCHER_ID}`);
+    await page.getByRole('button', { name: 'Mở áp dụng', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Mở áp dụng mã ưu đãi?' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Lưu trữ mã ưu đãi', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Lưu trữ mã ưu đãi?' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 });
 
@@ -383,15 +514,25 @@ async function installFe05Api(
     catalogQueries: [],
     catalogStatus: initial.catalogStatus ?? 'DRAFT',
     conflictNextProductUpdate: false,
+    conflictNextVoucherUpdate: false,
     detailRequests: 0,
+    failNextVoucherUsage: false,
     mediaDeletes: 0,
     mediaUploads: 0,
     pauseReason: null,
     productMedia: [mediaFixture(PRODUCT_MEDIA_ID, 'Ảnh sản phẩm ban đầu', 0)],
     productCreateBody: null,
     voucherCreateBody: null,
+    voucherCreateRequests: 0,
+    voucherDescription: 'Ưu đãi dành cho sản phẩm đã chọn.',
+    voucherDetailRequests: 0,
+    voucherName: VOUCHER_NAME,
     voucherRequests: 0,
     voucherStatus: initial.voucherStatus ?? 'DRAFT',
+    voucherTransitionRequests: 0,
+    voucherUpdateBodies: [],
+    voucherUpdateRequests: 0,
+    voucherUsageRequests: 0,
     variantMedia: [mediaFixture(VARIANT_MEDIA_ID, 'Ảnh phiên bản ban đầu', 0)],
     variants: [variantFixture(VARIANT_ID, '128 GB · Đen', 'ACTIVE')],
   };
@@ -424,9 +565,10 @@ async function installFe05Api(
       const requestedStatus = url.searchParams.get('status');
       const matches = requestedStatus === null || requestedStatus === probe.catalogStatus;
       const product = catalogProduct(probe.catalogStatus, probe);
+      const pageSize = Number(url.searchParams.get('pageSize')) || 12;
       await fulfillJson(
         route,
-        paged(matches ? [product] : [], Number(url.searchParams.get('pageSize')) || 12),
+        paged(matches ? [product, ...(pageSize === 100 ? [catalogProductB()] : [])] : [], pageSize),
       );
       return;
     }
@@ -447,6 +589,11 @@ async function installFe05Api(
     if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}`) && method === 'GET') {
       probe.detailRequests += 1;
       await fulfillJson(route, { data: catalogProduct(probe.catalogStatus, probe) });
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/products/${PRODUCT_B_ID}`) && method === 'GET') {
+      await fulfillJson(route, { data: catalogProductB() });
       return;
     }
 
@@ -548,7 +695,7 @@ async function installFe05Api(
       await fulfillJson(
         route,
         paged(
-          matches ? [voucher(probe.voucherStatus)] : [],
+          matches ? [voucher(probe.voucherStatus, probe)] : [],
           Number(url.searchParams.get('pageSize')) || 12,
         ),
       );
@@ -556,32 +703,68 @@ async function installFe05Api(
     }
 
     if (pathname.endsWith('/backoffice/vouchers') && method === 'POST') {
+      probe.voucherCreateRequests += 1;
       probe.voucherCreateBody = requestJson(route);
+      probe.voucherName = stringField(probe.voucherCreateBody, 'name') ?? probe.voucherName;
+      probe.voucherDescription =
+        stringField(probe.voucherCreateBody, 'description') ?? probe.voucherDescription;
       probe.voucherStatus = 'DRAFT';
-      await fulfillJson(route, { data: voucher(probe.voucherStatus) }, 201);
+      await fulfillJson(route, { data: voucher(probe.voucherStatus, probe) }, 201);
       return;
     }
 
     if (pathname.endsWith(`/backoffice/vouchers/${VOUCHER_ID}/usages`) && method === 'GET') {
+      probe.voucherUsageRequests += 1;
+      if (probe.failNextVoucherUsage) {
+        probe.failNextVoucherUsage = false;
+        await fulfillJson(
+          route,
+          { error: { code: 'SERVICE_UNAVAILABLE', message: 'usage fixture unavailable' } },
+          503,
+        );
+        return;
+      }
       await fulfillJson(route, voucherUsagePage());
       return;
     }
 
     if (pathname.endsWith(`/backoffice/vouchers/${VOUCHER_ID}/activate`) && method === 'POST') {
+      probe.voucherTransitionRequests += 1;
       probe.voucherStatus = 'ACTIVE';
-      await fulfillJson(route, { data: voucher(probe.voucherStatus) });
+      await fulfillJson(route, { data: voucher(probe.voucherStatus, probe) });
       return;
     }
 
     if (pathname.endsWith(`/backoffice/vouchers/${VOUCHER_ID}/pause`) && method === 'POST') {
+      probe.voucherTransitionRequests += 1;
       probe.pauseReason = stringField(requestJson(route), 'reason');
       probe.voucherStatus = 'PAUSED';
-      await fulfillJson(route, { data: voucher(probe.voucherStatus) });
+      await fulfillJson(route, { data: voucher(probe.voucherStatus, probe) });
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/vouchers/${VOUCHER_ID}`) && method === 'PATCH') {
+      probe.voucherUpdateRequests += 1;
+      const body = requestJson(route);
+      probe.voucherUpdateBodies.push(body);
+      if (probe.conflictNextVoucherUpdate) {
+        probe.conflictNextVoucherUpdate = false;
+        await fulfillJson(
+          route,
+          { error: { code: 'CONCURRENT_MODIFICATION', message: 'stale voucher fixture' } },
+          409,
+        );
+        return;
+      }
+      probe.voucherName = stringField(body, 'name') ?? probe.voucherName;
+      probe.voucherDescription = stringField(body, 'description') ?? probe.voucherDescription;
+      await fulfillJson(route, { data: voucher(probe.voucherStatus, probe) });
       return;
     }
 
     if (pathname.endsWith(`/backoffice/vouchers/${VOUCHER_ID}`) && method === 'GET') {
-      await fulfillJson(route, { data: voucher(probe.voucherStatus) });
+      probe.voucherDetailRequests += 1;
+      await fulfillJson(route, { data: voucher(probe.voucherStatus, probe) });
       return;
     }
 
@@ -609,11 +792,16 @@ function staffUser(role: StaffRole) {
   } as const;
 }
 
-function variantFixture(id: string, displayName: string, status: RecordStatus) {
+function variantFixture(
+  id: string,
+  displayName: string,
+  status: RecordStatus,
+  productId = PRODUCT_ID,
+) {
   return {
     id,
-    productId: PRODUCT_ID,
-    sku: 'IP15P-128-BLK-FE05',
+    productId,
+    sku: productId === PRODUCT_B_ID ? 'IP16P-256-DSR-FE09' : 'IP15P-128-BLK-FE05',
     displayName,
     storageCapacityGb: 128,
     colorName: 'Đen',
@@ -680,6 +868,33 @@ function catalogProduct(status: RecordStatus, probe: ApiProbe) {
   };
 }
 
+function catalogProductB() {
+  const variants = [variantFixture(VARIANT_B_ID, '256 GB · Titan sa mạc', 'ACTIVE', PRODUCT_B_ID)];
+  return {
+    id: PRODUCT_B_ID,
+    type: 'IPHONE',
+    brand: 'Apple',
+    name: PRODUCT_B_NAME,
+    slug: 'iphone-16-pro-fe09',
+    status: 'ACTIVE',
+    releaseYear: 2024,
+    variantCount: variants.length,
+    primaryMedia: null,
+    createdAt: '2026-08-28T01:00:00.000Z',
+    updatedAt: '2026-08-28T02:00:00.000Z',
+    description: 'Sản phẩm dùng để kiểm tra đổi lựa chọn biến thể.',
+    chipset: 'Apple A18 Pro',
+    ramGb: 8,
+    screenSizeInches: '6.3',
+    warrantyPolicyId: POLICY_ID,
+    seoTitle: null,
+    seoDescription: null,
+    archivedAt: null,
+    variants,
+    media: [],
+  };
+}
+
 function warrantyPolicyPage() {
   return paged(
     [
@@ -700,12 +915,27 @@ function warrantyPolicyPage() {
   );
 }
 
-function voucher(status: VoucherStatus) {
+function voucher(status: VoucherStatus, probe?: ApiProbe) {
+  const requestedScopeType = probe?.voucherCreateBody?.['scopeType'];
+  const scopeType =
+    requestedScopeType === 'ORDER' ||
+    requestedScopeType === 'PRODUCT_TYPE' ||
+    requestedScopeType === 'PRODUCTS' ||
+    requestedScopeType === 'VARIANTS'
+      ? requestedScopeType
+      : 'PRODUCTS';
+  const requestedScopeConfig = probe?.voucherCreateBody?.['scopeConfig'];
+  const scopeConfig =
+    requestedScopeConfig !== null &&
+    typeof requestedScopeConfig === 'object' &&
+    !Array.isArray(requestedScopeConfig)
+      ? requestedScopeConfig
+      : { productIds: [PRODUCT_ID] };
   return {
     id: VOUCHER_ID,
     code: 'FE05DEMO',
-    name: VOUCHER_NAME,
-    description: 'Ưu đãi dành cho sản phẩm đã chọn.',
+    name: probe?.voucherName ?? VOUCHER_NAME,
+    description: probe?.voucherDescription ?? 'Ưu đãi dành cho sản phẩm đã chọn.',
     discountType: 'PERCENT',
     discountValue: '10',
     maxDiscountAmount: '1500000',
@@ -715,8 +945,8 @@ function voucher(status: VoucherStatus) {
     totalUsageLimit: 300,
     perCustomerLimit: 1,
     visibility: 'ACCOUNT_ONLY',
-    scopeType: 'PRODUCTS',
-    scopeConfig: { productIds: [PRODUCT_ID] },
+    scopeType,
+    scopeConfig,
     status,
     usageCounts: { reserved: 1, consumed: 12, released: 2 },
     createdAt: '2026-08-28T01:00:00.000Z',
