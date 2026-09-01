@@ -7,6 +7,7 @@ import { InventoryStockMovementsView } from '@/components/backoffice/inventory/s
 import type { StockVariantOption } from '@/components/backoffice/inventory/stock/inventory-stock-view';
 import {
   buildStockMovementHref,
+  isCurrentStockRequest,
   mergeStockMovementQuery,
   sortStockVariantOptions,
   stockMovementQueryFromSearch,
@@ -61,12 +62,12 @@ export default function InventoryStockMovementsPage() {
       listInventoryStockLevels(client, { page: 1, pageSize: 100 }, { signal: controller.signal }),
     ])
       .then(([nextLocations, levelPage]) => {
-        if (controller.signal.aborted || request !== optionRequestRef.current) return;
+        if (!isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) return;
         setLocations(nextLocations);
-        setVariants(sortStockVariantOptions(variantOptions(levelPage.data)));
+        setVariants((current) => mergeVariantOptions(current, variantOptions(levelPage.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted && request === optionRequestRef.current) {
+        if (isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lựa chọn lọc lịch sử.'));
         }
       });
@@ -97,7 +98,7 @@ export default function InventoryStockMovementsPage() {
       { signal: controller.signal },
     )
       .then((page) => {
-        if (controller.signal.aborted || request !== movementRequestRef.current) return;
+        if (!isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) return;
 
         const authoritativePage = stockPageWithinTotal(query.page, page.pagination.totalPages);
         if (authoritativePage !== query.page) {
@@ -113,12 +114,14 @@ export default function InventoryStockMovementsPage() {
         setVariants((current) => mergeVariantOptions(current, movementVariantOptions(page.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted && request === movementRequestRef.current) {
+        if (isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lịch sử kho.'));
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted && request === movementRequestRef.current) setLoading(false);
+        if (isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) {
+          setLoading(false);
+        }
       });
     return () => {
       controller.abort();

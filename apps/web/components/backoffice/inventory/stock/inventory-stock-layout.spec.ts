@@ -9,7 +9,7 @@ describe('inventory stock layout contracts', () => {
       'utf8',
     );
 
-    expect(stylesheet).toMatch(/\.movementFilters\s*\{[^}]*align-items:\s*start;/s);
+    expect(stylesheet).toMatch(/\.movementFilters\s*\{[^}]*align-items:\s*start;/);
   });
 
   it('keeps enough vertical padding for select-option descenders', () => {
@@ -18,6 +18,8 @@ describe('inventory stock layout contracts', () => {
       'utf8',
     );
 
-    expect(primitives).toMatch(/select\.control\s*\{[^}]*padding-block:\s*var\(--space-2\);/s);
+    expect(primitives).toMatch(
+      /select\.control\s*\{[^}]*padding-block:\s*var\(--space-2\);/,
+    );
   });
 });

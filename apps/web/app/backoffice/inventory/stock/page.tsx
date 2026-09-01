@@ -10,6 +10,7 @@ import {
 } from '@/components/backoffice/inventory/stock/inventory-stock-view';
 import {
   buildStockLevelHref,
+  isCurrentStockRequest,
   mergeStockLevelQuery,
   sortStockVariantOptions,
   stockCommandErrorMessage,
@@ -70,12 +71,12 @@ export default function InventoryStockPage() {
       listInventoryStockLevels(client, { page: 1, pageSize: 100 }, { signal: controller.signal }),
     ])
       .then(([nextLocations, optionPage]) => {
-        if (controller.signal.aborted || request !== optionRequestRef.current) return;
+        if (!isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) return;
         setLocations(nextLocations);
-        setVariants(sortStockVariantOptions(variantOptions(optionPage.data)));
+        setVariants((current) => mergeVariantOptions(current, variantOptions(optionPage.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted && request === optionRequestRef.current) {
+        if (isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lựa chọn tồn kho.'));
         }
       });
@@ -99,7 +100,7 @@ export default function InventoryStockPage() {
         },
         signal === undefined ? {} : { signal },
       );
-      if (signal?.aborted || request !== levelRequestRef.current) return;
+      if (!isCurrentStockRequest(request, levelRequestRef.current, signal)) return;
 
       const authoritativePage = stockPageWithinTotal(
         querySnapshot.page,
@@ -128,12 +129,14 @@ export default function InventoryStockPage() {
     setError(null);
     void loadLevels(query, request, controller.signal)
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted && request === levelRequestRef.current) {
+        if (isCurrentStockRequest(request, levelRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải tồn phụ kiện.'));
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted && request === levelRequestRef.current) setLoading(false);
+        if (isCurrentStockRequest(request, levelRequestRef.current, controller.signal)) {
+          setLoading(false);
+        }
       });
     return () => {
       controller.abort();

@@ -4,6 +4,7 @@ import {
   buildStockLevelHref,
   buildStockMovementHref,
   emptyStockCommandDraft,
+  isCurrentStockRequest,
   mergeStockLevelQuery,
   sortStockVariantOptions,
   stockCommandErrorMessage,
@@ -24,6 +25,12 @@ describe('inventory stock query model', () => {
     expect(stockPageWithinTotal(7, 2)).toBe(2);
     expect(stockPageWithinTotal(1, 0)).toBe(1);
     expect(stockPageWithinTotal(Number.NaN, 8)).toBe(1);
+  });
+
+  it('rejects aborted and stale list responses before they can replace visible rows', () => {
+    expect(isCurrentStockRequest(3, 3, { aborted: false })).toBe(true);
+    expect(isCurrentStockRequest(2, 3, { aborted: false })).toBe(false);
+    expect(isCurrentStockRequest(3, 3, { aborted: true })).toBe(false);
   });
 
   it('sorts product and variant choices naturally with a stable tie breaker', () => {

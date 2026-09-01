@@ -101,6 +101,14 @@ export function stockPageWithinTotal(page: number, totalPages: number): number {
   return Math.min(page, normalizedTotal);
 }
 
+export function isCurrentStockRequest(
+  request: number,
+  latestRequest: number,
+  signal?: Pick<AbortSignal, 'aborted'>,
+): boolean {
+  return request === latestRequest && signal?.aborted !== true;
+}
+
 export function sortStockVariantOptions<Option extends SortableStockVariantOption>(
   options: readonly Option[],
 ): Option[] {
