@@ -1,11 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
 } from './queue-read-model';
 
 describe('authoritative operations queue reads', () => {
+  it('focuses a list read error without changing the operator scroll position', () => {
+    const focus = vi.fn();
+
+    focusQueueReadError({ focus });
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
   it('rejects a late response after a newer queue request starts', async () => {
     let latestRequest = 0;
     const applied: string[] = [];

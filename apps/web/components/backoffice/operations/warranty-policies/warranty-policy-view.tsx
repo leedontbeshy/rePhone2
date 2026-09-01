@@ -11,6 +11,7 @@ import {
   OperationsPanel,
 } from '../operations-primitives';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
@@ -88,7 +89,7 @@ export function WarrantyPolicyView() {
   }, [selectedKey]);
 
   useEffect(() => {
-    if (listError !== null) listErrorRef.current?.focus();
+    if (listError !== null) focusQueueReadError(listErrorRef.current);
   }, [listError]);
 
   const loadPolicies = useCallback(

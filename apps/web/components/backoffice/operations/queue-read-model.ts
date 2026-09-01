@@ -4,6 +4,10 @@ export interface QueueReadPresentation {
   readonly updating: boolean;
 }
 
+export function focusQueueReadError(target: Pick<HTMLElement, 'focus'> | null): void {
+  target?.focus({ preventScroll: true });
+}
+
 export function queuePageWithinTotal(page: number, totalPages: number): number {
   const normalizedPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
   const normalizedTotalPages = Number.isFinite(totalPages)

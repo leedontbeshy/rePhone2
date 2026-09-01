@@ -18,6 +18,7 @@ import {
 } from '@/lib/payment-api';
 import { OperationsPageHeader } from '../operations-primitives';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
@@ -73,7 +74,7 @@ export function PaymentQueueView() {
   }, [query]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {

@@ -10,6 +10,7 @@ import {
   OperationsPanel,
 } from '../operations-primitives';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
@@ -62,7 +63,7 @@ export function WarrantyQueueView() {
   }, [filters]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {

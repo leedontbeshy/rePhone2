@@ -34,6 +34,7 @@ import {
 } from '@/lib/fulfillment-api';
 import { OperationsPageHeader } from '../operations-primitives';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
@@ -95,7 +96,7 @@ export function OrderListView() {
   }, [query]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import { Button, InlineAlert, Input, Select, Skeleton, StatusChip } from '@/comp
 import { listBackofficeRefunds, type RefundListItem, type RefundListQuery } from '@/lib/refund-api';
 import { OperationsPageHeader } from '../operations-primitives';
 import {
+  focusQueueReadError,
   isCurrentQueueRequest,
   queuePageWithinTotal,
   queueReadPresentation,
@@ -68,7 +69,7 @@ export function RefundQueueView() {
   }, [query]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {
