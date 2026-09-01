@@ -460,6 +460,15 @@
   .cartMedia {
     max-height: 14rem;
   }
+  .wishlistMedia {
+    min-height: 10.5rem;
+    aspect-ratio: 16 / 9;
+    padding: var(--space-4);
+  }
+  .wishlistCardBody {
+    grid-template-rows: auto auto auto auto auto;
+    gap: var(--space-2);
+  }
   .itemPrice {
     justify-items: start;
     text-align: start;
