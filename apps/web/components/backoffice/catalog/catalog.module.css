@@ -622,6 +622,10 @@
   box-shadow: 0 0 0 1px var(--color-primary);
 }
 
+.radioCard:has(input:checked) .radioCardCopy span {
+  color: var(--color-primary-hover);
+}
+
 .radioCard input {
   width: 1.25rem;
   height: 1.25rem;
@@ -701,6 +705,10 @@
   border-color: color-mix(in srgb, var(--color-info) 35%, var(--color-border));
   color: var(--color-primary-hover);
   background: var(--color-info-soft);
+}
+
+.infoCard p {
+  color: var(--color-primary-hover);
 }
 
 .detailHero {
