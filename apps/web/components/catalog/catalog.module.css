@@ -213,6 +213,14 @@
   color: inherit;
 }
 
+.productMedia {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  padding: var(--space-4);
+  background: var(--color-surface-subtle);
+}
+
 .mediaLabel,
 .actualUnitLabel {
   position: absolute;
