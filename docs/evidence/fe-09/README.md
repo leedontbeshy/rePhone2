@@ -5,7 +5,8 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Work package hiện tại: **WP-05 — BLOCKED bởi FE9-R14**
+> Con trỏ triển khai: **WP-06 — PASS; tiếp theo WP-07**<br>
+> Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
 
@@ -20,6 +21,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-03 storefront evidence](./wp-03-storefront.md)
 - [WP-04 auth/account evidence](./wp-04-auth-account.md)
 - [WP-05 commerce evidence](./wp-05-commerce.md)
+- [WP-06 customer post-purchase evidence](./wp-06-post-purchase.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -102,6 +104,17 @@ WP-05 chưa được đóng vì `FE9-R14`: API create chưa xác nhận toàn b�
 khách vừa preview. Chi tiết implementation, lịch sử lỗi, performance và quyết định
 cần có nằm tại [WP-05 commerce evidence](./wp-05-commerce.md).
 
+## Customer post-purchase hardening WP-06
+
+WP-06 kết thúc tại `0de508c` với local loading cho collection/detail, mutation lock,
+guest credential fail-closed, warranty ownership E2E, after-sales eligibility và
+retry đúng hành động. Full web unit đạt `614/614`; API unit đạt `683/683`;
+after-sales/warranty E2E đạt `6/6`; browser post-purchase đạt `5/5` hai lượt liên
+tiếp, gồm đủ bảy route ở 390 px và Axe zero serious/critical.
+
+Chi tiết lỗi đã bắt, privacy matrix và acceptance nằm tại
+[WP-06 customer post-purchase evidence](./wp-06-post-purchase.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -112,7 +125,8 @@ cần có nằm tại [WP-05 commerce evidence](./wp-05-commerce.md).
 | WP-03 | Storefront browser/visual/performance evidence | PASS |
 | WP-04 | Auth/account browser/visual/security evidence | PASS |
 | WP-05 | Commerce evidence + 20 snapshot | BLOCKED — FE9-R14 |
-| WP-06–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-06 | Customer post-purchase browser/ownership/responsive evidence | PASS |
+| WP-07–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -128,6 +142,7 @@ cần có nằm tại [WP-05 commerce evidence](./wp-05-commerce.md).
 
 ## Bước tiếp theo
 
-Chốt quyết định `FE9-R14`: phê duyệt bổ sung fingerprint/version cho checkout
-preview ở backend/OpenAPI, hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước
-WP-14. Chưa chuyển WP-05 sang PASS cho đến khi quyết định này được ghi nhận.
+Triển khai WP-07 cho catalog và voucher administration. Song song, vẫn cần chốt
+`FE9-R14`: phê duyệt fingerprint/version cho checkout preview ở backend/OpenAPI,
+hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước WP-14. Chưa chuyển WP-05
+sang PASS cho đến khi quyết định này được ghi nhận.

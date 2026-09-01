@@ -234,3 +234,40 @@ Cả hai đạt budget LCP `<= 2.500 ms`, CLS `<= 0,1` và interaction proxy
 WP-05 chưa chuyển PASS vì `FE9-R14`: backend create chưa xác nhận toàn bộ business
 preview. Frontend scope đã xanh; quyết định contract hoặc chấp nhận rủi ro phải được
 ghi nhận trước closeout.
+
+## WP-06 verification — tree `0de508c`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 127 file, 614/614 test |
+| `pnpm --filter @rephone/api test` | 0 | 117 file, 683/683 test |
+| Targeted post-purchase web | 0 | 7 file, 44/44 test |
+| `pnpm --filter @rephone/api test:e2e -- test/e2e/after-sales.e2e.spec.ts` | 0 | 1 file, 6/6 test |
+| `pnpm --filter web lint` | 0 | PASS, zero warning |
+| `pnpm --filter web typecheck` | 0 | PASS |
+| `pnpm --filter @rephone/api lint` | 0 | PASS, zero warning |
+| `pnpm --filter @rephone/api typecheck` | 0 | PASS |
+| `git diff --check` | 0 | PASS |
+
+### Browser, responsive và privacy gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Khởi động đầu | 1 | Web server timeout do Docker Desktop crash ở Windows runtime socket |
+| Browser sau khôi phục môi trường | 1 | 1/5; lộ locator collection sai, contrast 4,08:1 và picker đọc trước khi option tải xong |
+| Browser remediation giữa | 1 | 3/5; còn strict locator và race chờ option |
+| Browser cuối, lượt 1 | 0 | 5/5, Chromium, 1 worker, 57,7 giây |
+| Browser cuối, lượt 2 | 0 | 5/5, Chromium, 1 worker, 56,2 giây |
+
+Docker Desktop 4.66 trên máy kiểm thử bị Application Control chặn việc dọn hai
+runtime socket của Docker AI/secrets. Runtime directory được di chuyển sang bản sao
+`.stale-*`, tạo lại sạch và tắt Docker AI cục bộ; không factory reset hoặc xóa image,
+volume hay dữ liệu PostgreSQL. Sau khôi phục, test database migrate đủ 12 migration
+và hai browser run cuối xanh liên tiếp.
+
+Browser suite phủ customer cancel thật, guest privacy, warranty detail/Axe,
+after-sales eligibility, form focus, synchronous double-submit, attachment/provider
+failure và đủ collection/detail ở 390 px. API E2E bổ sung owner, non-owner,
+anonymous, staff, converted guest cookie và forged guest header cho warranty.
