@@ -194,12 +194,34 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(mobileDialog).toBeVisible();
     await expect(closeMenu).toBeFocused();
 
+    const overlayBox = await mobileDialog.locator('..').boundingBox();
+    expect(overlayBox).not.toBeNull();
+    expect(overlayBox?.x).toBe(0);
+    expect(overlayBox?.y).toBe(0);
+    expect(overlayBox?.width).toBe(390);
+    expect(overlayBox?.height).toBe(844);
+
     await page.keyboard.press('Shift+Tab');
     expect(await mobileDialog.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(
       true,
     );
     await page.keyboard.press('Tab');
     await expect(closeMenu).toBeFocused();
+
+    const mobileSearch = mobileDialog.getByRole('combobox', {
+      name: 'Tìm iPhone hoặc phụ kiện',
+      exact: true,
+    });
+    await mobileSearch.fill('iPhone 17');
+    const mobileSuggestions = mobileDialog.getByRole('listbox', {
+      name: 'Gợi ý sản phẩm',
+      exact: true,
+    });
+    await expect(mobileSuggestions).toBeVisible();
+    const suggestionBox = await mobileSuggestions.boundingBox();
+    expect(suggestionBox).not.toBeNull();
+    expect(suggestionBox?.height).toBeGreaterThan(0);
+    expect((suggestionBox?.y ?? 844) + (suggestionBox?.height ?? 0)).toBeLessThanOrEqual(844);
 
     await page.keyboard.press('Escape');
     await expect(mobileDialog).toHaveCount(0);

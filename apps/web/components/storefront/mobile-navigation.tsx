@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce } from '@/app/commerce-provider';
 import {
@@ -89,92 +90,102 @@ export function MobileNavigation() {
       >
         Danh mục
       </button>
-      {open ? (
-        <div
-          className={styles.overlay}
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setOpen(false);
-          }}
-        >
-          <div
-            ref={panelRef}
-            id="storefront-mobile-navigation"
-            className={styles.panel}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="storefront-mobile-navigation-title"
-          >
-            <div className={styles.panelHeader}>
-              <strong id="storefront-mobile-navigation-title">Danh mục</strong>
-              <button className={styles.closeButton} type="button" onClick={closeNavigation}>
-                Đóng
-              </button>
-            </div>
-
-            <div className={styles.searchSlot}>
-              <StorefrontSearch
-                id="mobile-storefront-search"
-                onNavigate={closeNavigation}
-                variant="mobile"
-              />
-            </div>
-
-            <nav aria-label="Danh mục sản phẩm">
-              <Suspense
-                fallback={
-                  <MobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
-                }
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              className={styles.overlay}
+              onMouseDown={(event) => {
+                if (event.currentTarget === event.target) setOpen(false);
+              }}
+            >
+              <div
+                ref={panelRef}
+                id="storefront-mobile-navigation"
+                className={styles.panel}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="storefront-mobile-navigation-title"
               >
-                <QueryAwareMobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
-              </Suspense>
-            </nav>
+                <div className={styles.panelHeader}>
+                  <strong id="storefront-mobile-navigation-title">Danh mục</strong>
+                  <button className={styles.closeButton} type="button" onClick={closeNavigation}>
+                    Đóng
+                  </button>
+                </div>
 
-            {customerNavigation.length === 0 ? null : (
-              <nav className={styles.customerNavigation} aria-label="Lối tắt tài khoản">
-                <ul className={styles.navigationList}>
-                  {customerNavigation.map((item) => {
-                    const isCurrent = isStorefrontNavigationCurrent(item.href, pathname);
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          aria-current={isCurrent ? 'page' : undefined}
-                          onClick={closeNavigation}
-                        >
-                          {item.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-            )}
+                <div className={styles.searchSlot}>
+                  <StorefrontSearch
+                    id="mobile-storefront-search"
+                    onNavigate={closeNavigation}
+                    variant="mobile"
+                  />
+                </div>
 
-            <div className={styles.sessionLinks} role="group" aria-label="Tài khoản và giỏ hàng">
-              {status === 'loading' ? (
-                <span role="status">Đang tải tài khoản…</span>
-              ) : status === 'anonymous' ? (
-                <Link href="/login" onClick={closeNavigation}>
-                  Đăng nhập
-                </Link>
-              ) : user?.role === 'CUSTOMER' ? (
-                <Link href="/account" onClick={closeNavigation}>
-                  Tài khoản của bạn
-                </Link>
-              ) : (
-                <Link href="/backoffice" onClick={closeNavigation}>
-                  Mở trang quản trị
-                </Link>
-              )}
-              {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
-                <Link href="/cart" onClick={closeNavigation}>
-                  Giỏ hàng · {totalQuantity}
-                </Link>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                <nav aria-label="Danh mục sản phẩm">
+                  <Suspense
+                    fallback={
+                      <MobileNavigationLinks pathname={pathname} onNavigate={closeNavigation} />
+                    }
+                  >
+                    <QueryAwareMobileNavigationLinks
+                      pathname={pathname}
+                      onNavigate={closeNavigation}
+                    />
+                  </Suspense>
+                </nav>
+
+                {customerNavigation.length === 0 ? null : (
+                  <nav className={styles.customerNavigation} aria-label="Lối tắt tài khoản">
+                    <ul className={styles.navigationList}>
+                      {customerNavigation.map((item) => {
+                        const isCurrent = isStorefrontNavigationCurrent(item.href, pathname);
+                        return (
+                          <li key={item.href}>
+                            <Link
+                              href={item.href}
+                              aria-current={isCurrent ? 'page' : undefined}
+                              onClick={closeNavigation}
+                            >
+                              {item.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </nav>
+                )}
+
+                <div
+                  className={styles.sessionLinks}
+                  role="group"
+                  aria-label="Tài khoản và giỏ hàng"
+                >
+                  {status === 'loading' ? (
+                    <span role="status">Đang tải tài khoản…</span>
+                  ) : status === 'anonymous' ? (
+                    <Link href="/login" onClick={closeNavigation}>
+                      Đăng nhập
+                    </Link>
+                  ) : user?.role === 'CUSTOMER' ? (
+                    <Link href="/account" onClick={closeNavigation}>
+                      Tài khoản của bạn
+                    </Link>
+                  ) : (
+                    <Link href="/backoffice" onClick={closeNavigation}>
+                      Mở trang quản trị
+                    </Link>
+                  )}
+                  {status !== 'authenticated' || user?.role === 'CUSTOMER' ? (
+                    <Link href="/cart" onClick={closeNavigation}>
+                      Giỏ hàng · {totalQuantity}
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
