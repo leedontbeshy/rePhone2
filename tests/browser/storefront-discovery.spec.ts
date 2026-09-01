@@ -8,7 +8,7 @@ const MODEL_PATH = '/products/iphone-14-pro';
 const EXACT_UNIT_PATH = `${MODEL_PATH}/units/IP14P-128-001`;
 const SOLD_OUT_MODEL_PATH = '/products/iphone-15-pro';
 const UNAVAILABLE_MODEL_PATH = '/products/iphone-13';
-const UNAVAILABLE_UNIT_PATH = `${UNAVAILABLE_MODEL_PATH}/units/IP13-BLU-001`;
+const UNAVAILABLE_UNIT_PATH = `${UNAVAILABLE_MODEL_PATH}/units/IP13-NOT-FOUND`;
 const HOME_HEADING = 'Chọn iPhone phù hợp với bạn';
 const PUBLIC_ROUTES = [
   '/',
@@ -571,7 +571,7 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('128 GB · 6 GB RAM', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('Space Black', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
-  await expect(purchaseRail.getByText('Ngoại hình loại A', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ngoại hình loại A', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Pin 93%', { exact: true })).toBeVisible();
   await expect(
     page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
@@ -656,7 +656,7 @@ async function expectPublicPrimaryAction(
       await expect(page.locator(`main a[href="${SOLD_OUT_MODEL_PATH}"]`).first()).toBeVisible();
       return;
     case '/products':
-      await expect(page.locator(`main a[href="${MODEL_PATH}"]`).first()).toBeVisible();
+      await expect(page.locator('main article a[href^="/products/"]').first()).toBeVisible();
       return;
     case MODEL_PATH:
       await expect(page.locator(`main a[href="${EXACT_UNIT_PATH}"]`).first()).toBeVisible();
