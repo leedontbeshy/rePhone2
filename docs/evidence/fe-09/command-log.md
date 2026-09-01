@@ -184,3 +184,53 @@ account page được chụp giữa trang. Sau remediation, browser audit 320 px
 phát hiện document overflow do `html { min-width: 20rem }` kết hợp scrollbar dành
 chỗ. Concern được tách thành `11af652`, đo lại `scrollWidth === clientWidth === 320`
 và khóa bằng browser regression.
+
+## WP-05 verification — tree `727193d`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm format:check` | 0 | PASS sau khi chuẩn hóa `auth-provider.tsx` tại `8121362` |
+| `pnpm lint` | 0 | PASS, zero warning |
+| `pnpm typecheck` | 0 | 4/4 Turbo task |
+| `pnpm --filter @rephone/web test` | 0 | 127 file, 612/612 test |
+| `pnpm fe:coverage` | 0 | 162/162 operation, 56/56 route, 13/13 state |
+| `pnpm fe:a11y` | 0 | 4 file, 21/21 test |
+| `pnpm --filter @rephone/api test` | 0 | 117 file, 683/683 test |
+| Commerce + checkout API E2E | 0 | 2 file, 18/18 test |
+| `pnpm performance:storefront` | 0 | Production build + performance 1/1 |
+| `git diff --check` | 0 | PASS |
+
+### Browser, visual và review gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Final candidate đầu tại `c5d9432` | 1 | 11/13; scroll ở 7 px vượt assertion 1 px và footer snapshot thiếu dữ liệu seed hiện hành |
+| Visual update đã review | 0 | 20 snapshot được tạo lại sau khi ẩn dev portal và review 320/1440 px |
+| Guest shipping + customer pickup full-stack | 0 | 2/2, API create thật và mở trang đơn |
+| Full commerce trước identity isolation | 1 | 12/13; visual login vượt limit 5 lần/phút của cùng customer fixture |
+| Full commerce cuối, lượt 1 | 0 | 13/13, Chromium, 1 worker, 2,0 phút |
+| Full commerce cuối, lượt 2 | 0 | 13/13, Chromium, 1 worker, 2,0 phút |
+
+Không xóa các lần lỗi: flow tạo đơn thật đầu tiên còn chọn một máy ở kho cho pickup
+nên preview trả `409`; response body cũng không còn đọc được sau khi trang đã điều
+hướng. Scenario được chuyển sang máy có tại cửa hàng và xác minh projection ở trang
+đơn. Visual suite có fixture customer riêng để không phụ thuộc thứ tự hoặc rate-limit
+của các scenario trước.
+
+### Production performance tại `727193d`
+
+Profile `390×844`, CPU ×4, latency 40 ms, 10 Mbps download, ba lượt lấy median:
+
+| Route | LCP | CLS | Tương tác | Điều hướng | Bundle route |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `/cart` | 1.664 ms | 0 | 58,13 ms | 655,4 ms | 228.913 B |
+| `/checkout` | 1.620 ms | 0 | 61,2 ms | 628,5 ms | 233.658 B |
+
+Cả hai đạt budget LCP `<= 2.500 ms`, CLS `<= 0,1` và interaction proxy
+`<= 200 ms`. Raw report nằm tại `.local/release-performance/storefront.json`.
+
+WP-05 chưa chuyển PASS vì `FE9-R14`: backend create chưa xác nhận toàn bộ business
+preview. Frontend scope đã xanh; quyết định contract hoặc chấp nhận rủi ro phải được
+ghi nhận trước closeout.

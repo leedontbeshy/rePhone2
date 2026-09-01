@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Work package hiện tại: **WP-05**
+> Work package hiện tại: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
 
@@ -19,6 +19,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [Residual-risk log](./residual-risks.md)
 - [WP-03 storefront evidence](./wp-03-storefront.md)
 - [WP-04 auth/account evidence](./wp-04-auth-account.md)
+- [WP-05 commerce evidence](./wp-05-commerce.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -88,6 +89,19 @@ a11y `21/21`.
 Chi tiết security/privacy, browser state, visual baseline và acceptance nằm tại
 [WP-04 auth/account evidence](./wp-04-auth-account.md).
 
+## Commerce hardening WP-05
+
+Frontend WP-05 kết thúc tại `727193d` với cart queue cô lập theo phiên, wishlist giữ
+quantity, local loading, checkout chống gửi lặp/stale response và phục hồi create
+không chắc chắn chỉ sau thao tác rõ ràng của khách. Guest shipping và customer pickup
+đã tạo đơn bằng API/DB thật. Browser cart/wishlist/checkout đạt `13/13` hai lượt;
+20 snapshot phủ bốn trạng thái ở năm viewport; production cart/checkout lần lượt có
+LCP median `1.664 ms` và `1.620 ms`.
+
+WP-05 chưa được đóng vì `FE9-R14`: API create chưa xác nhận toàn bộ projection mà
+khách vừa preview. Chi tiết implementation, lịch sử lỗi, performance và quyết định
+cần có nằm tại [WP-05 commerce evidence](./wp-05-commerce.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -97,7 +111,8 @@ Chi tiết security/privacy, browser state, visual baseline và acceptance nằm
 | WP-02 | Foundation/browser/visual evidence | PASS |
 | WP-03 | Storefront browser/visual/performance evidence | PASS |
 | WP-04 | Auth/account browser/visual/security evidence | PASS |
-| WP-05–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-05 | Commerce evidence + 20 snapshot | BLOCKED — FE9-R14 |
+| WP-06–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -113,6 +128,6 @@ Chi tiết security/privacy, browser state, visual baseline và acceptance nằm
 
 ## Bước tiếp theo
 
-Thực hiện WP-05 cho cart, wishlist và checkout: giữ dữ liệu hợp lệ khi cập nhật theo
-vùng, khóa submit lặp, xử lý preview/reconfirm/conflict và bảo toàn conversion flow
-cho khách vãng lai lẫn khách đã đăng nhập.
+Chốt quyết định `FE9-R14`: phê duyệt bổ sung fingerprint/version cho checkout
+preview ở backend/OpenAPI, hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước
+WP-14. Chưa chuyển WP-05 sang PASS cho đến khi quyết định này được ghi nhận.
