@@ -9,7 +9,7 @@
     "lint": "eslint app components lib --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "test:coverage-contract": "vitest run lib/frontend-coverage.spec.ts",
+    "test:coverage-contract": "vitest run lib/frontend-coverage.spec.ts lib/frontend-browser-coverage.spec.ts",
     "test:a11y-contract": "vitest run components/ui/foundation.spec.ts components/ui/foundation-render.spec.tsx components/shells/shell-utils.spec.ts components/shells/shell-foundation.spec.tsx"
   },
   "dependencies": {
