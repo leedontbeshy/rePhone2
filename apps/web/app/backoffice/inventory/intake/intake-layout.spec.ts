@@ -79,6 +79,9 @@ describe('inventory intake form layout', () => {
     const wizard = readFileSync(wizardPath, 'utf8');
     expect(wizard).toContain('ref={fileInputRef}');
     expect(wizard).toContain("disabled={busy === 'upload'}");
+    expect(wizard).toContain('id="inventory-media-file-error"');
+    expect(wizard).toContain('validateInventoryMediaFile(nextFile)');
+    expect(wizard).toContain("event.target.value = ''");
     expect(wizard).toContain("identifiers || 'Chưa có mã định danh'");
     expect(wizard).not.toContain("key={file?.name ?? 'empty'}");
   });

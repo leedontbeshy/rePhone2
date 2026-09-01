@@ -143,6 +143,17 @@ export function validateInventoryIntakeDraft(draft: InventoryIntakeDraft): Intak
   return errors;
 }
 
+export function normalizedInventoryIdentifiers(
+  draft: Pick<InventoryIntakeDraft, 'eid' | 'imei1' | 'imei2' | 'serial'>,
+) {
+  return {
+    eid: normalizeEid(draft.eid),
+    imei1: normalizeImei(draft.imei1),
+    imei2: normalizeImei(draft.imei2),
+    serial: normalizeSerial(draft.serial),
+  } as const;
+}
+
 export function inventoryIntakeServerFieldErrors(
   value: unknown,
   draft: InventoryIntakeDraft,

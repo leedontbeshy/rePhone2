@@ -37,6 +37,7 @@ import {
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
   inventoryIntakeVariantIsSelectable,
+  normalizedInventoryIdentifiers,
   validateInventoryIntakeDraft,
   type IntakeField,
   type IntakeFieldErrors,
@@ -85,6 +86,7 @@ export function InventoryIntakeWizard() {
   const [unit, setUnit] = useState<Unit | null>(null);
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [intakeOptionsStatus, setIntakeOptionsStatus] = useState<
     'idle' | 'loading' | 'ready' | 'failed'
@@ -260,6 +262,7 @@ export function InventoryIntakeWizard() {
       return;
     }
     setIntakeErrors({});
+    const identifiers = normalizedInventoryIdentifiers(intake);
     void runAction('intake', async () => {
       const result = await client.POST('/api/v1/backoffice/inventory-units', {
         body: {
@@ -267,10 +270,10 @@ export function InventoryIntakeWizard() {
           locationId: intake.locationId,
           simLockStatus: intake.simLockStatus,
           simConfiguration: intake.simConfiguration,
-          ...(intake.imei1.trim() === '' ? {} : { imei1: intake.imei1 }),
-          ...(intake.imei2.trim() === '' ? {} : { imei2: intake.imei2 }),
-          ...(intake.eid.trim() === '' ? {} : { eid: intake.eid }),
-          ...(intake.serial.trim() === '' ? {} : { serial: intake.serial }),
+          ...(identifiers.imei1 === '' ? {} : { imei1: identifiers.imei1 }),
+          ...(identifiers.imei2 === '' ? {} : { imei2: identifiers.imei2 }),
+          ...(identifiers.eid === '' ? {} : { eid: identifiers.eid }),
+          ...(identifiers.serial === '' ? {} : { serial: identifiers.serial }),
           ...(intake.modelNumber.trim() === '' ? {} : { modelNumber: intake.modelNumber }),
           ...(intake.regionCode.trim() === '' ? {} : { regionCode: intake.regionCode }),
           ...(intake.salePrice.trim() === '' ? {} : { salePrice: intake.salePrice }),
@@ -345,10 +348,19 @@ export function InventoryIntakeWizard() {
 
   function submitUpload(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (unit === null || file === null) {
+      setMediaError('Hãy chọn một ảnh JPEG, PNG hoặc WebP.');
+      fileInputRef.current?.focus();
+      return;
+    }
+    const fileError = validateInventoryMediaFile(file);
+    if (fileError !== null) {
+      setMediaError(fileError);
+      fileInputRef.current?.focus();
+      return;
+    }
+    setMediaError(null);
     void runAction('upload', async () => {
-      if (unit === null || file === null) throw new Error('Hãy chọn một ảnh JPEG, PNG hoặc WebP.');
-      const fileError = validateInventoryMediaFile(file);
-      if (fileError !== null) throw new Error(fileError);
       const formData = new FormData();
       formData.set('file', file);
       formData.set('altText', `Ảnh thực tế ${unit.inventoryCode}`);
@@ -361,6 +373,7 @@ export function InventoryIntakeWizard() {
       if (result.data === undefined) throw apiRequestError(result.error);
       await refreshUnit(unit.id);
       setFile(null);
+      setMediaError(null);
       if (fileInputRef.current !== null) fileInputRef.current.value = '';
       setNotice('Đã tải ảnh thực tế của máy lên thành công.');
     });
@@ -816,7 +829,12 @@ export function InventoryIntakeWizard() {
             >
               <form className={styles.uploadForm} onSubmit={submitUpload}>
                 <input
-                  aria-describedby="inventory-media-file-help"
+                  aria-describedby={
+                    mediaError === null
+                      ? 'inventory-media-file-help'
+                      : 'inventory-media-file-help inventory-media-file-error'
+                  }
+                  aria-invalid={mediaError === null ? undefined : true}
                   className={styles.fileInput}
                   disabled={busy === 'upload'}
                   id="inventory-media-file"
@@ -824,7 +842,14 @@ export function InventoryIntakeWizard() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => {
-                    setFile(event.target.files?.[0] ?? null);
+                    const nextFile = event.target.files?.[0] ?? null;
+                    const nextError =
+                      nextFile === null
+                        ? 'Hãy chọn một ảnh JPEG, PNG hoặc WebP.'
+                        : validateInventoryMediaFile(nextFile);
+                    setFile(nextError === null ? nextFile : null);
+                    setMediaError(nextError);
+                    if (nextError !== null) event.target.value = '';
                   }}
                   required
                 />
@@ -848,6 +873,11 @@ export function InventoryIntakeWizard() {
                     {file === null ? 'Chọn ảnh' : 'Đổi ảnh'}
                   </span>
                 </label>
+                {mediaError === null ? null : (
+                  <p className={styles.uploadError} id="inventory-media-file-error" role="alert">
+                    {mediaError}
+                  </p>
+                )}
                 <div className={styles.uploadActions}>
                   <span>{unit.mediaCount} ảnh đã gắn với máy này</span>
                   <button

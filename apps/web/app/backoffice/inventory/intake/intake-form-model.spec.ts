@@ -6,6 +6,7 @@ import {
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
   inventoryIntakeVariantIsSelectable,
+  normalizedInventoryIdentifiers,
   validateInventoryIntakeDraft,
   type InventoryIntakeDraft,
 } from './intake-form-model';
@@ -110,6 +111,22 @@ describe('inventory intake validation', () => {
     expect(missingIdentifier.imei1).toBe('Nhập IMEI chính hoặc số sê-ri để nhận diện máy.');
     expect(duplicateImei.imei2).toBe('IMEI phụ phải khác IMEI chính.');
     expect(lowComparePrice.compareAtPrice).toBe('Giá niêm yết phải lớn hơn hoặc bằng giá bán.');
+  });
+
+  it('submits identifiers in the same normalized form that passed validation', () => {
+    expect(
+      normalizedInventoryIdentifiers({
+        eid: '8904 9003 2000 0000 0000 0000 0000 0001',
+        imei1: '49015-420-3237-518',
+        imei2: '35 2099 0017 6132 9',
+        serial: ' f2 lx 9a0 abc12 ',
+      }),
+    ).toEqual({
+      eid: '89049003200000000000000000000001',
+      imei1: '490154203237518',
+      imei2: '352099001761329',
+      serial: 'F2LX9A0ABC12',
+    });
   });
 
   it('maps server validation details back to supported form fields', () => {

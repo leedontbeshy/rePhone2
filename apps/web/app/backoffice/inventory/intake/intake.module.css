@@ -556,6 +556,16 @@
   box-shadow: var(--focus-ring);
 }
 
+.fileInput[aria-invalid='true'] + .filePicker {
+  border-color: var(--color-danger);
+}
+
+.uploadError {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-danger-hover);
+  font-size: var(--font-size-small);
+}
+
 .filePickerIcon {
   display: grid;
   inline-size: 3.25rem;
