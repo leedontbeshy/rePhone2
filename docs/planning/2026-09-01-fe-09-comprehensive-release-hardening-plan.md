@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-09 — FE-7 operations hardening**<br>
+> Con trỏ thực thi: **WP-10 — FE-8 system administration hardening**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -52,8 +52,8 @@ bằng chứng đóng work package.
 | WP-06 — Post-purchase | **PASS** | Bảy route khách hàng, guest credential, eligibility và evidence đã được kiểm tra |
 | WP-07 — Catalog/voucher | **PASS** | Sáu route, lifecycle, role, conflict và local refresh đã qua gate |
 | WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
-| WP-09 — Operations | **IN PROGRESS** | Code và UI lifecycle test đã triển khai; còn final browser pair, API gate, screenshot review và evidence closeout |
-| WP-10 — System admin | **PENDING** | Route matrix cơ bản đã có; hardening master-detail, CAS, audit, health và overview chưa đóng |
+| WP-09 — Operations | **PASS có residual risk** | 11 route, lifecycle, API, desktop/mobile, Axe và 22 ảnh đã qua gate; `FE9-R15`–`FE9-R16` còn mở |
+| WP-10 — System admin | **IN PROGRESS** | Route matrix cơ bản đã có; hardening master-detail, mutation lock, CAS/QR cleanup, audit, health và overview chưa đóng |
 | WP-11 — A11y/responsive/visual | **PENDING** | Chạy ma trận toàn sản phẩm sau WP-10 |
 | WP-12 — Performance/client/media | **PENDING** | Đo production baseline/after và tối ưu theo số liệu |
 | WP-13 — Legacy cleanup | **PENDING** | Chỉ bắt đầu sau browser/visual gate của owner tương ứng |
@@ -538,11 +538,16 @@ stock và stock movements.
 
 **Routes:** 11 route orders, payments, refunds, after-sales, warranties và policies.
 
-**Trạng thái 02/09/2026:** `IN PROGRESS`. Các concern về evidence, mutation lock,
-queue refresh, scroll/focus, contrast và lifecycle UI đã được triển khai theo commit
-nhỏ. Work package chỉ được chuyển `PASS` sau khi có hai lượt browser liên tiếp trên
-final tree, API service/E2E gate, review toàn bộ ảnh current-run và
-`wp-09-operations.md`.
+**Trạng thái 02/09/2026:** `PASS CÓ RESIDUAL`. Cây code/browser cuối `b10a0d4`
+đã qua full web `663/663`, API unit/service `106/106`, API E2E `42/42` và hai lượt
+browser `11/11` liên tiếp. Đủ 11 route ở desktop/mobile, Axe bằng zero
+serious/critical, không overflow và 22/22 ảnh current-run đã được review. Chi tiết
+tại [WP-09 operations evidence](../evidence/fe-09/wp-09-operations.md).
+
+Pending lock hiện chỉ chặn gửi lặp cùng frame; chưa có idempotency key cho lỗi mạng
+mơ hồ (`FE9-R15`). Native `datetime-local` trên Windows còn phụ thuộc regional
+locale (`FE9-R16`). Hai residual này không phủ nhận kết quả UI của WP-09 nhưng phải
+được xử lý hoặc chấp nhận rõ trước WP-14.
 
 **Tasks**
 
@@ -726,7 +731,7 @@ logic trùng lặp.
 | `inventory-stock` | có | axe/workflow resume/privacy đã qua gate WP-08 |
 | `backoffice-access` | có | tiếp tục giữ fail-closed toàn backoffice |
 | `critical-commerce-flow` | có | chạy lại như release smoke end-to-end |
-| `operations-lifecycle` | **thiếu** | đã triển khai 11 UI test chia bốn spec; còn final WP-09 closeout |
+| `operations-lifecycle` | **thiếu tại baseline** | đã hoàn thiện 11 UI test chia bốn spec; WP-09 PASS có residual |
 | `system-admin-health` | **thiếu** | route matrix cơ bản đã có; hardening sâu thuộc WP-10 |
 | `release-matrix` | **thiếu** | chưa tạo đầy đủ; thuộc WP-11/WP-14 |
 
@@ -820,6 +825,7 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R13 | response đăng ký vẫn để lộ tín hiệu trùng tài khoản qua Network | Trung bình | endpoint trả `409 DUPLICATE_RESOURCE` dù UI dùng nội dung chung | backend/OpenAPI dùng response không phân biệt hoặc Product chấp nhận rủi ro tại WP-14 |
 | FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao | metadata/phân bổ/điểm nhận thay đổi nhưng tổng tiền không đổi | backend/OpenAPI cấp fingerprint/version bất biến hoặc Product chấp nhận và sửa acceptance |
 | FE9-R15 | mutation FE-7 chưa replay an toàn sau lỗi mạng mơ hồ | Cao | pending lock chỉ chặn gửi lặp cùng thời điểm, không có idempotency key | bổ sung contract idempotency hoặc ghi quyết định residual risk trước release |
+| FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | shared accessible `DateTimeField` hoặc Product chấp nhận hành vi native trước release |
 
 Rollback policy:
 
@@ -871,17 +877,20 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Con trỏ hiện tại là **WP-09**. Thứ tự tiếp tục:
+Con trỏ hiện tại là **WP-10**. Thứ tự tiếp tục:
 
-1. Hoàn tất hai lượt browser liên tiếp của bốn spec operations trên final tree.
-2. Review toàn bộ ảnh desktop/mobile current-run; screenshot chỉ là bằng chứng
-   visual, còn accessibility phải dựa trên Axe và keyboard/manual check riêng.
-3. Chạy API service/E2E, full web test, typecheck, lint, format và diff gate.
-4. Viết `docs/evidence/fe-09/wp-09-operations.md`, cập nhật evidence index,
-   command log và residual-risk log trước khi chuyển WP-09 sang `PASS`.
-5. Triển khai WP-10, sau đó lần lượt WP-11 → WP-12 → WP-13 → WP-14.
-6. Trước WP-14, chốt `FE9-R13`, `FE9-R14`, `FE9-R15`, lấy CI URL/artifact thật
-   và chạy production release gate hai lần từ test database sạch.
+1. Khóa gửi lặp đồng bộ cho mutation nhân viên, khách hàng, cấu hình và QR; bổ sung
+   test cùng-frame trước khi mở rộng browser coverage.
+2. Dọn QR cũ theo best-effort sau khi thay QR thành công, không xóa nhầm object mới
+   và không rollback transaction đã commit chỉ vì cleanup provider thất bại.
+3. Mở rộng `system-admin-health` thành các spec master-detail, settings/QR,
+   audit và health/overview; kiểm tra role, conflict, provider degradation,
+   local loading, scroll/focus và response cũ.
+4. Chạy sáu route FE-8 ở desktop/mobile, Axe, overflow và visual review; sau đó
+   viết `wp-10-system-admin.md` trước khi chuyển WP-10 sang `PASS`.
+5. Tiếp tục lần lượt WP-11 → WP-12 → WP-13 → WP-14.
+6. Trước WP-14, chốt `FE9-R13`–`FE9-R16`, lấy CI URL/artifact thật và chạy
+   production release gate hai lần từ test database sạch.
 
 Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc
 merge chỉ thực hiện khi được yêu cầu; FE-09 chỉ chuyển `DONE` sau WP-14.

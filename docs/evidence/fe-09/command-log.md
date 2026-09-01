@@ -345,3 +345,54 @@ Media validation hiện chỉ áp dụng từng tệp: không rỗng, JPEG/PNG/W
 Không có backend total media-count cap nên command log không ghi một giới hạn tổng giả
 định. Việc không có trường lookup reason là quyết định sản phẩm trước WP-08, không
 phải regression.
+
+## WP-09 verification — code/browser tree `b10a0d4`
+
+### Commit ledger
+
+| Nhóm | Commit |
+| --- | --- |
+| Evidence và thao tác tài chính an toàn | `2caa6da`, `91aa642`, `6fe1c11` |
+| Queue refresh, response ordering, scroll và focus | `5ffbf04`, `f598b5d`, `15fa16e`, `f391e91`, `5a889d2` |
+| Contrast và hình học chi tiết đơn | `aa934db`, `9dc0459`, `91f2870` |
+| Finance browser lifecycle | `680dfa2`, `a904f5a`, `0562d27` |
+| Warranty và after-sales browser lifecycle | `db09f9f`, `184c3eb` |
+| Route/order lifecycle và visual fixture | `1c9a8f3`, `b10a0d4` |
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 137 file, 663/663 test |
+| Browser ownership + operations queue model | 0 | 2 file, 10/10 test |
+| `pnpm --filter @rephone/web typecheck` | 0 | PASS |
+| `pnpm --filter @rephone/web lint` | 0 | PASS, zero warning |
+| Targeted API operations unit/service | 0 | 16 file, 106/106 test |
+| Targeted API operations E2E | 0 | 5 file, 42/42 test |
+| `pnpm --filter @rephone/api typecheck` | 0 | PASS |
+| `pnpm --filter @rephone/api lint` | 0 | PASS, zero warning |
+
+API E2E có cảnh báo deprecation từ `pg` về `client.query()` trong lúc client đã
+thực thi, nhưng command thoát `0` và cả 42 test đều xanh. Cảnh báo được giữ trong
+log thay vì mô tả như một run hoàn toàn không có warning.
+
+### Browser, responsive và accessibility gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Operations cuối A, có capture | 0 | 11/11, Chromium, khoảng 2,1 phút; tạo 22 ảnh current-run |
+| Operations cuối B | 0 | 11/11, Chromium, khoảng 2,1 phút; lượt xanh liên tiếp thứ hai |
+| Responsive/overflow | 0 | 11 route ở 1440×900 và 360×844; không overflow |
+| Axe | 0 | Zero serious/critical trên từng route/viewport |
+| Visual review | 0 | 22/22 ảnh trong `.local/fe09/wp09-audit/` đã kiểm tra và chấp nhận |
+
+Bốn browser spec dùng route fixture để chứng minh UI, request path/body, loading,
+focus, scroll, role presentation và conflict presentation. API unit/service/E2E là
+lớp bằng chứng riêng cho authorization, state transition và side effect backend;
+không dùng browser fixture để tuyên bố database thật đã được chạy.
+
+Screenshot chỉ chứng minh phần visual. Accessibility được khóa riêng bằng Axe và
+assertion về landmark, focus, accessible name và document overflow. Pending lock
+chỉ chặn double-submit trong cùng frame; replay sau lỗi mạng mơ hồ vẫn là
+`FE9-R15`. Chuỗi trống của native `datetime-local` trên Windows vẫn phụ thuộc
+regional locale và được ghi tại `FE9-R16`.

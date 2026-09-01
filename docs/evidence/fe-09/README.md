@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-08 — PASS; tiếp theo WP-09**<br>
+> Con trỏ triển khai: **WP-09 — PASS có residual; tiếp theo WP-10**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -24,6 +24,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-06 customer post-purchase evidence](./wp-06-post-purchase.md)
 - [WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md)
 - [WP-08 inventory/stock evidence](./wp-08-inventory-stock.md)
+- [WP-09 operations evidence](./wp-09-operations.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -147,6 +148,21 @@ backend chưa có giới hạn tổng số ảnh theo máy. Lookup reason cố �
 Chi tiết browser fixture/API service boundary, commit và acceptance nằm tại
 [WP-08 inventory/stock evidence](./wp-08-inventory-stock.md).
 
+## Operations hardening WP-09
+
+WP-09 kết thúc code/browser tại `b10a0d4` với 11 route vận hành được kiểm tra ở
+desktop/mobile, queue refresh cục bộ, giữ scroll/focus, conflict refetch, minh chứng
+ký mới theo từng lần bấm và đầy đủ vòng đời đơn hàng, tài chính, hỗ trợ sau mua,
+bảo hành/chính sách. Full web unit đạt `663/663`; API unit/service đạt `106/106`;
+API E2E đạt `42/42`; browser operations đạt `11/11` hai lượt liên tiếp. Hai mươi
+hai ảnh current-run đã được review, không có document overflow và Axe bằng zero
+serious/critical.
+
+WP-09 được ghi `PASS có residual`: pending lock chặn gửi lặp cùng frame nhưng chưa
+có idempotency key cho lỗi mạng mơ hồ (`FE9-R15`); control ngày giờ native trên
+Windows vẫn phụ thuộc regional locale (`FE9-R16`). Chi tiết proof boundary, commit,
+test và acceptance nằm tại [WP-09 operations evidence](./wp-09-operations.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -160,7 +176,8 @@ Chi tiết browser fixture/API service boundary, commit và acceptance nằm t�
 | WP-06 | Customer post-purchase browser/ownership/responsive evidence | PASS |
 | WP-07 | Catalog/voucher browser/responsive/accessibility evidence | PASS |
 | WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
-| WP-09–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-09 | Operations browser/API/visual evidence | PASS có residual — FE9-R15/R16 mở |
+| WP-10 | System administration evidence | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -176,7 +193,8 @@ Chi tiết browser fixture/API service boundary, commit và acceptance nằm t�
 
 ## Bước tiếp theo
 
-Triển khai WP-09 cho operations hardening. Song song, vẫn cần chốt
-`FE9-R14`: phê duyệt fingerprint/version cho checkout preview ở backend/OpenAPI,
-hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước WP-14. Chưa chuyển WP-05
-sang PASS cho đến khi quyết định này được ghi nhận.
+Triển khai WP-10 cho system administration hardening. Song song, vẫn cần chốt
+`FE9-R13`–`FE9-R16`, đặc biệt fingerprint/version cho checkout preview và
+idempotency cho mutation vận hành, hoặc có quyết định chấp nhận rủi ro rõ trước
+WP-14. Chưa chuyển WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release này
+chưa được xử lý.
