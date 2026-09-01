@@ -1,3 +1,4 @@
+import { DeviceMobileIcon } from '@phosphor-icons/react';
 import NextLink from 'next/link';
 import type { SyntheticEvent } from 'react';
 import { Button, Skeleton, StatusChip, Textarea, formatVnd } from '@/components/ui';
@@ -40,43 +41,13 @@ export function OrderDetailMain({
 }>) {
   return (
     <div className={styles.detailSections}>
-      <OperationsPanel title="Khách hàng và giao nhận">
-        <dl className={styles.specGrid}>
-          <Spec label="Khách hàng" value={detail.contact.fullName} />
-          <Spec label="Số điện thoại" value={detail.contact.phone} />
-          <Spec label="Email" value={detail.contact.email} />
-          {detail.fulfillmentType === 'PICKUP' ? (
-            <Spec
-              label="Cửa hàng nhận"
-              value={
-                detail.pickupStore === null
-                  ? '—'
-                  : `${detail.pickupStore.code} · ${detail.pickupStore.name}`
-              }
-            />
-          ) : (
-            <>
-              <Spec
-                label="Nơi xuất hàng"
-                value={
-                  detail.location === null
-                    ? '—'
-                    : `${detail.location.code} · ${detail.location.name}`
-                }
-              />
-              <Spec label="Địa chỉ giao" value={formatOrderAddress(detail.shippingAddress)} />
-            </>
-          )}
-          {detail.pickupHoldUntil === null ? null : (
-            <Spec label="Giữ hàng đến" value={formatOrderDateTime(detail.pickupHoldUntil)} />
-          )}
-        </dl>
-      </OperationsPanel>
-
-      <OperationsPanel title="Sản phẩm">
+      <OperationsPanel className={styles.productPanel} title="Sản phẩm">
         <div className={styles.itemList}>
           {detail.items.map((item) => (
             <article className={styles.itemRow} key={item.id}>
+              <span className={styles.productVisual} aria-hidden="true">
+                <DeviceMobileIcon size={38} weight="duotone" />
+              </span>
               <div className={styles.itemCopy}>
                 <strong>{item.productName}</strong>
                 <span>
@@ -102,8 +73,49 @@ export function OrderDetailMain({
         </div>
       </OperationsPanel>
 
-      <OperationsPanel title="Tiến trình xử lý">
-        <OperationsTimeline items={orderTimeline(detail)} label="Tiến trình đơn hàng" />
+      <OperationsPanel className={styles.customerDeliveryPanel} title="Khách hàng và giao nhận">
+        <div className={styles.customerDeliveryGrid}>
+          <dl className={styles.compactSpecList}>
+            <Spec label="Khách hàng" value={detail.contact.fullName} />
+            <Spec label="Số điện thoại" value={detail.contact.phone} />
+            <Spec label="Email" value={detail.contact.email} />
+          </dl>
+          <dl className={styles.compactSpecList}>
+            {detail.fulfillmentType === 'PICKUP' ? (
+              <Spec
+                label="Cửa hàng nhận"
+                value={
+                  detail.pickupStore === null
+                    ? '—'
+                    : `${detail.pickupStore.code} · ${detail.pickupStore.name}`
+                }
+              />
+            ) : (
+              <>
+                <Spec label="Địa chỉ giao" value={formatOrderAddress(detail.shippingAddress)} />
+                <Spec
+                  label="Nơi xuất hàng"
+                  value={
+                    detail.location === null
+                      ? '—'
+                      : `${detail.location.code} · ${detail.location.name}`
+                  }
+                />
+              </>
+            )}
+            {detail.pickupHoldUntil === null ? null : (
+              <Spec label="Giữ hàng đến" value={formatOrderDateTime(detail.pickupHoldUntil)} />
+            )}
+          </dl>
+        </div>
+      </OperationsPanel>
+
+      <OperationsPanel className={styles.timelinePanel} title="Tiến trình xử lý">
+        <OperationsTimeline
+          items={orderTimeline(detail)}
+          label="Tiến trình đơn hàng"
+          orientation="horizontal"
+        />
       </OperationsPanel>
 
       {detail.shipments.length === 0 ? null : <ShipmentPanel detail={detail} />}
@@ -227,64 +239,72 @@ function PaymentAndRefundPanel({ detail }: Readonly<{ detail: BackofficeOrderDet
         <p className={styles.muted}>Chưa có khoản thanh toán hoặc hoàn tiền.</p>
       ) : null}
       {detail.paymentAttempts.length === 0 ? null : (
-        <div className={styles.paymentList}>
-          {detail.paymentAttempts.map((payment) => (
-            <article className={styles.recordCard} key={payment.id}>
-              <div className={styles.recordHeading}>
-                <div>
-                  <strong>{paymentPurposeLabel(payment.purpose)}</strong>
-                  <span>{paymentMethodLabel(payment.method)}</span>
+        <section className={styles.recordGroup} aria-labelledby="order-payments-heading">
+          <h3 id="order-payments-heading">Khoản thanh toán</h3>
+          <div className={styles.paymentList}>
+            {detail.paymentAttempts.map((payment) => (
+              <article className={styles.recordCard} key={payment.id}>
+                <div className={styles.recordHeading}>
+                  <div>
+                    <strong>{paymentPurposeLabel(payment.purpose)}</strong>
+                    <span>{paymentMethodLabel(payment.method)}</span>
+                  </div>
+                  <StatusChip
+                    label={paymentRecordStatusLabel(payment.status)}
+                    tone={paymentRecordTone(payment.status)}
+                  />
                 </div>
-                <StatusChip
-                  label={paymentRecordStatusLabel(payment.status)}
-                  tone={paymentRecordTone(payment.status)}
-                />
-              </div>
-              <dl className={styles.specGrid}>
-                <Spec label="Cần thu" value={formatVnd(payment.expectedAmount)} />
-                <Spec
-                  label="Đã nhận"
-                  value={payment.receivedAmount === null ? '—' : formatVnd(payment.receivedAmount)}
-                />
-                <Spec
-                  label="Đã kiểm tra"
-                  value={
-                    payment.reviewedAt === null ? '—' : formatOrderDateTime(payment.reviewedAt)
-                  }
-                />
-              </dl>
-              <NextLink href={`/backoffice/payments/${encodeURIComponent(payment.id)}`}>
-                Xem khoản thanh toán
-              </NextLink>
-            </article>
-          ))}
-        </div>
+                <dl className={styles.specGrid}>
+                  <Spec label="Cần thu" value={formatVnd(payment.expectedAmount)} />
+                  <Spec
+                    label="Đã nhận"
+                    value={
+                      payment.receivedAmount === null ? '—' : formatVnd(payment.receivedAmount)
+                    }
+                  />
+                  <Spec
+                    label="Đã kiểm tra"
+                    value={
+                      payment.reviewedAt === null ? '—' : formatOrderDateTime(payment.reviewedAt)
+                    }
+                  />
+                </dl>
+                <NextLink href={`/backoffice/payments/${encodeURIComponent(payment.id)}`}>
+                  Xem khoản thanh toán
+                </NextLink>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
       {detail.refunds.length === 0 ? null : (
-        <div className={styles.refundList}>
-          {detail.refunds.map((refund) => (
-            <article className={styles.recordCard} key={refund.id}>
-              <div className={styles.recordHeading}>
-                <div>
-                  <strong>{formatVnd(refund.amount)}</strong>
-                  <span>
-                    {refundMethodLabel(refund.method)} · {refund.reason}
-                  </span>
+        <section className={styles.recordGroup} aria-labelledby="order-refunds-heading">
+          <h3 id="order-refunds-heading">Hoàn tiền</h3>
+          <div className={styles.refundList}>
+            {detail.refunds.map((refund) => (
+              <article className={styles.recordCard} key={refund.id}>
+                <div className={styles.recordHeading}>
+                  <div>
+                    <strong>{formatVnd(refund.amount)}</strong>
+                    <span>
+                      {refundMethodLabel(refund.method)} · {refund.reason}
+                    </span>
+                  </div>
+                  <StatusChip
+                    label={refundStatusLabel(refund.status)}
+                    tone={refundTone(refund.status)}
+                  />
                 </div>
-                <StatusChip
-                  label={refundStatusLabel(refund.status)}
-                  tone={refundTone(refund.status)}
-                />
-              </div>
-              {refund.terminalReason === null ? null : (
-                <p className={styles.muted}>{refund.terminalReason}</p>
-              )}
-              <NextLink href={`/backoffice/refunds/${encodeURIComponent(refund.id)}`}>
-                Xem yêu cầu hoàn tiền
-              </NextLink>
-            </article>
-          ))}
-        </div>
+                {refund.terminalReason === null ? null : (
+                  <p className={styles.muted}>{refund.terminalReason}</p>
+                )}
+                <NextLink href={`/backoffice/refunds/${encodeURIComponent(refund.id)}`}>
+                  Xem yêu cầu hoàn tiền
+                </NextLink>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </OperationsPanel>
   );
