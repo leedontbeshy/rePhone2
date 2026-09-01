@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 import { Button } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import styles from './confirmation-dialog.module.css';
 
 export interface ConfirmationDialogProps {
@@ -33,26 +34,14 @@ export function ConfirmationDialog({
   onReasonChange,
   title,
 }: ConfirmationDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { closeDialog, dialogRef, onDialogClose } = useModalDialogLifecycle(open);
   const titleId = useId();
   const descriptionId = useId();
   const errorId = useId();
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (open && !dialog.open) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-      dialog.showModal();
-      return;
-    }
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
   const close = () => {
     if (pending) return;
-    dialogRef.current?.close();
+    closeDialog();
   };
 
   return (
@@ -67,7 +56,7 @@ export function ConfirmationDialog({
       }}
       onClose={() => {
         if (open && !pending) onClose();
-        window.setTimeout(() => previousFocusRef.current?.focus(), 0);
+        onDialogClose();
       }}
     >
       <form

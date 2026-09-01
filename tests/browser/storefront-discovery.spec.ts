@@ -278,6 +278,23 @@ test.describe('FE-1 storefront discovery', () => {
 
       await expectNoSeriousAccessibilityViolations(page, path);
     }
+
+    await page.goto('/products');
+    const filterTrigger = page.getByRole('button', { name: 'Bộ lọc và sắp xếp', exact: true });
+    await filterTrigger.click();
+    await expect(page.locator('dialog[open]')).toBeVisible();
+    await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+    await expect(filterTrigger).toBeFocused();
+
+    await page.goto(EXACT_UNIT_PATH);
+    const galleryTrigger = page.getByRole('button', {
+      name: 'Mở ảnh ở kích thước lớn',
+      exact: true,
+    });
+    await galleryTrigger.click();
+    await expect(page.locator('dialog[open]')).toBeVisible();
+    await page.getByRole('button', { name: 'Đóng ảnh phóng lớn', exact: true }).click();
+    await expect(galleryTrigger).toBeFocused();
   });
 
   test(bt('browser:storefront-discovery', 'mobile-generation-shelf'), async ({ page }) => {

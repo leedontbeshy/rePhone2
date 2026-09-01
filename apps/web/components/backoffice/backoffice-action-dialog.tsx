@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useId, useState, type ReactNode, type SyntheticEvent } from 'react';
 import { Button, InlineAlert, Textarea } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import styles from './catalog-voucher.module.css';
 
 export interface BackofficeActionDialogReason {
@@ -40,25 +41,12 @@ export function BackofficeActionDialog({
   reason,
   title,
 }: BackofficeActionDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(open);
   const titleId = useId();
   const descriptionId = useId();
   const reasonId = useId();
   const [attempted, setAttempted] = useState(false);
   const reasonError = reason === undefined ? undefined : validateReason(reason.value, reason);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (open && !dialog.open) {
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    if (!open && dialog.open) {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    }
-  }, [open]);
 
   useEffect(() => {
     if (!open) setAttempted(false);
@@ -77,6 +65,7 @@ export function BackofficeActionDialog({
       aria-labelledby={titleId}
       className={styles.actionDialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!pending) onCancel();
