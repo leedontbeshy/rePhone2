@@ -487,6 +487,11 @@ select.control {
   padding: var(--space-1) var(--space-3);
 }
 
+.statusChip.neutral > span:last-child,
+.statusChip.warning > span:last-child {
+  color: var(--color-body);
+}
+
 .price {
   color: var(--color-ink);
   font-size: var(--font-size-price);
