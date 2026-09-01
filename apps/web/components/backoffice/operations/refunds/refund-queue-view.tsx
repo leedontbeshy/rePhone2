@@ -13,6 +13,11 @@ import {
 import { Button, InlineAlert, Input, Select, Skeleton, StatusChip } from '@/components/ui';
 import { listBackofficeRefunds, type RefundListItem, type RefundListQuery } from '@/lib/refund-api';
 import { OperationsPageHeader } from '../operations-primitives';
+import {
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import {
   REFUND_DEFAULT_QUERY,
@@ -53,8 +58,10 @@ export function RefundQueueView() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
+  const listRequestRef = useRef(0);
 
   useEffect(() => {
     setDraft(draftFromQuery(query));
@@ -66,26 +73,32 @@ export function RefundQueueView() {
 
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff) return;
-    let active = true;
+    const request = ++listRequestRef.current;
     setLoading(true);
     setError(null);
     void listBackofficeRefunds(client, query)
       .then((result) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          router.replace(refundQueryHref(query, authoritativePage), { scroll: false });
+          return;
+        }
         setRefunds(result.data);
         setPagination(result.pagination);
+        setLoadedQueryKey(searchKey);
       })
       .catch((caught: unknown) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
         setError(caught instanceof Error ? caught.message : 'Không thể tải danh sách hoàn tiền.');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isCurrentQueueRequest(request, listRequestRef.current)) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [client, isStaff, query, refreshKey, status]);
+  }, [client, isStaff, query, refreshKey, router, searchKey, status]);
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,6 +108,8 @@ export function RefundQueueView() {
   function resetFilters() {
     router.replace(refundQueryHref(REFUND_DEFAULT_QUERY), { scroll: false });
   }
+
+  const readPresentation = queueReadPresentation(loading, error, searchKey, loadedQueryKey);
 
   return (
     <OperationsShell
@@ -206,6 +221,9 @@ export function RefundQueueView() {
       {error === null ? null : (
         <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được danh sách" tone="danger">
           <p>{error}</p>
+          {readPresentation.retainedSnapshotNotice === null ? null : (
+            <p>{readPresentation.retainedSnapshotNotice}</p>
+          )}
           <Button
             size="compact"
             variant="secondary"
@@ -218,7 +236,7 @@ export function RefundQueueView() {
         </InlineAlert>
       )}
 
-      {loading && refunds.length === 0 ? (
+      {readPresentation.initialLoading ? (
         <RefundQueueSkeleton />
       ) : (
         <RefundQueueTable loading={loading} refunds={refunds} />

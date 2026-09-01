@@ -33,6 +33,11 @@ import {
   type BackofficeOrderListQuery,
 } from '@/lib/fulfillment-api';
 import { OperationsPageHeader } from '../operations-primitives';
+import {
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import {
   DEFAULT_ORDER_FILTERS,
@@ -79,9 +84,11 @@ export function OrderListView() {
   const [pagination, setPagination] = useState<PaginationState>(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
+  const listRequestRef = useRef(0);
 
   useEffect(() => {
     setDraft(orderDraftFromQuery(query));
@@ -93,27 +100,33 @@ export function OrderListView() {
 
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff) return;
-    let active = true;
+    const request = ++listRequestRef.current;
     setLoading(true);
     setError(null);
     void listBackofficeOrders(client, query)
       .then((result) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          router.replace(orderListHref({ ...query, page: authoritativePage }), { scroll: false });
+          return;
+        }
         setOrders(result.data);
         setPagination(result.pagination);
         setHasLoaded(true);
+        setLoadedQueryKey(queryKey);
       })
       .catch((caught: unknown) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
         setError(caught instanceof Error ? caught.message : 'Không thể tải danh sách đơn hàng.');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isCurrentQueueRequest(request, listRequestRef.current)) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [client, isStaff, query, reloadKey, status]);
+  }, [client, isStaff, query, queryKey, reloadKey, router, status]);
 
   function navigate(next: BackofficeOrderListQuery) {
     const href = orderListHref(next);
@@ -134,7 +147,8 @@ export function OrderListView() {
     navigate(orderQueryFromDraft(DEFAULT_ORDER_FILTERS));
   }
 
-  const updating = loading && hasLoaded;
+  const readPresentation = queueReadPresentation(loading, error, queryKey, loadedQueryKey);
+  const updating = readPresentation.updating;
   return (
     <OperationsShell breadcrumbs={[{ label: 'Vận hành' }, { label: 'Đơn hàng' }]}>
       <div className={styles.page}>
@@ -154,7 +168,12 @@ export function OrderListView() {
         {error === null ? null : (
           <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được đơn hàng" tone="danger">
             <div className={styles.alertContent}>
-              <span>{error}</span>
+              <span>
+                {error}
+                {readPresentation.retainedSnapshotNotice === null
+                  ? null
+                  : ` ${readPresentation.retainedSnapshotNotice}`}
+              </span>
               <Button
                 disabled={loading}
                 size="compact"
@@ -179,8 +198,8 @@ export function OrderListView() {
           {updating ? <span className={styles.updating}>Đang cập nhật danh sách…</span> : null}
         </div>
 
-        {!hasLoaded && loading ? <OrderListSkeleton /> : null}
-        {hasLoaded && !loading && orders.length === 0 ? (
+        {readPresentation.initialLoading ? <OrderListSkeleton /> : null}
+        {hasLoaded && orders.length === 0 && !readPresentation.initialLoading ? (
           <section className={styles.emptyState}>
             <h2>Không có đơn phù hợp</h2>
             <p>Hãy thử thay đổi từ khóa hoặc bộ lọc.</p>
