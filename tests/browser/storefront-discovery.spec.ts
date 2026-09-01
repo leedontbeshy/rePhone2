@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Browser, type Page } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import { installDeterministicPublicMedia } from './support/deterministic-public-media';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const MODEL_PATH = '/products/iphone-14-pro';
 const EXACT_UNIT_PATH = `${MODEL_PATH}/units/IP14P-128-001`;
@@ -34,7 +36,7 @@ test.describe('FE-1 storefront discovery', () => {
     await installDeterministicPublicMedia(page);
   });
 
-  test('browses the six public surfaces using the seeded iPhone 14 dossier', async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'public-six-surfaces'), async ({ page }) => {
     await page.goto('/');
     await expect(
       page.getByRole('heading', {
@@ -76,9 +78,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.getByText('DEMO-PAUSED', { exact: true })).toHaveCount(0);
   });
 
-  test('keeps the shared header balanced and store actions clear across viewports', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'header-balance'), async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/store');
     await expectPublicRouteMarker(page, '/store');
@@ -147,9 +147,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(mobileNavigation.getByRole('link', { name: 'Ưu đãi', exact: true })).toBeVisible();
   });
 
-  test('keeps accessory cards and their actions aligned when optional details differ', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'accessory-card-alignment'), async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/products?productType=ACCESSORY&inStock=true');
 
@@ -192,9 +190,7 @@ test.describe('FE-1 storefront discovery', () => {
     }
   });
 
-  test('keeps URL filters authoritative across pagination and browser history', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'url-filter-history'), async ({ page }) => {
     await page.goto(
       '/products?productType=IPHONE&storageCapacityGb=128&pageSize=1&sortBy=name&sortOrder=asc',
     );
@@ -220,15 +216,11 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page).toHaveURL(/page=2/);
   });
 
-  test('server-renders the six public contracts without browser JavaScript', async ({
-    browser,
-  }) => {
+  test(bt('browser:storefront-discovery', 'ssr-contracts'), async ({ browser }) => {
     await expectServerRenderedPublicRoutes(browser);
   });
 
-  test('keeps exact-unit facts public-safe and avoids unverified merchandising claims', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'public-unit-safety'), async ({ page }) => {
     await page.goto(EXACT_UNIT_PATH);
     await expectExactUnitContract(page);
 
@@ -245,7 +237,7 @@ test.describe('FE-1 storefront discovery', () => {
     expect(html).not.toContain('RPH14P12801');
   });
 
-  test('shows account-only vouchers only after customer authentication', async ({ browser }) => {
+  test(bt('browser:storefront-discovery', 'account-voucher'), async ({ browser }) => {
     const guestContext = await browser.newContext();
     const customerContext = await browser.newContext();
     await installDeterministicPublicMedia(guestContext);
@@ -268,9 +260,7 @@ test.describe('FE-1 storefront discovery', () => {
     }
   });
 
-  test('passes serious accessibility checks and stays within a 320px viewport', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'a11y-mobile'), async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
 
     for (const path of PUBLIC_ROUTES) {
@@ -290,9 +280,7 @@ test.describe('FE-1 storefront discovery', () => {
     }
   });
 
-  test('keeps generation shelves scrollable without overflowing the mobile document', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'mobile-generation-shelf'), async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
 
@@ -317,7 +305,7 @@ test.describe('FE-1 storefront discovery', () => {
     expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
   });
 
-  test('exposes generation and store contact links in the shared footer', async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'footer-links'), async ({ page }) => {
     await page.goto('/');
     const footer = page.locator('footer');
 
@@ -338,7 +326,7 @@ test.describe('FE-1 storefront discovery', () => {
     ).toBeVisible();
   });
 
-  test('keeps skip navigation keyboard-operable on the canonical dossier', async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'skip-navigation'), async ({ page }) => {
     await page.goto(EXACT_UNIT_PATH);
     await page.keyboard.press('Tab');
 
@@ -351,7 +339,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.locator('main')).toBeFocused();
   });
 
-  test('recovers an unavailable exact unit back to its model', async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'unavailable-unit-recovery'), async ({ page }) => {
     const response = await page.goto(`${MODEL_PATH}/units/UNKNOWN-UNIT`);
 
     expect(response?.status()).toBe(404);
@@ -364,7 +352,7 @@ test.describe('FE-1 storefront discovery', () => {
     );
   });
 
-  test('hides the mobile purchase bar before it can cover the footer', async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'mobile-purchase-footer'), async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(EXACT_UNIT_PATH);
 
@@ -378,9 +366,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toHaveCount(0);
   });
 
-  test('captures the canonical model and exact-unit details at desktop and mobile', async ({
-    page,
-  }) => {
+  test(bt('browser:storefront-discovery', 'model-unit-visual'), async ({ page }) => {
     for (const viewport of [
       { name: 'desktop-1440', width: 1440, height: 900 },
       { name: 'mobile-390', width: 390, height: 844 },
@@ -535,20 +521,4 @@ async function expectNoSeriousAccessibilityViolations(page: Page, route: string)
     }));
 
   expect(violations).toEqual([]);
-}
-
-async function stabilizeVisualPage(page: Page): Promise<void> {
-  await page.evaluate(async () => document.fonts.ready);
-  await page.addStyleTag({
-    content: `
-      nextjs-portal,
-      [data-shell='storefront'] > a[href^='#'] {
-        display: none !important;
-      }
-
-      [data-shell='storefront'] > header {
-        position: static !important;
-      }
-    `,
-  });
 }

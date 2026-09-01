@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import { installDeterministicPublicMedia } from './support/deterministic-public-media';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const EXACT_UNIT_PATH = '/products/iphone-14-pro/units/IP14P-128-001';
 
 test.describe('FE-0 frontend foundation baseline', () => {
-  test('captures the representative exact-unit surface at desktop and mobile', async ({
-    context,
-    page,
-  }) => {
+  test(bt('browser:frontend-foundation', 'exact-unit-visual'), async ({ context, page }) => {
     await installDeterministicPublicMedia(context);
 
     for (const viewport of [
@@ -19,19 +18,7 @@ test.describe('FE-0 frontend foundation baseline', () => {
       await expect(
         page.getByText('Ảnh thật · Mã máy IP14P-128-001', { exact: true }),
       ).toBeVisible();
-      await page.evaluate(async () => document.fonts.ready);
-      await page.addStyleTag({
-        content: `
-          nextjs-portal,
-          [data-shell='storefront'] > a[href^='#'] {
-            display: none !important;
-          }
-
-          [data-shell='storefront'] > header {
-            position: static !important;
-          }
-        `,
-      });
+      await stabilizeVisualPage(page);
 
       await expect(page).toHaveScreenshot(`fe0-exact-unit-${viewport.name}.png`, {
         animations: 'disabled',
@@ -40,7 +27,7 @@ test.describe('FE-0 frontend foundation baseline', () => {
     }
   });
 
-  test('keeps the legacy storefront keyboard reachable during migration', async ({ page }) => {
+  test(bt('browser:frontend-foundation', 'legacy-keyboard'), async ({ page }) => {
     await page.goto('/products');
     await expect(page.locator('main')).toHaveCount(1);
 
