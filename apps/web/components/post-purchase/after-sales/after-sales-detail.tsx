@@ -9,6 +9,7 @@ import {
   ConfirmationDialog,
   DetailGrid,
   DetailPanel,
+  EmptyState,
   ErrorState,
   LifecycleJourney,
   PostPurchasePageHeader,
@@ -63,7 +64,9 @@ export function AfterSalesDetail() {
   const generationRef = useRef(0);
   const operationRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [retryAttachment, setRetryAttachment] = useState<AfterSalesAttachment | null>(null);
+  const [retryAction, setRetryAction] = useState<
+    { kind: 'detail' } | { attachment: AfterSalesAttachment; kind: 'attachment' } | null
+  >(null);
   const isStaff =
     status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN');
 
@@ -87,6 +90,7 @@ export function AfterSalesDetail() {
     setDetailAccessKey('');
     setError(null);
     setNotice(null);
+    setRetryAction(null);
     setNotFound(true);
     setCancelOpen(false);
     if (status === 'anonymous' && orderNumber) {
@@ -105,7 +109,7 @@ export function AfterSalesDetail() {
     setNotFound(false);
     setBusy(null);
     operationRef.current = null;
-    setRetryAttachment(null);
+    setRetryAction(null);
     setFile(null);
     setFileError(null);
     setCancelOpen(false);
@@ -140,6 +144,9 @@ export function AfterSalesDetail() {
             }
           } else
             setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
+          if (!(caught instanceof AfterSalesCustomerError) || !caught.notFound) {
+            setRetryAction({ kind: 'detail' });
+          }
         }
       })
       .finally(() => {
@@ -154,6 +161,7 @@ export function AfterSalesDetail() {
     const generation = generationRef.current;
     setLoading(true);
     setError(null);
+    setRetryAction(null);
     try {
       await loadDetail();
     } catch (caught) {
@@ -166,6 +174,7 @@ export function AfterSalesDetail() {
         }
       } else {
         setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
+        setRetryAction({ kind: 'detail' });
       }
     } finally {
       if (generationRef.current === generation) setLoading(false);
@@ -196,6 +205,7 @@ export function AfterSalesDetail() {
     setError(null);
     setFileError(null);
     setNotice(null);
+    setRetryAction(null);
     try {
       await uploadAfterSalesAttachment(client, requestNumber, file, token);
       if (generationRef.current !== generation) return;
@@ -238,7 +248,7 @@ export function AfterSalesDetail() {
     operationRef.current = operation;
     setBusy(operation);
     setError(null);
-    setRetryAttachment(null);
+    setRetryAction(null);
     try {
       const result = await getAfterSalesAttachmentUrl(
         client,
@@ -256,7 +266,7 @@ export function AfterSalesDetail() {
       if (generationRef.current !== generation) return;
       if (applySafeNotFound(caught)) return;
       if (generationRef.current === generation) {
-        setRetryAttachment(attachment);
+        setRetryAction({ attachment, kind: 'attachment' });
         setError(caught instanceof Error ? caught.message : 'Không thể mở tệp. Hãy thử lại.');
       }
     } finally {
@@ -282,6 +292,7 @@ export function AfterSalesDetail() {
     setBusy('cancel');
     setError(null);
     setNotice(null);
+    setRetryAction(null);
     try {
       await cancelAfterSalesRequest(client, requestNumber, reason, token);
       if (generationRef.current !== generation) return;
@@ -311,7 +322,7 @@ export function AfterSalesDetail() {
     }
   }
 
-  if (status === 'loading' || loading)
+  if (status === 'loading' || (loading && visibleDetail === null))
     return (
       <div className={styles.page}>
         <PostPurchasePageHeader title="Chi tiết yêu cầu hỗ trợ" />
@@ -322,7 +333,12 @@ export function AfterSalesDetail() {
     return (
       <div className={styles.page}>
         <PostPurchasePageHeader title="Chi tiết yêu cầu hỗ trợ" />
-        <ErrorState message="Tài khoản này không sử dụng khu vực hỗ trợ dành cho khách hàng." />
+        <EmptyState
+          title="Khu vực dành cho khách hàng"
+          description="Tài khoản nhân viên sử dụng khu vực quản lý hỗ trợ riêng."
+          actionHref="/backoffice/after-sales"
+          actionLabel="Mở khu vực quản lý"
+        />
       </div>
     );
   if (notFound)
@@ -363,8 +379,12 @@ export function AfterSalesDetail() {
       {error ? (
         <ErrorState
           message={error}
-          onRetry={() =>
-            retryAttachment ? void openAttachment(retryAttachment) : void retryDetail()
+          onRetry={
+            retryAction?.kind === 'attachment'
+              ? () => void openAttachment(retryAction.attachment)
+              : retryAction?.kind === 'detail'
+                ? () => void retryDetail()
+                : undefined
           }
         />
       ) : null}
@@ -372,6 +392,11 @@ export function AfterSalesDetail() {
       {!detail && !error ? <SafeNotFoundState /> : null}
       {detail ? (
         <>
+          {loading ? (
+            <p className={styles.refreshStatus} role="status">
+              Đang cập nhật yêu cầu hỗ trợ…
+            </p>
+          ) : null}
           <LifecycleJourney
             title="Tiến trình xử lý"
             ariaLabel="Các chặng xử lý yêu cầu hỗ trợ"
@@ -478,6 +503,9 @@ export function AfterSalesDetail() {
               <DetailPanel title="Bước tiếp theo">
                 <p>{afterSalesNextStep(detail.status)}</p>
                 <div className={styles.actions}>
+                  <Link className={styles.secondaryLink} href="/after-sales">
+                    Danh sách hỗ trợ
+                  </Link>
                   <Link className={styles.secondaryLink} href={orderHref}>
                     Xem đơn hàng
                   </Link>

@@ -242,6 +242,13 @@ export async function getAfterSalesAttachmentUrl(
   if (!isSafeSignedUrl(result.data.data.url)) {
     throw new Error('Không thể mở liên kết tệp đính kèm.');
   }
+  const expiresAt = Date.parse(result.data.data.expiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 5_000) {
+    throw new AfterSalesCustomerError(
+      'Liên kết tệp vừa hết hạn. Hãy mở lại để tạo liên kết mới.',
+      'SIGNED_URL_EXPIRED',
+    );
+  }
   return result.data.data;
 }
 
@@ -301,6 +308,7 @@ export function afterSalesError(value: unknown, fallback: string): string {
   if (code === 'EVIDENCE_REQUIRED' || code === 'EVIDENCE_INVALID') {
     return 'Tệp đính kèm không hợp lệ hoặc đã hỏng.';
   }
+  if (code === 'ATTACHMENT_LIMIT_REACHED') return 'Yêu cầu này đã có đủ 5 tệp đính kèm.';
   if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MB.';
   if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.';
   if (code === 'STORAGE_UNAVAILABLE') return 'Hiện chưa thể lưu tệp. Vui lòng thử lại sau.';

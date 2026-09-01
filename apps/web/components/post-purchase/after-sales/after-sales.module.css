@@ -102,6 +102,17 @@
   color: var(--color-muted);
 }
 
+.refreshStatus {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
 .rowAction,
 .secondaryLink {
   display: inline-flex;
@@ -155,6 +166,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .choice {

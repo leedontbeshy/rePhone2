@@ -139,29 +139,42 @@ describe('after-sales typed-client adapter', () => {
   });
 
   it('accepts HTTPS signed URLs and rejects credential-bearing URLs', async () => {
+    const futureExpiry = new Date(Date.now() + 60_000).toISOString();
     const safeGet = vi.fn().mockResolvedValue({
       data: {
         data: {
           url: 'https://storage.example.test/signed/object?signature=opaque',
-          expiresAt: '2026-08-25T00:05:00.000Z',
+          expiresAt: futureExpiry,
         },
       },
     });
     await expect(
       getAfterSalesAttachmentUrl(mockClient({ GET: safeGet }), REQUEST_NUMBER, ITEM_ID, TOKEN),
-    ).resolves.toMatchObject({ expiresAt: '2026-08-25T00:05:00.000Z' });
+    ).resolves.toMatchObject({ expiresAt: futureExpiry });
 
     const unsafeGet = vi.fn().mockResolvedValue({
       data: {
         data: {
           url: 'https://user:secret@storage.example.test/object',
-          expiresAt: '2026-08-25T00:05:00.000Z',
+          expiresAt: futureExpiry,
         },
       },
     });
     await expect(
       getAfterSalesAttachmentUrl(mockClient({ GET: unsafeGet }), REQUEST_NUMBER, ITEM_ID),
     ).rejects.toThrow('Không thể mở liên kết tệp đính kèm.');
+
+    const expiredGet = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          url: 'https://storage.example.test/signed/object?signature=expired',
+          expiresAt: new Date(Date.now() - 1_000).toISOString(),
+        },
+      },
+    });
+    await expect(
+      getAfterSalesAttachmentUrl(mockClient({ GET: expiredGet }), REQUEST_NUMBER, ITEM_ID),
+    ).rejects.toThrow('Liên kết tệp vừa hết hạn');
   });
 
   it('uploads one multipart file while keeping the guest credential in headers', async () => {
@@ -211,6 +224,9 @@ describe('after-sales typed-client adapter', () => {
     ).toBe('Hiện chưa thể lưu tệp. Vui lòng thử lại sau.');
     expect(afterSalesError({ error: { code: 'WARRANTY_NOT_ACTIVE' } }, 'fallback')).toBe(
       'Bảo hành hiện chưa đủ điều kiện để gửi yêu cầu.',
+    );
+    expect(afterSalesError({ error: { code: 'ATTACHMENT_LIMIT_REACHED' } }, 'fallback')).toBe(
+      'Yêu cầu này đã có đủ 5 tệp đính kèm.',
     );
   });
 
