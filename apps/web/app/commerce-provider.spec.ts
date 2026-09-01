@@ -123,7 +123,7 @@ describe('CommerceProvider foundations', () => {
   it('cancels queued work before it can start with a newer session credential', async () => {
     const tracker = createSessionRevisionTracker('authenticated:CUSTOMER:customer-a');
     const queue = createSerializedTaskQueue();
-    const firstResponse = deferred<void>();
+    const firstResponse = deferred<undefined>();
     const firstRequest = vi.fn(() => firstResponse.promise);
     const queuedRequest = vi.fn(() => Promise.resolve());
 
@@ -134,7 +134,7 @@ describe('CommerceProvider foundations', () => {
     expect(queuedRequest).not.toHaveBeenCalled();
 
     tracker.sync('authenticated:CUSTOMER:customer-b');
-    firstResponse.resolve();
+    firstResponse.resolve(undefined);
 
     await expect(first).resolves.toBeUndefined();
     await expect(queued).resolves.toBeUndefined();
@@ -144,7 +144,7 @@ describe('CommerceProvider foundations', () => {
   it('waits for an in-flight guest mutation before starting the customer merge queue', async () => {
     const tracker = createSessionRevisionTracker('anonymous:NONE:NONE');
     const guestQueue = createSerializedTaskQueue();
-    const guestResponse = deferred<void>();
+    const guestResponse = deferred<undefined>();
     const events: string[] = [];
     const guestMutation = enqueueSessionTask(guestQueue, tracker, async () => {
       events.push('guest:start');
@@ -156,14 +156,15 @@ describe('CommerceProvider foundations', () => {
     const guestDrain = guestQueue.whenIdle();
     tracker.sync('authenticated:CUSTOMER:customer-a');
     const customerQueue = createSerializedTaskQueue(guestDrain);
-    const merge = enqueueSessionTask(customerQueue, tracker, async () => {
+    const merge = enqueueSessionTask(customerQueue, tracker, () => {
       events.push('merge:start');
+      return Promise.resolve();
     });
 
     await Promise.resolve();
     expect(events).toEqual(['guest:start']);
 
-    guestResponse.resolve();
+    guestResponse.resolve(undefined);
     await expect(guestMutation).resolves.toBeUndefined();
     await expect(merge).resolves.toBeUndefined();
     expect(events).toEqual(['guest:start', 'guest:response', 'merge:start']);
