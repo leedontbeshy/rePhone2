@@ -34,6 +34,9 @@ interface CatalogProductFormProps {
   readonly pending?: boolean;
   readonly submitLabel?: string;
   readonly warranties: readonly CatalogWarrantyChoice[];
+  readonly warrantyLoading?: boolean;
+  readonly warrantyLoadError?: string | null;
+  readonly onRetryWarranties?: () => void;
   readonly onSubmit: (input: CatalogProductInput) => Promise<void> | void;
 }
 
@@ -43,6 +46,9 @@ export function CatalogProductForm({
   pending = false,
   submitLabel = 'Lưu bản nháp',
   warranties,
+  warrantyLoading = false,
+  warrantyLoadError = null,
+  onRetryWarranties,
   onSubmit,
 }: CatalogProductFormProps) {
   const [draft, setDraft] = useState(initialDraft);
@@ -327,13 +333,16 @@ export function CatalogProductForm({
             >
               <select
                 className={styles.nativeSelect}
+                disabled={warrantyLoading}
                 id="product-warranty"
                 value={draft.warrantyPolicyId}
                 onChange={(event) => {
                   updateField('warrantyPolicyId', event.target.value);
                 }}
               >
-                <option value="">Chọn chính sách bảo hành</option>
+                <option value="">
+                  {warrantyLoading ? 'Đang tải chính sách…' : 'Chọn chính sách bảo hành'}
+                </option>
                 {warranties.map((policy) => (
                   <option key={policy.id} value={policy.id}>
                     {policy.name}
@@ -344,6 +353,16 @@ export function CatalogProductForm({
                 ))}
               </select>
             </CatalogField>
+            {warrantyLoadError === null ? null : (
+              <div className={styles.fieldLoadError} role="alert">
+                <span>{warrantyLoadError}</span>
+                {onRetryWarranties === undefined ? null : (
+                  <button className={styles.textButton} type="button" onClick={onRetryWarranties}>
+                    Thử lại
+                  </button>
+                )}
+              </div>
+            )}
           </section>
 
           <section className={styles.formSection} aria-labelledby="search-preview-title">

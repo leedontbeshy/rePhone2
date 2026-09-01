@@ -22,24 +22,52 @@ export default function NewCatalogProductPage() {
   const [warranties, setWarranties] = useState<CatalogWarrantyChoice[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warrantyLoading, setWarrantyLoading] = useState(false);
+  const [warrantyLoadError, setWarrantyLoadError] = useState<string | null>(null);
+  const [warrantyReloadVersion, setWarrantyReloadVersion] = useState(0);
 
-  const loadWarranties = useCallback(async () => {
-    const options = await listCatalogWarrantyOptions(client);
-    setWarranties(
-      options.map((option) => ({
+  const loadWarranties = useCallback(
+    async (signal: AbortSignal) => {
+      const options = await listCatalogWarrantyOptions(client, undefined, { signal });
+      return options.map((option) => ({
         id: option.value,
         name: option.name,
         defaultDays: option.defaultDays,
-      })),
-    );
-  }, [client]);
+      }));
+    },
+    [client],
+  );
 
   useEffect(() => {
-    if (status !== 'authenticated' || !isStaff) return;
-    void loadWarranties().catch((caught: unknown) => {
-      setError(caught instanceof Error ? caught.message : 'Không thể tải chính sách bảo hành.');
-    });
-  }, [isStaff, loadWarranties, status]);
+    const controller = new AbortController();
+    let active = true;
+    setWarranties([]);
+    setWarrantyLoadError(null);
+    if (status !== 'authenticated' || !isStaff) {
+      setWarrantyLoading(false);
+      return () => {
+        controller.abort();
+      };
+    }
+    setWarrantyLoading(true);
+    void loadWarranties(controller.signal)
+      .then((options) => {
+        if (active && !controller.signal.aborted) setWarranties(options);
+      })
+      .catch((caught: unknown) => {
+        if (!active || controller.signal.aborted) return;
+        setWarrantyLoadError(
+          caught instanceof Error ? caught.message : 'Không thể tải chính sách bảo hành.',
+        );
+      })
+      .finally(() => {
+        if (active && !controller.signal.aborted) setWarrantyLoading(false);
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [isStaff, loadWarranties, status, user?.id, warrantyReloadVersion]);
 
   async function create(input: CatalogProductInput) {
     setPending(true);
@@ -67,6 +95,11 @@ export default function NewCatalogProductPage() {
         error={error}
         pending={pending}
         warranties={warranties}
+        warrantyLoading={warrantyLoading}
+        warrantyLoadError={warrantyLoadError}
+        onRetryWarranties={() => {
+          setWarrantyReloadVersion((value) => value + 1);
+        }}
         onSubmit={create}
       />
     </CatalogVoucherShell>
