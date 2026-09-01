@@ -19,9 +19,17 @@ const GUEST_UNIT = {
   code: 'IP14P-128-001',
   path: '/products/iphone-14-pro/units/IP14P-128-001',
 } as const;
+const GUEST_ORDER_UNIT = {
+  code: 'IP15PM-256-001',
+  path: '/products/iphone-15-pro-max/units/IP15PM-256-001',
+} as const;
 const CUSTOMER_UNIT = {
   code: 'IP14P-128-001',
   path: '/products/iphone-14-pro/units/IP14P-128-001',
+} as const;
+const CUSTOMER_PICKUP_UNIT = {
+  code: 'IP13-MID-001',
+  path: '/products/iphone-13/units/IP13-MID-001',
 } as const;
 const COMMERCE_VIEWPORTS = [
   { name: 'mobile-320', width: 320, height: 720 },
@@ -33,11 +41,11 @@ const COMMERCE_VIEWPORTS = [
 
 test.describe('FE-03 cart, wishlist and checkout', () => {
   test(bt('browser:cart-checkout', 'guest-shipping-order'), async ({ page }) => {
-    await addUnitToCart(page, GUEST_UNIT);
+    await addUnitToCart(page, GUEST_ORDER_UNIT);
     await page.goto('/cart');
 
     await expect(page.getByRole('heading', { name: 'Kiểm tra sản phẩm đã chọn' })).toBeVisible();
-    await expect(page.getByText(`Mã máy: ${GUEST_UNIT.code}`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`Mã máy: ${GUEST_ORDER_UNIT.code}`, { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click();
 
     await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng' })).toBeVisible();
@@ -58,52 +66,56 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
     expect((await previewResponse).status()).toBe(200);
     await expect(page.getByText('Đặt cọc', { exact: true })).toBeVisible();
-    const orderNumber = 'RPH-20260827-GUEST001';
-    const guestToken = 'g'.repeat(43);
-    let createRequests = 0;
-    await page.route('**/api/v1/checkouts', async (route) => {
-      if (route.request().method() !== 'POST') return route.continue();
-      createRequests += 1;
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            order: { orderNumber },
-            guestAccessToken: guestToken,
-          },
-        }),
-      });
-    });
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/checkouts' &&
+        response.request().method() === 'POST',
+    );
 
     await page.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
-    await page.waitForURL(`/orders/${orderNumber}`);
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(201);
+    await page.waitForURL('**/orders/**');
+    const orderNumber = orderNumberFrom(page.url());
+    await expect(
+      page
+        .getByRole('heading', { name: 'Nhận hàng', exact: true })
+        .locator('..')
+        .getByText('Giao tận nơi', { exact: true }),
+    ).toBeVisible();
     await expect
       .poll(() =>
-        page.evaluate((key) => sessionStorage.getItem(key), `rephone_order_token:${orderNumber}`),
+        page.evaluate(
+          (key) => sessionStorage.getItem(key) ?? '',
+          `rephone_order_token:${orderNumber}`,
+        ),
       )
-      .toBe(guestToken);
+      .toMatch(/^[A-Za-z0-9_-]{43,}$/);
     expect(new URL(page.url()).hash).toBe('');
-    expect(createRequests).toBe(1);
   });
 
   test(bt('browser:cart-checkout', 'customer-pickup-wishlist'), async ({ page }) => {
-    await addUnitToCart(page, CUSTOMER_UNIT);
+    await addUnitToCart(page, CUSTOMER_PICKUP_UNIT);
     await login(page, '/cart');
 
-    await expect(page.getByText(`Mã máy: ${CUSTOMER_UNIT.code}`, { exact: true })).toBeVisible();
-    await page.goto(CUSTOMER_UNIT.path);
+    await expect(
+      page.getByText(`Mã máy: ${CUSTOMER_PICKUP_UNIT.code}`, { exact: true }),
+    ).toBeVisible();
+    await page.goto(CUSTOMER_PICKUP_UNIT.path);
     await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
     await expect(page.getByText('Đã lưu máy vào danh sách.', { exact: true })).toBeVisible();
 
     await page.goto('/wishlist');
-    const savedCard = page.locator('article').filter({ hasText: CUSTOMER_UNIT.code });
+    const savedCard = page.locator('article').filter({ hasText: CUSTOMER_PICKUP_UNIT.code });
     await expect(savedCard).toBeVisible();
     await expect(
       savedCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }),
     ).toBeEnabled();
     await savedCard
-      .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
+      .getByRole('button', {
+        name: `Xóa iPhone 13 khỏi danh sách ưa thích`,
+        exact: true,
+      })
       .click();
     await expect(savedCard).toHaveCount(0);
 
@@ -124,23 +136,24 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
     expect((await pickupPreview).status()).toBe(200);
     await expect(page.getByText(/^Nhận tại /)).toBeVisible();
-    const orderNumber = 'RPH-20260827-PICKUP01';
-    let createBody: unknown;
-    await page.route('**/api/v1/checkouts', async (route) => {
-      if (route.request().method() !== 'POST') return route.continue();
-      createBody = route.request().postDataJSON();
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({ data: { order: { orderNumber } } }),
-      });
-    });
+    const createResponsePromise = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/checkouts' &&
+        response.request().method() === 'POST',
+    );
 
     await page.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
-    await page.waitForURL(`/orders/${orderNumber}`);
-    expect(createBody).toMatchObject({ fulfillmentType: 'PICKUP' });
-    expect(createBody).not.toHaveProperty('shippingAddress');
-    await removeCartUnit(page, CUSTOMER_UNIT.code);
+    const createResponse = await createResponsePromise;
+    expect(createResponse.status()).toBe(201);
+    await page.waitForURL('**/orders/**');
+    const orderNumber = orderNumberFrom(page.url());
+    await expect(page.getByRole('heading', { name: orderNumber, exact: true })).toBeVisible();
+    await expect(
+      page
+        .getByRole('heading', { name: 'Nhận hàng', exact: true })
+        .locator('..')
+        .getByText('Nhận tại cửa hàng', { exact: true }),
+    ).toBeVisible();
   });
 
   test(bt('browser:cart-checkout', 'guest-cart-merge-retry'), async ({ page }) => {
@@ -937,6 +950,15 @@ function stringProperty(value: Record<string, unknown>, key: string): string {
   const property = value[key];
   if (typeof property !== 'string') throw new Error(`Expected ${key} to be a string`);
   return property;
+}
+
+function orderNumberFrom(url: string): string {
+  const parts = new URL(url).pathname.split('/').filter(Boolean);
+  const orderNumber = parts[parts.length - 1];
+  if (orderNumber === undefined || !orderNumber.startsWith('RPH-')) {
+    throw new Error(`Expected order detail URL, received ${url}`);
+  }
+  return decodeURIComponent(orderNumber);
 }
 
 function collectWishlistRequests(page: Page): string[] {
