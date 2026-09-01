@@ -48,7 +48,7 @@
 
 .statusPill[data-tone='success'] {
   border-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-strong);
   background: var(--color-success-soft);
 }
 
