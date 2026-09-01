@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const PRODUCT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe0';
 const VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe1';
@@ -21,9 +22,7 @@ interface ApiProbe {
 }
 
 test.describe('FE-05 catalog and voucher administration', () => {
-  test('lets an employee use all catalog screens while keeping voucher management private', async ({
-    page,
-  }) => {
+  test(bt('browser:catalog-voucher-admin', 'employee-boundary'), async ({ page }) => {
     const probe = await installFe05Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/catalog/products');
@@ -49,7 +48,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('creates a catalog draft with named fields and opens it for sale', async ({ page }) => {
+  test(bt('browser:catalog-voucher-admin', 'catalog-draft-lifecycle'), async ({ page }) => {
     const probe = await installFe05Api(page, 'ADMIN');
 
     await page.goto('/backoffice/catalog/products');
@@ -92,9 +91,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('creates a typed voucher and covers activation and pause lifecycle actions', async ({
-    page,
-  }) => {
+  test(bt('browser:catalog-voucher-admin', 'voucher-lifecycle'), async ({ page }) => {
     const probe = await installFe05Api(page, 'ADMIN', { catalogStatus: 'ACTIVE' });
 
     await page.goto('/backoffice/vouchers');
@@ -148,9 +145,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('keeps all six administration screens inside desktop and 360px viewports', async ({
-    page,
-  }) => {
+  test(bt('browser:catalog-voucher-admin', 'admin-responsive'), async ({ page }) => {
     await installFe05Api(page, 'ADMIN');
     const screens = [
       { path: '/backoffice/catalog/products', heading: 'Danh mục sản phẩm' },

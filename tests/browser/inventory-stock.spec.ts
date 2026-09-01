@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const UNIT_ID = '0199d006-0000-7000-8000-000000000001';
 const INSPECTION_ID = '0199d006-0000-7000-8000-000000000002';
@@ -71,7 +72,7 @@ const CHECKS = [
 ] as const;
 
 test.describe('FE-06 inventory and stock workspace', () => {
-  test('keeps the employee unit profile free of cost requests and cost UI', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'employee-cost-privacy'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto(`/backoffice/inventory/units/${UNIT_ID}`, { waitUntil: 'domcontentloaded' });
@@ -83,7 +84,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('looks up a raw identifier through an automatically audited POST body', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'identifier-lookup-post'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/lookup', { waitUntil: 'domcontentloaded' });
@@ -103,9 +104,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(page.getByText('***********7518')).toBeVisible();
   });
 
-  test('filters the unit queue without reloading and blocks raw identifiers from URLs and GETs', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'unit-filter-no-reload'), async ({ page }) => {
     const browserErrors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') browserErrors.push(message.text());
@@ -151,9 +150,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(browserErrors).toEqual([]);
   });
 
-  test('reviews all 18 inspection items, confirms completion, then returns to intake', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'inspection-completion'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
 
     await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}?source=intake`, {
@@ -233,9 +230,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.inspectionStatus).toBe('COMPLETED');
   });
 
-  test('restores an existing intake without flashing step one and uploads through the custom picker', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'intake-resume-upload'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', {
       mediaCount: 0,
       resumeDelayMs: 400,
@@ -270,9 +265,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('keeps step four visible inside the mobile progress scroller after resume', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'mobile-step-four'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
     probe.inspectionStatus = 'COMPLETED';
     probe.inspectionValues = passingInspectionValues();
@@ -302,7 +295,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('does not trust an intake source marker for another inspection type', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'inspection-source-integrity'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { inspectionType: 'WARRANTY' });
     probe.inspectionValues = passingInspectionValues();
 
@@ -328,9 +321,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.inspectionCompleteRequests).toBe(1);
   });
 
-  test('records a stock command, reconciles levels and exposes the immutable ledger', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'stock-ledger'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/stock', { waitUntil: 'domcontentloaded' });
@@ -368,9 +359,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('renders all eight inventory routes without document overflow at 1440px and 360px', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'inventory-responsive'), async ({ page }) => {
     test.slow();
     const browserErrors: string[] = [];
     page.on('console', (message) => {

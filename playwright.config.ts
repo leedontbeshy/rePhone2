@@ -29,7 +29,7 @@ export default defineConfig({
     },
     {
       command:
-        'pnpm exec cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web exec next dev -p 3001',
+        'pnpm exec cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 API_INTERNAL_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web exec next dev -p 3001',
       url: `${webOrigin}/login`,
       timeout: 120_000,
       reuseExistingServer: false,
