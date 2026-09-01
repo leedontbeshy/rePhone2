@@ -1,8 +1,14 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const PRODUCT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe0';
 const VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe1';
+const CREATED_VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe4';
+const PRODUCT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe5';
+const VARIANT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe6';
+const UPLOADED_PRODUCT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe7';
+const UPLOADED_VARIANT_MEDIA_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe8';
 const POLICY_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe3';
 const VOUCHER_ID = '0199c9aa-a258-74c8-a35f-9cd11c562aa1';
 const PRODUCT_NAME = 'iPhone 15 Pro FE05';
@@ -13,12 +19,20 @@ type RecordStatus = 'ACTIVE' | 'ARCHIVED' | 'DRAFT';
 type VoucherStatus = RecordStatus | 'PAUSED';
 
 interface ApiProbe {
+  catalogQueries: string[];
   catalogStatus: RecordStatus;
+  conflictNextProductUpdate: boolean;
+  detailRequests: number;
+  mediaDeletes: number;
+  mediaUploads: number;
+  productMedia: ReturnType<typeof mediaFixture>[];
   pauseReason: string | null;
   productCreateBody: Record<string, unknown> | null;
   voucherCreateBody: Record<string, unknown> | null;
   voucherRequests: number;
   voucherStatus: VoucherStatus;
+  variantMedia: ReturnType<typeof mediaFixture>[];
+  variants: ReturnType<typeof variantFixture>[];
 }
 
 test.describe('FE-05 catalog and voucher administration', () => {
@@ -68,8 +82,20 @@ test.describe('FE-05 catalog and voucher administration', () => {
       page.getByRole('heading', { level: 1, name: 'Không thể mở khu vực này' }),
     ).toBeVisible();
     await expect(page.getByText('Chỉ quản trị viên được quản lý mã ưu đãi.')).toBeVisible();
+
+    for (const forbiddenPath of [
+      '/backoffice/vouchers/new',
+      `/backoffice/vouchers/${VOUCHER_ID}`,
+    ]) {
+      await page.goto(forbiddenPath);
+      await expect(
+        page.getByRole('heading', { level: 1, name: 'Không thể mở khu vực này' }),
+      ).toBeVisible();
+      await expect(page.getByText('Chỉ quản trị viên được quản lý mã ưu đãi.')).toBeVisible();
+    }
     expect(probe.voucherRequests).toBe(0);
     await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 
   test(bt('browser:catalog-voucher-admin', 'catalog-draft-lifecycle'), async ({ page }) => {
@@ -78,6 +104,58 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await page.goto('/backoffice/catalog/products');
     await expect(page.getByRole('heading', { level: 1, name: 'Danh mục sản phẩm' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mã ưu đãi', exact: true })).toBeVisible();
+
+    const search = page.getByRole('combobox', { name: 'Tìm sản phẩm' });
+    await search.fill('iPhone 15');
+    const suggestions = page.getByRole('listbox', { name: 'Gợi ý sản phẩm' });
+    await expect(suggestions.getByRole('option', { name: new RegExp(PRODUCT_NAME) })).toBeVisible();
+    await search.press('ArrowDown');
+    await search.press('Enter');
+    await expect(page).toHaveURL(`/backoffice/catalog/products/${PRODUCT_ID}`);
+
+    await page.goto('/backoffice/catalog/products?page=99');
+    await expect(page.getByRole('heading', { level: 1, name: 'Danh mục sản phẩm' })).toBeVisible();
+    await expect(page).toHaveURL('/backoffice/catalog/products');
+    expect(
+      probe.catalogQueries.some(
+        (query) => query.includes('sortBy=releaseYear') && query.includes('sortOrder=desc'),
+      ),
+    ).toBe(true);
+
+    let releaseFilter: (() => void) | undefined;
+    let markFilterStarted: (() => void) | undefined;
+    const filterStarted = new Promise<void>((resolve) => {
+      markFilterStarted = resolve;
+    });
+    const filterRelease = new Promise<void>((resolve) => {
+      releaseFilter = resolve;
+    });
+    await page.route('**/api/v1/backoffice/products**', async (route) => {
+      const url = new URL(route.request().url());
+      if (
+        route.request().method() !== 'GET' ||
+        url.pathname !== '/api/v1/backoffice/products' ||
+        url.searchParams.get('type') !== 'ACCESSORY' ||
+        url.searchParams.get('pageSize') !== '6'
+      ) {
+        await route.fallback();
+        return;
+      }
+      markFilterStarted?.();
+      await filterRelease;
+      await route.fallback();
+    });
+    const typeFilter = page.getByLabel('Loại sản phẩm');
+    const productBoard = page.getByRole('region', { name: 'Danh sách sản phẩm' });
+    await typeFilter.focus();
+    await typeFilter.selectOption('ACCESSORY');
+    await filterStarted;
+    await expect(productBoard).toHaveAttribute('aria-busy', 'true');
+    await expect(productBoard.getByRole('heading', { level: 2, name: PRODUCT_NAME })).toBeVisible();
+    await expect(typeFilter).toBeFocused();
+    releaseFilter?.();
+    await expect(productBoard).not.toHaveAttribute('aria-busy', 'true');
+    await expect(page).toHaveURL(/type=ACCESSORY/);
 
     await page.goto('/backoffice/catalog/products/new');
     await expect(page.getByRole('heading', { level: 1, name: 'Thêm sản phẩm' })).toBeVisible();
@@ -103,6 +181,94 @@ test.describe('FE-05 catalog and voucher administration', () => {
       type: 'IPHONE',
       warrantyPolicyId: POLICY_ID,
     });
+
+    const editProduct = page.locator('header').getByRole('button', {
+      name: 'Lưu thay đổi',
+      exact: true,
+    });
+    probe.conflictNextProductUpdate = true;
+    const detailRequestsBeforeConflict = probe.detailRequests;
+    await editProduct.click();
+    const productDialog = page.getByRole('dialog', { name: 'Chỉnh sửa thông tin' });
+    await productDialog.getByLabel('Tên sản phẩm').fill(`${PRODUCT_NAME} cũ`);
+    await productDialog.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
+    await expect(productDialog).toHaveCount(0);
+    await expect(
+      page.getByText(
+        'Dữ liệu sản phẩm vừa thay đổi. Đã tải lại thông tin mới nhất; hãy kiểm tra rồi thao tác lại.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(probe.detailRequests).toBeGreaterThan(detailRequestsBeforeConflict);
+    await expect(page.getByRole('heading', { level: 1, name: PRODUCT_NAME })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Thêm biến thể', exact: true }).click();
+    const createVariantDialog = page.getByRole('dialog', { name: 'Thêm biến thể' });
+    await createVariantDialog.getByLabel('Tên phiên bản *').fill('256 GB · Titan');
+    await createVariantDialog.getByLabel('Mã biến thể *').fill('IP15P-256-TTN-FE09');
+    await createVariantDialog.getByLabel('Dung lượng *').fill('256');
+    await createVariantDialog.getByLabel('Tên màu *').fill('Titan');
+    await createVariantDialog.getByRole('button', { name: 'Thêm biến thể', exact: true }).click();
+    await expect(createVariantDialog).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 3, name: '256 GB · Titan' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Sửa 256 GB · Titan' }).click();
+    const editVariantDialog = page.getByRole('dialog', { name: 'Chỉnh sửa biến thể' });
+    await editVariantDialog.getByLabel('Tên phiên bản *').fill('256 GB · Titan tự nhiên');
+    await editVariantDialog.getByRole('button', { name: 'Lưu biến thể', exact: true }).click();
+    await expect(editVariantDialog).toHaveCount(0);
+    await expect(
+      page.getByRole('heading', { level: 3, name: '256 GB · Titan tự nhiên' }),
+    ).toBeVisible();
+
+    const productMediaInput = page.locator('#product-media input[type="file"]');
+    const uploadsBeforeEmptyFile = probe.mediaUploads;
+    await productMediaInput.setInputFiles({
+      name: 'empty.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from([]),
+    });
+    await expect(page.getByText('Tệp ảnh đang trống.', { exact: true })).toBeVisible();
+    expect(probe.mediaUploads).toBe(uploadsBeforeEmptyFile);
+    await productMediaInput.setInputFiles({
+      name: 'product.webp',
+      mimeType: 'image/webp',
+      buffer: Buffer.from('product-image'),
+    });
+    await expect(page.getByText('Đã tải hình ảnh lên.', { exact: true })).toBeVisible();
+
+    const createdVariantInput = page.getByLabel('Tải ảnh cho 256 GB · Titan tự nhiên');
+    await createdVariantInput.setInputFiles({
+      name: 'variant.webp',
+      mimeType: 'image/webp',
+      buffer: Buffer.from('variant-image'),
+    });
+    await expect(page.getByText('Ảnh phiên bản mới', { exact: true })).toBeVisible();
+
+    const productMediaSection = page.locator('#product-media');
+    await productMediaSection.getByRole('button', { name: 'Sửa' }).last().click();
+    const mediaDialog = page.getByRole('dialog', { name: 'Chỉnh sửa hình ảnh' });
+    await mediaDialog.getByLabel('Mô tả hình ảnh').fill('Ảnh sản phẩm đã chỉnh sửa');
+    await mediaDialog.getByLabel('Vị trí hiển thị').fill('12');
+    await mediaDialog.getByRole('button', { name: 'Lưu hình ảnh', exact: true }).click();
+    await expect(mediaDialog).toHaveCount(0);
+    await expect(page.getByText('Ảnh sản phẩm đã chỉnh sửa', { exact: true })).toBeVisible();
+    const deletesBefore = probe.mediaDeletes;
+    await productMediaSection.getByRole('button', { name: 'Xóa' }).last().click();
+    const deleteMediaDialog = page.getByRole('dialog', { name: 'Xóa hình ảnh này?' });
+    await deleteMediaDialog.getByRole('button', { name: 'Xóa hình ảnh', exact: true }).click();
+    await expect(deleteMediaDialog).toHaveCount(0);
+    expect(probe.mediaDeletes).toBe(deletesBefore + 1);
+
+    await page.getByRole('button', { name: 'Lưu trữ 256 GB · Titan tự nhiên' }).click();
+    const archiveVariantDialog = page.getByRole('dialog', {
+      name: 'Lưu trữ 256 GB · Titan tự nhiên?',
+    });
+    await archiveVariantDialog.getByLabel('Lý do').fill('Ngừng nhập cấu hình thử nghiệm');
+    await archiveVariantDialog
+      .getByRole('button', { name: 'Lưu trữ biến thể', exact: true })
+      .click();
+    await expect(archiveVariantDialog).toHaveCount(0);
 
     await page.locator('header').getByRole('button', { name: 'Mở bán', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: `Mở bán ${PRODUCT_NAME}?` });
@@ -190,8 +356,21 @@ test.describe('FE-05 catalog and voucher administration', () => {
         await expect(page.getByRole('heading', { level: 1, name: screen.heading })).toBeVisible();
         await expectNaturalVietnameseMain(page);
         await expectSingleMainAndNoOverflow(page);
+        await expectAccessible(page);
       }
     }
+
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto(`/backoffice/catalog/products/${PRODUCT_ID}`);
+    await page.getByRole('button', { name: 'Thêm biến thể', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Thêm biến thể' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await page.locator('#product-media').getByRole('button', { name: 'Sửa' }).first().click();
+    await expect(page.getByRole('dialog', { name: 'Chỉnh sửa hình ảnh' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 });
 
@@ -201,12 +380,20 @@ async function installFe05Api(
   initial: Partial<Pick<ApiProbe, 'catalogStatus' | 'voucherStatus'>> = {},
 ): Promise<ApiProbe> {
   const probe: ApiProbe = {
+    catalogQueries: [],
     catalogStatus: initial.catalogStatus ?? 'DRAFT',
+    conflictNextProductUpdate: false,
+    detailRequests: 0,
+    mediaDeletes: 0,
+    mediaUploads: 0,
     pauseReason: null,
+    productMedia: [mediaFixture(PRODUCT_MEDIA_ID, 'Ảnh sản phẩm ban đầu', 0)],
     productCreateBody: null,
     voucherCreateBody: null,
     voucherRequests: 0,
     voucherStatus: initial.voucherStatus ?? 'DRAFT',
+    variantMedia: [mediaFixture(VARIANT_MEDIA_ID, 'Ảnh phiên bản ban đầu', 0)],
+    variants: [variantFixture(VARIANT_ID, '128 GB · Đen', 'ACTIVE')],
   };
 
   await page.route('**/api/v1/auth/refresh', async (route) => {
@@ -233,9 +420,10 @@ async function installFe05Api(
     }
 
     if (pathname.endsWith('/backoffice/products') && method === 'GET') {
+      probe.catalogQueries.push(url.search);
       const requestedStatus = url.searchParams.get('status');
       const matches = requestedStatus === null || requestedStatus === probe.catalogStatus;
-      const product = catalogProduct(probe.catalogStatus);
+      const product = catalogProduct(probe.catalogStatus, probe);
       await fulfillJson(
         route,
         paged(matches ? [product] : [], Number(url.searchParams.get('pageSize')) || 12),
@@ -246,18 +434,109 @@ async function installFe05Api(
     if (pathname.endsWith('/backoffice/products') && method === 'POST') {
       probe.productCreateBody = requestJson(route);
       probe.catalogStatus = 'DRAFT';
-      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus) }, 201);
+      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus, probe) }, 201);
       return;
     }
 
     if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}/publish`) && method === 'POST') {
       probe.catalogStatus = 'ACTIVE';
-      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus) });
+      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus, probe) });
       return;
     }
 
     if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}`) && method === 'GET') {
-      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus) });
+      probe.detailRequests += 1;
+      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus, probe) });
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}`) && method === 'PATCH') {
+      if (probe.conflictNextProductUpdate) {
+        probe.conflictNextProductUpdate = false;
+        await fulfillJson(
+          route,
+          { error: { code: 'CONCURRENT_MODIFICATION', message: 'stale browser fixture' } },
+          409,
+        );
+        return;
+      }
+      await fulfillJson(route, { data: catalogProduct(probe.catalogStatus, probe) });
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}/variants`) && method === 'POST') {
+      const body = requestJson(route);
+      const created = variantFixture(
+        CREATED_VARIANT_ID,
+        stringField(body, 'displayName') ?? '256 GB · Titan',
+        'DRAFT',
+      );
+      probe.variants.push(created);
+      await fulfillJson(route, { data: created }, 201);
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/variants/${CREATED_VARIANT_ID}`) && method === 'PATCH') {
+      const body = requestJson(route);
+      const variant = probe.variants.find(({ id }) => id === CREATED_VARIANT_ID);
+      if (variant !== undefined) {
+        variant.displayName = stringField(body, 'displayName') ?? variant.displayName;
+      }
+      await fulfillJson(route, { data: variant });
+      return;
+    }
+
+    if (
+      pathname.endsWith(`/backoffice/variants/${CREATED_VARIANT_ID}/archive`) &&
+      method === 'POST'
+    ) {
+      const variant = probe.variants.find(({ id }) => id === CREATED_VARIANT_ID);
+      if (variant !== undefined) variant.status = 'ARCHIVED';
+      await fulfillJson(route, { data: variant });
+      return;
+    }
+
+    if (pathname.endsWith(`/backoffice/products/${PRODUCT_ID}/media`) && method === 'POST') {
+      probe.mediaUploads += 1;
+      const media = mediaFixture(
+        UPLOADED_PRODUCT_MEDIA_ID,
+        PRODUCT_NAME,
+        nextMediaSortOrder(probe.productMedia),
+      );
+      probe.productMedia.push(media);
+      await fulfillJson(route, { data: media }, 201);
+      return;
+    }
+
+    if (
+      pathname.endsWith(`/backoffice/variants/${CREATED_VARIANT_ID}/media`) &&
+      method === 'POST'
+    ) {
+      probe.mediaUploads += 1;
+      const media = mediaFixture(UPLOADED_VARIANT_MEDIA_ID, 'Ảnh phiên bản mới', 0);
+      probe.variantMedia.push(media);
+      await fulfillJson(route, { data: media }, 201);
+      return;
+    }
+
+    if (pathname.includes('/backoffice/product-media/') && method === 'PATCH') {
+      const mediaId = pathname.slice(pathname.lastIndexOf('/') + 1);
+      const body = requestJson(route);
+      const media = [...probe.productMedia, ...probe.variantMedia].find(({ id }) => id === mediaId);
+      if (media !== undefined) {
+        media.altText = stringField(body, 'altText') ?? media.altText;
+        if (typeof body['sortOrder'] === 'number') media.sortOrder = body['sortOrder'];
+      }
+      await fulfillJson(route, { data: media });
+      return;
+    }
+
+    if (pathname.includes('/backoffice/product-media/') && method === 'DELETE') {
+      const mediaId = pathname.slice(pathname.lastIndexOf('/') + 1);
+      probe.productMedia = probe.productMedia.filter(({ id }) => id !== mediaId);
+      probe.variantMedia = probe.variantMedia.filter(({ id }) => id !== mediaId);
+      probe.mediaDeletes += 1;
+      await route.fulfill({ status: 204, headers: corsHeaders(route) });
       return;
     }
 
@@ -330,12 +609,12 @@ function staffUser(role: StaffRole) {
   } as const;
 }
 
-function catalogProduct(status: RecordStatus) {
-  const variant = {
-    id: VARIANT_ID,
+function variantFixture(id: string, displayName: string, status: RecordStatus) {
+  return {
+    id,
     productId: PRODUCT_ID,
     sku: 'IP15P-128-BLK-FE05',
-    displayName: '128 GB · Đen',
+    displayName,
     storageCapacityGb: 128,
     colorName: 'Đen',
     colorHex: '#111111',
@@ -344,11 +623,38 @@ function catalogProduct(status: RecordStatus) {
     compareAtPrice: null,
     accessoryAttributes: null,
     warrantyPolicyId: POLICY_ID,
-    status: 'ACTIVE',
+    status,
     media: [],
     createdAt: '2026-08-28T01:00:00.000Z',
     updatedAt: '2026-08-28T02:00:00.000Z',
   };
+}
+
+function mediaFixture(id: string, altText: string, sortOrder: number) {
+  return {
+    id,
+    ownerType: 'PRODUCT',
+    ownerId: PRODUCT_ID,
+    url: `https://cdn.example.test/${id}.webp`,
+    mimeType: 'image/webp',
+    fileSize: 1024,
+    width: 800,
+    height: 800,
+    sortOrder,
+    altText,
+    createdAt: '2026-08-28T02:00:00.000Z',
+  };
+}
+
+function nextMediaSortOrder(media: readonly ReturnType<typeof mediaFixture>[]) {
+  return media.reduce((maximum, item) => Math.max(maximum, item.sortOrder), -1) + 1;
+}
+
+function catalogProduct(status: RecordStatus, probe: ApiProbe) {
+  const variants = probe.variants.map((variant) => ({
+    ...variant,
+    media: variant.id === CREATED_VARIANT_ID ? probe.variantMedia : variant.media,
+  }));
   return {
     id: PRODUCT_ID,
     type: 'IPHONE',
@@ -357,8 +663,8 @@ function catalogProduct(status: RecordStatus) {
     slug: 'iphone-15-pro-fe05',
     status,
     releaseYear: 2023,
-    variantCount: 1,
-    primaryMedia: null,
+    variantCount: variants.length,
+    primaryMedia: probe.productMedia[0] ?? null,
     createdAt: '2026-08-28T01:00:00.000Z',
     updatedAt: '2026-08-28T02:00:00.000Z',
     description: 'Mẫu máy dành cho kiểm thử FE-05.',
@@ -369,8 +675,8 @@ function catalogProduct(status: RecordStatus) {
     seoTitle: 'iPhone 15 Pro đang có sẵn',
     seoDescription: 'Thông tin rõ ràng về các máy iPhone 15 Pro đang có sẵn.',
     archivedAt: status === 'ARCHIVED' ? '2026-08-28T03:00:00.000Z' : null,
-    variants: [variant],
-    media: [],
+    variants,
+    media: probe.productMedia,
   };
 }
 
@@ -503,4 +809,24 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+}
+
+async function expectAccessible(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .exclude('nextjs-portal')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(
+    results.violations
+      .filter(({ impact }) => impact === 'serious' || impact === 'critical')
+      .map(({ id, impact, nodes }) => ({
+        id,
+        impact,
+        nodes: nodes.map(({ target, html, failureSummary }) => ({
+          target,
+          html,
+          failureSummary,
+        })),
+      })),
+  ).toEqual([]);
 }
