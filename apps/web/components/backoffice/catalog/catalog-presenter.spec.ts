@@ -87,7 +87,8 @@ describe('trình bày danh mục FE-05', () => {
   });
 
   it('chặn đúng loại và kích thước ảnh trước khi tải lên', () => {
-    expect(validateCatalogMediaFile({ size: 100, type: 'image/jpeg' })).toBeUndefined();
+    expect(validateCatalogMediaFile({ size: 100, type: 'image/jpeg' })).toBeNull();
+    expect(validateCatalogMediaFile({ size: 0, type: 'image/jpeg' })).toContain('trống');
     expect(validateCatalogMediaFile({ size: 100, type: 'image/svg+xml' })).toContain('JPEG');
     expect(validateCatalogMediaFile({ size: 8 * 1024 * 1024 + 1, type: 'image/png' })).toContain(
       '8 MB',
