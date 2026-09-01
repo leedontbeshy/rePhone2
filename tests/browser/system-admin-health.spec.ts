@@ -50,8 +50,11 @@ test(
     const storeNameInput = page.getByLabel(/^Tên cửa hàng/);
     const originalStoreName = await storeNameInput.inputValue();
     const temporaryStoreName = `${originalStoreName} · kiểm thử FE-09`;
-    await saveStoreName(page, temporaryStoreName);
-    await saveStoreName(page, originalStoreName);
+    try {
+      await saveStoreName(page, temporaryStoreName);
+    } finally {
+      await saveStoreName(page, originalStoreName);
+    }
 
     const auditList = await visitLiveProjection(
       page,
