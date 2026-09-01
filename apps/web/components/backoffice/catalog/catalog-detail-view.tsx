@@ -33,6 +33,7 @@ import {
   type CatalogRecordStatus,
 } from './catalog-presenter';
 import styles from './catalog.module.css';
+import { catalogFormChanged, useUnsavedCatalogChanges } from './use-unsaved-catalog-changes';
 
 export { validateCatalogMediaFile } from '@/lib/backoffice-catalog-api';
 
@@ -687,7 +688,9 @@ export function CatalogDetailView({
             setDialog(null);
           }}
           onSubmit={(input) => {
-            closeDialogAfter(onUpdateProduct(input));
+            return Promise.resolve(onUpdateProduct(input)).then(() => {
+              setDialog(null);
+            });
           }}
         />
       ) : null}
@@ -1247,29 +1250,33 @@ function CatalogProductEditDialog({
   product: CatalogProductDetailRecord;
   warranties: readonly CatalogWarrantyChoice[];
   onCancel: () => void;
-  onSubmit: (input: CatalogProductUpdateInput) => void;
+  onSubmit: (input: CatalogProductUpdateInput) => Promise<void> | void;
 }>) {
   const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
-  const [draft, setDraft] = useState(() => ({
-    brand: product.brand,
-    chipset: product.chipset ?? '',
-    description: product.description ?? '',
-    name: product.name,
-    ramGb: product.ramGb === null || product.ramGb === undefined ? '' : String(product.ramGb),
-    releaseYear:
-      product.releaseYear === null || product.releaseYear === undefined
-        ? ''
-        : String(product.releaseYear),
-    screenSizeInches: product.screenSizeInches ?? '',
-    seoDescription: product.seoDescription ?? '',
-    seoTitle: product.seoTitle ?? '',
-    slug: product.slug,
-    warrantyPolicyId: product.warrantyPolicyId ?? '',
-  }));
-  function submit(event: SyntheticEvent<HTMLFormElement>) {
+  const initialDraft = catalogProductEditDraftFrom(product);
+  const [draft, setDraft] = useState(initialDraft);
+  const [baseline, setBaseline] = useState(initialDraft);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const dirty = catalogFormChanged(baseline, draft);
+
+  useUnsavedCatalogChanges(dirty);
+
+  useEffect(() => {
+    const authoritative = catalogProductEditDraftFrom(product);
+    setDraft(authoritative);
+    setBaseline(authoritative);
+    setConfirmDiscard(false);
+  }, [product]);
+
+  function requestCancel() {
+    if (dirty) setConfirmDiscard(true);
+    else onCancel();
+  }
+
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (draft.name.trim() === '' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) return;
-    onSubmit({
+    const input: CatalogProductUpdateInput = {
       brand: draft.brand.trim(),
       description: draft.description.trim(),
       name: draft.name.trim(),
@@ -1285,20 +1292,31 @@ function CatalogProductEditDialog({
             releaseYear: Number(draft.releaseYear),
             screenSizeInches: draft.screenSizeInches,
           }),
-    });
+    };
+    try {
+      await onSubmit(input);
+      setBaseline(draft);
+    } catch {
+      // Keep the edited baseline dirty while the route reports or recovers the conflict.
+    }
   }
   return (
-    <dialog
-      aria-labelledby="product-edit-title"
-      className={styles.dialogPanel}
-      ref={dialogRef}
-      onClose={onDialogClose}
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) onCancel();
-      }}
-    >
-      <form onSubmit={submit}>
+    <>
+      <dialog
+        aria-labelledby="product-edit-title"
+        className={styles.dialogPanel}
+        ref={dialogRef}
+        onClose={onDialogClose}
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!busy) requestCancel();
+        }}
+      >
+      <form
+        onSubmit={(event) => {
+          void submit(event);
+        }}
+      >
         <div className={styles.dialogHeading}>
           <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
           <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
@@ -1454,15 +1472,37 @@ function CatalogProductEditDialog({
           </DialogField>
         </div>
         <div className={styles.dialogActions}>
-          <button className={styles.secondaryLink} disabled={busy} type="button" onClick={onCancel}>
+          <button
+            className={styles.secondaryLink}
+            disabled={busy}
+            type="button"
+            onClick={requestCancel}
+          >
             Hủy
           </button>
           <button className={styles.primaryLink} disabled={busy} type="submit">
             {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
           </button>
         </div>
-      </form>
-    </dialog>
+        </form>
+      </dialog>
+      <BackofficeActionDialog
+        cancelLabel="Tiếp tục chỉnh sửa"
+        confirmLabel="Bỏ thay đổi"
+        description="Thông tin sản phẩm vừa chỉnh sửa chưa được lưu và sẽ bị mất."
+        destructive
+        open={confirmDiscard}
+        title="Bỏ các thay đổi chưa lưu?"
+        onCancel={() => {
+          setConfirmDiscard(false);
+        }}
+        onConfirm={() => {
+          setBaseline(draft);
+          setConfirmDiscard(false);
+          onCancel();
+        }}
+      />
+    </>
   );
 }
 
@@ -1543,6 +1583,25 @@ function CatalogMediaEditDialog({
       </form>
     </dialog>
   );
+}
+
+function catalogProductEditDraftFrom(product: CatalogProductDetailRecord) {
+  return {
+    brand: product.brand,
+    chipset: product.chipset ?? '',
+    description: product.description ?? '',
+    name: product.name,
+    ramGb: product.ramGb === null || product.ramGb === undefined ? '' : String(product.ramGb),
+    releaseYear:
+      product.releaseYear === null || product.releaseYear === undefined
+        ? ''
+        : String(product.releaseYear),
+    screenSizeInches: product.screenSizeInches ?? '',
+    seoDescription: product.seoDescription ?? '',
+    seoTitle: product.seoTitle ?? '',
+    slug: product.slug,
+    warrantyPolicyId: product.warrantyPolicyId ?? '',
+  };
 }
 
 function CatalogDescription({ label, value }: Readonly<{ label: string; value: string }>) {

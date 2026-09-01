@@ -1,7 +1,6 @@
 'use client';
 
 import { DeviceMobileIcon, InfoIcon, PlugIcon } from '@phosphor-icons/react';
-import Link from 'next/link';
 import {
   useEffect,
   useRef,
@@ -10,7 +9,7 @@ import {
   type ReactNode,
   type SyntheticEvent,
 } from 'react';
-import { CatalogVoucherStatusChip } from '@/components/backoffice';
+import { BackofficeActionDialog, CatalogVoucherStatusChip } from '@/components/backoffice';
 import {
   catalogProductInputFromDraft,
   EMPTY_PRODUCT_DRAFT,
@@ -21,6 +20,11 @@ import {
   type CatalogValidationError,
 } from './catalog-presenter';
 import styles from './catalog.module.css';
+import {
+  catalogFormChanged,
+  catalogInternalNavigationTarget,
+  useUnsavedCatalogChanges,
+} from './use-unsaved-catalog-changes';
 
 export interface CatalogWarrantyChoice {
   readonly id: string;
@@ -36,6 +40,8 @@ interface CatalogProductFormProps {
   readonly warranties: readonly CatalogWarrantyChoice[];
   readonly warrantyLoading?: boolean;
   readonly warrantyLoadError?: string | null;
+  readonly onCancel: () => void;
+  readonly onNavigateAway: (href: string) => void;
   readonly onRetryWarranties?: () => void;
   readonly onSubmit: (input: CatalogProductInput) => Promise<void> | void;
 }
@@ -48,13 +54,57 @@ export function CatalogProductForm({
   warranties,
   warrantyLoading = false,
   warrantyLoadError = null,
+  onCancel,
+  onNavigateAway,
   onRetryWarranties,
   onSubmit,
 }: CatalogProductFormProps) {
   const [draft, setDraft] = useState(initialDraft);
+  const [baseline, setBaseline] = useState(initialDraft);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [errors, setErrors] = useState<readonly CatalogValidationError[]>([]);
   const [slugEdited, setSlugEdited] = useState(initialDraft.slug !== '');
   const errorRef = useRef<HTMLDivElement>(null);
+  const dirty = catalogFormChanged(baseline, draft);
+
+  useUnsavedCatalogChanges(dirty);
+
+  useEffect(() => {
+    setDraft(initialDraft);
+    setBaseline(initialDraft);
+    setConfirmDiscard(false);
+    setPendingNavigation(null);
+  }, [initialDraft]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const protectInternalNavigation = (event: MouseEvent) => {
+      if (
+        event.button !== 0 ||
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest<HTMLAnchorElement>('a[href]');
+      if (anchor === null || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const destination = catalogInternalNavigationTarget(anchor.href, window.location.href);
+      if (destination === null) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingNavigation(destination);
+    };
+    document.addEventListener('click', protectInternalNavigation, true);
+    return () => {
+      document.removeEventListener('click', protectInternalNavigation, true);
+    };
+  }, [dirty]);
 
   useEffect(() => {
     if (error !== null || errors.length > 0) errorRef.current?.focus();
@@ -80,26 +130,46 @@ export function CatalogProductForm({
     );
   }
 
-  function submit(event: SyntheticEvent<HTMLFormElement>) {
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
     const validationErrors = validateCatalogProductDraft(draft);
     setErrors(validationErrors);
     if (validationErrors.length > 0) return;
-    void onSubmit(catalogProductInputFromDraft(draft));
+    try {
+      await onSubmit(catalogProductInputFromDraft(draft));
+      setBaseline(draft);
+    } catch {
+      // The route owns the actionable API error and keeps the edited draft intact.
+    }
   }
 
   return (
-    <form className={styles.page} noValidate onSubmit={submit}>
+    <>
+      <form
+        className={styles.page}
+        noValidate
+        onSubmit={(event) => {
+          void submit(event);
+        }}
+      >
       <header className={styles.pageHeader}>
         <div className={styles.pageHeading}>
           <h1>Thêm sản phẩm</h1>
           <p>Tạo thông tin chung trước, sau đó bổ sung biến thể và hình ảnh.</p>
         </div>
         <div className={styles.headerActions}>
-          <Link className={styles.secondaryLink} href="/backoffice/catalog/products">
+          <button
+            className={styles.secondaryLink}
+            disabled={pending}
+            type="button"
+            onClick={() => {
+              if (dirty) setConfirmDiscard(true);
+              else onCancel();
+            }}
+          >
             Hủy
-          </Link>
+          </button>
           <button className={styles.primaryLink} disabled={pending} type="submit">
             {pending ? 'Đang lưu…' : submitLabel}
           </button>
@@ -437,7 +507,28 @@ export function CatalogProductForm({
           </section>
         </aside>
       </div>
-    </form>
+      </form>
+      <BackofficeActionDialog
+        cancelLabel="Tiếp tục chỉnh sửa"
+        confirmLabel="Bỏ thay đổi"
+        description="Thông tin bạn vừa nhập chưa được lưu và sẽ bị mất."
+        destructive
+        open={confirmDiscard || pendingNavigation !== null}
+        title="Bỏ các thay đổi chưa lưu?"
+        onCancel={() => {
+          setConfirmDiscard(false);
+          setPendingNavigation(null);
+        }}
+        onConfirm={() => {
+          setBaseline(draft);
+          setConfirmDiscard(false);
+          const destination = pendingNavigation;
+          setPendingNavigation(null);
+          if (destination === null) onCancel();
+          else onNavigateAway(destination);
+        }}
+      />
+    </>
   );
 }
 

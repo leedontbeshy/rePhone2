@@ -78,6 +78,7 @@ export default function NewCatalogProductPage() {
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Không thể tạo sản phẩm.');
+      throw caught;
     } finally {
       setPending(false);
     }
@@ -97,6 +98,12 @@ export default function NewCatalogProductPage() {
         warranties={warranties}
         warrantyLoading={warrantyLoading}
         warrantyLoadError={warrantyLoadError}
+        onCancel={() => {
+          router.push('/backoffice/catalog/products');
+        }}
+        onNavigateAway={(href) => {
+          router.push(href);
+        }}
         onRetryWarranties={() => {
           setWarrantyReloadVersion((value) => value + 1);
         }}
