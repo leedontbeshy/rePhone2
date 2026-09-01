@@ -2531,7 +2531,6 @@ main > p:not(.eyebrow) {
 .warranty-record-card:hover,
 .warranty-record-card:focus-visible {
   border-color: #0b766f;
-  outline: none;
   transform: translateY(-2px);
 }
 

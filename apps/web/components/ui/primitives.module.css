@@ -535,4 +535,10 @@ select.control {
   .spinner {
     border-inline-end-color: transparent;
   }
+
+  .filePicker:has(.fileInput:focus-visible) {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
+  }
 }

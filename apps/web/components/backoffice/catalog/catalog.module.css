@@ -370,7 +370,6 @@
 .productCard:hover,
 .productCard:focus-visible {
   border-color: var(--color-primary);
-  outline: 0;
 }
 
 .productIdentity {

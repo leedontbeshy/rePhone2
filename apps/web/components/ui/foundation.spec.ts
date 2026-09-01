@@ -59,7 +59,39 @@ describe('frontend design foundation', () => {
 
     expect(unresolved).toEqual([]);
   });
+
+  it('keeps transparent file controls and legacy cards visibly focused', () => {
+    const webRoot = fileURLToPath(new URL('../..', import.meta.url));
+    const base = readFileSync(join(webRoot, 'styles', 'base.css'), 'utf8');
+    const primitives = readFileSync(
+      join(webRoot, 'components', 'ui', 'primitives.module.css'),
+      'utf8',
+    );
+    const globals = readFileSync(join(webRoot, 'app', 'globals.css'), 'utf8');
+    const catalog = readFileSync(
+      join(webRoot, 'components', 'backoffice', 'catalog', 'catalog.module.css'),
+      'utf8',
+    );
+
+    expect(base).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*input\[type='file'\]:focus-visible \+ \*[\s\S]*outline:\s*3px solid Highlight;/,
+    );
+    expect(base).toMatch(/label:has\(\+ input\[type='file'\]:focus-visible\)/);
+    expect(base).toMatch(/label:has\(> input\[type='file'\]:focus-visible\)/);
+    expect(primitives).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*\.filePicker:has\(\.fileInput:focus-visible\)[\s\S]*outline:\s*3px solid Highlight;/,
+    );
+    expect(focusVisibleBlocksWithoutReplacement(globals)).toEqual([]);
+    expect(focusVisibleBlocksWithoutReplacement(catalog)).toEqual([]);
+  });
 });
+
+function focusVisibleBlocksWithoutReplacement(source: string): string[] {
+  return [...source.matchAll(/([^{}]*:focus-visible[^{}]*)\{([^{}]*)\}/g)]
+    .filter(([, , body]) => /outline:\s*(?:0|none)\s*;/.test(body ?? ''))
+    .filter(([, , body]) => !/box-shadow:\s*[^;]+;/.test(body ?? ''))
+    .map(([, selector]) => selector?.trim() ?? '');
+}
 
 function listCssFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

@@ -198,4 +198,11 @@ body {
     outline: 3px solid CanvasText;
     box-shadow: none;
   }
+
+  input[type='file']:focus-visible + *,
+  label:has(+ input[type='file']:focus-visible),
+  label:has(> input[type='file']:focus-visible) {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
 }
