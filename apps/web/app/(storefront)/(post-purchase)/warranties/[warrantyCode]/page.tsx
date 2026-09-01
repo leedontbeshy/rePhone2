@@ -14,7 +14,6 @@ import { WarrantyDetail } from '@/components/post-purchase/warranties/warranty-d
 import { WarrantyDetailStateHeader } from '@/components/post-purchase/warranties/warranty-detail-state-header';
 import styles from '@/components/post-purchase/warranties/warranties.module.css';
 import {
-  clearWarrantyGuestCredential,
   getCustomerWarranty,
   resolveWarrantyGuestCredential,
   warrantyAccessKey,
@@ -40,7 +39,7 @@ export default function CustomerWarrantyDetailPage() {
 function CustomerWarrantyDetailContent() {
   const params = useParams<{ warrantyCode: string }>();
   const searchParams = useSearchParams();
-  const warrantyCode = decodeURIComponent(params.warrantyCode);
+  const warrantyCode = params.warrantyCode;
   const orderNumber = searchParams.get('orderNumber');
   const { client, status, user } = useAuth();
   const isCustomer = user?.role === 'CUSTOMER';
@@ -74,7 +73,6 @@ function CustomerWarrantyDetailContent() {
     if (access?.key !== accessKey || status === 'loading' || isStaff) return;
     let active = true;
     setLoading(true);
-    setDetail(null);
     setError(null);
     const guestCredential = status === 'anonymous' ? access.guestCredential : undefined;
     void getCustomerWarranty(client, warrantyCode, guestCredential)
@@ -88,9 +86,7 @@ function CustomerWarrantyDetailContent() {
           caught instanceof WarrantyCustomerError
             ? caught
             : new WarrantyCustomerError('Không thể mở bảo hành này.', 'unknown');
-        if (nextError.kind === 'not-found' && status === 'anonymous') {
-          clearWarrantyGuestCredential(orderNumber, sessionStorage);
-        }
+        if (nextError.kind === 'not-found') setDetail(null);
         setError(nextError);
       })
       .finally(() => {
@@ -119,7 +115,9 @@ function CustomerWarrantyDetailContent() {
         <span aria-current="page">{visibleDetail?.warrantyCode ?? warrantyCode}</span>
       </nav>
       {visibleDetail === null ? <WarrantyDetailStateHeader /> : null}
-      {status === 'loading' || (!isStaff && !accessMatchesContext) || loading ? (
+      {status === 'loading' ||
+      (!isStaff && !accessMatchesContext) ||
+      (loading && !visibleDetail) ? (
         <CollectionLoading label="Đang tải chi tiết bảo hành…" />
       ) : null}
       {isStaff ? (
@@ -139,9 +137,12 @@ function CustomerWarrantyDetailContent() {
           }}
         />
       ) : null}
-      {!loading && visibleError === null && visibleDetail !== null ? (
-        <WarrantyDetail detail={visibleDetail} />
+      {loading && visibleDetail ? (
+        <p className={styles.refreshStatus} role="status">
+          Đang cập nhật chi tiết bảo hành…
+        </p>
       ) : null}
+      {visibleDetail !== null ? <WarrantyDetail detail={visibleDetail} /> : null}
     </section>
   );
 }
