@@ -92,4 +92,18 @@ describe('after-sales presentation', () => {
     expect(source).toContain("setFileError('Hãy chọn một ảnh hoặc tài liệu PDF.');");
     expect(source).toContain('setFileError(validation);');
   });
+
+  it('links create-form validation to fields and locks duplicate submission synchronously', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./after-sales-create.tsx', import.meta.url)),
+      'utf8',
+    );
+
+    expect(source).toContain('aria-invalid={issueError !== null || undefined}');
+    expect(source).toContain('id="after-sales-issue-error" role="alert"');
+    expect(source).toContain('issueRef.current?.focus();');
+    expect(source).toContain('outcomeRef.current?.focus();');
+    expect(source).toContain('if (submitOperationRef.current !== null) return;');
+    expect(source).toContain('setSelectionReloadKey((value) => value + 1);');
+  });
 });

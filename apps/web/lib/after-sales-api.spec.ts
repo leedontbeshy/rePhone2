@@ -286,16 +286,17 @@ describe('after-sales typed-client adapter', () => {
             { orderNumber: ORDER_NUMBER, status: 'COMPLETED' },
             { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' },
           ],
-          meta: { pagination: { page: 1, pageSize: 100, totalItems: 2, totalPages: 1 } },
+          meta: { pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 } },
         },
       })
       .mockResolvedValueOnce({ data: { data: completedOrder } })
       .mockResolvedValueOnce({ data: { data: { ...completedOrder, status: 'PROCESSING' } } });
     const client = mockClient({ GET: get });
 
-    await expect(listCompletedAfterSalesOrders(client)).resolves.toEqual([
-      expect.objectContaining({ orderNumber: ORDER_NUMBER }),
-    ]);
+    await expect(listCompletedAfterSalesOrders(client)).resolves.toMatchObject({
+      data: [expect.objectContaining({ orderNumber: ORDER_NUMBER })],
+      pagination: { page: 1, totalPages: 1 },
+    });
     await expect(getCompletedAfterSalesOrder(client, ORDER_NUMBER)).resolves.toMatchObject({
       status: 'COMPLETED',
     });
@@ -306,45 +307,25 @@ describe('after-sales typed-client adapter', () => {
     expect(get.mock.calls[0]?.[1]).toMatchObject({ params: { query: { status: 'COMPLETED' } } });
   });
 
-  it('loads every completed-order page and filters each page authoritatively', async () => {
-    const first = { orderNumber: ORDER_NUMBER, status: 'COMPLETED' };
+  it('loads only the requested completed-order page', async () => {
     const second = { orderNumber: 'RPH-20260826-DEF23456', status: 'COMPLETED' };
-    const get = vi
-      .fn()
-      .mockResolvedValueOnce({
-        data: {
-          data: [first, { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' }],
-          meta: { pagination: { page: 1, pageSize: 100, totalItems: 3, totalPages: 2 } },
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          data: [second],
-          meta: { pagination: { page: 2, pageSize: 100, totalItems: 3, totalPages: 2 } },
-        },
-      });
-
-    await expect(listCompletedAfterSalesOrders(mockClient({ GET: get }))).resolves.toEqual([
-      first,
-      second,
-    ]);
-    expect(get).toHaveBeenNthCalledWith(1, '/api/v1/orders', {
-      params: {
-        query: {
-          status: 'COMPLETED',
-          page: 1,
-          pageSize: 100,
-          sortBy: 'placedAt',
-          sortOrder: 'desc',
-        },
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        data: [second],
+        meta: { pagination: { page: 2, pageSize: 20, totalItems: 21, totalPages: 2 } },
       },
     });
-    expect(get).toHaveBeenNthCalledWith(2, '/api/v1/orders', {
+
+    await expect(
+      listCompletedAfterSalesOrders(mockClient({ GET: get }), { page: 2, pageSize: 20 }),
+    ).resolves.toMatchObject({ data: [second], pagination: { page: 2, totalPages: 2 } });
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith('/api/v1/orders', {
       params: {
         query: {
           status: 'COMPLETED',
           page: 2,
-          pageSize: 100,
+          pageSize: 20,
           sortBy: 'placedAt',
           sortOrder: 'desc',
         },

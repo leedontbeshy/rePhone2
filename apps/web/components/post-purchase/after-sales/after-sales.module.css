@@ -207,10 +207,33 @@
   font: inherit;
 }
 
+.field textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.fieldError {
+  color: var(--color-danger);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
 .selector,
 .itemChoices {
   display: grid;
   gap: var(--space-4);
+}
+
+.selectorPagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.selectorPagination > span {
+  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
 }
 
 .itemChoice {

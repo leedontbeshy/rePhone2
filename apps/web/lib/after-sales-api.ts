@@ -55,7 +55,6 @@ export class AfterSalesCustomerError extends Error {
 const ORDER_NUMBER_PATTERN = /^RPH-\d{8}-[A-Z0-9]{8}$/;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
-const MAX_COMPLETED_ORDER_PAGES = 100;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -131,38 +130,26 @@ export async function getAfterSalesOrderItem(
 
 export async function listCompletedAfterSalesOrders(
   client: AfterSalesApiClient,
-): Promise<AfterSalesOrderChoice[]> {
-  const orders: AfterSalesOrderChoice[] = [];
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    if (page > MAX_COMPLETED_ORDER_PAGES) {
-      throw new AfterSalesCustomerError(
-        'Chưa thể tải đầy đủ danh sách đơn hàng. Vui lòng thử lại sau.',
-        'PAGINATION_LIMIT_EXCEEDED',
-      );
-    }
-    const result = await client.GET('/api/v1/orders', {
-      params: {
-        query: {
-          status: 'COMPLETED',
-          page,
-          pageSize: 100,
-          sortBy: 'placedAt',
-          sortOrder: 'desc',
-        },
+  query: { page: number; pageSize: number } = { page: 1, pageSize: 20 },
+): Promise<{ data: AfterSalesOrderChoice[]; pagination: AfterSalesPage['pagination'] }> {
+  const result = await client.GET('/api/v1/orders', {
+    params: {
+      query: {
+        status: 'COMPLETED',
+        page: query.page,
+        pageSize: query.pageSize,
+        sortBy: 'placedAt',
+        sortOrder: 'desc',
       },
-    });
-    if (result.data === undefined) {
-      throw customerError(result.error, 'Không thể tải đơn hàng.');
-    }
-    orders.push(...result.data.data.filter((order) => order.status === 'COMPLETED'));
-    const projectedTotalPages = result.data.meta.pagination.totalPages;
-    totalPages =
-      Number.isInteger(projectedTotalPages) && projectedTotalPages > 0 ? projectedTotalPages : page;
-    page += 1;
+    },
+  });
+  if (result.data === undefined) {
+    throw customerError(result.error, 'Không thể tải đơn hàng.');
   }
-  return orders;
+  return {
+    data: result.data.data.filter((order) => order.status === 'COMPLETED'),
+    pagination: result.data.meta.pagination,
+  };
 }
 
 export async function getCompletedAfterSalesOrder(
