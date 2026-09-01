@@ -143,8 +143,8 @@ export class CartService {
     const guestToken = this.guestIdentity.readToken(request);
     const guestTokenHash =
       guestToken === undefined ? undefined : this.guestIdentity.digestToken(guestToken);
-    const cappedItemIds = new Set<string>();
-    const cartId = await this.transactions.run('cart.merge', async (transaction) => {
+    const mergeResult = await this.transactions.run('cart.merge', async (transaction) => {
+      const cappedItemIds = new Set<string>();
       const keys = [`customer:${auth.userId}`];
       if (guestTokenHash !== undefined) keys.push(`guest:${guestTokenHash}`);
       for (const key of keys.sort()) await this.carts.lockIdentity(key, transaction);
@@ -158,7 +158,7 @@ export class CartService {
       if (guestCart !== null && activeGuest === null) {
         await transaction.cart.update({ where: { id: guestCart.id }, data: { status: 'EXPIRED' } });
       }
-      if (activeGuest === null) return customerCart?.id ?? null;
+      if (activeGuest === null) return { cartId: customerCart?.id ?? null, cappedItemIds };
 
       if (customerCart === null) {
         const claimed = await transaction.cart.update({
@@ -166,7 +166,7 @@ export class CartService {
           data: { customerId: auth.userId, guestTokenHash: null, expiresAt: null },
           select: { id: true },
         });
-        return claimed.id;
+        return { cartId: claimed.id, cappedItemIds };
       }
 
       await this.carts.lockCart(customerCart.id, transaction);
@@ -201,8 +201,9 @@ export class CartService {
         where: { id: activeGuest.id },
         data: { status: 'ABANDONED' },
       });
-      return customerCart.id;
+      return { cartId: customerCart.id, cappedItemIds };
     });
+    const { cartId, cappedItemIds } = mergeResult;
     if (cartId === null) return emptyCart();
     const cart = await this.carts.findActiveById(cartId);
     if (cart === null) return emptyCart();
