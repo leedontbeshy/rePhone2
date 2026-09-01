@@ -271,3 +271,29 @@ Browser suite phủ customer cancel thật, guest privacy, warranty detail/Axe,
 after-sales eligibility, form focus, synchronous double-submit, attachment/provider
 failure và đủ collection/detail ở 390 px. API E2E bổ sung owner, non-owner,
 anonymous, staff, converted guest cookie và forged guest header cho warranty.
+
+## WP-07 verification — code tree `f72fd6e`, browser logic `ef5708f`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 130 file, 630/630 test |
+| Targeted API catalog/voucher | 0 | 4 file, 50/50 test |
+| `pnpm --filter @rephone/web lint` | 0 | PASS, zero warning |
+| `pnpm --filter @rephone/web typecheck` | 0 | PASS |
+| Targeted gate sau format `f72fd6e` | 0 | PASS |
+| `git diff --check` | 0 | PASS |
+
+### Browser, responsive và accessibility gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Browser đầu | 1 | Lộ bốn lỗi a11y thật: catalog selected helper, shared selected-option hint, voucher table header và mobile context link |
+| Remediation | 0 | Sửa riêng tại `3d8d18c`, `781bf41`, `16457ba`, `d2e566a`; Axe trở về zero serious/critical |
+| Browser cuối trên logic `ef5708f`, lượt 1 | 0 | 4/4, Chromium, 1 worker, 1,2 phút |
+| Browser cuối trên logic `ef5708f`, lượt 2 | 0 | 4/4, Chromium, 1 worker, 1,2 phút |
+
+Browser matrix phủ đủ sáu route catalog/voucher ở 1440/360 px, đo không overflow
+và không lộ control mặc định. `f72fd6e` chỉ là formatting-only cho năm tệp catalog;
+typecheck và targeted gate được chạy lại sau format, không thay đổi browser behavior.

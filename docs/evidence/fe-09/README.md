@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-06 — PASS; tiếp theo WP-07**<br>
+> Con trỏ triển khai: **WP-07 — PASS; tiếp theo WP-08**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -22,6 +22,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-04 auth/account evidence](./wp-04-auth-account.md)
 - [WP-05 commerce evidence](./wp-05-commerce.md)
 - [WP-06 customer post-purchase evidence](./wp-06-post-purchase.md)
+- [WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -115,6 +116,19 @@ tiếp, gồm đủ bảy route ở 390 px và Axe zero serious/critical.
 Chi tiết lỗi đã bắt, privacy matrix và acceptance nằm tại
 [WP-06 customer post-purchase evidence](./wp-06-post-purchase.md).
 
+## Catalog và voucher administration hardening WP-07
+
+WP-07 kết thúc code tại `f72fd6e` (browser logic `ef5708f`) với catalog snapshot
+gắn query/owner, suggestion lỗi có retry, pagination clamp/focus, product media và
+conflict recovery, dirty-state guard, voucher date/time/lifecycle cùng negative
+role flow. Full web unit đạt `630/630`; targeted API catalog/voucher đạt `50/50`;
+browser catalog/voucher đạt `4/4` hai lượt liên tiếp. Sáu route đều xanh ở
+1440/360 px, không overflow và Axe zero serious/critical sau bốn remediation
+accessibility.
+
+Chi tiết commit, lịch sử lỗi và acceptance nằm tại
+[WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -126,7 +140,8 @@ Chi tiết lỗi đã bắt, privacy matrix và acceptance nằm tại
 | WP-04 | Auth/account browser/visual/security evidence | PASS |
 | WP-05 | Commerce evidence + 20 snapshot | BLOCKED — FE9-R14 |
 | WP-06 | Customer post-purchase browser/ownership/responsive evidence | PASS |
-| WP-07–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-07 | Catalog/voucher browser/responsive/accessibility evidence | PASS |
+| WP-08–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -142,7 +157,7 @@ Chi tiết lỗi đã bắt, privacy matrix và acceptance nằm tại
 
 ## Bước tiếp theo
 
-Triển khai WP-07 cho catalog và voucher administration. Song song, vẫn cần chốt
+Triển khai WP-08 cho inventory và stock hardening. Song song, vẫn cần chốt
 `FE9-R14`: phê duyệt fingerprint/version cho checkout preview ở backend/OpenAPI,
 hoặc chấp nhận hoãn rủi ro và điều chỉnh acceptance trước WP-14. Chưa chuyển WP-05
 sang PASS cho đến khi quyết định này được ghi nhận.
