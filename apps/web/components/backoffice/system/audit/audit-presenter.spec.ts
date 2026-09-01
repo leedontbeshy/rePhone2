@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { AuditLogListItem } from '@/lib/system-admin-api';
 import {
   DEFAULT_AUDIT_QUERY,
   auditActionLabel,
   auditDraftFromQuery,
+  focusAuditDetailHeading,
   auditListQueryKey,
   auditQueryFromDraft,
   auditWorkspaceHref,
@@ -13,6 +14,14 @@ import {
 } from './audit-presenter';
 
 describe('audit query presentation', () => {
+  it('focuses a loaded detail without moving the current list position', () => {
+    const focus = vi.fn();
+
+    focusAuditDetailHeading({ focus });
+    focusAuditDetailHeading(null);
+
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
   it('accepts only supported URL values and restores safe defaults', () => {
     const query = parseAuditQuery(
       new URLSearchParams(

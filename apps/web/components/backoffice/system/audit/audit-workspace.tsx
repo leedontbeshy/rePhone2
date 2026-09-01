@@ -29,6 +29,7 @@ import {
   auditActionLabel,
   auditActorLabel,
   auditDraftFromQuery,
+  focusAuditDetailHeading,
   auditListQueryKey,
   auditQueryFromDraft,
   auditResourceLabel,
@@ -161,7 +162,7 @@ function AuditLogWorkspaceContent() {
       typeof window !== 'undefined' &&
       window.matchMedia('(max-width: 59.99rem)').matches
     ) {
-      detailHeadingRef.current?.focus();
+      focusAuditDetailHeading(detailHeadingRef.current);
     }
   }, [detail, selectedId]);
 
@@ -507,6 +508,7 @@ export function AuditLogList({
             data-selected={selected || undefined}
             href={buildHref(row.id)}
             key={row.id}
+            scroll={false}
           >
             <span className={styles.avatar} aria-hidden="true">
               {row.actorInitials}

@@ -1,10 +1,9 @@
 'use client';
 
-import { ArrowLeftIcon } from '@phosphor-icons/react';
 import NextLink from 'next/link';
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { Button, InlineAlert, formatVnd } from '@/components/ui';
+import { Button, InlineAlert } from '@/components/ui';
 import {
   cancelBackofficeOrder,
   completePickup,
@@ -27,23 +26,16 @@ import {
   type FulfillmentAction,
 } from '@/lib/fulfillment-api';
 import { createRefund } from '@/lib/refund-api';
-import {
-  OperationsDetailLayout,
-  OperationsMoneySummary,
-  OperationsPageHeader,
-  OperationsStatusAxes,
-} from '../operations-primitives';
 import { OperationsShell } from '../operations-shell';
 import {
-  formatOrderDateTime,
   isPositiveMoney,
   isSafeTrackingUrl,
   moneyExceeds,
-  orderStatusAxes,
   primaryOrderAction,
 } from './order-presenter';
 import { OrderActionPanel } from './order-action-panel';
 import { OrderDetailMain, OrderDetailSkeleton } from './order-detail-sections';
+import { OrderFinancialSummary, OrderSummaryBand } from './order-detail-summary';
 import styles from './orders.module.css';
 
 type BusyAction = FulfillmentAction | 'INTERNAL_NOTE' | 'RELOAD' | null;
@@ -504,30 +496,9 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
         ) : null}
         {detail === null ? null : (
           <>
-            <OperationsPageHeader
-              actions={
-                <NextLink className={styles.backLink} href="/backoffice/orders">
-                  <ArrowLeftIcon aria-hidden="true" size={18} />
-                  Quay lại danh sách
-                </NextLink>
-              }
-              description={
-                detail.fulfillmentType === 'PICKUP' ? 'Đơn nhận tại cửa hàng' : 'Đơn giao tận nơi'
-              }
-              meta={
-                <div className={styles.detailMeta}>
-                  <span>Đặt lúc {formatOrderDateTime(detail.placedAt)}</span>
-                  <span>{detail.contact.fullName}</span>
-                </div>
-              }
-              title={`Đơn hàng ${detail.orderNumber}`}
-            />
-            <OperationsStatusAxes
-              axes={orderStatusAxes(detail)}
-              label="Ba trạng thái của đơn hàng"
-            />
-            <OperationsDetailLayout
-              main={
+            <OrderSummaryBand detail={detail} />
+            <div className={styles.orderDetailLayout}>
+              <div className={styles.orderDetailMain}>
                 <OrderDetailMain
                   notePending={busy === 'INTERNAL_NOTE'}
                   writesDisabled={busy !== null}
@@ -538,8 +509,8 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                     void saveInternalNote(event);
                   }}
                 />
-              }
-              rail={
+              </div>
+              <aside className={styles.orderDetailRail}>
                 <div className={styles.railStack}>
                   <OrderActionPanel
                     busy={busy}
@@ -587,31 +558,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                     onSelect={setSelectedAction}
                     onSubmit={submitAction}
                   />
-                  <OperationsMoneySummary
-                    rows={[
-                      { label: 'Tạm tính', value: formatVnd(detail.pricing.subtotal) },
-                      {
-                        label: 'Giảm giá',
-                        value: `−${formatVnd(detail.pricing.voucherDiscountAmount)}`,
-                      },
-                      ...(detail.fulfillmentType === 'SHIPPING'
-                        ? [{ label: 'Phí giao hàng', value: formatVnd(detail.pricing.shippingFee) }]
-                        : []),
-                      {
-                        emphasis: 'strong',
-                        label: 'Tổng cộng',
-                        value: formatVnd(detail.pricing.grandTotal),
-                      },
-                      { label: 'Đã thu', value: formatVnd(detail.pricing.paidAmount) },
-                      { label: 'Đã hoàn', value: formatVnd(detail.pricing.refundedAmount) },
-                      {
-                        emphasis: 'primary',
-                        label: 'Còn phải thu',
-                        value: formatVnd(detail.pricing.balanceDue),
-                      },
-                      { label: 'Còn có thể hoàn', value: formatVnd(detail.refundableAmount) },
-                    ]}
-                  />
+                  <OrderFinancialSummary detail={detail} />
                   {detail.cancelReason === null ? null : (
                     <p className={styles.dangerBox}>
                       <strong>Lý do hủy</strong>
@@ -619,8 +566,8 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                     </p>
                   )}
                 </div>
-              }
-            />
+              </aside>
+            </div>
           </>
         )}
       </div>

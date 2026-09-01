@@ -1,9 +1,22 @@
-import { createRef } from 'react';
+import { createRef, type AnchorHTMLAttributes, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuditLogDetail, AuditLogListItem } from '@/lib/system-admin-api';
 import { projectAuditListItem } from './audit-presenter';
 import { AuditDetailPanel, AuditLogList } from './audit-workspace';
+
+interface MockNextLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  readonly children: ReactNode;
+  readonly scroll?: boolean;
+}
+
+vi.mock('next/link', () => ({
+  default: ({ children, scroll, ...props }: MockNextLinkProps) => (
+    <a {...props} data-scroll={String(scroll)}>
+      {children}
+    </a>
+  ),
+}));
 
 describe('audit master-detail presentation', () => {
   it('keeps detail-only and request fields out of list rows', () => {
@@ -25,6 +38,7 @@ describe('audit master-detail presentation', () => {
     expect(markup).toContain('Đã vô hiệu hóa nhân viên');
     expect(markup).toContain('Đang chọn');
     expect(markup).toContain('/backoffice/audit-logs?selected=audit-1');
+    expect(markup).toContain('data-scroll="false"');
     expect(markup).not.toContain('employee.disabled');
     expect(markup).not.toContain('list-secret-sentinel');
     expect(markup).not.toContain('list-metadata-sentinel');

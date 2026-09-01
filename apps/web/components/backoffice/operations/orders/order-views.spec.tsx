@@ -4,7 +4,8 @@ import type { BackofficeOrderDetail, BackofficeOrderListItem } from '@/lib/fulfi
 import { OrderActionChoices, OrderActionPanel } from './order-action-panel';
 import type { OrderActionSetters, OrderActionValues } from './order-action-fields';
 import { OrderDetailView } from './order-detail-view';
-import { OrderNoteForm } from './order-detail-sections';
+import { OrderDetailMain, OrderNoteForm } from './order-detail-sections';
+import { OrderFinancialSummary, OrderSummaryBand } from './order-detail-summary';
 import { OrderQueue } from './order-list-view';
 
 vi.mock('next/navigation', () => ({
@@ -109,6 +110,9 @@ describe('order operations views', () => {
     expect(noteMarkup).toMatch(/<fieldset[^>]*disabled=""/);
     expect(actionMarkup).toContain('aria-busy="true"');
     expect(noteMarkup).toContain('aria-busy="true"');
+    expect(actionMarkup).toContain('<details');
+    expect(actionMarkup).toContain('Chi tiết bàn giao cho đơn vị vận chuyển');
+    expect(actionMarkup).not.toMatch(/<details[^>]*\sopen(?:=|\s|>)/);
   });
 
   it('shows a loading state instead of a false not-found message before the first response', () => {
@@ -116,6 +120,52 @@ describe('order operations views', () => {
 
     expect(markup).toContain('Đang tải chi tiết đơn hàng');
     expect(markup).not.toContain('Không tìm thấy đơn hàng');
+  });
+
+  it('renders a compact authoritative summary without raw status values', () => {
+    const markup = renderToStaticMarkup(<OrderSummaryBand detail={orderDetail()} />);
+
+    expect(markup).toContain('RPH-20260828-ABC12345');
+    expect(markup).toContain('Khách Demo');
+    expect(markup).toContain('0900000000');
+    expect(markup).toContain('1.500.000');
+    expect(markup).toContain('Giao tận nơi');
+    expect(markup).toContain('Trạng thái đơn');
+    expect(markup).toContain('Trạng thái giao hàng');
+    expect(markup).toContain('Trạng thái thanh toán');
+    expect(markup).not.toContain('PROCESSING');
+    expect(markup).not.toContain('IN_TRANSIT');
+    expect(markup).not.toContain('PARTIALLY_PAID');
+  });
+
+  it('puts products before customer details and keeps the timeline semantic', () => {
+    const markup = renderToStaticMarkup(
+      <OrderDetailMain
+        detail={orderDetail()}
+        internalNote=""
+        notePending={false}
+        writesDisabled={false}
+        setInternalNote={() => undefined}
+        onSaveNote={() => undefined}
+      />,
+    );
+
+    expect(markup.indexOf('Sản phẩm')).toBeLessThan(markup.indexOf('Khách hàng và giao nhận'));
+    expect(markup).toContain('aria-label="Tiến trình đơn hàng"');
+    expect(markup).toContain('<ol');
+    expect(markup).toContain('iPhone 15 Pro');
+    expect(markup).not.toContain('<img');
+  });
+
+  it('separates order value from collected and refundable money', () => {
+    const markup = renderToStaticMarkup(<OrderFinancialSummary detail={orderDetail()} />);
+
+    expect(markup).toContain('Tổng quan tài chính');
+    expect(markup).toContain('Giá trị đơn');
+    expect(markup).toContain('Dòng tiền');
+    expect(markup).toContain('Phí giao hàng');
+    expect(markup).toContain('Còn phải thu');
+    expect(markup).toContain('Còn có thể hoàn');
   });
 });
 
@@ -185,5 +235,67 @@ function order(overrides: Partial<BackofficeOrderListItem> = {}): BackofficeOrde
     totalItemQuantity: 1,
     updatedAt: null,
     ...overrides,
+  };
+}
+
+function orderDetail(): BackofficeOrderDetail {
+  return {
+    availableActions: ['MARK_SHIPMENT_DELIVERED', 'MARK_SHIPMENT_FAILED'],
+    cancelReason: null,
+    cancelledAt: null,
+    completedAt: null,
+    confirmedAt: '2026-08-28T02:00:00.000Z',
+    contact: { email: 'khach@example.com', fullName: 'Khách Demo', phone: '0900000000' },
+    customerNote: null,
+    fulfillmentStatus: 'IN_TRANSIT',
+    fulfillmentType: 'SHIPPING',
+    id: 'order-1',
+    internalNote: null,
+    items: [
+      {
+        id: 'item-1',
+        inventoryCode: 'RPH-U-DEMO',
+        lineTotal: '1470000',
+        productName: 'iPhone 15 Pro',
+        quantity: 1,
+        sku: 'IP15P-128-BLU',
+        unitPrice: '1470000',
+        variantName: '128 GB Blue',
+        warranty: null,
+        warrantyDays: 90,
+      },
+    ],
+    location: { code: 'HCM-01', id: 'location-1', name: 'Cửa hàng Hồ Chí Minh', type: 'STORE' },
+    orderNumber: 'RPH-20260828-ABC12345',
+    paymentAttempts: [],
+    paymentStatus: 'PARTIALLY_PAID',
+    pickedUpAt: null,
+    pickupHoldUntil: null,
+    pickupReadyAt: null,
+    pickupStore: null,
+    placedAt: '2026-08-28T01:00:00.000Z',
+    pricing: {
+      balanceDue: '1000000',
+      depositRequired: '500000',
+      grandTotal: '1500000',
+      paidAmount: '500000',
+      refundedAmount: '0',
+      shippingFee: '30000',
+      shippingFeeOriginal: '30000',
+      shippingFeeOverride: null,
+      subtotal: '1470000',
+      voucherDiscountAmount: '0',
+    },
+    refundableAmount: '500000',
+    refunds: [],
+    reservations: [],
+    shipments: [],
+    shippingAddress: {
+      addressLine1: '116 Lý Chiêu Hoàng',
+      city: 'Thành phố Hồ Chí Minh',
+      district: 'Quận 6',
+      ward: 'Phường 10',
+    },
+    status: 'PROCESSING',
   };
 }
