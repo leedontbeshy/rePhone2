@@ -153,3 +153,34 @@ trước full browser cuối.
 Browser review trực tiếp phát hiện media treo/broken-alt và menu fixed bị sticky
 header cắt còn 81 px. Hai lỗi được sửa bằng commit độc lập rồi khóa bằng browser
 regression; raw screenshot nằm trong `.local/fe09-wp03-audit/`.
+
+## WP-04 verification — tree `7551933`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 126 file, 602/602 test |
+| `pnpm fe:coverage` | 0 | 9/9 executable coverage contract |
+| `pnpm fe:a11y` | 0 | 4 file, 21/21 test |
+| `pnpm --filter @rephone/web typecheck` | 0 | PASS |
+| `pnpm lint` — lượt đầu | 1 | Bắt visual helper dùng arrow shorthand trả về `void` |
+| `pnpm lint` — sau remediation | 0 | PASS, zero warning |
+| `pnpm --filter @rephone/web build` | 0 | Production build; Next sinh đủ 56 route |
+| `git diff --check` | 0 | PASS |
+
+### Browser, visual và review gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Auth/account full run trước remediation cuối | 0 | 9/9, Chromium, 1 worker |
+| Visual focused, không update | 0 | 2/2 snapshot |
+| Auth/account full run cuối | 0 | 9/9, Chromium, 1 worker, 1,2 phút |
+| Manual browser audit | 0 | 1440×900, 390×844 và 320×844; profile/address/security ổn định |
+
+Review độc lập đầu tiên phát hiện response sai chủ tài khoản, permanent skeleton và
+reset-success flash sai trạng thái; snapshot review phát hiện skip link che logo và
+account page được chụp giữa trang. Sau remediation, browser audit 320 px tiếp tục
+phát hiện document overflow do `html { min-width: 20rem }` kết hợp scrollbar dành
+chỗ. Concern được tách thành `11af652`, đo lại `scrollWidth === clientWidth === 320`
+và khóa bằng browser regression.
