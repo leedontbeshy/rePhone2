@@ -678,7 +678,7 @@
 
 .actionTabs button[aria-pressed='true'] {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   background: var(--color-brand-soft);
 }
 

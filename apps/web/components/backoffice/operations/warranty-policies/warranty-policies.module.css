@@ -62,6 +62,10 @@
   background: var(--color-brand-soft);
 }
 
+.policyRow[data-selected='true'] .policyCell span {
+  color: var(--color-body);
+}
+
 .policyCell {
   display: grid;
   min-width: 0;

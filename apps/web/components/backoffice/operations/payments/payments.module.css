@@ -125,7 +125,7 @@
 }
 
 .evidenceCopy span {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
 }
 

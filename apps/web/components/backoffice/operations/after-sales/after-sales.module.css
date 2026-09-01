@@ -270,7 +270,7 @@
   padding: var(--space-3);
   border: var(--border-default);
   border-radius: var(--radius-control);
-  color: var(--color-muted);
+  color: var(--color-body);
   background: var(--color-brand-soft);
 }
 
