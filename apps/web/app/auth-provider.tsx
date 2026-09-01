@@ -184,12 +184,10 @@ export function createSingleFlight<TKey, TValue>(
         caught instanceof Error ? caught : new Error('Refresh work failed unexpectedly.'),
       );
     }
-    void pending
-      .then(next.resolve, next.reject)
-      .finally(() => {
-        if (inFlight?.promise === next.promise) inFlight = undefined;
-        runNext();
-      });
+    void pending.then(next.resolve, next.reject).finally(() => {
+      if (inFlight?.promise === next.promise) inFlight = undefined;
+      runNext();
+    });
   };
 
   return (key) => {
