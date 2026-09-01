@@ -1197,7 +1197,11 @@ async function captureAuditScreenshot(page: Page, name: string): Promise<void> {
   await mkdir(directory, { recursive: true });
   const sequence = String(auditScreenshotSequence).padStart(2, '0');
   await page.locator('nextjs-portal').evaluateAll((portals) => {
-    for (const portal of portals) portal.setAttribute('hidden', '');
+    for (const portal of portals) {
+      portal.setAttribute('aria-hidden', 'true');
+      portal.setAttribute('hidden', '');
+      (portal as HTMLElement).style.setProperty('display', 'none', 'important');
+    }
   });
   await page.screenshot({
     animations: 'disabled',
