@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { BROWSER_COMMERCE_ACCOUNT } from '../../apps/api/test/browser/auth-fixtures';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
@@ -750,7 +751,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
 
     const wishlistContext = await browser.newContext();
     const wishlistPage = await wishlistContext.newPage();
-    await loginAs(wishlistPage, CUSTOMER, '/wishlist');
+    await loginAs(wishlistPage, BROWSER_COMMERCE_ACCOUNT, '/wishlist');
     await clearWishlist(wishlistPage);
     await addUnitToWishlist(wishlistPage, GUEST_UNIT);
     for (const viewport of COMMERCE_VIEWPORTS) {
