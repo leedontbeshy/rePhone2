@@ -35,6 +35,11 @@ describe('frontend design foundation', () => {
     expect(primitives).toContain('min-height: var(--control-height);');
     expect(primitives).not.toContain('min-height: 2.5rem;');
     expect(contrastRatio('#006780', '#e2f5f9')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#273548', '#f1f5f8')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#1769aa', '#edf4ff')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#0b6b45', '#e8f7f0')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#9b5b00', '#fff4dd')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#931d25', '#fff0f1')).toBeGreaterThanOrEqual(4.5);
   });
 
   it('does not reference undefined global color tokens without a fallback', () => {

@@ -487,9 +487,24 @@ select.control {
   padding: var(--space-1) var(--space-3);
 }
 
-.statusChip.neutral > span:last-child,
-.statusChip.warning > span:last-child {
+.statusChip.neutral > span:last-child {
   color: var(--color-body);
+}
+
+.statusChip.info > span:last-child {
+  color: var(--color-info);
+}
+
+.statusChip.success > span:last-child {
+  color: var(--color-success-strong);
+}
+
+.statusChip.warning > span:last-child {
+  color: var(--color-warning);
+}
+
+.statusChip.danger > span:last-child {
+  color: var(--color-danger-hover);
 }
 
 .price {
