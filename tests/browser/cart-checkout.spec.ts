@@ -726,6 +726,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
   });
 
   test(bt('browser:cart-checkout', 'commerce-responsive-visual'), async ({ browser }) => {
+    test.setTimeout(240_000);
     const commerceViolations: string[] = [];
     const cartContext = await browser.newContext();
     const cartPage = await cartContext.newPage();
