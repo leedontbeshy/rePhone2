@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -21,6 +22,13 @@ const CUSTOMER_UNIT = {
   code: 'IP14P-128-001',
   path: '/products/iphone-14-pro/units/IP14P-128-001',
 } as const;
+const COMMERCE_VIEWPORTS = [
+  { name: 'mobile-320', width: 320, height: 720 },
+  { name: 'mobile-390', width: 390, height: 844 },
+  { name: 'tablet-768', width: 768, height: 900 },
+  { name: 'laptop-1024', width: 1024, height: 900 },
+  { name: 'desktop-1440', width: 1440, height: 1000 },
+] as const;
 
 test.describe('FE-03 cart, wishlist and checkout', () => {
   test(bt('browser:cart-checkout', 'guest-shipping-order'), async ({ page }) => {
@@ -702,6 +710,113 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await page.waitForURL(`/orders/${createdOrderNumber}`);
     expect(createRequests).toBe(2);
   });
+
+  test(bt('browser:cart-checkout', 'commerce-responsive-visual'), async ({ browser }) => {
+    const commerceViolations: string[] = [];
+    const cartContext = await browser.newContext();
+    const cartPage = await cartContext.newPage();
+    await addUnitToCart(cartPage, GUEST_UNIT);
+    for (const viewport of COMMERCE_VIEWPORTS) {
+      await cartPage.setViewportSize(viewport);
+      await cartPage.goto('/cart');
+      await expect(cartPage.getByText(`Mã máy: ${GUEST_UNIT.code}`, { exact: true })).toBeVisible();
+      await expect(cartPage.getByLabel('Giỏ hàng, 1 sản phẩm')).toBeVisible();
+      await prepareVisualSnapshot(cartPage);
+      commerceViolations.push(
+        ...(await inspectCommerceSurface(cartPage, `cart populated ${viewport.name}`)),
+      );
+      await expect(cartPage).toHaveScreenshot(`fe3-cart-populated-${viewport.name}.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: true,
+      });
+    }
+    await cartContext.close();
+
+    const wishlistContext = await browser.newContext();
+    const wishlistPage = await wishlistContext.newPage();
+    await loginAs(wishlistPage, CUSTOMER, '/wishlist');
+    await clearWishlist(wishlistPage);
+    await addUnitToWishlist(wishlistPage, GUEST_UNIT);
+    for (const viewport of COMMERCE_VIEWPORTS) {
+      await wishlistPage.setViewportSize(viewport);
+      await wishlistPage.goto('/wishlist');
+      await expect(
+        wishlistPage.getByText(`Mã máy: ${GUEST_UNIT.code}`, { exact: true }),
+      ).toBeVisible();
+      await expect(wishlistPage.getByLabel('Giỏ hàng, 0 sản phẩm')).toBeVisible();
+      await prepareVisualSnapshot(wishlistPage);
+      commerceViolations.push(
+        ...(await inspectCommerceSurface(wishlistPage, `wishlist populated ${viewport.name}`)),
+      );
+      await expect(wishlistPage).toHaveScreenshot(`fe3-wishlist-populated-${viewport.name}.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: true,
+      });
+    }
+    await clearWishlist(wishlistPage);
+    await wishlistContext.close();
+
+    const checkoutContext = await browser.newContext();
+    const checkoutPage = await checkoutContext.newPage();
+    await addUnitToCart(checkoutPage, GUEST_UNIT);
+    await checkoutPage.route('**/api/v1/checkouts', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 'CONCURRENT_MODIFICATION',
+            message: 'Checkout authority changed.',
+          },
+        }),
+      });
+    });
+    for (const viewport of COMMERCE_VIEWPORTS) {
+      await checkoutPage.setViewportSize(viewport);
+      await checkoutPage.goto('/checkout');
+      await fillContact(checkoutPage, 'Khách ảnh FE-09', 'visual-fe09@rephone.local');
+      await checkoutPage.getByLabel('Nhận tại cửa hàng').check();
+      await checkoutPage.locator('#checkout-voucher').fill('WELCOME100');
+      await checkoutPage.getByRole('button', { name: 'Áp dụng', exact: true }).click();
+      await requestCheckoutPreview(checkoutPage);
+      await expect(checkoutPage.getByLabel('Giỏ hàng, 1 sản phẩm')).toBeVisible();
+      await prepareVisualSnapshot(checkoutPage);
+      commerceViolations.push(
+        ...(await inspectCommerceSurface(checkoutPage, `checkout preview ${viewport.name}`)),
+      );
+      await expect(checkoutPage).toHaveScreenshot(`fe3-checkout-preview-${viewport.name}.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: true,
+      });
+
+      await checkoutPage.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
+      await expect(
+        checkoutPage.getByRole('alert').filter({
+          hasText: 'Thông tin vừa thay đổi. Hãy tải lại trang rồi thử lại.',
+        }),
+      ).toBeVisible();
+      await prepareVisualSnapshot(checkoutPage);
+      commerceViolations.push(
+        ...(await inspectCommerceSurface(checkoutPage, `checkout conflict ${viewport.name}`)),
+      );
+      await expect(checkoutPage).toHaveScreenshot(`fe3-checkout-conflict-${viewport.name}.png`, {
+        animations: 'disabled',
+        caret: 'hide',
+        fullPage: true,
+      });
+    }
+    await checkoutContext.close();
+    expect(commerceViolations, 'commerce surfaces must pass responsive and a11y checks').toEqual(
+      [],
+    );
+  });
 });
 
 async function addUnitToCart(
@@ -832,6 +947,41 @@ function collectWishlistRequests(page: Page): string[] {
     }
   });
   return requests;
+}
+
+async function inspectCommerceSurface(page: Page, label: string): Promise<string[]> {
+  const violations: string[] = [];
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  if (dimensions.scrollWidth > dimensions.clientWidth) {
+    violations.push(
+      `${label}: horizontal overflow ${String(dimensions.scrollWidth)} > ${String(dimensions.clientWidth)}`,
+    );
+  }
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+  for (const violation of results.violations) {
+    if (violation.impact !== 'serious' && violation.impact !== 'critical') continue;
+    const targets = violation.nodes.flatMap(({ target }) => target).join(', ');
+    violations.push(`${label}: ${violation.id} (${violation.impact}) at ${targets}`);
+  }
+  return violations;
+}
+
+async function prepareVisualSnapshot(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+  });
 }
 
 async function removeCartUnit(page: Page, inventoryCode: string): Promise<void> {

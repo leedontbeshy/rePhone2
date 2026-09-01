@@ -346,6 +346,13 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/checkout', '/orders/[orderNumber]'],
         ownsStates: ['pending', 'success', 'warning'],
       },
+      'commerce-responsive-visual': {
+        title:
+          'keeps populated cart, wishlist and checkout states accessible across five viewports',
+        ownsRoutes: [],
+        coversRoutes: ['/cart', '/wishlist', '/checkout'],
+        ownsStates: ['conflict', 'success'],
+      },
     },
   },
   'browser:catalog-voucher-admin': {
