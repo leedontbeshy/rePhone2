@@ -315,6 +315,71 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
       expect(layout.labelDisplay).toBe('none');
     }
   });
+
+  test(bt('browser:cart-checkout', 'cart-local-loading'), async ({ page }) => {
+    await addUnitToCart(page, GUEST_UNIT);
+    await page.goto('/cart');
+
+    const cartRow = page.locator('article').filter({ hasText: GUEST_UNIT.code });
+    const cartSummary = page.getByRole('complementary', { name: 'Tóm tắt giỏ hàng' });
+    await expect(cartRow).toBeVisible();
+    await expect(cartSummary).toBeVisible();
+
+    const retryStarted = deferred();
+    const releaseRetry = deferred();
+    let cartRefreshes = 0;
+    await page.route('**/api/v1/cart/items/*', async (route) => {
+      if (route.request().method() !== 'DELETE') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({ status: 204, body: '' });
+    });
+    await page.route('**/api/v1/cart', async (route) => {
+      const requestUrl = new URL(route.request().url());
+      if (route.request().method() !== 'GET' || requestUrl.pathname !== '/api/v1/cart') {
+        await route.continue();
+        return;
+      }
+      cartRefreshes += 1;
+      if (cartRefreshes === 1) {
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: { code: 'SERVICE_UNAVAILABLE', message: 'Dịch vụ đang tạm gián đoạn.' },
+          }),
+        });
+        return;
+      }
+      retryStarted.resolve();
+      await releaseRetry.promise;
+      await route.continue();
+    });
+
+    await cartRow.getByRole('button', { name: 'Xóa', exact: true }).click();
+    await expect(page.getByText('Chưa thể tải giỏ hàng', { exact: true })).toBeVisible();
+    await expect(cartRow).toBeVisible();
+    await expect(cartSummary).toBeVisible();
+
+    await page.getByRole('button', { name: 'Tải lại', exact: true }).click();
+    await retryStarted.promise;
+
+    const busyCartRegion = page.locator('[aria-busy="true"]:not(button)');
+    await expect(busyCartRegion).toHaveCount(1);
+    await expect(busyCartRegion).toContainText(GUEST_UNIT.code);
+    await expect(busyCartRegion).toContainText('Tóm tắt giỏ hàng');
+    await expect(cartRow).toBeVisible();
+    await expect(cartSummary).toBeVisible();
+    await expect(page.getByLabel('Đang tải giỏ hàng')).toHaveCount(0);
+
+    releaseRetry.resolve();
+    await expect(page.getByText('Chưa thể tải giỏ hàng', { exact: true })).toHaveCount(0);
+    await expect(busyCartRegion).toHaveCount(0);
+    await expect(cartRow).toBeVisible();
+    await expect(cartSummary).toBeVisible();
+    expect(cartRefreshes).toBe(2);
+  });
 });
 
 async function addUnitToCart(
@@ -428,4 +493,12 @@ function cartEnvelopeWithoutMedia(value: unknown): Record<string, unknown> {
       ),
     },
   };
+}
+
+function deferred(): { promise: Promise<void>; resolve: () => void } {
+  let resolve!: () => void;
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
 }

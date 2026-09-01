@@ -309,6 +309,12 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/checkout'],
         ownsStates: ['success'],
       },
+      'cart-local-loading': {
+        title: 'keeps populated cart rows and summary visible during a retry refresh',
+        ownsRoutes: [],
+        coversRoutes: ['/cart'],
+        ownsStates: ['error', 'pending', 'success'],
+      },
     },
   },
   'browser:catalog-voucher-admin': {
