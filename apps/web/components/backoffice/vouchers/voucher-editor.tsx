@@ -1,7 +1,7 @@
 'use client';
 
 import { CircleIcon, InfoIcon } from '@phosphor-icons/react';
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { CatalogVoucherStatusChip } from '@/components/backoffice';
 import {
@@ -34,7 +34,11 @@ import {
 } from './voucher-admin-ui';
 import {
   loadAllVoucherCatalogProducts,
+  validVoucherVariantSelection,
+  VIETNAM_TIME_ZONE_LABEL,
   voucherEndDateExtensionError,
+  voucherIsoToVietnamDateTimeLocal,
+  voucherVietnamDateTimeLocalToIso,
 } from './voucher-editor-logic';
 import styles from './voucher-admin.module.css';
 
@@ -65,6 +69,24 @@ interface VoucherDraft {
   variantProductId: string;
   visibility: VoucherVisibility;
 }
+
+type VoucherDraftField =
+  | 'code'
+  | 'discountValue'
+  | 'endsAt'
+  | 'maxDiscountAmount'
+  | 'minimumOrderAmount'
+  | 'name'
+  | 'perCustomerLimit'
+  | 'scopeSelection'
+  | 'startsAt'
+  | 'totalUsageLimit';
+
+type VoucherDraftErrors = Partial<Record<VoucherDraftField, string>>;
+
+type VoucherDraftResult =
+  | { input: CreateVoucherInput; ok: true }
+  | { errors: VoucherDraftErrors; focusId: string; message: string; ok: false };
 
 const EMPTY_DRAFT: VoucherDraft = {
   code: '',
@@ -97,21 +119,35 @@ export function VoucherEditor({
   const [draft, setDraft] = useState<VoucherDraft>(() => draftFromVoucher(initialVoucher));
   const [products, setProducts] = useState<CatalogProductListItem[]>([]);
   const [variantProduct, setVariantProduct] = useState<CatalogProductDetail | null>(null);
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [productLoading, setProductLoading] = useState(false);
+  const [variantLoading, setVariantLoading] = useState(false);
+  const [productError, setProductError] = useState<string | null>(null);
+  const [variantError, setVariantError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<VoucherDraftErrors>({});
+  const variantRequestRef = useRef(0);
   const canLoadCatalog = status === 'authenticated' && user?.role === 'ADMIN';
   const shouldLoadCatalog = canLoadCatalog && !endDateOnly;
+  const visibleVariantProduct =
+    variantProduct?.id === draft.variantProductId ? variantProduct : null;
+  const initialVariantIds = initialVoucherVariantIds(initialVoucher);
 
   useEffect(() => {
     setDraft(draftFromVoucher(initialVoucher));
+    setFieldErrors({});
+    setFormError(null);
   }, [initialVoucher]);
+
+  useEffect(() => {
+    setFieldErrors({});
+    setFormError(null);
+  }, [draft]);
 
   useEffect(() => {
     if (!shouldLoadCatalog) return;
     let active = true;
-    setCatalogLoading(true);
-    setCatalogError(null);
+    setProductLoading(true);
+    setProductError(null);
     void loadAllVoucherCatalogProducts((page, pageSize) =>
       listCatalogProducts(client, {
         page,
@@ -127,10 +163,10 @@ export function VoucherEditor({
         if (active) setProducts(result);
       })
       .catch((caught: unknown) => {
-        if (active) setCatalogError(errorMessage(caught, 'Không thể tải lựa chọn sản phẩm.'));
+        if (active) setProductError(errorMessage(caught, 'Không thể tải lựa chọn sản phẩm.'));
       })
       .finally(() => {
-        if (active) setCatalogLoading(false);
+        if (active) setProductLoading(false);
       });
     return () => {
       active = false;
@@ -138,25 +174,31 @@ export function VoucherEditor({
   }, [client, shouldLoadCatalog]);
 
   useEffect(() => {
+    const request = variantRequestRef.current + 1;
+    variantRequestRef.current = request;
+    setVariantProduct(null);
+    setVariantError(null);
     if (!shouldLoadCatalog || draft.scopeType !== 'VARIANTS' || draft.variantProductId === '') {
-      setVariantProduct(null);
+      setVariantLoading(false);
       return;
     }
     let active = true;
-    setCatalogLoading(true);
-    setCatalogError(null);
+    setVariantLoading(true);
     void getCatalogProduct(client, draft.variantProductId)
       .then((product) => {
-        if (active) setVariantProduct(product);
+        if (active && variantRequestRef.current === request) setVariantProduct(product);
       })
       .catch((caught: unknown) => {
-        if (active) setCatalogError(errorMessage(caught, 'Không thể tải các biến thể.'));
+        if (active && variantRequestRef.current === request) {
+          setVariantError(errorMessage(caught, 'Không thể tải các biến thể.'));
+        }
       })
       .finally(() => {
-        if (active) setCatalogLoading(false);
+        if (active && variantRequestRef.current === request) setVariantLoading(false);
       });
     return () => {
       active = false;
+      if (variantRequestRef.current === request) variantRequestRef.current += 1;
     };
   }, [client, draft.scopeType, draft.variantProductId, shouldLoadCatalog]);
 
@@ -165,20 +207,38 @@ export function VoucherEditor({
   function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
-    const result = normalizeDraft(draft);
-    if (result instanceof Error) {
+    const validVariantIds =
+      draft.scopeType === 'VARIANTS'
+        ? validVoucherVariantSelection({
+            activeVariantIds:
+              visibleVariantProduct?.variants
+                .filter((variant) => variant.status === 'active')
+                .map((variant) => variant.id) ?? [],
+            initialVariantIds,
+            loadedProductId: visibleVariantProduct?.id ?? null,
+            selectedProductId: draft.variantProductId,
+            selectedVariantIds: draft.variantIds,
+          })
+        : [];
+    const result = normalizeDraft(draft, validVariantIds);
+    if (!result.ok) {
+      setFieldErrors(result.errors);
       setFormError(result.message);
+      focusVoucherField(result.focusId);
       return;
     }
     if (endDateOnly && initialVoucher !== undefined) {
-      const dateError = voucherEndDateExtensionError(initialVoucher.endsAt, result.endsAt);
+      const dateError = voucherEndDateExtensionError(initialVoucher.endsAt, result.input.endsAt);
       if (dateError !== null) {
+        setFieldErrors({ endsAt: dateError });
         setFormError(dateError);
+        focusVoucherField('voucher-end');
         return;
       }
     }
+    setFieldErrors({});
     setFormError(null);
-    onSubmit(result);
+    onSubmit(result.input);
   }
 
   if (endDateOnly && initialVoucher !== undefined) {
@@ -197,9 +257,10 @@ export function VoucherEditor({
           <section className={styles.formSection}>
             <h2>Gia hạn thời gian áp dụng</h2>
             <Input
+              error={fieldErrors.endsAt}
               id="voucher-end"
-              label="Kết thúc"
-              min={toDateTimeLocal(initialVoucher.endsAt)}
+              label={`Kết thúc (${VIETNAM_TIME_ZONE_LABEL})`}
+              min={voucherIsoToVietnamDateTimeLocal(initialVoucher.endsAt)}
               required
               type="datetime-local"
               value={draft.endsAt}
@@ -229,6 +290,66 @@ export function VoucherEditor({
     );
   }
 
+  if (initialVoucher?.status === 'ACTIVE') {
+    return (
+      <div className={styles.editorGrid}>
+        <form className={styles.editorMain} id={formId} noValidate onSubmit={submit}>
+          {formError === null ? null : (
+            <InlineAlert title="Hãy kiểm tra lại thông tin" tone="danger">
+              {formError}
+            </InlineAlert>
+          )}
+          <InlineAlert title="Chỉ chỉnh sửa nội dung giới thiệu" tone="info">
+            Mã đang được áp dụng. Mức giảm, phạm vi, thời gian và giới hạn sử dụng được giữ nguyên.
+          </InlineAlert>
+          <section className={styles.formSection}>
+            <h2>Thông tin chương trình</h2>
+            <div className={styles.formGrid}>
+              <Input
+                error={fieldErrors.name}
+                id="voucher-name"
+                label="Tên chương trình"
+                maxLength={255}
+                required
+                value={draft.name}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, name: event.target.value }));
+                }}
+              />
+              <Textarea
+                containerClassName={styles.fullWidth ?? ''}
+                id="voucher-description"
+                label="Mô tả"
+                maxLength={2000}
+                rows={4}
+                value={draft.description}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, description: event.target.value }));
+                }}
+              />
+            </div>
+          </section>
+        </form>
+
+        <aside className={styles.editorRail} aria-label="Thông tin chỉnh sửa mã ưu đãi">
+          <section className={styles.sideCard}>
+            <h2>Điều kiện được giữ nguyên</h2>
+            <div className={styles.previewCopy}>
+              <h3>{initialVoucher.code}</h3>
+              <p>{voucherDiscountSummary(initialVoucher)}</p>
+              <p>{voucherScopeSummary(initialVoucher)}</p>
+              <p>{formatVoucherDateRange(initialVoucher.startsAt, initialVoucher.endsAt)}</p>
+            </div>
+          </section>
+          <div className={styles.infoBox}>
+            <InfoIcon aria-hidden size={20} />
+            <span>Hãy tạm dừng mã trước khi cần thay đổi điều kiện áp dụng.</span>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.editorGrid}>
       <form className={styles.editorMain} id={formId} noValidate onSubmit={submit}>
@@ -242,6 +363,7 @@ export function VoucherEditor({
           <h2>Thông tin chương trình</h2>
           <div className={styles.formGrid}>
             <Input
+              error={fieldErrors.code}
               id="voucher-code"
               label="Mã ưu đãi"
               hint={
@@ -258,6 +380,7 @@ export function VoucherEditor({
               }}
             />
             <Input
+              error={fieldErrors.name}
               id="voucher-name"
               label="Tên chương trình"
               maxLength={255}
@@ -313,6 +436,7 @@ export function VoucherEditor({
           </RadioGroup>
           <div className={`${styles.formGrid ?? ''} ${styles.formGridThree ?? ''}`}>
             <Input
+              error={fieldErrors.discountValue}
               id="discount-value"
               label={draft.discountType === 'PERCENT' ? 'Mức giảm (%)' : 'Số tiền giảm (đ)'}
               inputMode="numeric"
@@ -327,6 +451,7 @@ export function VoucherEditor({
             />
             <Input
               disabled={draft.discountType === 'FIXED'}
+              error={fieldErrors.maxDiscountAmount}
               id="discount-maximum"
               label="Giảm tối đa (đ)"
               inputMode="numeric"
@@ -341,6 +466,7 @@ export function VoucherEditor({
               }}
             />
             <Input
+              error={fieldErrors.minimumOrderAmount}
               id="minimum-order"
               label="Giá trị đơn hàng tối thiểu (đ)"
               inputMode="numeric"
@@ -360,7 +486,7 @@ export function VoucherEditor({
 
         <section className={styles.formSection}>
           <h2>Phạm vi áp dụng</h2>
-          <RadioGroup legend="Áp dụng cho" required>
+          <RadioGroup error={fieldErrors.scopeSelection} legend="Áp dụng cho" required>
             <div className={`${styles.radioGrid ?? ''} ${styles.radioGridFour ?? ''}`}>
               {(
                 [
@@ -405,7 +531,7 @@ export function VoucherEditor({
 
           {draft.scopeType === 'PRODUCTS' ? (
             <CatalogProductPicker
-              loading={catalogLoading}
+              loading={productLoading}
               products={products}
               selectedIds={draft.productIds}
               onToggle={(productId) => {
@@ -420,10 +546,12 @@ export function VoucherEditor({
           {draft.scopeType === 'VARIANTS' ? (
             <div className={styles.selectionArea}>
               <Select
+                disabled={productLoading}
                 id="variant-product"
                 label="Chọn sản phẩm để xem biến thể"
                 value={draft.variantProductId}
                 onChange={(event) => {
+                  setVariantProduct(null);
                   setDraft((current) => ({
                     ...current,
                     variantIds: [],
@@ -438,15 +566,20 @@ export function VoucherEditor({
                   </option>
                 ))}
               </Select>
-              {draft.variantIds.length > 0 && variantProduct === null ? (
+              {variantLoading ? (
+                <p className={styles.supportCopy} role="status">
+                  Đang tải biến thể…
+                </p>
+              ) : null}
+              {draft.variantIds.length > 0 && visibleVariantProduct === null && !variantLoading ? (
                 <p className={styles.selectionSummary}>
                   Đang giữ {draft.variantIds.length} biến thể đã chọn. Chọn một sản phẩm để thay
                   đổi.
                 </p>
               ) : null}
-              {variantProduct === null ? null : (
+              {visibleVariantProduct === null || variantLoading ? null : (
                 <div className={styles.selectionList}>
-                  {variantProduct.variants
+                  {visibleVariantProduct.variants
                     .filter((variant) => variant.status === 'active')
                     .map((variant) => (
                       <Checkbox
@@ -468,9 +601,14 @@ export function VoucherEditor({
             </div>
           ) : null}
 
-          {catalogError === null ? null : (
+          {productError === null ? null : (
             <InlineAlert title="Chưa tải được lựa chọn sản phẩm" tone="warning">
-              {catalogError}
+              {productError}
+            </InlineAlert>
+          )}
+          {variantError === null ? null : (
+            <InlineAlert title="Chưa tải được biến thể" tone="warning">
+              {variantError}
             </InlineAlert>
           )}
         </section>
@@ -479,8 +617,9 @@ export function VoucherEditor({
           <h2>Thời gian và giới hạn</h2>
           <div className={`${styles.formGrid ?? ''} ${styles.formGridFour ?? ''}`}>
             <Input
+              error={fieldErrors.startsAt}
               id="voucher-start"
-              label="Bắt đầu"
+              label={`Bắt đầu (${VIETNAM_TIME_ZONE_LABEL})`}
               required
               type="datetime-local"
               value={draft.startsAt}
@@ -489,8 +628,9 @@ export function VoucherEditor({
               }}
             />
             <Input
+              error={fieldErrors.endsAt}
               id="voucher-end"
-              label="Kết thúc"
+              label={`Kết thúc (${VIETNAM_TIME_ZONE_LABEL})`}
               required
               type="datetime-local"
               value={draft.endsAt}
@@ -499,6 +639,7 @@ export function VoucherEditor({
               }}
             />
             <Input
+              error={fieldErrors.totalUsageLimit}
               id="voucher-total-limit"
               label="Tổng lượt sử dụng"
               hint="Để trống nếu không giới hạn."
@@ -515,6 +656,7 @@ export function VoucherEditor({
             />
             <Input
               disabled={draft.visibility === 'PUBLIC'}
+              error={fieldErrors.perCustomerLimit}
               id="voucher-customer-limit"
               label="Mỗi khách hàng"
               hint={
@@ -673,7 +815,7 @@ function draftFromVoucher(voucher?: Voucher): VoucherDraft {
     description: voucher.description ?? '',
     discountType: voucher.discountType,
     discountValue: voucher.discountValue,
-    endsAt: toDateTimeLocal(voucher.endsAt),
+    endsAt: voucherIsoToVietnamDateTimeLocal(voucher.endsAt),
     maxDiscountAmount: voucher.maxDiscountAmount ?? '',
     minimumOrderAmount: voucher.minimumOrderAmount,
     name: voucher.name,
@@ -681,7 +823,7 @@ function draftFromVoucher(voucher?: Voucher): VoucherDraft {
     productIds,
     productType,
     scopeType: voucher.scopeType,
-    startsAt: toDateTimeLocal(voucher.startsAt),
+    startsAt: voucherIsoToVietnamDateTimeLocal(voucher.startsAt),
     totalUsageLimit: voucher.totalUsageLimit?.toString() ?? '',
     variantIds,
     variantProductId: '',
@@ -689,34 +831,64 @@ function draftFromVoucher(voucher?: Voucher): VoucherDraft {
   };
 }
 
-function normalizeDraft(draft: VoucherDraft): CreateVoucherInput | Error {
+function normalizeDraft(
+  draft: VoucherDraft,
+  validVariantIds: readonly string[] | null,
+): VoucherDraftResult {
   const code = draft.code.trim().toUpperCase();
   const name = draft.name.trim();
-  if (code.length === 0 || code.length > 64) return new Error('Mã ưu đãi cần từ 1 đến 64 ký tự.');
+  if (code.length === 0 || code.length > 64) {
+    return draftFailure('code', 'voucher-code', 'Mã ưu đãi cần từ 1 đến 64 ký tự.');
+  }
   if (name.length === 0 || name.length > 255)
-    return new Error('Tên chương trình cần từ 1 đến 255 ký tự.');
+    return draftFailure('name', 'voucher-name', 'Tên chương trình cần từ 1 đến 255 ký tự.');
   if (!positiveInteger(draft.discountValue))
-    return new Error('Mức giảm phải là số nguyên lớn hơn 0.');
+    return draftFailure('discountValue', 'discount-value', 'Mức giảm phải là số nguyên lớn hơn 0.');
   if (draft.discountType === 'PERCENT' && Number(draft.discountValue) > 100) {
-    return new Error('Mức giảm theo phần trăm không được quá 100%.');
+    return draftFailure(
+      'discountValue',
+      'discount-value',
+      'Mức giảm theo phần trăm không được quá 100%.',
+    );
   }
   if (draft.maxDiscountAmount !== '' && !positiveInteger(draft.maxDiscountAmount)) {
-    return new Error('Mức giảm tối đa phải là số nguyên lớn hơn 0.');
+    return draftFailure(
+      'maxDiscountAmount',
+      'discount-maximum',
+      'Mức giảm tối đa phải là số nguyên lớn hơn 0.',
+    );
   }
   if (!nonNegativeInteger(draft.minimumOrderAmount)) {
-    return new Error('Giá trị đơn hàng tối thiểu phải là số nguyên từ 0 trở lên.');
+    return draftFailure(
+      'minimumOrderAmount',
+      'minimum-order',
+      'Giá trị đơn hàng tối thiểu phải là số nguyên từ 0 trở lên.',
+    );
   }
-  const startsAt = toIsoDate(draft.startsAt);
-  const endsAt = toIsoDate(draft.endsAt);
-  if (startsAt === null || endsAt === null) return new Error('Hãy chọn đầy đủ thời gian áp dụng.');
+  const startsAt = voucherVietnamDateTimeLocalToIso(draft.startsAt);
+  if (startsAt === null) {
+    return draftFailure('startsAt', 'voucher-start', 'Hãy chọn thời gian bắt đầu hợp lệ.');
+  }
+  const endsAt = voucherVietnamDateTimeLocalToIso(draft.endsAt);
+  if (endsAt === null) {
+    return draftFailure('endsAt', 'voucher-end', 'Hãy chọn thời gian kết thúc hợp lệ.');
+  }
   if (new Date(startsAt).getTime() >= new Date(endsAt).getTime()) {
-    return new Error('Thời gian kết thúc phải sau thời gian bắt đầu.');
+    return draftFailure('endsAt', 'voucher-end', 'Thời gian kết thúc phải sau thời gian bắt đầu.');
   }
   if (draft.totalUsageLimit !== '' && !positiveInteger(draft.totalUsageLimit)) {
-    return new Error('Tổng lượt sử dụng phải là số nguyên lớn hơn 0.');
+    return draftFailure(
+      'totalUsageLimit',
+      'voucher-total-limit',
+      'Tổng lượt sử dụng phải là số nguyên lớn hơn 0.',
+    );
   }
   if (draft.perCustomerLimit !== '' && !positiveInteger(draft.perCustomerLimit)) {
-    return new Error('Giới hạn mỗi khách hàng phải là số nguyên lớn hơn 0.');
+    return draftFailure(
+      'perCustomerLimit',
+      'voucher-customer-limit',
+      'Giới hạn mỗi khách hàng phải là số nguyên lớn hơn 0.',
+    );
   }
 
   const base = {
@@ -742,21 +914,42 @@ function normalizeDraft(draft: VoucherDraft): CreateVoucherInput | Error {
   };
 
   if (draft.scopeType === 'ORDER') {
-    return { ...base, scopeType: 'ORDER', scopeConfig: null };
+    return { input: { ...base, scopeType: 'ORDER', scopeConfig: null }, ok: true };
   }
   if (draft.scopeType === 'PRODUCT_TYPE') {
     return {
-      ...base,
-      scopeType: 'PRODUCT_TYPE',
-      scopeConfig: { productType: draft.productType },
+      input: {
+        ...base,
+        scopeType: 'PRODUCT_TYPE',
+        scopeConfig: { productType: draft.productType },
+      },
+      ok: true,
     };
   }
   if (draft.scopeType === 'PRODUCTS') {
-    if (draft.productIds.length === 0) return new Error('Hãy chọn ít nhất một sản phẩm.');
-    return { ...base, scopeType: 'PRODUCTS', scopeConfig: { productIds: draft.productIds } };
+    if (draft.productIds.length === 0) {
+      return draftFailure('scopeSelection', 'scope-products', 'Hãy chọn ít nhất một sản phẩm.');
+    }
+    return {
+      input: {
+        ...base,
+        scopeType: 'PRODUCTS',
+        scopeConfig: { productIds: draft.productIds },
+      },
+      ok: true,
+    };
   }
-  if (draft.variantIds.length === 0) return new Error('Hãy chọn ít nhất một biến thể.');
-  return { ...base, scopeType: 'VARIANTS', scopeConfig: { variantIds: draft.variantIds } };
+  if (validVariantIds === null) {
+    return draftFailure(
+      'scopeSelection',
+      'variant-product',
+      'Hãy chọn ít nhất một biến thể thuộc sản phẩm hiện tại.',
+    );
+  }
+  return {
+    input: { ...base, scopeType: 'VARIANTS', scopeConfig: { variantIds: [...validVariantIds] } },
+    ok: true,
+  };
 }
 
 function previewVoucher(draft: VoucherDraft) {
@@ -782,21 +975,11 @@ function previewVoucher(draft: VoucherDraft) {
   const time =
     draft.startsAt === '' || draft.endsAt === ''
       ? 'Chưa chọn thời gian'
-      : formatVoucherDateRange(toIsoDate(draft.startsAt) ?? '', toIsoDate(draft.endsAt) ?? '');
+      : formatVoucherDateRange(
+          voucherVietnamDateTimeLocalToIso(draft.startsAt) ?? '',
+          voucherVietnamDateTimeLocalToIso(draft.endsAt) ?? '',
+        );
   return { discount, scope, time };
-}
-
-function toDateTimeLocal(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-
-function toIsoDate(value: string): string | null {
-  if (value === '') return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 function digits(value: string): string {
@@ -813,6 +996,29 @@ function nonNegativeInteger(value: string): boolean {
 
 function toggleId(values: readonly string[], id: string): string[] {
   return values.includes(id) ? values.filter((value) => value !== id) : [...values, id];
+}
+
+function initialVoucherVariantIds(voucher?: Voucher): string[] {
+  return voucher?.scopeType === 'VARIANTS' &&
+    voucher.scopeConfig !== null &&
+    voucher.scopeConfig !== undefined &&
+    'variantIds' in voucher.scopeConfig
+    ? [...voucher.scopeConfig.variantIds]
+    : [];
+}
+
+function draftFailure(
+  field: VoucherDraftField,
+  focusId: string,
+  message: string,
+): VoucherDraftResult {
+  return { errors: { [field]: message }, focusId, message, ok: false };
+}
+
+function focusVoucherField(id: string): void {
+  window.requestAnimationFrame(() => {
+    document.getElementById(id)?.focus();
+  });
 }
 
 function errorMessage(value: unknown, fallback: string): string {

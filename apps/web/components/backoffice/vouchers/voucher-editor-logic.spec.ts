@@ -3,9 +3,12 @@ import type { CatalogProductListItem, CatalogProductPage } from '@/lib/backoffic
 import type { CreateVoucherInput, Voucher } from '@/lib/backoffice-voucher-api';
 import {
   loadAllVoucherCatalogProducts,
+  validVoucherVariantSelection,
   voucherAllowsOnlyEndDateUpdate,
   voucherEndDateExtensionError,
+  voucherIsoToVietnamDateTimeLocal,
   voucherUpdateFromEditor,
+  voucherVietnamDateTimeLocalToIso,
 } from './voucher-editor-logic';
 
 const VOUCHER: Voucher = {
@@ -73,6 +76,13 @@ describe('voucher editor lifecycle rules', () => {
     });
   });
 
+  it('limits active voucher edits to descriptive metadata', () => {
+    expect(voucherUpdateFromEditor({ ...VOUCHER, status: 'ACTIVE' }, EDITOR_INPUT)).toEqual({
+      description: null,
+      name: 'Tên đã sửa',
+    });
+  });
+
   it('does not allow shortening the current end time', () => {
     expect(voucherEndDateExtensionError(VOUCHER.endsAt, '2026-09-29T23:59:59.000Z')).toContain(
       'không được sớm hơn',
@@ -82,7 +92,53 @@ describe('voucher editor lifecycle rules', () => {
   });
 });
 
+describe('voucher Vietnam date time', () => {
+  it('converts datetime-local values with a fixed UTC+07 offset', () => {
+    expect(voucherVietnamDateTimeLocalToIso('2026-09-01T08:00')).toBe('2026-09-01T01:00:00.000Z');
+    expect(voucherIsoToVietnamDateTimeLocal('2026-09-01T01:00:00.000Z')).toBe('2026-09-01T08:00');
+  });
+
+  it('rejects invalid wall-clock dates instead of normalizing them silently', () => {
+    expect(voucherVietnamDateTimeLocalToIso('2026-02-30T08:00')).toBeNull();
+    expect(voucherVietnamDateTimeLocalToIso('not-a-date')).toBeNull();
+    expect(voucherIsoToVietnamDateTimeLocal('not-a-date')).toBe('');
+  });
+});
+
 describe('voucher product choices', () => {
+  it('accepts only variants belonging to the currently loaded product', () => {
+    expect(
+      validVoucherVariantSelection({
+        activeVariantIds: ['variant-b'],
+        initialVariantIds: [],
+        loadedProductId: 'product-b',
+        selectedProductId: 'product-b',
+        selectedVariantIds: ['variant-b'],
+      }),
+    ).toEqual(['variant-b']);
+    expect(
+      validVoucherVariantSelection({
+        activeVariantIds: ['variant-a'],
+        initialVariantIds: [],
+        loadedProductId: 'product-a',
+        selectedProductId: 'product-b',
+        selectedVariantIds: ['variant-a'],
+      }),
+    ).toBeNull();
+  });
+
+  it('keeps an untouched existing variant scope without requiring a product lookup', () => {
+    expect(
+      validVoucherVariantSelection({
+        activeVariantIds: [],
+        initialVariantIds: ['variant-a'],
+        loadedProductId: null,
+        selectedProductId: '',
+        selectedVariantIds: ['variant-a'],
+      }),
+    ).toEqual(['variant-a']);
+  });
+
   it('loads every reported page and removes duplicate products without truncating at 100', async () => {
     const loadPage = vi
       .fn<(page: number, pageSize: number) => Promise<CatalogProductPage>>()
