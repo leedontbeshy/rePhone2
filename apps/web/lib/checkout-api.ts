@@ -1,5 +1,5 @@
 import type { components } from '@rephone/api-client';
-import { checkoutChangedPreview } from './order-access';
+import { checkoutChangedPreview, customerApiError } from './order-access';
 
 export type CheckoutPreview = components['schemas']['CheckoutPreviewDto'];
 
@@ -8,6 +8,12 @@ export interface CheckoutRequestEpoch {
   invalidate: () => void;
   isCurrent: (requestId: number) => boolean;
 }
+
+export type CheckoutCreateFailure =
+  | { kind: 'review'; preview: CheckoutPreview }
+  | { kind: 'conflict'; message: string }
+  | { kind: 'uncertain' }
+  | { kind: 'error'; message: string };
 
 export function createCheckoutRequestEpoch(): CheckoutRequestEpoch {
   let currentRequestId = 0;
@@ -28,6 +34,20 @@ export function createCheckoutRequestEpoch(): CheckoutRequestEpoch {
 export function parseChangedCheckoutPreview(value: unknown): CheckoutPreview | undefined {
   const candidate = checkoutChangedPreview(value);
   return isCheckoutPreview(candidate) ? candidate : undefined;
+}
+
+export function classifyCheckoutCreateFailure(
+  status: number,
+  error: unknown,
+  recovering = false,
+): CheckoutCreateFailure {
+  const current = parseChangedCheckoutPreview(error);
+  if (current !== undefined) return { kind: 'review', preview: current };
+  if (status >= 500 || status < 400 || (recovering && status !== 409 && status !== 422)) {
+    return { kind: 'uncertain' };
+  }
+  const message = customerApiError(error, 'Chưa thể tạo đơn hàng.');
+  return status === 409 ? { kind: 'conflict', message } : { kind: 'error', message };
 }
 
 export function checkoutWarningMessage(code: string): string {

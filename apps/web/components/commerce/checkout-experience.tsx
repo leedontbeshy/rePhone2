@@ -17,8 +17,8 @@ import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import {
   checkoutWarningMessage,
+  classifyCheckoutCreateFailure,
   createCheckoutRequestEpoch,
-  parseChangedCheckoutPreview,
   type CheckoutPreview,
   type CheckoutRequestEpoch,
 } from '@/lib/checkout-api';
@@ -26,8 +26,9 @@ import { customerApiError } from '@/lib/order-access';
 import styles from './checkout-experience.module.css';
 
 type Address = components['schemas']['AddressDto'];
+type CheckoutCreateRequest = components['schemas']['CreateCheckoutRequestDto'];
 type Fulfillment = 'PICKUP' | 'SHIPPING';
-type PendingAction = 'preview' | 'create' | null;
+type PendingAction = 'preview' | 'create' | 'recover' | null;
 
 export interface CheckoutFormData {
   fullName: string;
@@ -117,9 +118,10 @@ function CheckoutSession() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<CheckoutFormErrors>({});
   const [reviewRequired, setReviewRequired] = useState(false);
-  const [createUncertain, setCreateUncertain] = useState(false);
+  const [uncertainRequest, setUncertainRequest] = useState<CheckoutCreateRequest | null>(null);
   const [form, setForm] = useState<CheckoutFormData>(EMPTY_FORM);
   const reviewRef = useRef<HTMLDivElement>(null);
+  const pageErrorRef = useRef<HTMLParagraphElement>(null);
   const previewRequests = useRef<CheckoutRequestEpoch | null>(null);
   const createRequests = useRef<CheckoutRequestEpoch | null>(null);
   const actionLock = useRef<PendingAction>(null);
@@ -229,6 +231,10 @@ function CheckoutSession() {
     }
   };
 
+  const focusPageError = () => {
+    requestAnimationFrame(() => pageErrorRef.current?.focus());
+  };
+
   const validate = () => {
     const errors = validateCheckoutForm(form, fulfillmentType);
     setFieldErrors(errors);
@@ -238,7 +244,7 @@ function CheckoutSession() {
 
   const requestPreview = async () => {
     if (
-      createUncertain ||
+      uncertainRequest !== null ||
       !validate() ||
       cart === null ||
       cart.items.length === 0 ||
@@ -277,79 +283,65 @@ function CheckoutSession() {
     }
   };
 
-  const createOrder = async () => {
-    if (
-      preview === null ||
-      reviewRequired ||
-      createUncertain ||
-      actionLock.current !== null ||
-      !validate()
-    )
-      return;
-    actionLock.current = 'create';
-    setPendingAction('create');
-    setPageError(null);
+  const submitCheckoutRequest = async (
+    request: CheckoutCreateRequest,
+    action: 'create' | 'recover',
+  ) => {
+    if (actionLock.current !== null) return;
     const requestEpoch = createRequests.current;
-    if (requestEpoch === null) {
-      actionLock.current = null;
-      setPendingAction(null);
-      return;
-    }
+    if (requestEpoch === null) return;
+    actionLock.current = action;
+    setPendingAction(action);
+    setPageError(null);
     const requestId = requestEpoch.begin();
     try {
-      const shippingAddress =
-        fulfillmentType === 'SHIPPING'
-          ? {
-              receiverName: form.receiverName.trim(),
-              phone: form.receiverPhone.trim(),
-              addressLine: form.addressLine.trim(),
-              ward: form.ward.trim(),
-              district: form.district.trim(),
-              province: form.province.trim(),
-              ...(form.postalCode.trim() === '' ? {} : { postalCode: form.postalCode.trim() }),
-            }
-          : undefined;
       let result;
       try {
         result = await client.POST('/api/v1/checkouts', {
           params: { header: CSRF_HEADER },
-          body: {
-            fulfillmentType,
-            contact: {
-              fullName: form.fullName.trim(),
-              email: form.email.trim(),
-              phone: form.phone.trim(),
-            },
-            ...(shippingAddress === undefined ? {} : { shippingAddress }),
-            ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
-            ...(form.customerNote.trim() === '' ? {} : { customerNote: form.customerNote.trim() }),
-            expectedCartUpdatedAt: preview.cartUpdatedAt,
-            expectedGrandTotal: preview.pricing.grandTotal,
-            expectedDepositRequired: preview.pricing.depositRequired,
-          },
+          body: request,
         });
       } catch {
         if (!requestEpoch.isCurrent(requestId)) return;
-        setCreateUncertain(true);
-        setPageError(null);
+        setUncertainRequest(request);
+        if (action === 'recover') {
+          setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+          focusPageError();
+        }
         return;
       }
       if (!requestEpoch.isCurrent(requestId)) return;
       if (result.data === undefined) {
-        const current = parseChangedCheckoutPreview(result.error);
-        if (current !== undefined) {
-          setPreview(current);
+        const failure = classifyCheckoutCreateFailure(
+          result.response.status,
+          result.error,
+          action === 'recover',
+        );
+        if (failure.kind === 'review') {
+          setUncertainRequest(null);
+          setPreview(failure.preview);
           setReviewRequired(true);
           requestAnimationFrame(() => reviewRef.current?.focus());
-          return;
+        } else if (failure.kind === 'conflict') {
+          setUncertainRequest(null);
+          setPreview(null);
+          setReviewRequired(false);
+          setPageError(failure.message);
+          focusPageError();
+        } else if (failure.kind === 'uncertain') {
+          setUncertainRequest(request);
+          if (action === 'recover') {
+            setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+            focusPageError();
+          }
+        } else {
+          setUncertainRequest(null);
+          setPageError(failure.message);
+          focusPageError();
         }
-        if (result.response.status >= 500 || result.response.status < 400) {
-          setCreateUncertain(true);
-          setPageError(null);
-          return;
-        }
-        throw new Error(customerApiError(result.error, 'Chưa thể tạo đơn hàng.'));
+        return;
       }
+      setUncertainRequest(null);
       const order = result.data.data.order;
       const token = result.data.data.guestAccessToken;
       if (!requestEpoch.isCurrent(requestId)) return;
@@ -358,9 +350,13 @@ function CheckoutSession() {
           ? `/orders/${order.orderNumber}`
           : `/orders/${order.orderNumber}#token=${encodeURIComponent(token)}`,
       );
-    } catch (caught) {
+    } catch {
       if (requestEpoch.isCurrent(requestId)) {
-        setPageError(caught instanceof Error ? caught.message : 'Chưa thể tạo đơn hàng.');
+        setUncertainRequest(request);
+        if (action === 'recover') {
+          setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+          focusPageError();
+        }
       }
     } finally {
       if (requestEpoch.isCurrent(requestId)) {
@@ -368,6 +364,51 @@ function CheckoutSession() {
         setPendingAction(null);
       }
     }
+  };
+
+  const createOrder = async () => {
+    if (
+      preview === null ||
+      reviewRequired ||
+      uncertainRequest !== null ||
+      actionLock.current !== null ||
+      !validate()
+    )
+      return;
+    const shippingAddress =
+      fulfillmentType === 'SHIPPING'
+        ? {
+            receiverName: form.receiverName.trim(),
+            phone: form.receiverPhone.trim(),
+            addressLine: form.addressLine.trim(),
+            ward: form.ward.trim(),
+            district: form.district.trim(),
+            province: form.province.trim(),
+            ...(form.postalCode.trim() === '' ? {} : { postalCode: form.postalCode.trim() }),
+          }
+        : undefined;
+    await submitCheckoutRequest(
+      {
+        fulfillmentType,
+        contact: {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+        },
+        ...(shippingAddress === undefined ? {} : { shippingAddress }),
+        ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
+        ...(form.customerNote.trim() === '' ? {} : { customerNote: form.customerNote.trim() }),
+        expectedCartUpdatedAt: preview.cartUpdatedAt,
+        expectedGrandTotal: preview.pricing.grandTotal,
+        expectedDepositRequired: preview.pricing.depositRequired,
+      },
+      'create',
+    );
+  };
+
+  const recoverOrder = async () => {
+    if (uncertainRequest === null) return;
+    await submitCheckoutRequest(uncertainRequest, 'recover');
   };
 
   const setField = (field: FormField, value: string) => {
@@ -410,7 +451,8 @@ function CheckoutSession() {
     }
   };
 
-  const formLocked = pendingAction === 'create' || createUncertain;
+  const formLocked =
+    pendingAction === 'create' || pendingAction === 'recover' || uncertainRequest !== null;
 
   if (cartLoading) return <CheckoutLoading />;
   if (cartError !== null) {
@@ -735,14 +777,16 @@ function CheckoutSession() {
           error={pageError}
           pendingAction={pendingAction}
           preview={preview}
+          pageErrorRef={pageErrorRef}
           reviewRef={reviewRef}
           reviewRequired={reviewRequired}
-          createUncertain={createUncertain}
+          uncertain={uncertainRequest !== null}
           onAcknowledgeReview={() => {
             setReviewRequired(false);
           }}
           onCreate={() => void createOrder()}
           onPreview={() => void requestPreview()}
+          onRecover={() => void recoverOrder()}
         />
       </div>
     </div>
@@ -797,25 +841,29 @@ function FormSection({ children, title }: Readonly<{ children: React.ReactNode; 
 function OrderSummary({
   cart,
   error,
+  pageErrorRef,
   pendingAction,
   preview,
   reviewRef,
   reviewRequired,
-  createUncertain,
+  uncertain,
   onAcknowledgeReview,
   onCreate,
   onPreview,
+  onRecover,
 }: Readonly<{
   cart: Cart;
   error: string | null;
+  pageErrorRef: React.RefObject<HTMLParagraphElement | null>;
   pendingAction: PendingAction;
   preview: CheckoutPreview | null;
   reviewRef: React.RefObject<HTMLDivElement | null>;
   reviewRequired: boolean;
-  createUncertain: boolean;
+  uncertain: boolean;
   onAcknowledgeReview: () => void;
   onCreate: () => void;
   onPreview: () => void;
+  onRecover: () => void;
 }>) {
   return (
     <aside className={styles.summary} aria-label="Đơn hàng của bạn">
@@ -843,7 +891,7 @@ function OrderSummary({
         </div>
       ) : null}
       {error !== null ? (
-        <p className={styles.pageError} role="alert">
+        <p ref={pageErrorRef} className={styles.pageError} role="alert" tabIndex={-1}>
           {error}
         </p>
       ) : null}
@@ -859,10 +907,21 @@ function OrderSummary({
         </span>
       </div>
 
-      {createUncertain ? (
+      {uncertain ? (
         <div className={styles.uncertainNotice} role="alert">
-          <strong>Đang chờ xác nhận đơn hàng</strong>
-          <span>Vui lòng kiểm tra email trước khi thao tác lại để tránh tạo trùng đơn.</span>
+          <strong>Chưa nhận được xác nhận đơn hàng</strong>
+          <span>
+            Yêu cầu có thể đã được ghi nhận. Hãy chủ động kiểm tra trạng thái để tiếp tục mà không
+            tạo trùng đơn.
+          </span>
+          <Button
+            className={styles.summaryButton}
+            loading={pendingAction === 'recover'}
+            loadingLabel="Đang kiểm tra trạng thái đơn hàng"
+            onClick={onRecover}
+          >
+            Kiểm tra trạng thái đơn hàng
+          </Button>
         </div>
       ) : reviewRequired ? (
         <Button className={styles.summaryButton} onClick={onAcknowledgeReview}>

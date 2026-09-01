@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   checkoutWarningMessage,
+  classifyCheckoutCreateFailure,
   createCheckoutRequestEpoch,
   parseChangedCheckoutPreview,
 } from './checkout-api';
@@ -126,5 +127,44 @@ describe('createCheckoutRequestEpoch', () => {
 
     epoch.invalidate();
     expect(epoch.isCurrent(second)).toBe(false);
+  });
+});
+
+describe('classifyCheckoutCreateFailure', () => {
+  it('returns the authoritative preview for review-required conflicts', () => {
+    expect(
+      classifyCheckoutCreateFailure(409, {
+        error: {
+          code: 'CHECKOUT_REVIEW_REQUIRED',
+          details: [{ code: 'CHECKOUT_CHANGED', current: preview }],
+        },
+      }),
+    ).toEqual({ kind: 'review', preview });
+  });
+
+  it('separates definitive conflicts from uncertain and ordinary failures', () => {
+    expect(
+      classifyCheckoutCreateFailure(409, {
+        error: { code: 'INVENTORY_NOT_AVAILABLE' },
+      }),
+    ).toEqual({ kind: 'conflict', message: 'Sản phẩm này hiện không còn sẵn hàng.' });
+    expect(classifyCheckoutCreateFailure(503, undefined)).toEqual({ kind: 'uncertain' });
+    expect(
+      classifyCheckoutCreateFailure(422, {
+        error: { code: 'VOUCHER_NOT_APPLICABLE' },
+      }),
+    ).toEqual({ kind: 'error', message: 'Mã ưu đãi chưa áp dụng được cho giỏ hàng này.' });
+  });
+
+  it('keeps recovery uncertain when a gate rejects the replay before checkout is resolved', () => {
+    expect(classifyCheckoutCreateFailure(429, { error: { code: 'RATE_LIMITED' } }, true)).toEqual({
+      kind: 'uncertain',
+    });
+    expect(
+      classifyCheckoutCreateFailure(401, { error: { code: 'SESSION_REVOKED' } }, true),
+    ).toEqual({ kind: 'uncertain' });
+    expect(
+      classifyCheckoutCreateFailure(422, { error: { code: 'VOUCHER_NOT_APPLICABLE' } }, true),
+    ).toEqual({ kind: 'error', message: 'Mã ưu đãi chưa áp dụng được cho giỏ hàng này.' });
   });
 });

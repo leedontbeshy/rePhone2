@@ -359,6 +359,12 @@
   border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
   color: var(--color-danger);
   background: var(--color-danger-soft);
+  scroll-margin-block-start: var(--storefront-header-offset);
+}
+
+.pageError:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
 }
 
 .prePreview {
