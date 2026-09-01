@@ -35,7 +35,7 @@ export const FRONTEND_BROWSER_SUITES = {
       'legacy-keyboard': {
         title: 'keeps the legacy storefront keyboard reachable during migration',
         ownsRoutes: [],
-        coversRoutes: ['/products/[slug]/units/[inventoryCode]'],
+        coversRoutes: ['/products'],
         ownsStates: ['success'],
       },
     },
@@ -55,7 +55,7 @@ export const FRONTEND_BROWSER_SUITES = {
           '/vouchers',
         ],
         coversRoutes: [],
-        ownsStates: ['loading', 'success'],
+        ownsStates: ['success'],
       },
       'header-balance': {
         title: 'keeps the shared header balanced and store actions clear across viewports',
@@ -63,17 +63,29 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/', '/store'],
         ownsStates: [],
       },
+      'search-suggestions-keyboard': {
+        title: 'navigates product suggestions from the shared storefront search by keyboard',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/products/[slug]'],
+        ownsStates: ['success'],
+      },
+      'keyboard-interactions': {
+        title: 'keeps mobile navigation, catalog filters and media dialogs keyboard-operable',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/products', '/products/[slug]/units/[inventoryCode]'],
+        ownsStates: ['success'],
+      },
       'accessory-card-alignment': {
         title: 'keeps accessory cards and their actions aligned when optional details differ',
         ownsRoutes: [],
-        coversRoutes: ['/store'],
+        coversRoutes: ['/products'],
         ownsStates: ['success'],
       },
       'url-filter-history': {
         title: 'keeps URL filters authoritative across pagination and browser history',
         ownsRoutes: [],
         coversRoutes: ['/products'],
-        ownsStates: ['loading', 'success'],
+        ownsStates: ['success'],
       },
       'ssr-contracts': {
         title: 'server-renders the six public contracts without browser JavaScript',
@@ -103,13 +115,33 @@ export const FRONTEND_BROWSER_SUITES = {
       'a11y-mobile': {
         title: 'passes serious accessibility checks and stays within a 320px viewport',
         ownsRoutes: [],
-        coversRoutes: ['/products/[slug]/units/[inventoryCode]'],
+        coversRoutes: [
+          '/',
+          '/store',
+          '/products',
+          '/products/[slug]',
+          '/products/[slug]/units/[inventoryCode]',
+          '/vouchers',
+        ],
+        ownsStates: ['success'],
+      },
+      'responsive-route-matrix': {
+        title: 'keeps all six public surfaces usable without overflow from 320px to 1440px',
+        ownsRoutes: [],
+        coversRoutes: [
+          '/',
+          '/store',
+          '/products',
+          '/products/[slug]',
+          '/products/[slug]/units/[inventoryCode]',
+          '/vouchers',
+        ],
         ownsStates: ['success'],
       },
       'mobile-generation-shelf': {
         title: 'keeps generation shelves scrollable without overflowing the mobile document',
         ownsRoutes: [],
-        coversRoutes: ['/products'],
+        coversRoutes: ['/'],
         ownsStates: ['success'],
       },
       'footer-links': {

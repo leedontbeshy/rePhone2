@@ -7,6 +7,8 @@ import { stabilizeVisualPage } from './support/stabilize-visual-page';
 const MODEL_PATH = '/products/iphone-14-pro';
 const EXACT_UNIT_PATH = `${MODEL_PATH}/units/IP14P-128-001`;
 const SOLD_OUT_MODEL_PATH = '/products/iphone-15-pro';
+const UNAVAILABLE_MODEL_PATH = '/products/iphone-13';
+const UNAVAILABLE_UNIT_PATH = `${UNAVAILABLE_MODEL_PATH}/units/IP13-BLU-001`;
 const HOME_HEADING = 'Chọn iPhone phù hợp với bạn';
 const PUBLIC_ROUTES = [
   '/',
@@ -145,6 +147,87 @@ test.describe('FE-1 storefront discovery', () => {
       mobileNavigation.getByRole('link', { name: 'Liên hệ', exact: true }),
     ).toHaveAttribute('aria-current', 'page');
     await expect(mobileNavigation.getByRole('link', { name: 'Ưu đãi', exact: true })).toBeVisible();
+  });
+
+  test(bt('browser:storefront-discovery', 'search-suggestions-keyboard'), async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+
+    const search = page.getByRole('combobox', { name: 'Tìm iPhone hoặc phụ kiện', exact: true });
+    await search.fill('iPhone 17');
+
+    const listbox = page.getByRole('listbox', { name: 'Gợi ý sản phẩm', exact: true });
+    const suggestions = listbox.locator('a[role="option"]');
+    await expect(listbox).toBeVisible();
+    await expect(suggestions.first()).toContainText('iPhone 17');
+
+    await search.press('Escape');
+    await expect(search).toHaveAttribute('aria-expanded', 'false');
+    await expect(listbox).toHaveCount(0);
+
+    const firstSuggestion = suggestions.first();
+    await search.press('ArrowDown');
+    await expect(listbox).toBeVisible();
+    const [suggestionId, suggestionHref] = await Promise.all([
+      firstSuggestion.getAttribute('id'),
+      firstSuggestion.getAttribute('href'),
+    ]);
+    expect(suggestionId).not.toBeNull();
+    expect(suggestionHref).toMatch(/^\/products\/iphone-17/);
+    await expect(search).toHaveAttribute('aria-activedescendant', suggestionId ?? '');
+
+    await search.press('Enter');
+    await expect(page).toHaveURL(suggestionHref ?? '/products');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('iPhone 17');
+  });
+
+  test(bt('browser:storefront-discovery', 'keyboard-interactions'), async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    const menuTrigger = page.getByRole('button', { name: 'Mở danh mục', exact: true });
+    await menuTrigger.focus();
+    await page.keyboard.press('Enter');
+
+    const mobileDialog = page.getByRole('dialog', { name: 'Danh mục', exact: true });
+    const closeMenu = mobileDialog.getByRole('button', { name: 'Đóng', exact: true });
+    await expect(mobileDialog).toBeVisible();
+    await expect(closeMenu).toBeFocused();
+
+    await page.keyboard.press('Shift+Tab');
+    expect(await mobileDialog.evaluate((dialog) => dialog.contains(document.activeElement))).toBe(
+      true,
+    );
+    await page.keyboard.press('Tab');
+    await expect(closeMenu).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(mobileDialog).toHaveCount(0);
+    await expect(menuTrigger).toBeFocused();
+
+    await page.goto('/products');
+    const filterTrigger = page.getByRole('button', {
+      name: 'Bộ lọc và sắp xếp',
+      exact: true,
+    });
+    await filterTrigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('dialog[open]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await expect(filterTrigger).toBeFocused();
+
+    await page.goto(EXACT_UNIT_PATH);
+    const galleryTrigger = page.getByRole('button', {
+      name: 'Mở ảnh ở kích thước lớn',
+      exact: true,
+    });
+    await galleryTrigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('dialog[open]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await expect(galleryTrigger).toBeFocused();
   });
 
   test(bt('browser:storefront-discovery', 'accessory-card-alignment'), async ({ page }) => {
@@ -297,11 +380,39 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(galleryTrigger).toBeFocused();
   });
 
+  test(bt('browser:storefront-discovery', 'responsive-route-matrix'), async ({ page }) => {
+    for (const viewport of [
+      { width: 320, height: 900 },
+      { width: 768, height: 1024 },
+      { width: 1024, height: 900 },
+      { width: 1440, height: 900 },
+    ] as const) {
+      await page.setViewportSize(viewport);
+
+      for (const path of PUBLIC_ROUTES) {
+        await page.goto(path);
+        await expectPublicRouteMarker(page, path);
+        await expect(page.locator('main')).toHaveCount(1);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+        await expectPublicPrimaryAction(page, path);
+
+        const dimensions = await page.evaluate(() => ({
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+        }));
+        expect(
+          dimensions.scrollWidth,
+          `${path} overflows the ${String(viewport.width)}px viewport`,
+        ).toBeLessThanOrEqual(dimensions.clientWidth);
+      }
+    }
+  });
+
   test(bt('browser:storefront-discovery', 'mobile-generation-shelf'), async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
 
-    const shelf = page.getByLabel('Các model thuộc iPhone 15', { exact: true });
+    const shelf = page.getByLabel('Các dòng máy thuộc iPhone 15', { exact: true });
     await expect(shelf).toBeVisible();
 
     const initialDimensions = await shelf.evaluate((element) => ({
@@ -357,7 +468,7 @@ test.describe('FE-1 storefront discovery', () => {
   });
 
   test(bt('browser:storefront-discovery', 'unavailable-unit-recovery'), async ({ page }) => {
-    const response = await page.goto(`${MODEL_PATH}/units/UNKNOWN-UNIT`);
+    const response = await page.goto(UNAVAILABLE_UNIT_PATH);
 
     expect(response?.status()).toBe(404);
     await expect(
@@ -365,7 +476,7 @@ test.describe('FE-1 storefront discovery', () => {
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Xem các máy cùng dòng' })).toHaveAttribute(
       'href',
-      MODEL_PATH,
+      UNAVAILABLE_MODEL_PATH,
     );
   });
 
@@ -392,7 +503,7 @@ test.describe('FE-1 storefront discovery', () => {
 
       await page.goto(MODEL_PATH);
       await expect(page.getByRole('heading', { level: 1, name: 'iPhone 14 Pro' })).toBeVisible();
-      await expect(page.getByText('Ảnh minh họa model', { exact: true })).toBeVisible();
+      await expect(page.getByText('Ảnh minh họa dòng máy', { exact: true })).toBeVisible();
       await expect(page.locator(`main a[href="${EXACT_UNIT_PATH}"]`).first()).toBeVisible();
       await stabilizeVisualPage(page);
       await expect(page).toHaveScreenshot(`fe1-model-detail-${viewport.name}.png`, {
@@ -438,7 +549,7 @@ async function expectExactUnitContract(page: Page): Promise<void> {
   await expect(page.getByText('128 GB · 6 GB RAM', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('Space Black', { exact: true })).toBeVisible();
   await expect(purchaseRail.getByText('16.490.000 ₫', { exact: true })).toBeVisible();
-  await expect(purchaseRail.getByText('Grade A', { exact: true })).toBeVisible();
+  await expect(purchaseRail.getByText('Ngoại hình loại A', { exact: true })).toBeVisible();
   await expect(page.getByText('Pin 93%', { exact: true })).toBeVisible();
   await expect(
     page.getByText('90 ngày', { exact: true }).filter({ visible: true }).first(),
@@ -511,6 +622,37 @@ async function expectPublicRouteMarker(
       return;
     case '/vouchers':
       await expect(page.getByText('WELCOME100', { exact: true })).toBeVisible();
+  }
+}
+
+async function expectPublicPrimaryAction(
+  page: Page,
+  path: (typeof PUBLIC_ROUTES)[number],
+): Promise<void> {
+  switch (path) {
+    case '/':
+      await expect(page.locator(`main a[href="${SOLD_OUT_MODEL_PATH}"]`).first()).toBeVisible();
+      return;
+    case '/products':
+      await expect(page.locator(`main a[href="${MODEL_PATH}"]`).first()).toBeVisible();
+      return;
+    case MODEL_PATH:
+      await expect(page.locator(`main a[href="${EXACT_UNIT_PATH}"]`).first()).toBeVisible();
+      return;
+    case EXACT_UNIT_PATH:
+      await expect(
+        page.locator('main').getByRole('button', { name: 'Thêm vào giỏ', exact: true }).first(),
+      ).toBeVisible();
+      return;
+    case '/store':
+      await expect(
+        page.locator('main').getByRole('link', { name: 'Gọi cửa hàng', exact: true }),
+      ).toBeVisible();
+      return;
+    case '/vouchers':
+      await expect(
+        page.locator('main').getByRole('link', { name: 'Đăng nhập', exact: true }),
+      ).toBeVisible();
   }
 }
 
