@@ -161,16 +161,50 @@ export function createMemoryAuthSession(): MemoryAuthSession {
 
 export function createSingleFlight<TKey, TValue>(
   work: (key: TKey) => Promise<TValue>,
-): (key: TKey) => Promise<TValue | undefined> {
+): (key: TKey) => Promise<TValue> {
   let inFlight: { key: TKey; promise: Promise<TValue> } | undefined;
-  return (key) => {
-    if (inFlight !== undefined) {
-      return Object.is(inFlight.key, key) ? inFlight.promise : Promise.resolve(undefined);
+  const queue: Array<{
+    key: TKey;
+    promise: Promise<TValue>;
+    reject: (reason?: unknown) => void;
+    resolve: (value: TValue | PromiseLike<TValue>) => void;
+  }> = [];
+
+  const runNext = () => {
+    if (inFlight !== undefined) return;
+    const next = queue.shift();
+    if (next === undefined) return;
+
+    inFlight = { key: next.key, promise: next.promise };
+    let pending: Promise<TValue>;
+    try {
+      pending = Promise.resolve(work(next.key));
+    } catch (caught) {
+      pending = Promise.reject(
+        caught instanceof Error ? caught : new Error('Refresh work failed unexpectedly.'),
+      );
     }
-    const promise = work(key).finally(() => {
-      if (inFlight?.promise === promise) inFlight = undefined;
+    void pending
+      .then(next.resolve, next.reject)
+      .finally(() => {
+        if (inFlight?.promise === next.promise) inFlight = undefined;
+        runNext();
+      });
+  };
+
+  return (key) => {
+    if (inFlight !== undefined && Object.is(inFlight.key, key)) return inFlight.promise;
+    const queued = queue.find((entry) => Object.is(entry.key, key));
+    if (queued !== undefined) return queued.promise;
+
+    let resolve!: (value: TValue | PromiseLike<TValue>) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<TValue>((resolvePromise, rejectPromise) => {
+      resolve = resolvePromise;
+      reject = rejectPromise;
     });
-    inFlight = { key, promise };
+    queue.push({ key, promise, reject, resolve });
+    runNext();
     return promise;
   };
 }

@@ -88,27 +88,54 @@ describe('AuthProvider foundations', () => {
     });
   });
 
-  it('shares one in-flight refresh and permits a new refresh after settlement', async () => {
-    let release: ((value: string) => void) | undefined;
+  it('deduplicates the active key and queues a new key until the current refresh settles', async () => {
+    const releases: Array<(value: string) => void> = [];
     const work = vi.fn(
-      () =>
+      (key: string) =>
         new Promise<string>((resolve) => {
-          release = resolve;
+          releases.push((value) => {
+            resolve(key + ':' + value);
+          });
         }),
     );
-    const refresh = createSingleFlight<string, string>(() => work());
+    const refresh = createSingleFlight<string, string>(work);
 
     const first = refresh('session-a');
     const second = refresh('session-a');
+    const next = refresh('session-b');
+    const nextDuplicate = refresh('session-b');
     expect(first).toBe(second);
-    expect(work).toHaveBeenCalledOnce();
-    await expect(refresh('session-b')).resolves.toBeUndefined();
+    expect(next).toBe(nextDuplicate);
     expect(work).toHaveBeenCalledOnce();
 
-    release?.('access-1');
-    await expect(first).resolves.toBe('access-1');
-    void refresh('session-a');
+    releases[0]?.('access-1');
+    await expect(first).resolves.toBe('session-a:access-1');
     expect(work).toHaveBeenCalledTimes(2);
+    expect(work).toHaveBeenLastCalledWith('session-b');
+
+    releases[1]?.('access-2');
+    await expect(next).resolves.toBe('session-b:access-2');
+  });
+
+  it('continues the refresh queue after a rejected or synchronously thrown job', async () => {
+    const failure = new Error('refresh failed');
+    const work = vi
+      .fn<(key: string) => Promise<string>>()
+      .mockRejectedValueOnce(failure)
+      .mockImplementationOnce(() => {
+        throw failure;
+      })
+      .mockResolvedValueOnce('access-c');
+    const refresh = createSingleFlight<string, string>(work);
+
+    const first = refresh('session-a');
+    const second = refresh('session-b');
+    const third = refresh('session-c');
+
+    await expect(first).rejects.toBe(failure);
+    await expect(second).rejects.toBe(failure);
+    await expect(third).resolves.toBe('access-c');
+    expect(work.mock.calls.map(([key]) => key)).toEqual(['session-a', 'session-b', 'session-c']);
   });
 
   it('sends refresh with the HttpOnly-cookie transport proof and parses the session', async () => {
