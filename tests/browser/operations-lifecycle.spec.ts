@@ -52,6 +52,20 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
         await isolated.goto(route, { waitUntil: 'domcontentloaded' });
         await expect(isolated.locator('[data-shell="backoffice"]')).toHaveCount(1);
         await expect(isolated.locator('main')).toContainText(text);
+        if (route === `/backoffice/orders/${ID}` && viewport.width === 1440) {
+          const email = isolated.getByText('khach@example.com', { exact: true });
+          await expect(email).toBeVisible();
+          const emailLayout = await email.evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            singleLine: getComputedStyle(element).whiteSpace === 'nowrap',
+          }));
+          expect(
+            emailLayout,
+            'Email phổ biến phải hiển thị trọn vẹn trên một dòng ở trang chi tiết đơn desktop',
+          ).toMatchObject({ singleLine: true });
+          expect(emailLayout.scrollWidth).toBeLessThanOrEqual(emailLayout.clientWidth);
+        }
         const size = await isolated.evaluate(() => ({
           client: document.documentElement.clientWidth,
           scroll: document.documentElement.scrollWidth,
