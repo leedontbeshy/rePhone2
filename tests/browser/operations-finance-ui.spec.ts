@@ -5,6 +5,7 @@ const ID = '0199d009-0000-7000-8000-000000000071';
 
 interface FinanceProbe {
   conflictNext: boolean;
+  evidenceAvailable: boolean;
   evidenceMode: 'provider' | 'safe' | 'unsafe';
   evidenceRequests: number;
   mutations: string[];
@@ -36,6 +37,17 @@ test.describe('WP09 finance operations through the rendered UI', () => {
     probe.evidenceMode = 'provider';
     await page.getByRole('button', { name: 'Mở minh chứng' }).click();
     await expect(page.locator('main [role="alert"]')).toContainText(/chưa thể|tạm/i);
+
+    const unavailablePage = await context.newPage();
+    const unavailable = await installFinanceFixture(unavailablePage, context, 'payment');
+    unavailable.evidenceAvailable = false;
+    await unavailablePage.goto(`/backoffice/payments/${ID}`, { waitUntil: 'domcontentloaded' });
+    await expect(
+      unavailablePage.getByText('Chưa có minh chứng để xem.', { exact: true }),
+    ).toBeVisible();
+    await expect(unavailablePage.getByRole('button', { name: 'Mở minh chứng' })).toBeDisabled();
+    expect(unavailable.evidenceRequests).toBe(0);
+    await unavailablePage.close();
 
     probe.evidenceMode = 'safe';
     await page.getByRole('button', { name: 'Xác nhận thanh toán', exact: true }).click();
@@ -129,6 +141,7 @@ async function installFinanceFixture(
 ): Promise<FinanceProbe> {
   const probe: FinanceProbe = {
     conflictNext: false,
+    evidenceAvailable: true,
     evidenceMode: 'safe',
     evidenceRequests: 0,
     mutations: [],
@@ -203,8 +216,12 @@ function payment(probe: FinanceProbe) {
   const rejected = probe.paymentStatus === 'REJECTED';
   return {
     availableActions:
-      verified || rejected ? ['VIEW_EVIDENCE'] : ['VERIFY', 'REJECT', 'VIEW_EVIDENCE'],
-    evidenceAvailable: true,
+      verified || rejected
+        ? probe.evidenceAvailable
+          ? ['VIEW_EVIDENCE']
+          : []
+        : ['VERIFY', 'REJECT', ...(probe.evidenceAvailable ? ['VIEW_EVIDENCE'] : [])],
+    evidenceAvailable: probe.evidenceAvailable,
     order: {
       orderNumber: 'RPH-FE09-FINANCE',
       status: 'PLACED',
