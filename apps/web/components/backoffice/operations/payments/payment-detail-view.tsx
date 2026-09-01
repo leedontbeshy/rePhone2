@@ -45,6 +45,24 @@ import {
 import styles from './payments.module.css';
 
 type PaymentDecision = 'verify' | 'reject';
+type PaymentOperation = 'evidence' | PaymentDecision;
+type PaymentOperationLock = { current: PaymentOperation | null };
+
+export async function runExclusivePaymentOperation(
+  lock: PaymentOperationLock,
+  operation: PaymentOperation,
+  allowed: boolean,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  if (!allowed || lock.current !== null) return false;
+  lock.current = operation;
+  try {
+    await task();
+    return true;
+  } finally {
+    if (lock.current === operation) lock.current = null;
+  }
+}
 
 export function PaymentDetailView() {
   const params = useParams<{ id: string }>();
@@ -62,6 +80,7 @@ export function PaymentDetailView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const operationRef = useRef<PaymentOperation>(null);
 
   const loadPayment = useCallback(async () => {
     const next = await getBackofficePayment(client, paymentId);
@@ -103,28 +122,37 @@ export function PaymentDetailView() {
   }
 
   async function openEvidence() {
-    const evidenceWindow = window.open('about:blank', '_blank');
-    if (evidenceWindow === null) {
-      setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
-      return;
-    }
-    evidenceWindow.opener = null;
-    setBusy('evidence');
-    setError(null);
-    try {
-      const evidence = await getPaymentEvidenceUrl(client, paymentId);
-      evidenceWindow.location.replace(evidence.url);
-    } catch (caught) {
-      evidenceWindow.close();
-      setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
-    } finally {
-      setBusy(null);
-    }
+    await runExclusivePaymentOperation(
+      operationRef,
+      'evidence',
+      detail?.availableActions.includes('VIEW_EVIDENCE') === true,
+      async () => {
+        const evidenceWindow = window.open('about:blank', '_blank');
+        if (evidenceWindow === null) {
+          setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
+          return;
+        }
+        evidenceWindow.opener = null;
+        setBusy('evidence');
+        setError(null);
+        try {
+          const evidence = await getPaymentEvidenceUrl(client, paymentId);
+          evidenceWindow.location.replace(evidence.url);
+        } catch (caught) {
+          evidenceWindow.close();
+          setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
+        } finally {
+          setBusy(null);
+        }
+      },
+    );
   }
 
   async function submitDecision(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (decision === null || detail === null) return;
+    const requiredAction = decision === 'verify' ? 'VERIFY' : 'REJECT';
+    if (!detail.availableActions.includes(requiredAction)) return;
     const validation = validateDecision(
       decision,
       receivedAmount,
@@ -137,33 +165,34 @@ export function PaymentDetailView() {
       return;
     }
 
-    setBusy(decision);
-    setFieldError(null);
-    setError(null);
-    setNotice(null);
-    try {
-      const result =
-        decision === 'verify'
-          ? await verifyPayment(client, paymentId, {
-              receivedAmount: receivedAmount.trim(),
-              ...(verifyNote.trim().length === 0 ? {} : { note: verifyNote.trim() }),
-            })
-          : await rejectPayment(client, paymentId, { reason: rejectReason.trim() });
-      await loadPayment();
-      setNotice(reviewNotice(decision, result.notificationDelivery));
-      closeDecision();
-    } catch (caught) {
-      setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật thanh toán.');
+    await runExclusivePaymentOperation(operationRef, decision, true, async () => {
+      setBusy(decision);
+      setFieldError(null);
+      setError(null);
+      setNotice(null);
       try {
-        const refreshed = await loadPayment();
-        const requiredAction = decision === 'verify' ? 'VERIFY' : 'REJECT';
-        if (!refreshed.availableActions.includes(requiredAction)) closeDecision();
-      } catch {
-        // Giữ lỗi thao tác đang hiển thị; nút tải lại toàn hồ sơ nằm ngoài hộp thoại.
+        const result =
+          decision === 'verify'
+            ? await verifyPayment(client, paymentId, {
+                receivedAmount: receivedAmount.trim(),
+                ...(verifyNote.trim().length === 0 ? {} : { note: verifyNote.trim() }),
+              })
+            : await rejectPayment(client, paymentId, { reason: rejectReason.trim() });
+        await loadPayment();
+        setNotice(reviewNotice(decision, result.notificationDelivery));
+        closeDecision();
+      } catch (caught) {
+        setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật thanh toán.');
+        try {
+          const refreshed = await loadPayment();
+          if (!refreshed.availableActions.includes(requiredAction)) closeDecision();
+        } catch {
+          // Giữ lỗi thao tác đang hiển thị; nút tải lại toàn hồ sơ nằm ngoài hộp thoại.
+        }
+      } finally {
+        setBusy(null);
       }
-    } finally {
-      setBusy(null);
-    }
+    });
   }
 
   return (
