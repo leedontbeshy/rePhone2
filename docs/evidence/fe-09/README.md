@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Work package hiện tại: **WP-02**
+> Work package hiện tại: **WP-03**
 
 ## Phạm vi bằng chứng
 
@@ -55,13 +55,24 @@ projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài regi
 | CI workflow | IMPLEMENTED | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
 | CI run URL | PENDING | Chỉ có sau khi nhánh được push; bắt buộc bổ sung trước WP-14 closeout |
 
+## Foundation và shared UX consistency WP-02
+
+WP-02 kết thúc tại `eb9820e` với shared form, file picker, pagination, loading,
+sidebar scroll, focus token và dialog lifecycle đã được harden. Review độc lập
+không còn P0/P1/P2 sau remediation. Full web unit đạt `588/588`, shared a11y đạt
+`21/21` và full Chromium đạt `48/48` trong 3,6 phút.
+
+Chi tiết command, ảnh trước/sau và acceptance mapping nằm tại
+[WP-02 foundation evidence](./wp-02-foundation.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
 | --- | --- | --- |
 | WP-00 | Evidence index, command log, residual risks | Có |
 | WP-01 | Browser ownership registry và release workflow | Có; CI URL chờ push |
-| WP-02–WP-10 | Browser/visual evidence theo surface | Chưa có |
+| WP-02 | Foundation/browser/visual evidence | PASS |
+| WP-03–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -77,6 +88,6 @@ projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài regi
 
 ## Bước tiếp theo
 
-Thực hiện WP-02 theo từng concern dùng chung: token/focus, file picker, sidebar,
-loading, dialog và pagination. Mỗi thay đổi phải chạy consumer scan cùng browser
-regression của surface chịu ảnh hưởng.
+Thực hiện WP-03 cho sáu surface storefront: nội dung và media public, filter/history,
+SSR, unavailable recovery, responsive và accessibility. Mỗi thay đổi tiếp tục tách
+theo concern và giữ browser regression của owner xanh.

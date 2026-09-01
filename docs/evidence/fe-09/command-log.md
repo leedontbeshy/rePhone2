@@ -99,3 +99,30 @@ lượt; không chạy nhiều Turbo command có chung `db:generate` đồng th�
   container đúng trạng thái ban đầu.
 - Summary sanitized luôn được upload; browser diagnostics chi tiết chỉ upload khi
   lỗi. CI URL và review artifact thật được hoãn tới lúc push/closeout.
+
+## WP-02 verification — tree `eb9820e`
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 124 file, 588/588 test |
+| `pnpm --filter @rephone/web typecheck` | 0 | PASS |
+| `pnpm fe:a11y` | 0 | 4 file, 21/21 test |
+| `pnpm lint` | 0 | PASS, zero warning |
+| `pnpm format:check` | 0 | PASS |
+| `git diff --check` | 0 | PASS |
+
+### Browser và review gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Full Chromium trước remediation review | 0 | 48/48, 1 worker, 3,6 phút |
+| Forced-colors upload focus | 0 | 2/2, shared picker và custom picker |
+| Full Chromium cuối | 0 | 48/48, 1 worker, 3,6 phút |
+| Independent post-fix review | 0 | GO; zero P0/P1/P2 |
+
+Review đầu không được xóa khỏi lịch sử: nó phát hiện stale variant khi đổi dòng
+máy gặp lỗi, focus dialog có điều kiện trong React Strict Mode, focus forced-colors
+và lỗi tệp động chưa được thông báo. Bốn concern đã được sửa riêng và kiểm thử lại
+trước full browser cuối.
