@@ -208,7 +208,7 @@
 
 .formActions p {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
 }
 
@@ -263,7 +263,7 @@
 }
 
 .summaryHero span {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
 }
 
