@@ -21,6 +21,13 @@ describe('AfterSalesQueueList', () => {
     expect(markup).not.toContain('UUID');
   });
 
+  it('keeps the loaded queue visible while a local refresh is in progress', () => {
+    const markup = renderToStaticMarkup(<AfterSalesQueueList items={[queueItem()]} updating />);
+
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('RPH-AS-20260829-0001');
+  });
+
   it('renders an actionable inspection loading failure', () => {
     const markup = renderToStaticMarkup(
       <InspectionLoadFailure error="Kết nối tạm thời gián đoạn." onRetry={() => undefined} />,
