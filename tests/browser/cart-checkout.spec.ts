@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const CUSTOMER = {
   email: 'customer@rephone.local',
@@ -9,12 +10,12 @@ const GUEST_UNIT = {
   path: '/products/iphone-14-pro/units/IP14P-128-001',
 } as const;
 const CUSTOMER_UNIT = {
-  code: 'IP14P-256-001',
-  path: '/products/iphone-14-pro/units/IP14P-256-001',
+  code: 'IP14P-128-001',
+  path: '/products/iphone-14-pro/units/IP14P-128-001',
 } as const;
 
 test.describe('FE-03 cart, wishlist and checkout', () => {
-  test('guest creates a shipping order and hands off the one-time order link', async ({ page }) => {
+  test(bt('browser:cart-checkout', 'guest-shipping-order'), async ({ page }) => {
     await addUnitToCart(page, GUEST_UNIT);
     await page.goto('/cart');
 
@@ -25,12 +26,12 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng' })).toBeVisible();
     await expect(page.getByLabel('Giao tận nơi')).toBeChecked();
     await fillContact(page, 'Khách vãng lai FE-03', 'guest-fe03@rephone.local');
-    await page.getByLabel('Tên người nhận').fill('Khách nhận FE-03');
-    await page.getByLabel('Điện thoại người nhận').fill('0900000303');
-    await page.getByLabel('Địa chỉ', { exact: true }).fill('27 Đường Kiểm Thử');
-    await page.getByLabel('Phường / Xã').fill('Phường Demo');
-    await page.getByLabel('Quận / Huyện').fill('Quận Demo');
-    await page.getByLabel('Tỉnh / Thành phố').fill('TP. Hồ Chí Minh');
+    await page.locator('#checkout-receiverName').fill('Khách nhận FE-03');
+    await page.locator('#checkout-receiverPhone').fill('0900000303');
+    await page.locator('#checkout-addressLine').fill('27 Đường Kiểm Thử');
+    await page.locator('#checkout-ward').fill('Phường Demo');
+    await page.locator('#checkout-district').fill('Quận Demo');
+    await page.locator('#checkout-province').fill('TP. Hồ Chí Minh');
 
     const previewResponse = page.waitForResponse(
       (response) =>
@@ -69,9 +70,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     expect(createRequests).toBe(1);
   });
 
-  test('customer merges a guest unit, uses wishlist and creates a pickup order', async ({
-    page,
-  }) => {
+  test(bt('browser:cart-checkout', 'customer-pickup-wishlist'), async ({ page }) => {
     await addUnitToCart(page, CUSTOMER_UNIT);
     await login(page, '/cart');
 
@@ -96,10 +95,10 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     const savedAddress = page.getByLabel('Chọn địa chỉ đã lưu');
     await expect(savedAddress).toContainText('Nhà');
     await savedAddress.selectOption({ index: 1 });
-    await expect(page.getByLabel('Địa chỉ', { exact: true })).toHaveValue('123 Đường Demo');
+    await expect(page.locator('#checkout-addressLine')).toHaveValue('123 Đường Demo');
 
     await page.getByLabel('Nhận tại cửa hàng').check();
-    await expect(page.getByLabel('Địa chỉ', { exact: true })).toHaveCount(0);
+    await expect(page.locator('#checkout-addressLine')).toHaveCount(0);
     const pickupPreview = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname === '/api/v1/checkouts/preview' &&
@@ -127,9 +126,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await removeCartUnit(page, CUSTOMER_UNIT.code);
   });
 
-  test('lets a customer retry a failed guest-cart merge without losing the selected unit', async ({
-    page,
-  }) => {
+  test(bt('browser:cart-checkout', 'guest-cart-merge-retry'), async ({ page }) => {
     await addUnitToCart(page, CUSTOMER_UNIT);
     let mergeRequests = 0;
     await page.route('**/api/v1/cart/merge', async (route) => {
@@ -157,9 +154,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await removeCartUnit(page, CUSTOMER_UNIT.code);
   });
 
-  test('requires an explicit reconfirmation after checkout changes and never retries automatically', async ({
-    page,
-  }) => {
+  test(bt('browser:cart-checkout', 'checkout-reconfirmation'), async ({ page }) => {
     await addUnitToCart(page, GUEST_UNIT);
     await page.goto('/checkout');
     await fillShippingCheckout(page);
@@ -201,7 +196,9 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     });
 
     await page.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
-    await expect(page.getByRole('alert')).toContainText('Đơn hàng vừa có thay đổi');
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Đơn hàng vừa có thay đổi' }),
+    ).toBeVisible();
     await expect(page.getByText(formatVnd(changed.grandTotal), { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Đặt hàng', exact: true })).toHaveCount(0);
     await page.waitForTimeout(250);
@@ -240,19 +237,19 @@ async function removeCartUnit(page: Page, inventoryCode: string): Promise<void> 
 }
 
 async function fillContact(page: Page, fullName: string, email: string): Promise<void> {
-  await page.getByLabel('Họ và tên').fill(fullName);
-  await page.getByLabel('Điện thoại', { exact: true }).fill('0900000303');
-  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.locator('#checkout-fullName').fill(fullName);
+  await page.locator('#checkout-phone').fill('0900000303');
+  await page.locator('#checkout-email').fill(email);
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {
   await fillContact(page, 'Khách xác nhận FE-03', 'review-fe03@rephone.local');
-  await page.getByLabel('Tên người nhận').fill('Khách nhận FE-03');
-  await page.getByLabel('Điện thoại người nhận').fill('0900000303');
-  await page.getByLabel('Địa chỉ', { exact: true }).fill('27 Đường Kiểm Thử');
-  await page.getByLabel('Phường / Xã').fill('Phường Demo');
-  await page.getByLabel('Quận / Huyện').fill('Quận Demo');
-  await page.getByLabel('Tỉnh / Thành phố').fill('TP. Hồ Chí Minh');
+  await page.locator('#checkout-receiverName').fill('Khách nhận FE-03');
+  await page.locator('#checkout-receiverPhone').fill('0900000303');
+  await page.locator('#checkout-addressLine').fill('27 Đường Kiểm Thử');
+  await page.locator('#checkout-ward').fill('Phường Demo');
+  await page.locator('#checkout-district').fill('Quận Demo');
+  await page.locator('#checkout-province').fill('TP. Hồ Chí Minh');
 }
 
 function checkoutPreviewEnvelope(value: unknown): { data: Record<string, unknown> } {

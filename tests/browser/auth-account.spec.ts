@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import {
   BROWSER_INVITATION_ACCOUNT,
   BROWSER_RESET_ACCOUNT,
@@ -41,7 +42,7 @@ const CHECKOUT_INVENTORY_PATH = '/products/iphone-13/units/IP13-BLU-001';
 test.describe('FE-2 authentication and account', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('consumes a reset token from the fragment before submitting it', async ({ page }) => {
+  test(bt('browser:auth-account', 'reset-password-fragment'), async ({ page }) => {
     await page.goto(`/reset-password#token=${encodeURIComponent(BROWSER_RESET_ACCOUNT.token)}`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Đặt mật khẩu mới' })).toBeVisible();
@@ -69,9 +70,7 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Hồ sơ của bạn' })).toBeVisible();
   });
 
-  test('consumes an employee invitation without auto-login and uses the staff destination', async ({
-    page,
-  }) => {
+  test(bt('browser:auth-account', 'staff-invitation'), async ({ page }) => {
     await page.goto(
       `/accept-invitation#token=${encodeURIComponent(BROWSER_INVITATION_ACCOUNT.token)}`,
     );
@@ -119,7 +118,7 @@ test.describe('FE-2 authentication and account', () => {
     ).toHaveAttribute('href', '/backoffice');
   });
 
-  test('runs the customer session, profile, address and password lifecycle', async ({ page }) => {
+  test(bt('browser:auth-account', 'account-lifecycle'), async ({ page }) => {
     await page.goto('/register');
     await expect(page.getByRole('heading', { level: 1, name: 'Tạo tài khoản' })).toBeVisible();
     await expectNoHorizontalOverflow(page);
@@ -287,7 +286,7 @@ test.describe('FE-2 authentication and account', () => {
     }
   });
 
-  test('keeps forgot-password responses enumeration-safe', async ({ page }) => {
+  test(bt('browser:auth-account', 'forgot-password-enumeration'), async ({ page }) => {
     const knownResponse = await submitForgotPassword(page, BROWSER_RESET_ACCOUNT.email);
     const unknownResponse = await submitForgotPassword(
       page,

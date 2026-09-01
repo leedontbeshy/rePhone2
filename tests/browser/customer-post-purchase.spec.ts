@@ -1,10 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const ORDER_NUMBER = 'RPH-20260828-POST0001';
 const ORDER_ITEM_ID = '0199b354-d818-7f7c-b966-3932599978d0';
 const WARRANTY_CODE = 'RPH-W-20260828-POST0001';
 const REQUEST_NUMBER = 'RPH-AS-20260828-POST01';
+const ACTIVE_PAYMENT_EXPIRES_AT = new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString();
 
 const customer = {
   id: '0199b354-d818-7f7c-b966-3932599978aa',
@@ -33,7 +35,7 @@ const orderItem = {
     warrantyCode: WARRANTY_CODE,
     status: 'ACTIVE',
     startAt: '2026-08-01T00:00:00.000Z',
-    endAt: '2026-10-30T00:00:00.000Z',
+    endAt: '2099-10-30T00:00:00.000Z',
     isValid: true,
     isExpired: false,
   },
@@ -55,7 +57,7 @@ const paymentAttempt = {
     qrUrl: null,
     transferContent: 'RPH20260828POST0001',
   },
-  expiresAt: '2026-08-30T00:00:00.000Z',
+  expiresAt: ACTIVE_PAYMENT_EXPIRES_AT,
   submittedAt: null,
   reviewSlaDueAt: null,
   reviewOverdue: false,
@@ -112,7 +114,7 @@ const warranty = {
   daysSnapshot: 90,
   status: 'ACTIVE',
   startAt: '2026-08-01T00:00:00.000Z',
-  endAt: '2026-10-30T00:00:00.000Z',
+  endAt: '2099-10-30T00:00:00.000Z',
   isValid: true,
   isExpired: false,
 };
@@ -144,9 +146,7 @@ test.describe('FE-04 customer post-purchase', () => {
     await installCustomerApi(page);
   });
 
-  test('covers the customer order list, detail journey, cancellation and URL allowlist', async ({
-    page,
-  }) => {
+  test(bt('browser:customer-post-purchase', 'customer-order-lifecycle'), async ({ page }) => {
     await page.goto('/orders?status=PROCESSING&page=2&token=must-not-survive');
     await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng của bạn' })).toBeVisible();
     await page.getByRole('combobox', { name: /^Trạng thái/ }).selectOption('');
@@ -167,7 +167,7 @@ test.describe('FE-04 customer post-purchase', () => {
     await expectAccessible(page);
   });
 
-  test('tries cookie-backed guest access and keeps a rejected detail private', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'guest-order-privacy'), async ({ page }) => {
     let detailRequests = 0;
     let guestHeader: string | undefined;
     await page.route(`**/api/v1/orders/${ORDER_NUMBER}`, async (route) => {
@@ -188,7 +188,7 @@ test.describe('FE-04 customer post-purchase', () => {
     expect(guestHeader).toBeUndefined();
   });
 
-  test('covers warranty list and detail without nested landmarks', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'warranty-list-detail'), async ({ page }) => {
     await page.goto('/warranties');
     await expect(page.getByRole('heading', { level: 1, name: 'Bảo hành của bạn' })).toBeVisible();
     await expect(page.getByText('iPhone 15', { exact: true })).toBeVisible();
@@ -199,7 +199,7 @@ test.describe('FE-04 customer post-purchase', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('covers after-sales list, creation context and detail actions', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'after-sales-journey'), async ({ page }) => {
     await page.goto('/after-sales?type=WARRANTY&unknown=drop-me');
     await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ sau mua' })).toBeVisible();
     await expect(page.getByText(REQUEST_NUMBER, { exact: true })).toBeVisible();
@@ -229,7 +229,7 @@ test.describe('FE-04 customer post-purchase', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('keeps post-purchase collections inside a 390px mobile viewport', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'post-purchase-mobile'), async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
 
     await page.goto('/orders');
