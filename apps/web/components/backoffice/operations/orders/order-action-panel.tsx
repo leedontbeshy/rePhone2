@@ -1,3 +1,4 @@
+import { CaretDownIcon } from '@phosphor-icons/react';
 import type { SyntheticEvent } from 'react';
 import { Button } from '@/components/ui';
 import type {
@@ -46,37 +47,43 @@ export function OrderActionPanel({
             onSelect={onSelect}
           />
           {selectedAction === null ? null : (
-            <form
-              aria-busy={busy !== null || undefined}
-              className={styles.actionForm}
-              noValidate
-              onSubmit={onSubmit}
-            >
-              <fieldset className={styles.actionFieldset} disabled={busy !== null}>
-                <div className={styles.actionIntro}>
-                  <h3>{orderActionLabel(selectedAction)}</h3>
-                  <p>{orderActionDescription(selectedAction)}</p>
-                </div>
-                <ActionFields
-                  action={selectedAction}
-                  detail={detail}
-                  returnLocations={returnLocations}
-                  setters={setters}
-                  values={values}
-                />
-                <div className={styles.actionFooter}>
-                  <Button
-                    disabled={busy !== null}
-                    loading={busy === selectedAction}
-                    loadingLabel="Đang cập nhật đơn hàng"
-                    type="submit"
-                    variant={selectedAction === 'CANCEL_ORDER' ? 'destructive' : 'primary'}
-                  >
-                    Xác nhận {orderActionLabel(selectedAction).toLocaleLowerCase('vi-VN')}
-                  </Button>
-                </div>
-              </fieldset>
-            </form>
+            <details className={styles.actionDisclosure} key={selectedAction}>
+              <summary>
+                <span>Chi tiết {orderActionLabel(selectedAction).toLocaleLowerCase('vi-VN')}</span>
+                <CaretDownIcon aria-hidden="true" size={18} weight="bold" />
+              </summary>
+              <form
+                aria-busy={busy !== null || undefined}
+                className={styles.actionForm}
+                noValidate
+                onSubmit={onSubmit}
+              >
+                <fieldset className={styles.actionFieldset} disabled={busy !== null}>
+                  <div className={styles.actionIntro}>
+                    <h3>{orderActionLabel(selectedAction)}</h3>
+                    <p>{orderActionDescription(selectedAction)}</p>
+                  </div>
+                  <ActionFields
+                    action={selectedAction}
+                    detail={detail}
+                    returnLocations={returnLocations}
+                    setters={setters}
+                    values={values}
+                  />
+                  <div className={styles.actionFooter}>
+                    <Button
+                      disabled={busy !== null}
+                      loading={busy === selectedAction}
+                      loadingLabel="Đang cập nhật đơn hàng"
+                      type="submit"
+                      variant={selectedAction === 'CANCEL_ORDER' ? 'destructive' : 'primary'}
+                    >
+                      Xác nhận {orderActionLabel(selectedAction).toLocaleLowerCase('vi-VN')}
+                    </Button>
+                  </div>
+                </fieldset>
+              </form>
+            </details>
           )}
         </div>
       )}
