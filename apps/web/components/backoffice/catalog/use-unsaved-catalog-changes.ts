@@ -20,18 +20,12 @@ export function useUnsavedCatalogChanges(dirty: boolean) {
   }, [dirty]);
 }
 
-export function catalogFormChanged(
-  baseline: Readonly<object>,
-  current: Readonly<object>,
-): boolean {
+export function catalogFormChanged(baseline: Readonly<object>, current: Readonly<object>): boolean {
   const keys = new Set([...Object.keys(baseline), ...Object.keys(current)]);
   return [...keys].some((key) => !Object.is(Reflect.get(baseline, key), Reflect.get(current, key)));
 }
 
-export function catalogInternalNavigationTarget(
-  href: string,
-  currentHref: string,
-): string | null {
+export function catalogInternalNavigationTarget(href: string, currentHref: string): string | null {
   const current = new URL(currentHref);
   const destination = new URL(href, current);
   if (destination.origin !== current.origin) return null;

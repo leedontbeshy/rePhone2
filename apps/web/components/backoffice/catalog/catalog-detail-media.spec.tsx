@@ -57,8 +57,18 @@ function product(): CatalogProductDetailRecord {
         id: 'variant-1',
         inventoryMode: 'SERIALIZED',
         media: [
-          { id: 'media-1', url: 'https://cdn.test/front.webp', altText: 'Ảnh mặt trước', sortOrder: 0 },
-          { id: 'media-2', url: 'https://cdn.test/back.webp', altText: 'Ảnh mặt sau', sortOrder: 5 },
+          {
+            id: 'media-1',
+            url: 'https://cdn.test/front.webp',
+            altText: 'Ảnh mặt trước',
+            sortOrder: 0,
+          },
+          {
+            id: 'media-2',
+            url: 'https://cdn.test/back.webp',
+            altText: 'Ảnh mặt sau',
+            sortOrder: 5,
+          },
         ],
         salePrice: null,
         sku: 'IP15P-256-BLK',

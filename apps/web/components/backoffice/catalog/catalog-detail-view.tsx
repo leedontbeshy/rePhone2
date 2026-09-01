@@ -1312,178 +1312,178 @@ function CatalogProductEditDialog({
           if (!busy) requestCancel();
         }}
       >
-      <form
-        onSubmit={(event) => {
-          void submit(event);
-        }}
-      >
-        <div className={styles.dialogHeading}>
-          <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
-          <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
-        </div>
-        {operationError === null || operationError === undefined ? null : (
-          <div className={styles.errorBanner} role="alert">
-            {operationError}
+        <form
+          onSubmit={(event) => {
+            void submit(event);
+          }}
+        >
+          <div className={styles.dialogHeading}>
+            <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
+            <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
           </div>
-        )}
-        <div className={styles.fieldGrid}>
-          <DialogField id="edit-product-name" label="Tên sản phẩm">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-name"
-              maxLength={255}
-              required
-              value={draft.name}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, name: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-slug" label="Đường dẫn">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-slug"
-              maxLength={180}
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              required
-              value={draft.slug}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, slug: event.target.value.toLowerCase() }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-brand" label="Thương hiệu">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-brand"
-              maxLength={255}
-              required
-              value={draft.brand}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, brand: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-warranty" label="Chính sách bảo hành">
-            <select
-              className={styles.nativeSelect}
-              id="edit-product-warranty"
-              required
-              value={draft.warrantyPolicyId}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
-              }}
+          {operationError === null || operationError === undefined ? null : (
+            <div className={styles.errorBanner} role="alert">
+              {operationError}
+            </div>
+          )}
+          <div className={styles.fieldGrid}>
+            <DialogField id="edit-product-name" label="Tên sản phẩm">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-name"
+                maxLength={255}
+                required
+                value={draft.name}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, name: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-slug" label="Đường dẫn">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-slug"
+                maxLength={180}
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                required
+                value={draft.slug}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, slug: event.target.value.toLowerCase() }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-brand" label="Thương hiệu">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-brand"
+                maxLength={255}
+                required
+                value={draft.brand}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, brand: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-warranty" label="Chính sách bảo hành">
+              <select
+                className={styles.nativeSelect}
+                id="edit-product-warranty"
+                required
+                value={draft.warrantyPolicyId}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
+                }}
+              >
+                <option value="">Chọn chính sách</option>
+                {warranties.map((warranty) => (
+                  <option key={warranty.id} value={warranty.id}>
+                    {warranty.name}
+                  </option>
+                ))}
+              </select>
+            </DialogField>
+            {product.type === 'IPHONE' ? (
+              <>
+                <DialogField id="edit-product-year" label="Năm ra mắt">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-year"
+                    max={2100}
+                    min={2007}
+                    required
+                    type="number"
+                    value={draft.releaseYear}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, releaseYear: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-ram" label="Dung lượng RAM">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-ram"
+                    max={64}
+                    min={1}
+                    required
+                    type="number"
+                    value={draft.ramGb}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, ramGb: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-screen" label="Kích thước màn hình">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-screen"
+                    required
+                    value={draft.screenSizeInches}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, screenSizeInches: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-chipset" label="Bộ xử lý">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-chipset"
+                    maxLength={255}
+                    required
+                    value={draft.chipset}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, chipset: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+              </>
+            ) : null}
+            <DialogField className={styles.wideField} id="edit-product-description" label="Mô tả">
+              <textarea
+                className={styles.nativeTextarea}
+                id="edit-product-description"
+                rows={4}
+                value={draft.description}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, description: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-seo-title" label="Tiêu đề tìm kiếm">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-seo-title"
+                maxLength={255}
+                value={draft.seoTitle}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, seoTitle: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-seo-description" label="Mô tả tìm kiếm">
+              <textarea
+                className={styles.nativeTextarea}
+                id="edit-product-seo-description"
+                rows={3}
+                value={draft.seoDescription}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, seoDescription: event.target.value }));
+                }}
+              />
+            </DialogField>
+          </div>
+          <div className={styles.dialogActions}>
+            <button
+              className={styles.secondaryLink}
+              disabled={busy}
+              type="button"
+              onClick={requestCancel}
             >
-              <option value="">Chọn chính sách</option>
-              {warranties.map((warranty) => (
-                <option key={warranty.id} value={warranty.id}>
-                  {warranty.name}
-                </option>
-              ))}
-            </select>
-          </DialogField>
-          {product.type === 'IPHONE' ? (
-            <>
-              <DialogField id="edit-product-year" label="Năm ra mắt">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-year"
-                  max={2100}
-                  min={2007}
-                  required
-                  type="number"
-                  value={draft.releaseYear}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, releaseYear: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-ram" label="Dung lượng RAM">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-ram"
-                  max={64}
-                  min={1}
-                  required
-                  type="number"
-                  value={draft.ramGb}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, ramGb: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-screen" label="Kích thước màn hình">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-screen"
-                  required
-                  value={draft.screenSizeInches}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, screenSizeInches: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-chipset" label="Bộ xử lý">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-chipset"
-                  maxLength={255}
-                  required
-                  value={draft.chipset}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, chipset: event.target.value }));
-                  }}
-                />
-              </DialogField>
-            </>
-          ) : null}
-          <DialogField className={styles.wideField} id="edit-product-description" label="Mô tả">
-            <textarea
-              className={styles.nativeTextarea}
-              id="edit-product-description"
-              rows={4}
-              value={draft.description}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, description: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-seo-title" label="Tiêu đề tìm kiếm">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-seo-title"
-              maxLength={255}
-              value={draft.seoTitle}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, seoTitle: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-seo-description" label="Mô tả tìm kiếm">
-            <textarea
-              className={styles.nativeTextarea}
-              id="edit-product-seo-description"
-              rows={3}
-              value={draft.seoDescription}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, seoDescription: event.target.value }));
-              }}
-            />
-          </DialogField>
-        </div>
-        <div className={styles.dialogActions}>
-          <button
-            className={styles.secondaryLink}
-            disabled={busy}
-            type="button"
-            onClick={requestCancel}
-          >
-            Hủy
-          </button>
-          <button className={styles.primaryLink} disabled={busy} type="submit">
-            {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
-          </button>
-        </div>
+              Hủy
+            </button>
+            <button className={styles.primaryLink} disabled={busy} type="submit">
+              {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
+            </button>
+          </div>
         </form>
       </dialog>
       <BackofficeActionDialog

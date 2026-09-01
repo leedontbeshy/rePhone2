@@ -1,10 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { CatalogProductForm } from './catalog-product-form';
-import {
-  catalogFormChanged,
-  catalogInternalNavigationTarget,
-} from './use-unsaved-catalog-changes';
+import { catalogFormChanged, catalogInternalNavigationTarget } from './use-unsaved-catalog-changes';
 
 describe('bảo vệ thay đổi sản phẩm chưa lưu', () => {
   it('chỉ đánh dấu bẩn khi một trường thực sự thay đổi', () => {
