@@ -55,6 +55,7 @@ describe('FE-07 operations primitives', () => {
       <>
         <OperationsPageHeader title="Đơn hàng RPH-001" description="Nguyễn Văn An" />
         <OperationsTimeline
+          orientation="horizontal"
           items={[
             { label: 'Đã đặt hàng', at: '09:20 29/08/2026' },
             { label: 'Đang chuẩn bị', state: 'current' },
@@ -71,8 +72,15 @@ describe('FE-07 operations primitives', () => {
 
     expect(markup).toContain('<h1>Đơn hàng RPH-001</h1>');
     expect(markup).toContain('<ol');
+    expect(markup).toContain('data-orientation="horizontal"');
     expect(markup).toContain('<time>09:20 29/08/2026</time>');
     expect(markup).toContain('<dl');
     expect(markup).toContain('Còn phải thu');
+  });
+
+  it('keeps the timeline vertical when no orientation is provided', () => {
+    const markup = renderToStaticMarkup(<OperationsTimeline items={[{ label: 'Đã đặt hàng' }]} />);
+
+    expect(markup).toContain('data-orientation="vertical"');
   });
 });
