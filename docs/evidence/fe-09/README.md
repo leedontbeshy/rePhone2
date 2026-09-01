@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Work package hiện tại: **WP-00**
+> Work package hiện tại: **WP-02**
 
 ## Phạm vi bằng chứng
 
@@ -37,12 +37,30 @@ cookie, database URL, production PII hoặc signed URL vào thư mục này.
 | Format | Đã khắc phục | `design-qa.md` được chuẩn hóa bằng Prettier |
 | Lint | Đã khắc phục | Bỏ `.local/` khỏi phạm vi và khai báo global `URL` cho Node script |
 
+## Coverage truth và release automation WP-01
+
+Tree kết thúc tại `d21bd07` có registry thực thi cho **11 browser suite / 48 test**,
+sở hữu chính xác **56/56 route** và đủ 13 state đã khóa. Hai suite FE-07/FE-08
+không còn là nhãn mô tả: chúng chạy thật trên route matrix backoffice và backend
+projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài registry, dùng
+`skip`/`only`/`fixme`/`fail`, trùng owner hoặc claim route/state không hợp lệ.
+
+| Hạng mục | Kết quả | Bằng chứng tóm tắt |
+| --- | --- | --- |
+| Browser ownership contract | PASS | 9/9 coverage contract; 11 suite, 48 test, 56 primary route |
+| Full browser suite | PASS | 48/48 Chromium, 1 worker, 3 phút 24 giây |
+| Visual determinism | PASS | 2/2 test ảnh chạy xanh hai lượt liên tiếp sau khi review 6 ảnh |
+| Fast quality gates | PASS | format, lint, typecheck, unit/component, a11y, build và generated drift |
+| Release DB guard | PASS | Chặn DB không có hậu tố `_test` và host từ xa; lifecycle test 2/2 |
+| CI workflow | IMPLEMENTED | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
+| CI run URL | PENDING | Chỉ có sau khi nhánh được push; bắt buộc bổ sung trước WP-14 closeout |
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
 | --- | --- | --- |
 | WP-00 | Evidence index, command log, residual risks | Có |
-| WP-01 | Browser ownership registry, CI run và sanitized report | Chưa có |
+| WP-01 | Browser ownership registry và release workflow | Có; CI URL chờ push |
 | WP-02–WP-10 | Browser/visual evidence theo surface | Chưa có |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
@@ -59,5 +77,6 @@ cookie, database URL, production PII hoặc signed URL vào thư mục này.
 
 ## Bước tiếp theo
 
-Hoàn tất verification cho commit khởi động WP-00, sau đó chuyển sang WP-01 để
-biến `browser:*` thành ownership thực thi và thêm release automation.
+Thực hiện WP-02 theo từng concern dùng chung: token/focus, file picker, sidebar,
+loading, dialog và pagination. Mỗi thay đổi phải chạy consumer scan cùng browser
+regression của surface chịu ảnh hưởng.

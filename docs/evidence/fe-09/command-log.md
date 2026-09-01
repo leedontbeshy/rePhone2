@@ -54,3 +54,47 @@ khi kết luận bundle tăng hoặc giảm.
 Output đầy đủ không được commit. CI sau WP-01 phải lưu sanitized summary khi
 thành công và trace/screenshot/video chi tiết khi thất bại, với retention policy
 rõ ràng.
+
+## WP-01 verification — tree `d21bd07`
+
+### Lịch sử browser gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Full browser baseline | 1 | 44/48; lộ bốn drift thật: selector commerce cũ, fixture thanh toán hết hạn và hai nhóm visual baseline cũ |
+| Visual update | 0 | Review và cập nhật 6 ảnh desktop/mobile; không tăng sai số hoặc che vùng nội dung |
+| Visual determinism 1 | 0 | 2/2, 49,2 giây |
+| Visual determinism 2 | 0 | 2/2, 50,8 giây |
+| Full browser cuối | 0 | 48/48, Chromium, 1 worker, 3 phút 24 giây |
+
+Không xóa dấu hiệu drift đầu tiên khỏi log. Fixture hết hạn được đổi thành thời
+điểm tương đối; selector được đồng bộ theo UI hiện hành; ảnh chỉ được cập nhật sau
+khi kiểm tra đủ sáu viewport artifact.
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm format:check` | 0 | PASS |
+| `pnpm lint` | 0 | PASS |
+| `pnpm typecheck` | 0 | 4/4 Turbo tasks |
+| `pnpm test` | 0 | API client 7/7; API 680/680; web 572/572; release lifecycle 2/2 |
+| `pnpm fe:coverage` | 0 | 9/9, gồm executable browser ownership contract |
+| `pnpm fe:a11y` | 0 | 15/15 |
+| `pnpm build` | 0 | 4/4 Turbo tasks; 56 route Next build thành công |
+| `pnpm verify:generated` | 0 | OpenAPI và generated client không drift |
+
+Một lượt `typecheck`/`test` chạy đồng thời đã tranh chấp thư mục Prisma generated
+trên Windows và cho lỗi giả `ENOTEMPTY`. Sau khi chạy `db:generate` độc lập, toàn
+bộ gate tuần tự xanh. `verify:release` cố ý tuần tự hóa các bước và sẽ chạy hai
+lượt; không chạy nhiều Turbo command có chung `db:generate` đồng thời.
+
+### Release automation đã thêm
+
+- Fast gate trên Ubuntu 24.04 và Windows 2025.
+- Database integration/coverage dùng PostgreSQL 17 test service.
+- Browser release suite chạy Chromium trên Windows.
+- Generated-drift rehearsal, remote/non-test DB negative rehearsal và cleanup
+  container đúng trạng thái ban đầu.
+- Summary sanitized luôn được upload; browser diagnostics chi tiết chỉ upload khi
+  lỗi. CI URL và review artifact thật được hoãn tới lúc push/closeout.

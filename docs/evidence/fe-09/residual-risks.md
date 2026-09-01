@@ -2,12 +2,13 @@
 
 | ID | Trạng thái | Mức | Owner | Bằng chứng hiện tại | Điều kiện đóng |
 | --- | --- | --- | --- | --- | --- |
-| FE9-R03 | OPEN | Cao | WP-01 | 73 operation đang trỏ tới `operations-lifecycle` hoặc `system-admin-health` nhưng hai suite chưa tồn tại | Registry kiểm được suite/test ID thật; negative contract test xanh |
-| FE9-R04 | OPEN | Cao | WP-01/WP-14 | Asset integrity test mất `12.863 s` với timeout `15 s` và đã lỗi khi chạy gate song song | Xác định policy thực thi tuần tự hoặc tối ưu test; hai release run không retry/flaky |
+| FE9-R03 | CLOSED | Cao | WP-01 | Registry có 11 suite/48 test; FE-07 và FE-08 chạy thật; negative ownership contract 5/5 | Đã đóng tại `74a3700`; full browser 48/48 |
+| FE9-R04 | MITIGATED | Cao | WP-01/WP-14 | Gate chạy song song tranh chấp Prisma generated trên Windows; gate tuần tự xanh | Release orchestration đã tuần tự hóa; đóng sau hai release run không retry/flaky |
 | FE9-R05 | OPEN | Rất cao | WP-01/WP-14 | Chưa có CI artifact để kiểm redaction | Workflow chỉ dùng test secret; artifact review không có token/PII |
 | FE9-R08 | OPEN | Trung bình | WP-12 | Mới có tổng static JS; chưa có route-level production baseline | Baseline/after report cùng profile và SHA |
-| FE9-R10 | OPEN | Cao | WP-01 | Repository chưa có GitHub Actions workflow | Fast PR gate và full release gate chạy trên CI, có URL/artifact thật |
+| FE9-R10 | MITIGATED | Cao | WP-01/WP-14 | Workflow đã có fast Linux/Windows, DB PostgreSQL 17 và browser Windows | Push nhánh, kiểm CI thật và ghi URL/artifact trước closeout |
 | FE9-R01 | MONITOR | Cao | WP-02–WP-13 | `globals.css` còn lớn và nhiều surface dùng shared selector | Consumer scan + browser regression trước từng cleanup commit |
+| FE9-R11 | OPEN | Trung bình | WP-02–WP-10 | Registry chứng minh owner/route/state ở mức cấu trúc; chưa thay thế audit sâu từng surface | Browser, responsive, accessibility và visual evidence riêng cho từng work package |
 
 ## Rủi ro đã giảm trong WP-00
 
