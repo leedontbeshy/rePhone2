@@ -37,12 +37,22 @@ export function useModalDialogLifecycle(open?: boolean) {
     }
   }, [restoreFocus]);
 
+  const restoreFocusAfterUnmount = useCallback(() => {
+    window.setTimeout(() => {
+      const dialog = dialogRef.current;
+      // React Strict Mode replays effects while keeping the mounted dialog open.
+      // Preserve the captured trigger until the dialog really closes or unmounts.
+      if (dialog !== null && dialog.isConnected && dialog.open) return;
+      restoreFocus();
+    }, 0);
+  }, [restoreFocus]);
+
   useEffect(() => {
     if (open === true) openDialog();
     if (open === false) closeDialog();
   }, [closeDialog, open, openDialog]);
 
-  useEffect(() => restoreFocus, [restoreFocus]);
+  useEffect(() => restoreFocusAfterUnmount, [restoreFocusAfterUnmount]);
 
   return {
     closeDialog,

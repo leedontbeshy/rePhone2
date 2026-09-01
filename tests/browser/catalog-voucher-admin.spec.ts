@@ -39,6 +39,30 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await expect(page.getByRole('heading', { level: 1, name: PRODUCT_NAME })).toBeVisible();
     await expect(page.getByText('Theo từng máy', { exact: true })).toBeVisible();
 
+    // The detail workspace runs under React Strict Mode. This conditional dialog mounts open,
+    // then unmounts on Escape and must retain its original trigger through effect replay.
+    const editTrigger = page.locator('header').getByRole('button', {
+      name: 'Lưu thay đổi',
+      exact: true,
+    });
+    await editTrigger.click();
+    const editDialog = page.getByRole('dialog', { name: 'Chỉnh sửa thông tin' });
+    await expect(editDialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(editDialog).toHaveCount(0);
+    await expect(editTrigger).toBeFocused();
+
+    // Backoffice action dialogs stay mounted while their controlled `open` state changes.
+    const archiveTrigger = page
+      .locator('header')
+      .getByRole('button', { name: 'Lưu trữ sản phẩm', exact: true });
+    await archiveTrigger.click();
+    const archiveDialog = page.getByRole('dialog', { name: `Lưu trữ ${PRODUCT_NAME}?` });
+    await expect(archiveDialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(archiveDialog).toHaveCount(0);
+    await expect(archiveTrigger).toBeFocused();
+
     await page.goto('/backoffice/vouchers');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Không thể mở khu vực này' }),
