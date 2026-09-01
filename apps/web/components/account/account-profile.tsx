@@ -22,8 +22,14 @@ type ProfileField = keyof AccountUpdate;
 type ProfileErrors = Partial<Record<ProfileField, string>>;
 
 export function AccountProfile() {
-  const { client, status } = useAuth();
-  const [account, setAccount] = useState<Account | null>(null);
+  const { client, status, user } = useAuth();
+  const ownerId = status === 'authenticated' ? (user?.id ?? null) : null;
+  const ownerIdRef = useRef(ownerId);
+  ownerIdRef.current = ownerId;
+  const [accountState, setAccountState] = useState<OwnedAccountState>({
+    ownerId: null,
+    account: null,
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<AccountRequestError | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -31,29 +37,49 @@ export function AccountProfile() {
   useEffect(() => {
     if (status === 'loading') return;
     if (status === 'anonymous') {
-      setAccount(null);
+      setAccountState({ ownerId: null, account: null });
       setLoading(false);
       setLoadError(null);
       return;
     }
 
+    if (ownerId === null) return;
+    const requestOwnerId = ownerId;
     let active = true;
     setLoading(true);
     setLoadError(null);
     void getAccount(client)
       .then((value) => {
-        if (active) setAccount(value);
+        if (!active || ownerIdRef.current !== requestOwnerId) return;
+        if (value.id !== requestOwnerId) {
+          setAccountState({ ownerId: requestOwnerId, account: null });
+          setLoadError(new AccountRequestError('Không thể xác nhận thông tin tài khoản.'));
+          return;
+        }
+        setAccountState({ ownerId: requestOwnerId, account: value });
       })
       .catch((caught: unknown) => {
-        if (active) setLoadError(asAccountError(caught, 'Không thể tải thông tin tài khoản.'));
+        if (active && ownerIdRef.current === requestOwnerId) {
+          setAccountState((current) =>
+            current.ownerId === requestOwnerId
+              ? current
+              : { ownerId: requestOwnerId, account: null },
+          );
+          setLoadError(asAccountError(caught, 'Không thể tải thông tin tài khoản.'));
+        }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && ownerIdRef.current === requestOwnerId) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [client, reloadKey, status]);
+  }, [client, ownerId, reloadKey, status]);
+
+  const account = accountForOwner(accountState, ownerId);
+  const initialLoading =
+    status === 'authenticated' &&
+    (accountState.ownerId !== ownerId || (loading && account === null));
 
   return (
     <div className={styles.page}>
@@ -62,7 +88,7 @@ export function AccountProfile() {
         title="Hồ sơ của bạn"
         description="Cập nhật thông tin liên hệ dùng cho trải nghiệm mua hàng và hỗ trợ sau bán."
       />
-      {status === 'loading' || loading ? (
+      {status === 'loading' || initialLoading ? (
         <AccountLoadingState label="Đang tải hồ sơ tài khoản" />
       ) : status === 'anonymous' ? (
         <AccountAnonymousState returnTo="/account" />
@@ -74,10 +100,39 @@ export function AccountProfile() {
           }}
         />
       ) : account !== null ? (
-        <ProfileEditor account={account} onUpdated={setAccount} />
+        <ProfileEditor
+          key={ownerId ?? account.id}
+          account={account}
+          onUpdated={(updated) => {
+            if (ownerId === null || updated.id !== ownerId) return;
+            setAccountState((current) =>
+              acceptAccountForOwner(current, ownerId, ownerIdRef.current, updated),
+            );
+          }}
+        />
       ) : null}
     </div>
   );
+}
+
+export interface OwnedAccountState {
+  ownerId: string | null;
+  account: Account | null;
+}
+
+export function accountForOwner(state: OwnedAccountState, ownerId: string | null): Account | null {
+  return state.ownerId === ownerId ? state.account : null;
+}
+
+export function acceptAccountForOwner(
+  state: OwnedAccountState,
+  requestOwnerId: string,
+  currentOwnerId: string | null,
+  account: Account,
+): OwnedAccountState {
+  return requestOwnerId === currentOwnerId && account.id === requestOwnerId
+    ? { ownerId: requestOwnerId, account }
+    : state;
 }
 
 function ProfileEditor({
@@ -92,9 +147,11 @@ function ProfileEditor({
   const [saved, setSaved] = useState(false);
   const [requestError, setRequestError] = useState<AccountRequestError | null>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const pendingRef = useRef(false);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
+    if (pendingRef.current) return;
     const input: AccountUpdate = { fullName: fullName.trim(), phone: phone.trim() || null };
     const nextErrors = validateProfile(input);
     setErrors(nextErrors);
@@ -105,10 +162,16 @@ function ProfileEditor({
       return;
     }
 
+    pendingRef.current = true;
     setPending(true);
     try {
       const updated = await updateAccount(client, input);
-      commitProfileUpdate(updated, onUpdated, syncAccountProfile);
+      const accepted = commitProfileUpdate(updated, account.id, onUpdated, syncAccountProfile);
+      if (!accepted) {
+        throw new AccountRequestError(
+          'Không thể xác nhận thông tin vừa lưu. Hãy tải lại trang rồi thử lại.',
+        );
+      }
       setFullName(updated.fullName);
       setPhone(updated.phone ?? '');
       setSaved(true);
@@ -119,8 +182,20 @@ function ProfileEditor({
       setRequestError(issue);
       focusSummary(summaryRef);
     } finally {
+      pendingRef.current = false;
       setPending(false);
     }
+  }
+
+  function clearFieldIssue(field: ProfileField) {
+    setErrors((current) => {
+      if (current[field] === undefined) return current;
+      return Object.fromEntries(
+        Object.entries(current).filter(([candidate]) => candidate !== field),
+      );
+    });
+    setRequestError(null);
+    setSaved(false);
   }
 
   const summaryErrors: ErrorSummaryItem[] = Object.entries(errors).map(([field, message]) => ({
@@ -142,10 +217,15 @@ function ProfileEditor({
         <div className={styles.sectionHeading}>
           <div>
             <h2 id="profile-form-title">Thông tin liên hệ</h2>
-            <p>Email, vai trò và trạng thái tài khoản không thể đổi tại đây.</p>
+            <p>Email và thông tin tài khoản được quản lý riêng, không thể đổi tại đây.</p>
           </div>
         </div>
-        <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
+        <form
+          className={styles.form}
+          noValidate
+          aria-busy={pending || undefined}
+          onSubmit={(event) => void submit(event)}
+        >
           <ErrorSummary
             ref={summaryRef}
             errors={summaryErrors}
@@ -168,6 +248,7 @@ function ProfileEditor({
               disabled={pending}
               onChange={(event) => {
                 setFullName(event.currentTarget.value);
+                clearFieldIssue('fullName');
               }}
             />
             <Input
@@ -182,6 +263,7 @@ function ProfileEditor({
               hint="Để trống nếu bạn chưa muốn lưu số điện thoại."
               onChange={(event) => {
                 setPhone(event.currentTarget.value);
+                clearFieldIssue('phone');
               }}
             />
           </div>
@@ -198,15 +280,18 @@ function ProfileEditor({
 
 export function commitProfileUpdate(
   account: Account,
+  expectedOwnerId: string,
   onUpdated: (account: Account) => void,
   syncAccountProfile: (profile: AuthAccountProfile) => void,
-) {
+): boolean {
+  if (account.id !== expectedOwnerId) return false;
   onUpdated(account);
   syncAccountProfile({
     id: account.id,
     fullName: account.fullName,
     phone: account.phone ?? null,
   });
+  return true;
 }
 
 export function AccountSummary({ account }: Readonly<{ account: Account }>) {
@@ -215,11 +300,11 @@ export function AccountSummary({ account }: Readonly<{ account: Account }>) {
       <h2 id="account-summary-title">Thông tin tài khoản</h2>
       <dl className={styles.summaryGrid}>
         <SummaryItem label="Email" value={account.email} />
-        <SummaryItem label="Vai trò" value={roleLabel(account.role)} />
-        <SummaryItem label="Trạng thái" value={statusLabel(account.status)} />
+        <SummaryItem label="Loại tài khoản" value={roleLabel(account.role)} />
+        <SummaryItem label="Tình trạng tài khoản" value={statusLabel(account.status)} />
         <SummaryItem
-          label="Xác minh email"
-          value={account.emailVerifiedAt ? formatDate(account.emailVerifiedAt) : 'Chưa xác minh'}
+          label="Email đã xác nhận"
+          value={account.emailVerifiedAt ? formatDate(account.emailVerifiedAt) : 'Chưa xác nhận'}
         />
         {account.staffProfile ? (
           <>

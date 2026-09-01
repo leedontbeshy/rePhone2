@@ -1,15 +1,9 @@
 'use client';
 
-import { useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import {
-  Button,
-  ErrorSummary,
-  InlineAlert,
-  Input,
-  Link,
-  type ErrorSummaryItem,
-} from '@/components/ui';
+import { PasswordInput } from '@/components/auth';
+import { Button, ErrorSummary, InlineAlert, Link, type ErrorSummaryItem } from '@/components/ui';
 import { AccountRequestError, changeAccountPassword, type PasswordChange } from '@/lib/account-api';
 import styles from './account.module.css';
 import { AccountAnonymousState, AccountLoadingState, AccountPageHeader } from './account-states';
@@ -18,19 +12,35 @@ type PasswordField = keyof PasswordChange | 'confirmation';
 type PasswordErrors = Partial<Record<PasswordField, string>>;
 
 export function SecuritySettings() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
+  const ownerId = status === 'authenticated' ? (user?.id ?? null) : null;
+  const ownerIdRef = useRef(ownerId);
+  ownerIdRef.current = ownerId;
   const [complete, setComplete] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ownerId !== null) {
+      setComplete(false);
+      setCompleting(false);
+    }
+  }, [ownerId]);
+
+  useEffect(() => {
+    if (complete) window.requestAnimationFrame(() => successRef.current?.focus());
+  }, [complete]);
 
   return (
     <div className={styles.page}>
       <AccountPageHeader
         eyebrow="Tài khoản"
         title="Bảo mật"
-        description="Đổi mật khẩu sẽ đăng xuất bạn khỏi mọi thiết bị để bảo vệ tài khoản."
+        description="Cập nhật mật khẩu để bảo vệ tài khoản của bạn."
       />
-      {complete ? (
+      {complete && ownerId === null ? (
         <section className={styles.panel}>
-          <div className={styles.successState}>
+          <div ref={successRef} className={styles.successState} tabIndex={-1}>
             <InlineAlert tone="success" role="status" title="Đã đổi mật khẩu">
               Bạn đã được đăng xuất khỏi tất cả thiết bị. Hãy đăng nhập lại bằng mật khẩu mới.
             </InlineAlert>
@@ -41,22 +51,39 @@ export function SecuritySettings() {
             </div>
           </div>
         </section>
-      ) : status === 'loading' ? (
+      ) : status === 'loading' || completing ? (
         <AccountLoadingState label="Đang kiểm tra trạng thái đăng nhập" />
       ) : status === 'anonymous' ? (
         <AccountAnonymousState returnTo="/account/security" />
-      ) : (
+      ) : ownerId !== null ? (
         <PasswordForm
+          key={ownerId}
+          canShowCompletion={() => ownerIdRef.current === null}
+          isCurrentOwner={() => ownerIdRef.current === ownerId}
+          onCompleting={() => {
+            setCompleting(true);
+          }}
           onComplete={() => {
             setComplete(true);
+            setCompleting(false);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 }
 
-function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
+function PasswordForm({
+  canShowCompletion,
+  isCurrentOwner,
+  onComplete,
+  onCompleting,
+}: Readonly<{
+  canShowCompletion: () => boolean;
+  isCurrentOwner: () => boolean;
+  onComplete: () => void;
+  onCompleting: () => void;
+}>) {
   const { client, logout } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -65,9 +92,11 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
   const [requestError, setRequestError] = useState<AccountRequestError | null>(null);
   const [pending, setPending] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const pendingRef = useRef(false);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
+    if (pendingRef.current) return;
     const input: PasswordChange = { currentPassword, newPassword };
     const nextErrors = validatePasswordChange(input, confirmation);
     setErrors(nextErrors);
@@ -77,19 +106,36 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
       return;
     }
 
+    pendingRef.current = true;
     setPending(true);
     try {
       await changeAccountPassword(client, input);
-      await settleLogoutBeforeCompletion(logout, onComplete);
+      if (!isCurrentOwner()) return;
+      onCompleting();
+      await settleLogoutBeforeCompletion(logout, () => {
+        if (canShowCompletion()) onComplete();
+      });
     } catch (caught) {
+      if (!isCurrentOwner()) return;
       const issue = asAccountError(caught, 'Không thể đổi mật khẩu.');
       const fieldErrors = passwordFieldErrors(issue);
       setErrors(fieldErrors);
       setRequestError(issue);
       focusSummary(summaryRef);
     } finally {
+      pendingRef.current = false;
       setPending(false);
     }
+  }
+
+  function clearFieldIssue(field: PasswordField) {
+    setErrors((current) => {
+      if (current[field] === undefined) return current;
+      return Object.fromEntries(
+        Object.entries(current).filter(([candidate]) => candidate !== field),
+      );
+    });
+    setRequestError(null);
   }
 
   const summaryErrors: ErrorSummaryItem[] = Object.entries(errors).map(([field, message]) => ({
@@ -105,15 +151,19 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
       <div className={styles.sectionHeading}>
         <div>
           <h2 id="password-form-title">Đổi mật khẩu</h2>
-          <p>Bạn sẽ cần đăng nhập lại trên thiết bị này và mọi thiết bị khác.</p>
+          <p>Nhập mật khẩu hiện tại, sau đó tạo mật khẩu mới.</p>
         </div>
       </div>
-      <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
+      <form
+        className={styles.form}
+        noValidate
+        aria-busy={pending || undefined}
+        onSubmit={(event) => void submit(event)}
+      >
         <ErrorSummary ref={summaryRef} errors={summaryErrors} />
-        <Input
+        <PasswordInput
           id="password-currentPassword"
           label="Mật khẩu hiện tại"
-          type="password"
           value={currentPassword}
           autoComplete="current-password"
           minLength={8}
@@ -123,12 +173,12 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
           error={errors.currentPassword}
           onChange={(event) => {
             setCurrentPassword(event.currentTarget.value);
+            clearFieldIssue('currentPassword');
           }}
         />
-        <Input
+        <PasswordInput
           id="password-newPassword"
           label="Mật khẩu mới"
-          type="password"
           value={newPassword}
           autoComplete="new-password"
           minLength={8}
@@ -139,12 +189,12 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
           hint="Từ 8 đến 128 ký tự, có ít nhất một chữ và một số; không bắt đầu hoặc kết thúc bằng khoảng trắng."
           onChange={(event) => {
             setNewPassword(event.currentTarget.value);
+            clearFieldIssue('newPassword');
           }}
         />
-        <Input
+        <PasswordInput
           id="password-confirmation"
           label="Nhập lại mật khẩu mới"
-          type="password"
           value={confirmation}
           autoComplete="new-password"
           minLength={8}
@@ -154,12 +204,9 @@ function PasswordForm({ onComplete }: Readonly<{ onComplete: () => void }>) {
           error={errors.confirmation}
           onChange={(event) => {
             setConfirmation(event.currentTarget.value);
+            clearFieldIssue('confirmation');
           }}
         />
-        <ul className={styles.passwordGuidance} aria-label="Điều gì xảy ra sau khi đổi mật khẩu">
-          <li>Bạn sẽ được đăng xuất khỏi tất cả thiết bị đang dùng tài khoản này.</li>
-          <li>Sau khi đổi, hãy dùng mật khẩu mới cho lần đăng nhập tiếp theo.</li>
-        </ul>
         <div className={styles.formActions}>
           <Button type="submit" loading={pending} loadingLabel="Đang đổi mật khẩu">
             Đổi mật khẩu

@@ -34,7 +34,8 @@ import {
 type AddressTextField = Exclude<keyof AddressCreate, 'isDefault'>;
 type AddressDraft = Record<AddressTextField, string> & Pick<AddressCreate, 'isDefault'>;
 type AddressErrors = Partial<Record<AddressTextField, string>>;
-type EditorState = { mode: 'create' } | { mode: 'edit'; address: AccountAddress };
+type EditorDraft = { mode: 'create' } | { mode: 'edit'; address: AccountAddress };
+type EditorState = EditorDraft & { ownerId: string };
 
 const EMPTY_ADDRESS: AddressDraft = {
   label: '',
@@ -48,9 +49,36 @@ const EMPTY_ADDRESS: AddressDraft = {
   isDefault: false,
 };
 
+export interface OwnedAddressState {
+  ownerId: string | null;
+  addresses: AccountAddress[];
+}
+
+export function addressesForOwner(
+  state: OwnedAddressState,
+  ownerId: string | null,
+): AccountAddress[] {
+  return state.ownerId === ownerId ? state.addresses : [];
+}
+
+export function acceptAddressesForOwner(
+  state: OwnedAddressState,
+  requestOwnerId: string,
+  currentOwnerId: string | null,
+  addresses: AccountAddress[],
+): OwnedAddressState {
+  return requestOwnerId === currentOwnerId ? { ownerId: requestOwnerId, addresses } : state;
+}
+
 export function AddressBook() {
   const { client, status, user } = useAuth();
-  const [addresses, setAddresses] = useState<AccountAddress[]>([]);
+  const ownerId = status === 'authenticated' && user?.role === 'CUSTOMER' ? user.id : null;
+  const ownerIdRef = useRef(ownerId);
+  ownerIdRef.current = ownerId;
+  const [addressState, setAddressState] = useState<OwnedAddressState>({
+    ownerId: null,
+    addresses: [],
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<AccountRequestError | null>(null);
   const [mutationError, setMutationError] = useState<AccountRequestError | null>(null);
@@ -62,11 +90,32 @@ export function AddressBook() {
   const [reloadKey, setReloadKey] = useState(0);
   const editorReturnFocusIdRef = useRef<string | null>(null);
   const pendingEditorFocusIdRef = useRef<string | null>(null);
-  const mutationInFlightRef = useRef(false);
+  const archiveOperationRef = useRef<{ id: number; ownerId: string } | null>(null);
+  const nextArchiveOperationIdRef = useRef(0);
+  const previousOwnerIdRef = useRef(ownerId);
   const announcementRef = useRef<HTMLDivElement>(null);
+  const addresses = addressesForOwner(addressState, ownerId);
+  const visibleEditor = editor?.ownerId === ownerId ? editor : null;
+  const initialLoading =
+    status === 'authenticated' &&
+    user?.role === 'CUSTOMER' &&
+    (addressState.ownerId !== ownerId || (loading && addresses.length === 0));
 
   useEffect(() => {
-    if (editor !== null || editorPending) return;
+    if (previousOwnerIdRef.current === ownerId) return;
+    previousOwnerIdRef.current = ownerId;
+    setEditor(null);
+    setEditorPending(false);
+    setConfirmingId(null);
+    setArchivePendingId(null);
+    setMutationError(null);
+    setAnnouncement('');
+    editorReturnFocusIdRef.current = null;
+    pendingEditorFocusIdRef.current = null;
+  }, [ownerId]);
+
+  useEffect(() => {
+    if (visibleEditor !== null || editorPending) return;
     const returnFocusId = pendingEditorFocusIdRef.current;
     if (returnFocusId === null) return;
     pendingEditorFocusIdRef.current = null;
@@ -74,71 +123,108 @@ export function AddressBook() {
       const restored = focusFirstAvailable(document, [returnFocusId, 'address-create-trigger']);
       if (!restored) announcementRef.current?.focus();
     });
-  }, [editor, editorPending]);
+  }, [editorPending, visibleEditor]);
 
   useEffect(() => {
     if (status === 'loading') return;
     if (status !== 'authenticated' || user?.role !== 'CUSTOMER') {
-      setAddresses([]);
+      setAddressState({ ownerId: null, addresses: [] });
+      setEditor(null);
+      setConfirmingId(null);
       setLoading(false);
       setLoadError(null);
       return;
     }
 
+    if (ownerId === null) return;
+    const requestOwnerId = ownerId;
     let active = true;
     setLoading(true);
     setLoadError(null);
     void listAccountAddresses(client)
       .then((value) => {
-        if (active) setAddresses(value);
+        if (active && ownerIdRef.current === requestOwnerId) {
+          setAddressState((current) =>
+            acceptAddressesForOwner(current, requestOwnerId, ownerIdRef.current, value),
+          );
+        }
       })
       .catch((caught: unknown) => {
-        if (active) setLoadError(asAccountError(caught, 'Không thể tải sổ địa chỉ.'));
+        if (active && ownerIdRef.current === requestOwnerId) {
+          setAddressState((current) =>
+            current.ownerId === requestOwnerId
+              ? current
+              : { ownerId: requestOwnerId, addresses: [] },
+          );
+          setLoadError(asAccountError(caught, 'Không thể tải sổ địa chỉ.'));
+        }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && ownerIdRef.current === requestOwnerId) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [client, reloadKey, status, user?.role]);
+  }, [client, ownerId, reloadKey, status, user?.role]);
 
   async function saveAddress(input: AddressCreate | AddressUpdate) {
+    const mutationOwnerId = ownerId;
+    if (mutationOwnerId === null || visibleEditor === null) return;
     setMutationError(null);
     setAnnouncement('');
     try {
-      if (editor?.mode === 'edit') {
-        await updateAccountAddress(client, editor.address.id, input);
+      if (visibleEditor.mode === 'edit') {
+        await updateAccountAddress(client, visibleEditor.address.id, input);
       } else {
         await createAccountAddress(client, input as AddressCreate);
       }
       const successMessage =
-        editor?.mode === 'edit' ? 'Đã cập nhật địa chỉ.' : 'Đã thêm địa chỉ mới.';
+        visibleEditor.mode === 'edit' ? 'Đã cập nhật địa chỉ.' : 'Đã thêm địa chỉ mới.';
+      if (ownerIdRef.current !== mutationOwnerId) return;
       closeEditorAfterSave();
       try {
-        setAddresses(await listAccountAddresses(client));
+        const latest = await listAccountAddresses(client);
+        if (ownerIdRef.current !== mutationOwnerId) return;
+        setAddressState((current) =>
+          acceptAddressesForOwner(current, mutationOwnerId, ownerIdRef.current, latest),
+        );
         setAnnouncement(successMessage);
       } catch (caught) {
+        if (ownerIdRef.current !== mutationOwnerId) return;
         setLoadError(
           asAccountError(caught, 'Đã lưu địa chỉ nhưng chưa tải được dữ liệu mới nhất.'),
         );
       }
     } catch (caught) {
-      throw asAccountError(caught, 'Không thể lưu địa chỉ.');
+      if (ownerIdRef.current === mutationOwnerId) {
+        throw asAccountError(caught, 'Không thể lưu địa chỉ.');
+      }
     }
   }
 
   async function confirmArchive(address: AccountAddress) {
-    if (mutationInFlightRef.current) return;
-    mutationInFlightRef.current = true;
+    const mutationOwnerId = ownerId;
+    if (mutationOwnerId === null) return;
+    if (archiveOperationRef.current?.ownerId === mutationOwnerId) return;
+    const operation = {
+      id: nextArchiveOperationIdRef.current + 1,
+      ownerId: mutationOwnerId,
+    };
+    nextArchiveOperationIdRef.current = operation.id;
+    archiveOperationRef.current = operation;
     setArchivePendingId(address.id);
     setMutationError(null);
     setAnnouncement('');
     try {
       await archiveAccountAddress(client, address.id);
+      if (ownerIdRef.current !== mutationOwnerId) return;
       setConfirmingId(null);
       try {
-        setAddresses(await listAccountAddresses(client));
+        const latest = await listAccountAddresses(client);
+        if (ownerIdRef.current !== mutationOwnerId) return;
+        setAddressState((current) =>
+          acceptAddressesForOwner(current, mutationOwnerId, ownerIdRef.current, latest),
+        );
         setAnnouncement(
           address.isDefault
             ? 'Đã xóa địa chỉ mặc định. Chưa có địa chỉ mặc định mới.'
@@ -146,6 +232,7 @@ export function AddressBook() {
         );
         window.requestAnimationFrame(() => announcementRef.current?.focus());
       } catch (caught) {
+        if (ownerIdRef.current !== mutationOwnerId) return;
         setLoadError(
           asAccountError(caught, 'Đã xóa địa chỉ nhưng chưa tải được dữ liệu mới nhất.'),
         );
@@ -154,16 +241,21 @@ export function AddressBook() {
         });
       }
     } catch (caught) {
-      setMutationError(asAccountError(caught, 'Không thể xóa địa chỉ.'));
+      if (ownerIdRef.current === mutationOwnerId) {
+        setMutationError(asAccountError(caught, 'Không thể xóa địa chỉ.'));
+      }
     } finally {
-      mutationInFlightRef.current = false;
-      setArchivePendingId(null);
+      if (archiveOperationRef.current === operation) {
+        archiveOperationRef.current = null;
+        setArchivePendingId(null);
+      }
     }
   }
 
-  function openEditor(nextEditor: EditorState, returnFocusId: string) {
+  function openEditor(nextEditor: EditorDraft, returnFocusId: string) {
+    if (ownerId === null) return;
     editorReturnFocusIdRef.current = returnFocusId;
-    setEditor(nextEditor);
+    setEditor({ ...nextEditor, ownerId });
     setConfirmingId(null);
     setMutationError(null);
   }
@@ -182,7 +274,6 @@ export function AddressBook() {
   }
 
   function handleEditorPendingChange(pending: boolean) {
-    mutationInFlightRef.current = pending;
     setEditorPending(pending);
   }
 
@@ -193,7 +284,7 @@ export function AddressBook() {
 
   const canUseAddressBook = status === 'authenticated' && user?.role === 'CUSTOMER';
   const addressActionsDisabled = addressInteractionLocked({
-    editorOpen: editor !== null,
+    editorOpen: visibleEditor !== null,
     editorPending,
     confirmationOpen: confirmingId !== null,
     archivePending: archivePendingId !== null,
@@ -201,7 +292,7 @@ export function AddressBook() {
   const showCreateAction =
     canUseAddressBook &&
     !loading &&
-    editor === null &&
+    visibleEditor === null &&
     loadError === null &&
     !addressActionsDisabled;
 
@@ -210,7 +301,7 @@ export function AddressBook() {
       <AccountPageHeader
         eyebrow="Tài khoản"
         title="Sổ địa chỉ"
-        description="Lưu các địa chỉ giao hàng thường dùng. Thay đổi tại đây không làm đổi địa chỉ đã chụp trong đơn cũ."
+        description="Lưu các địa chỉ giao hàng thường dùng. Thay đổi tại đây không làm đổi địa chỉ của những đơn hàng trước đây."
         action={
           showCreateAction ? (
             <Button
@@ -225,7 +316,7 @@ export function AddressBook() {
         }
       />
 
-      {status === 'loading' || loading ? (
+      {status === 'loading' || initialLoading ? (
         <AccountLoadingState label="Đang tải sổ địa chỉ" />
       ) : status === 'anonymous' ? (
         <AccountAnonymousState returnTo="/account/addresses" />
@@ -250,16 +341,16 @@ export function AddressBook() {
             {announcement ? <InlineAlert tone="success">{announcement}</InlineAlert> : null}
           </div>
           {mutationError !== null ? <MutationError error={mutationError} /> : null}
-          {editor !== null ? (
+          {visibleEditor !== null ? (
             <AddressEditor
-              key={editor.mode === 'edit' ? editor.address.id : 'new-address'}
-              {...(editor.mode === 'edit' ? { address: editor.address } : {})}
+              key={visibleEditor.mode === 'edit' ? visibleEditor.address.id : 'new-address'}
+              {...(visibleEditor.mode === 'edit' ? { address: visibleEditor.address } : {})}
               onCancel={closeEditorAndRestoreFocus}
               onPendingChange={handleEditorPendingChange}
               onSave={saveAddress}
             />
           ) : null}
-          {addresses.length === 0 && editor === null ? (
+          {addresses.length === 0 && visibleEditor === null ? (
             <section className={styles.emptyState}>
               <h2>Chưa có địa chỉ đã lưu</h2>
               <p>Bạn có thể thêm địa chỉ trước hoặc nhập trực tiếp khi thanh toán.</p>
@@ -330,6 +421,13 @@ function AddressEditor({
 
   function setText(field: AddressTextField, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      if (current[field] === undefined) return current;
+      return Object.fromEntries(
+        Object.entries(current).filter(([candidate]) => candidate !== field),
+      );
+    });
+    setRequestError(null);
   }
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
@@ -382,7 +480,12 @@ function AddressEditor({
           <p>Thông tin này được dùng để điền nhanh khi bạn chọn giao hàng.</p>
         </div>
       </div>
-      <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
+      <form
+        className={styles.form}
+        noValidate
+        aria-busy={pending || undefined}
+        onSubmit={(event) => void submit(event)}
+      >
         <ErrorSummary
           ref={summaryRef}
           errors={summaryErrors}
@@ -501,6 +604,7 @@ function AddressEditor({
               onChange={(event) => {
                 const isDefault = event.currentTarget.checked;
                 setDraft((current) => ({ ...current, isDefault }));
+                setRequestError(null);
               }}
             />
           </div>
