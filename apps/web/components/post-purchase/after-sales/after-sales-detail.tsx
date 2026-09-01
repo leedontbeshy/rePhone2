@@ -28,7 +28,6 @@ import {
   type AfterSalesAttachment,
   type AfterSalesDetail as AfterSalesDetailDto,
 } from '@/lib/after-sales-api';
-import { removeGuestOrderToken } from '@/lib/order-access';
 import {
   afterSalesJourney,
   afterSalesNextStep,
@@ -93,10 +92,6 @@ export function AfterSalesDetail() {
     setRetryAction(null);
     setNotFound(true);
     setCancelOpen(false);
-    if (status === 'anonymous' && orderNumber) {
-      removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-      guestTokenRef.current = undefined;
-    }
     return true;
   }
 
@@ -138,10 +133,6 @@ export function AfterSalesDetail() {
         if (generationRef.current === generation) {
           if (caught instanceof AfterSalesCustomerError && caught.notFound) {
             setNotFound(true);
-            if (status === 'anonymous' && orderNumber) {
-              removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-              guestTokenRef.current = undefined;
-            }
           } else
             setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
           if (!(caught instanceof AfterSalesCustomerError) || !caught.notFound) {
@@ -168,10 +159,6 @@ export function AfterSalesDetail() {
       if (generationRef.current !== generation) return;
       if (caught instanceof AfterSalesCustomerError && caught.notFound) {
         setNotFound(true);
-        if (status === 'anonymous' && orderNumber) {
-          removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-          guestTokenRef.current = undefined;
-        }
       } else {
         setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
         setRetryAction({ kind: 'detail' });

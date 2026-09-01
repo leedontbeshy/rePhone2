@@ -179,6 +179,59 @@ describe('Slice 11 after-sales HTTP contract', () => {
     expectNoStore(adminOther);
   });
 
+  it('lists only owned warranties and hides customer detail from non-owners', async () => {
+    const owner = await login(server, 'CUSTOMER');
+    const employee = await login(server, 'EMPLOYEE');
+    const fixture = await completeAccessoryPickup(server, prisma, bearer(owner), employee);
+    const warranty = await prisma.warranty.findUniqueOrThrow({
+      where: { orderItemId: fixture.orderItemId },
+      select: { warrantyCode: true },
+    });
+
+    const list = await request(server).get('/api/v1/warranties').set(bearer(owner)).expect(200);
+    expectNoStore(list);
+    expect(
+      arrayProperty(record(list.body), 'data').map((item) =>
+        stringProperty(record(item), 'warrantyCode'),
+      ),
+    ).toContain(warranty.warrantyCode);
+
+    const detail = await request(server)
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .set(bearer(owner))
+      .expect(200);
+    expectNoStore(detail);
+    expect(JSON.stringify(detail.body)).not.toMatch(
+      /customerId|guestAccessTokenHash|sourceCart|internalNote/,
+    );
+
+    await registerCustomer(server, 'other-warranty@example.com', 'Khách không sở hữu bảo hành');
+    const otherCustomer = await loginWithCredentials(
+      server,
+      'other-warranty@example.com',
+      'Customer123',
+    );
+    const hidden = await request(server)
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .set(bearer(otherCustomer))
+      .expect(404);
+    expectNoStore(hidden);
+    expect(errorCode(hidden)).toBe('RESOURCE_NOT_FOUND');
+
+    const anonymous = await request(server)
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .expect(404);
+    expectNoStore(anonymous);
+    expect(errorCode(anonymous)).toBe('RESOURCE_NOT_FOUND');
+
+    const staff = await request(server)
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .set(bearer(employee))
+      .expect(403);
+    expectNoStore(staff);
+    expect(errorCode(staff)).toBe('FORBIDDEN');
+  });
+
   it('returns role-aware warranty actions and catalog-backed policy archive readiness', async () => {
     const customer = await login(server, 'CUSTOMER');
     const employee = await login(server, 'EMPLOYEE');
@@ -432,6 +485,25 @@ describe('Slice 11 after-sales HTTP contract', () => {
       type: 'RETURN',
       issueDescription: 'Phụ kiện không phù hợp nhu cầu và còn nguyên trạng sử dụng.',
     };
+    const warranty = await prisma.warranty.findUniqueOrThrow({
+      where: { orderItemId: fixture.orderItemId },
+      select: { warrantyCode: true },
+    });
+
+    const guestWarranty = await agent
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .expect(200);
+    expectNoStore(guestWarranty);
+    expect(JSON.stringify(guestWarranty.body)).not.toMatch(
+      /customerId|guestAccessTokenHash|sourceCart|internalNote/,
+    );
+
+    const forgedWarranty = await agent
+      .get(`/api/v1/warranties/${warranty.warrantyCode}`)
+      .set('X-Guest-Order-Token', 'B'.repeat(43))
+      .expect(404);
+    expectNoStore(forgedWarranty);
+    expect(errorCode(forgedWarranty)).toBe('RESOURCE_NOT_FOUND');
 
     const missingCsrf = await agent.post('/api/v1/after-sales').send(payload).expect(403);
     expectNoStore(missingCsrf);
