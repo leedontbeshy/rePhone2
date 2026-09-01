@@ -4,6 +4,7 @@ import {
   createSerializedTaskQueue,
   createSessionRevisionTracker,
   currentSessionValue,
+  enqueueSessionTask,
 } from './commerce-provider';
 
 function deferred<T>() {
@@ -117,5 +118,54 @@ describe('CommerceProvider foundations', () => {
     oldResponse.resolve('stale cart');
     await expect(oldRequest).resolves.toBe('stale cart');
     expect(tracker.isCurrent(oldRevision)).toBe(false);
+  });
+
+  it('cancels queued work before it can start with a newer session credential', async () => {
+    const tracker = createSessionRevisionTracker('authenticated:CUSTOMER:customer-a');
+    const queue = createSerializedTaskQueue();
+    const firstResponse = deferred<void>();
+    const firstRequest = vi.fn(() => firstResponse.promise);
+    const queuedRequest = vi.fn(() => Promise.resolve());
+
+    const first = enqueueSessionTask(queue, tracker, firstRequest);
+    const queued = enqueueSessionTask(queue, tracker, queuedRequest);
+    await Promise.resolve();
+    expect(firstRequest).toHaveBeenCalledOnce();
+    expect(queuedRequest).not.toHaveBeenCalled();
+
+    tracker.sync('authenticated:CUSTOMER:customer-b');
+    firstResponse.resolve();
+
+    await expect(first).resolves.toBeUndefined();
+    await expect(queued).resolves.toBeUndefined();
+    expect(queuedRequest).not.toHaveBeenCalled();
+  });
+
+  it('waits for an in-flight guest mutation before starting the customer merge queue', async () => {
+    const tracker = createSessionRevisionTracker('anonymous:NONE:NONE');
+    const guestQueue = createSerializedTaskQueue();
+    const guestResponse = deferred<void>();
+    const events: string[] = [];
+    const guestMutation = enqueueSessionTask(guestQueue, tracker, async () => {
+      events.push('guest:start');
+      await guestResponse.promise;
+      events.push('guest:response');
+    });
+    await Promise.resolve();
+
+    const guestDrain = guestQueue.whenIdle();
+    tracker.sync('authenticated:CUSTOMER:customer-a');
+    const customerQueue = createSerializedTaskQueue(guestDrain);
+    const merge = enqueueSessionTask(customerQueue, tracker, async () => {
+      events.push('merge:start');
+    });
+
+    await Promise.resolve();
+    expect(events).toEqual(['guest:start']);
+
+    guestResponse.resolve();
+    await expect(guestMutation).resolves.toBeUndefined();
+    await expect(merge).resolves.toBeUndefined();
+    expect(events).toEqual(['guest:start', 'guest:response', 'merge:start']);
   });
 });
