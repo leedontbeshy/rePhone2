@@ -117,7 +117,7 @@
 }
 
 .dataBoard th {
-  color: var(--color-muted);
+  color: var(--color-body);
   background: var(--color-surface-subtle);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
