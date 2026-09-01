@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
@@ -11,9 +11,17 @@ import {
   PostPurchasePageHeader,
 } from '@/components/post-purchase';
 import { WarrantyList } from '@/components/post-purchase/warranties/warranty-list';
-import { parseWarrantyPage } from '@/components/post-purchase/warranties/warranty-presenters';
+import {
+  parseWarrantyPage,
+  warrantyPageHref,
+} from '@/components/post-purchase/warranties/warranty-presenters';
 import styles from '@/components/post-purchase/warranties/warranties.module.css';
-import { listCustomerWarranties, type Pagination, type WarrantyListItem } from '@/lib/warranty-api';
+import {
+  listCustomerWarranties,
+  type Pagination,
+  type WarrantyListItem,
+  type WarrantyPage,
+} from '@/lib/warranty-api';
 
 const PAGE_SIZE = 12;
 const EMPTY_PAGE: Pagination = { page: 1, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 0 };
@@ -28,24 +36,26 @@ export default function CustomerWarrantiesPage() {
 
 function CustomerWarrantiesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const page = parseWarrantyPage(searchParams.get('page'));
   const { client, status, user } = useAuth();
-  const isCustomer = user?.role === 'CUSTOMER';
-  const [warranties, setWarranties] = useState<WarrantyListItem[]>([]);
-  const [pagination, setPagination] = useState<Pagination>(EMPTY_PAGE);
+  const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+  const ownerKey = isCustomer ? user.id : '';
+  const [snapshot, setSnapshot] = useState<{
+    key: string;
+    ownerKey: string;
+    result: WarrantyPage<WarrantyListItem>;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ key: string; message: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const listKey = `${status}\u0000${user?.id ?? ''}\u0000${String(page)}\u0000${String(reloadKey)}`;
-  const [stateKey, setStateKey] = useState('');
 
   useEffect(() => {
     let active = true;
-    setWarranties([]);
-    setPagination({ ...EMPTY_PAGE, page });
     setError(null);
-    setStateKey('');
-    if (status !== 'authenticated' || !isCustomer) {
+    if (!isCustomer) {
+      setSnapshot(null);
       setLoading(false);
       return () => {
         active = false;
@@ -55,14 +65,19 @@ function CustomerWarrantiesContent() {
     void listCustomerWarranties(client, { page, pageSize: PAGE_SIZE })
       .then((result) => {
         if (!active) return;
-        setWarranties(result.data);
-        setPagination(result.pagination);
-        setStateKey(listKey);
+        const finalPage = Math.max(1, result.pagination.totalPages);
+        if (page > finalPage) {
+          router.replace(warrantyPageHref(finalPage), { scroll: false });
+          return;
+        }
+        setSnapshot({ key: listKey, ownerKey, result });
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(caught instanceof Error ? caught.message : 'Không thể tải bảo hành.');
-          setStateKey(listKey);
+          setError({
+            key: listKey,
+            message: caught instanceof Error ? caught.message : 'Không thể tải bảo hành.',
+          });
         }
       })
       .finally(() => {
@@ -71,13 +86,15 @@ function CustomerWarrantiesContent() {
     return () => {
       active = false;
     };
-  }, [client, isCustomer, listKey, page, reloadKey, status, user?.id]);
+  }, [client, isCustomer, listKey, ownerKey, page, reloadKey, router]);
 
-  const contextReady = stateKey === listKey;
-  const visibleError = contextReady ? error : null;
-  const visibleWarranties = contextReady ? warranties : [];
-  const visiblePagination = contextReady ? pagination : { ...EMPTY_PAGE, page };
-  const contextLoading = status === 'authenticated' && isCustomer && (!contextReady || loading);
+  const ownedSnapshot = snapshot?.ownerKey === ownerKey ? snapshot : null;
+  const contextReady = ownedSnapshot?.key === listKey;
+  const visibleError = error?.key === listKey ? error.message : null;
+  const visibleWarranties = ownedSnapshot?.result.data ?? [];
+  const visiblePagination = ownedSnapshot?.result.pagination ?? { ...EMPTY_PAGE, page };
+  const initialLoading = isCustomer && loading && ownedSnapshot === null;
+  const updating = isCustomer && ownedSnapshot !== null && (loading || !contextReady);
 
   return (
     <section className={styles.page}>
@@ -85,7 +102,7 @@ function CustomerWarrantiesContent() {
         title="Bảo hành của bạn"
         description="Xem thời hạn và điều khoản đã ghi nhận khi đơn hàng hoàn tất."
         status={
-          status === 'authenticated' && isCustomer && contextReady && !loading ? (
+          isCustomer && ownedSnapshot !== null ? (
             <span className={styles.count}>{visiblePagination.totalItems} bảo hành</span>
           ) : undefined
         }
@@ -107,8 +124,8 @@ function CustomerWarrantiesContent() {
           actionLabel="Mở khu vực quản lý"
         />
       ) : null}
-      {contextLoading ? <CollectionLoading label="Đang tải bảo hành…" /> : null}
-      {status === 'authenticated' && isCustomer && visibleError !== null ? (
+      {initialLoading ? <CollectionLoading label="Đang tải bảo hành…" /> : null}
+      {isCustomer && visibleError !== null ? (
         <ErrorState
           message={visibleError}
           onRetry={() => {
@@ -118,7 +135,7 @@ function CustomerWarrantiesContent() {
       ) : null}
       {status === 'authenticated' &&
       isCustomer &&
-      !contextLoading &&
+      !initialLoading &&
       visibleError === null &&
       visibleWarranties.length === 0 ? (
         <EmptyState
@@ -128,12 +145,9 @@ function CustomerWarrantiesContent() {
           actionLabel="Xem máy đang bán"
         />
       ) : null}
-      {status === 'authenticated' &&
-      isCustomer &&
-      !contextLoading &&
-      visibleError === null &&
-      visibleWarranties.length > 0 ? (
+      {isCustomer && visibleWarranties.length > 0 ? (
         <WarrantyList
+          busy={updating}
           items={visibleWarranties}
           page={visiblePagination.page}
           totalPages={visiblePagination.totalPages}
