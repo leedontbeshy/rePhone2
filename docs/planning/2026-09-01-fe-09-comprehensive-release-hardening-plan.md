@@ -1,10 +1,12 @@
-# FE-09 — Kế hoạch hoàn thiện toàn diện frontend và release hardening
+# FE-09 — Kế hoạch và chi tiết triển khai hoàn thiện toàn diện frontend
 
 > Trạng thái tài liệu: **ACTIVE**<br>
 > Trạng thái phase trong coverage manifest: **IN PROGRESS**<br>
 > Ngày khóa phạm vi: **01/09/2026**  
+> Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
+> Con trỏ thực thi: **WP-09 — FE-7 operations hardening**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -32,6 +34,33 @@
 Yêu cầu người dùng “hoàn thiện toàn diện, không chỉ FE-07 và FE-08” là quyết định
 khóa phạm vi. Việc yêu cầu viết tài liệu này được xem là xác nhận understanding
 và lựa chọn phương án triển khai theo work package có gate.
+
+### 1.1. Tiến độ thực thi hiện tại
+
+Đây là ảnh chụp tiến độ tại ngày **02/09/2026**. Kết quả chi tiết, command và SHA
+được lưu tại [evidence index](../evidence/fe-09/README.md); bảng này không thay thế
+bằng chứng đóng work package.
+
+| Work package | Trạng thái | Kết quả hiện tại / điều kiện còn lại |
+| --- | --- | --- |
+| WP-00 — Baseline | **PASS** | Baseline, command log và evidence skeleton đã được khóa |
+| WP-01 — Coverage + CI | **PASS phần triển khai** | Registry/CI workflow đã có; CI URL và artifact thật chờ push, bắt buộc bổ sung ở WP-14 |
+| WP-02 — Foundation | **PASS** | Shared form, loading, focus, pagination, upload và sidebar đã harden |
+| WP-03 — Storefront | **PASS** | Sáu route public đã qua browser, responsive, accessibility và performance đại diện |
+| WP-04 — Auth/account | **PASS có residual risk** | Flow và privacy đã harden; `FE9-R13` về response đăng ký vẫn mở |
+| WP-05 — Commerce | **BLOCKED** | Frontend/test đã hoàn tất; `FE9-R14` về checkout preview fingerprint chưa có quyết định backend/Product |
+| WP-06 — Post-purchase | **PASS** | Bảy route khách hàng, guest credential, eligibility và evidence đã được kiểm tra |
+| WP-07 — Catalog/voucher | **PASS** | Sáu route, lifecycle, role, conflict và local refresh đã qua gate |
+| WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
+| WP-09 — Operations | **IN PROGRESS** | Code và UI lifecycle test đã triển khai; còn final browser pair, API gate, screenshot review và evidence closeout |
+| WP-10 — System admin | **PENDING** | Route matrix cơ bản đã có; hardening master-detail, CAS, audit, health và overview chưa đóng |
+| WP-11 — A11y/responsive/visual | **PENDING** | Chạy ma trận toàn sản phẩm sau WP-10 |
+| WP-12 — Performance/client/media | **PENDING** | Đo production baseline/after và tối ưu theo số liệu |
+| WP-13 — Legacy cleanup | **PENDING** | Chỉ bắt đầu sau browser/visual gate của owner tương ứng |
+| WP-14 — Release closeout | **PENDING** | Hai release run sạch, production smoke, CI artifact, release SHA và quyết định residual risk |
+
+Các trạng thái trên phân biệt rõ **code đã có** với **work package đã đủ bằng
+chứng để đóng**. Một WP không được chuyển `PASS` chỉ vì test cục bộ đơn lẻ xanh.
 
 ## 2. Mục tiêu và definition of done
 
@@ -191,7 +220,11 @@ baseline-relative; ngưỡng tuyệt đối vẫn phải được xác minh bằ
 - Raw report nằm dưới `.local/` hoặc CI artifact; repo chỉ giữ summary, selected
   evidence và ảnh đã review, không chứa credential.
 
-## 5. Baseline đã xác minh ngày 01/09/2026
+## 5. Baseline khởi động đã xác minh ngày 01/09/2026
+
+Các số trong phần này là mốc lịch sử tại Start SHA, không phải số liệu hiện tại.
+Tiến độ mới hơn nằm ở mục 1.1 và evidence index; FE-09 giữ baseline này để so sánh
+độ thay đổi, không cập nhật đè lên số gốc.
 
 | Hạng mục | Baseline hiện tại | Ý nghĩa đối với FE-09 |
 | --- | ---: | --- |
@@ -505,6 +538,12 @@ stock và stock movements.
 
 **Routes:** 11 route orders, payments, refunds, after-sales, warranties và policies.
 
+**Trạng thái 02/09/2026:** `IN PROGRESS`. Các concern về evidence, mutation lock,
+queue refresh, scroll/focus, contrast và lifecycle UI đã được triển khai theo commit
+nhỏ. Work package chỉ được chuyển `PASS` sau khi có hai lượt browser liên tiếp trên
+final tree, API service/E2E gate, review toàn bộ ảnh current-run và
+`wp-09-operations.md`.
+
 **Tasks**
 
 - Tạo `operations-lifecycle` browser suite thật cho toàn bộ route owner đã khai báo.
@@ -676,20 +715,25 @@ logic trùng lặp.
 
 ### 10.4. Browser suite mục tiêu
 
-| Suite | Trạng thái đầu FE-09 | Mục tiêu |
+| Suite | Trạng thái đầu FE-09 | Trạng thái hiện tại / mục tiêu còn lại |
 | --- | --- | --- |
-| `frontend-foundation` | có | regression shared shell/primitive/visual |
-| `storefront-discovery` | có | mở rộng perf/responsive/a11y |
-| `auth-account` | có | mở rộng mobile/keyboard/state |
-| `cart-checkout` | có | mở rộng partial loading/conflict |
-| `customer-post-purchase` | có | mở rộng evidence/eligibility/error |
-| `catalog-voucher-admin` | có | mở rộng role/state/visual |
-| `inventory-stock` | có | mở rộng axe/perf/workflow resume |
-| `backoffice-access` | có | giữ fail-closed toàn backoffice |
-| `critical-commerce-flow` | có | release smoke end-to-end |
-| `operations-lifecycle` | **thiếu** | tạo cho FE-7 |
-| `system-admin-health` | **thiếu** | tạo cho FE-8 |
-| `release-matrix` | **thiếu** | cross-surface viewport/a11y/visual/perf owner |
+| `frontend-foundation` | có | regression shared shell/primitive/visual đã được mở rộng |
+| `storefront-discovery` | có | perf/responsive/a11y đại diện đã có; chạy lại ở release matrix |
+| `auth-account` | có | mobile/keyboard/state đã mở rộng; `FE9-R13` còn mở |
+| `cart-checkout` | có | partial loading/conflict đã mở rộng; `FE9-R14` chặn closeout |
+| `customer-post-purchase` | có | evidence/eligibility/error đã qua gate WP-06 |
+| `catalog-voucher-admin` | có | role/state/visual đã qua gate WP-07 |
+| `inventory-stock` | có | axe/workflow resume/privacy đã qua gate WP-08 |
+| `backoffice-access` | có | tiếp tục giữ fail-closed toàn backoffice |
+| `critical-commerce-flow` | có | chạy lại như release smoke end-to-end |
+| `operations-lifecycle` | **thiếu** | đã triển khai 11 UI test chia bốn spec; còn final WP-09 closeout |
+| `system-admin-health` | **thiếu** | route matrix cơ bản đã có; hardening sâu thuộc WP-10 |
+| `release-matrix` | **thiếu** | chưa tạo đầy đủ; thuộc WP-11/WP-14 |
+
+Browser test dùng fixture/interception chứng minh giao diện, tương tác, loading,
+focus, scroll, role presentation và conflict presentation. API unit/service/E2E
+chứng minh authorization, state transition và side effect backend. Không dùng bằng
+chứng browser fixture để tuyên bố backend thật đã hoạt động đúng.
 
 ## 11. Performance measurement protocol
 
@@ -773,6 +817,9 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R10 | full gate quá dài làm bỏ qua kiểm thử | Cao | chỉ chạy subset trước merge | fast PR gate + required release gate + artifact |
 | FE9-R11 | backend contract gap bị vá bằng UI suy diễn | Cao | status/action tự tính ở client | dừng WP, ghi blocker backend, không workaround |
 | FE9-R12 | Docker/test DB khác Supabase runtime | Trung bình | local xanh nhưng provider runtime lỗi | contract/integration parity, provider degradation smoke |
+| FE9-R13 | response đăng ký vẫn để lộ tín hiệu trùng tài khoản qua Network | Trung bình | endpoint trả `409 DUPLICATE_RESOURCE` dù UI dùng nội dung chung | backend/OpenAPI dùng response không phân biệt hoặc Product chấp nhận rủi ro tại WP-14 |
+| FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao | metadata/phân bổ/điểm nhận thay đổi nhưng tổng tiền không đổi | backend/OpenAPI cấp fingerprint/version bất biến hoặc Product chấp nhận và sửa acceptance |
+| FE9-R15 | mutation FE-7 chưa replay an toàn sau lỗi mạng mơ hồ | Cao | pending lock chỉ chặn gửi lặp cùng thời điểm, không có idempotency key | bổ sung contract idempotency hoặc ghi quyết định residual risk trước release |
 
 Rollback policy:
 
@@ -824,15 +871,17 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Khi bắt đầu triển khai:
+Con trỏ hiện tại là **WP-09**. Thứ tự tiếp tục:
 
-1. Chạy WP-00, cập nhật FE-09 `IN PROGRESS` và commit planning/evidence riêng.
-2. Không sửa UI trước khi baseline/gap list được ghi trên start SHA.
-3. Thực hiện WP-01 trước để mọi claim coverage sau đó có owner thật.
-4. Mỗi surface được audit bằng browser, ghi issue/evidence, sửa theo concern rồi
-   chạy lại cùng viewport/state.
-5. Chỉ chuyển sang closeout khi toàn bộ WP acceptance đã xanh hoặc residual risk
-   được ghi rõ và người có thẩm quyền chấp nhận.
+1. Hoàn tất hai lượt browser liên tiếp của bốn spec operations trên final tree.
+2. Review toàn bộ ảnh desktop/mobile current-run; screenshot chỉ là bằng chứng
+   visual, còn accessibility phải dựa trên Axe và keyboard/manual check riêng.
+3. Chạy API service/E2E, full web test, typecheck, lint, format và diff gate.
+4. Viết `docs/evidence/fe-09/wp-09-operations.md`, cập nhật evidence index,
+   command log và residual-risk log trước khi chuyển WP-09 sang `PASS`.
+5. Triển khai WP-10, sau đó lần lượt WP-11 → WP-12 → WP-13 → WP-14.
+6. Trước WP-14, chốt `FE9-R13`, `FE9-R14`, `FE9-R15`, lấy CI URL/artifact thật
+   và chạy production release gate hai lần từ test database sạch.
 
-Tài liệu này là kế hoạch triển khai; không tự đánh dấu FE-09 `IN PROGRESS` hoặc
-`DONE` chỉ vì file đã được tạo.
+Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc
+merge chỉ thực hiện khi được yêu cầu; FE-09 chỉ chuyển `DONE` sau WP-14.
