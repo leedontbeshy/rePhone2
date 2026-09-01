@@ -10,6 +10,7 @@
 | FE9-R01 | MONITOR | Cao | WP-02–WP-13 | `globals.css` còn lớn và nhiều surface dùng shared selector | Consumer scan + browser regression trước từng cleanup commit |
 | FE9-R11 | OPEN | Trung bình | WP-02–WP-10 | Registry chứng minh owner/route/state ở mức cấu trúc; chưa thay thế audit sâu từng surface | Browser, responsive, accessibility và visual evidence riêng cho từng work package |
 | FE9-R13 | OPEN — CONTRACT DECISION | Trung bình | Backend/Auth | UI đăng ký dùng nội dung chung và API có giới hạn 5 lượt/15 phút, nhưng endpoint vẫn trả HTTP `409 DUPLICATE_RESOURCE` có thể quan sát trong Network | Đóng bằng thay đổi backend/OpenAPI đã được phê duyệt để dùng response không phân biệt, hoặc ghi nhận chấp nhận rủi ro tại WP-14 |
+| FE9-R14 | OPEN — CONTRACT BLOCKER | Cao | Backend/Checkout + Product | Tạo đơn chỉ so thời điểm giỏ hàng, tổng tiền và tiền cọc; cửa hàng nhận máy, phân bổ giá theo dòng, tên ưu đãi hoặc metadata sản phẩm có thể đổi mà ba giá trị này vẫn giữ nguyên | Theo non-goal FE-09, không suy diễn ở frontend. Chỉ đóng khi backend/OpenAPI dùng một phiên bản hoặc fingerprint bất biến bao phủ toàn bộ business preview và trả `409` kèm preview mới khi lệch; nếu hoãn, Product Owner phải chấp nhận rõ rủi ro và sửa acceptance trước WP-14 |
 
 ## Rủi ro đã giảm trong WP-00
 
