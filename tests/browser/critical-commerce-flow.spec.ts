@@ -92,7 +92,48 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
       mimeType: 'image/png',
       buffer: ONE_PIXEL_PNG,
     });
+    const proofSubmitted = customerPage.waitForResponse((response) => {
+      const request = response.request();
+      const path = new URL(response.url()).pathname;
+      return (
+        request.method() === 'POST' &&
+        path.startsWith('/api/v1/payments/') &&
+        path.endsWith('/submit-proof')
+      );
+    });
+    const orderRefreshAbort = new AbortController();
+    const orderRefreshed = customerPage
+      .waitForResponse(
+        (response) => {
+          const request = response.request();
+          return (
+            request.method() === 'GET' &&
+            new URL(response.url()).pathname === `/api/v1/orders/${encodeURIComponent(orderNumber)}`
+          );
+        },
+        { signal: orderRefreshAbort.signal },
+      )
+      .then(
+        (response) => ({ response }) as const,
+        (error: unknown) => ({ error }) as const,
+      );
     await customerPage.getByRole('button', { name: 'Gửi minh chứng', exact: true }).click();
+    const proofResponse = await proofSubmitted;
+    if (proofResponse.status() !== 200) {
+      orderRefreshAbort.abort();
+      await orderRefreshed;
+    }
+    expect(proofResponse.status()).toBe(200);
+    const orderRefreshResult = await orderRefreshed;
+    if ('error' in orderRefreshResult) throw orderRefreshResult.error;
+    expect(orderRefreshResult.response.status()).toBe(200);
+    const depositPayment = customerPage.locator('article').filter({
+      has: customerPage.getByText('Thanh toán cọc', { exact: true }),
+    });
+    await expect(depositPayment.getByText('Đang kiểm tra', { exact: true })).toBeVisible();
+    await expect(
+      depositPayment.getByRole('button', { name: 'Gửi minh chứng', exact: true }),
+    ).toHaveCount(0);
     await expect(
       customerPage.getByText('Đã gửi minh chứng. Thanh toán đang được kiểm tra.', {
         exact: true,
