@@ -221,12 +221,21 @@ test(
             name: 'Điều hướng backoffice',
           });
           await sidebar.evaluate((element) => {
-            // Keep the nested scroller at its viewport height while Playwright expands the page
-            // for a full-page capture; otherwise dvh growth clamps scrollTop back to zero.
+            const navigation = element.querySelector<HTMLElement>(':scope > nav');
+            if (navigation === null) throw new Error('Backoffice navigation is missing');
+
+            // A full-page capture resets nested scroll offsets on the CI runner. Preserve the
+            // exact max-scroll appearance in a transform, which the capture does not reset.
+            const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
             element.style.blockSize = `${String(element.getBoundingClientRect().height)}px`;
+            element.style.insetBlockStart = 'auto';
+            element.style.overflow = 'clip';
+            element.style.position = 'static';
+            element.scrollTop = 0;
+            navigation.style.transform = `translateY(-${String(maximumScrollTop)}px)`;
           });
           // The shell observes sidebar resizes to keep the active item visible. Let that callback
-          // settle before pinning the exact snapshot scroll offset so it cannot race the capture.
+          // settle before verifying that snapshot-only clipping kept the visual offset stable.
           await page.evaluate(
             () =>
               new Promise<void>((resolve) => {
@@ -237,14 +246,7 @@ test(
                 });
               }),
           );
-          const targetScrollTop = await sidebar.evaluate((element) => {
-            const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
-            element.scrollTop = maximumScrollTop;
-            return maximumScrollTop;
-          });
-          await expect
-            .poll(() => sidebar.evaluate((element) => element.scrollTop))
-            .toBe(targetScrollTop);
+          await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBe(0);
           await expect(activeNavigation).toBeInViewport();
         }
         await expect(page).toHaveScreenshot(
