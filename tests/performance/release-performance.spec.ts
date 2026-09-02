@@ -318,7 +318,9 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
     'WP-12 performance measurement must run from a clean commit so the report SHA is reproducible.',
   ).toBe(true);
 
-  const customer = await createAuthenticatedContext(browser, CUSTOMER, '/account');
+  const customer = await createAuthenticatedContext(browser, CUSTOMER, '/account', {
+    waitForCustomerCart: true,
+  });
   let admin: BrowserContext | undefined;
   try {
     const customerOrderNumber = await createRepresentativeShippingOrder(customer);
@@ -392,6 +394,7 @@ async function createAuthenticatedContext(
   browser: Browser,
   credentials: { readonly email: string; readonly password: string },
   destination: string,
+  options: { readonly waitForCustomerCart?: boolean } = {},
 ): Promise<BrowserContext> {
   const context = await browser.newContext({ viewport: VIEWPORT });
   await installDeterministicPublicMedia(context);
@@ -400,8 +403,17 @@ async function createAuthenticatedContext(
     await page.goto(`/login?returnTo=${encodeURIComponent(destination)}`);
     await page.getByLabel('Email').fill(credentials.email);
     await page.locator('#password').fill(credentials.password);
+    const destinationReady = page.waitForURL(destination);
+    const cartReady = options.waitForCustomerCart
+      ? page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/api/v1/cart/merge',
+        )
+      : Promise.resolve(undefined);
     await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-    await page.waitForURL(destination);
+    const [, cartResponse] = await Promise.all([destinationReady, cartReady]);
+    if (cartResponse !== undefined) expect(cartResponse.status()).toBe(200);
   } catch (error) {
     await context.close();
     throw error;
@@ -418,7 +430,13 @@ async function createRepresentativeShippingOrder(context: BrowserContext): Promi
     await expect(
       page.getByText(`Ảnh thật · Mã máy ${ORDER_UNIT.code}`, { exact: true }),
     ).toBeVisible();
+    const addToCart = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/cart/items',
+    );
     await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    expect((await addToCart).status()).toBe(201);
     await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await page.goto('/checkout');
     await fillShippingCheckout(page);
