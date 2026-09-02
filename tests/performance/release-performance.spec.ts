@@ -164,7 +164,7 @@ const ROUTES: readonly RouteDescriptor[] = [
       await expect(page.getByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeVisible();
     },
     interact: async (page) => {
-      const toggle = page.getByRole('button', { name: 'Hiện mật khẩu', exact: true });
+      const toggle = page.locator('button[aria-controls="password"]');
       await toggle.click();
       await expect(toggle).toHaveAttribute('aria-label', 'Ẩn mật khẩu');
     },
