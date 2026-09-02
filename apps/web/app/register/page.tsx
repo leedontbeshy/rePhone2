@@ -81,8 +81,8 @@ export default function RegisterPage() {
     <AuthPage title="Tạo tài khoản" description={description}>
       {completed ? (
         <div ref={successRef} className={authStyles.terminalState} tabIndex={-1}>
-          <InlineAlert tone="success" title="Tài khoản đã được tạo">
-            Tài khoản đã được tạo nhưng bạn chưa đăng nhập. Hãy đăng nhập để tiếp tục.
+          <InlineAlert tone="success" title="Đã tiếp nhận yêu cầu">
+            Nếu thông tin phù hợp, bạn có thể đăng nhập để tiếp tục.
           </InlineAlert>
           <AuthFormActions>
             <Link href="/login" standalone>

@@ -224,7 +224,7 @@ test.describe('FE-2 authentication and account', () => {
     const responseText = await response.text();
     expect(responseText).not.toContain(BROWSER_RESET_ACCOUNT.email);
     expect(responseText).not.toContain('DUPLICATE_RESOURCE');
-    await expect(page.getByText('Tài khoản đã được tạo', { exact: true })).toBeVisible();
+    await expect(page.getByText('Đã tiếp nhận yêu cầu', { exact: true })).toBeVisible();
   });
 
   test(bt('browser:auth-account', 'auth-route-state-matrix'), async ({ page }) => {
