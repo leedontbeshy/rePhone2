@@ -52,6 +52,7 @@ test('fails closed before cleanup and covers the critical production probes', as
   assert.match(runner, /\^npipe:\/\//);
   assert.match(runner, /Assert-CleanupTargets/);
   assert.match(runner, /'ls', '--all', '-q'/);
+  assert.match(runner, /'\{\{json \.Config\.Labels\}\}'/);
   assert.match(runner, /com\.rephone\.production-smoke/);
   assert.match(probe, /\/health\/live/);
   assert.match(probe, /\/health\/ready/);

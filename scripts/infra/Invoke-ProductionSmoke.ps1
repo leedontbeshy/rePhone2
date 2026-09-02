@@ -67,7 +67,8 @@ function Assert-CleanupTargets {
     if ($LASTEXITCODE -ne 0) { throw "Could not enumerate smoke $kind targets." }
     foreach ($id in $ids) {
       if ([string]::IsNullOrWhiteSpace($id)) { continue }
-      $labels = & docker $kind inspect $id --format '{{json .Labels}}'
+      $labelTemplate = if ($kind -eq 'container') { '{{json .Config.Labels}}' } else { '{{json .Labels}}' }
+      $labels = & docker $kind inspect $id --format $labelTemplate
       if ($LASTEXITCODE -ne 0) { throw "Could not inspect smoke $kind target." }
       $parsed = $labels | ConvertFrom-Json
       if ($parsed.'com.docker.compose.project' -ne $project -or $parsed.'com.rephone.production-smoke' -ne $nonce) {
