@@ -64,6 +64,7 @@
     "test:db:prepare": "pnpm --filter @rephone/api test:db:prepare",
     "test:browser": "playwright test",
     "test:browser:release-matrix": "playwright test tests/browser/release-matrix.spec.ts",
+    "test:browser:cross-browser-smoke": "playwright test tests/browser/release-matrix.spec.ts -g skip-links-and-axe --config playwright.cross-browser.config.ts",
     "performance:storefront:build": "cross-env NODE_ENV=production NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 API_INTERNAL_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web build",
     "performance:storefront": "pnpm performance:storefront:build && playwright test tests/performance/storefront-performance.spec.ts --config playwright.performance.config.ts",
     "performance:release": "pnpm performance:storefront:build && playwright test tests/performance/release-performance.spec.ts --config playwright.performance.config.ts",
