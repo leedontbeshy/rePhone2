@@ -8,10 +8,18 @@ const CUSTOMER_B = '0199d010-0000-7000-8000-000000000012';
 
 type Role = 'ADMIN' | 'EMPLOYEE';
 
+type ControlledRequestState = 'waiting' | 'started' | 'completed';
+
+interface ControlledDetailRequest {
+  readonly release: () => void;
+  readonly state: () => ControlledRequestState;
+}
+
 interface UserProbe {
   readonly commands: string[];
   readonly detailFailures: Set<string>;
   readonly detailReads: string[];
+  readonly holdNextDetail: (path: string) => ControlledDetailRequest;
   employeeListReads: number;
   customerListReads: number;
 }
@@ -30,15 +38,32 @@ test(bt('browser:system-admin-health', 'user-master-detail-stability'), async ({
 
   const employeeB = userButton(page, 'Nhân viên Bình');
   const employeeA = userButton(page, 'Nhân viên An');
+  const employeeAPath = `/api/v1/backoffice/employees/${EMPLOYEE_A}`;
+  const employeeBPath = `/api/v1/backoffice/employees/${EMPLOYEE_B}`;
+  const employeeBDetail = probe.holdNextDetail(employeeBPath);
+  const employeeBRequest = waitForDetailRequest(page, employeeBPath);
   await employeeB.scrollIntoViewIfNeeded();
   const employeeScroll = await page.evaluate(() => window.scrollY);
   await employeeB.click();
-  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
-  await expect(employeeList).toBeVisible();
-  await employeeA.click();
-  await expect(page.locator('#employee-detail')).toContainText('Nhân viên An');
-  await expect(page.locator('#employee-detail').getByRole('heading', { level: 2 })).toBeFocused();
-  await delay(520);
+  await employeeBRequest;
+  await expect.poll(employeeBDetail.state).toBe('started');
+  try {
+    await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+    await expect(employeeList).toBeVisible();
+    const employeeARequest = waitForDetailRequest(page, employeeAPath);
+    await employeeA.click();
+    await employeeARequest;
+    await expect(page.locator('#employee-detail')).toContainText('Nhân viên An');
+    await expect(page.locator('#employee-detail').getByRole('heading', { level: 2 })).toBeFocused();
+    await expect(page.locator('#employee-detail')).not.toContainText('Nhân viên Bình');
+    expect(probe.employeeListReads).toBe(employeeListReads);
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - employeeScroll),
+    ).toBeLessThanOrEqual(2);
+  } finally {
+    employeeBDetail.release();
+  }
+  await expect.poll(employeeBDetail.state).toBe('completed');
   await expect(page.locator('#employee-detail')).toContainText('Nhân viên An');
   await expect(page.locator('#employee-detail')).not.toContainText('Nhân viên Bình');
   expect(probe.employeeListReads).toBe(employeeListReads);
@@ -55,15 +80,32 @@ test(bt('browser:system-admin-health', 'user-master-detail-stability'), async ({
 
   const customerA = userButton(page, 'Khách An');
   const customerB = userButton(page, 'Khách Bình');
+  const customerAPath = `/api/v1/backoffice/customers/${CUSTOMER_A}`;
+  const customerBPath = `/api/v1/backoffice/customers/${CUSTOMER_B}`;
+  const customerBDetail = probe.holdNextDetail(customerBPath);
+  const customerBRequest = waitForDetailRequest(page, customerBPath);
   await customerB.scrollIntoViewIfNeeded();
   const customerScroll = await page.evaluate(() => window.scrollY);
   await customerB.click();
-  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
-  await expect(customerList).toBeVisible();
-  await customerA.click();
-  await expect(page.locator('#customer-detail')).toContainText('Khách An');
-  await expect(page.locator('#customer-detail').getByRole('heading', { level: 2 })).toBeFocused();
-  await delay(380);
+  await customerBRequest;
+  await expect.poll(customerBDetail.state).toBe('started');
+  try {
+    await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+    await expect(customerList).toBeVisible();
+    const customerARequest = waitForDetailRequest(page, customerAPath);
+    await customerA.click();
+    await customerARequest;
+    await expect(page.locator('#customer-detail')).toContainText('Khách An');
+    await expect(page.locator('#customer-detail').getByRole('heading', { level: 2 })).toBeFocused();
+    await expect(page.locator('#customer-detail')).not.toContainText('Khách Bình');
+    expect(probe.customerListReads).toBe(customerListReads);
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - customerScroll),
+    ).toBeLessThanOrEqual(2);
+  } finally {
+    customerBDetail.release();
+  }
+  await expect.poll(customerBDetail.state).toBe('completed');
   await expect(page.locator('#customer-detail')).toContainText('Khách An');
   await expect(page.locator('#customer-detail')).not.toContainText('Khách Bình');
   expect(probe.customerListReads).toBe(customerListReads);
@@ -71,15 +113,29 @@ test(bt('browser:system-admin-health', 'user-master-detail-stability'), async ({
     Math.abs((await page.evaluate(() => window.scrollY)) - customerScroll),
   ).toBeLessThanOrEqual(2);
 
-  const customerBPath = `/api/v1/backoffice/customers/${CUSTOMER_B}`;
   const detailReadsBeforeFailure = probe.detailReads.filter(
     (path) => path === customerBPath,
   ).length;
   probe.detailFailures.add(customerBPath);
+  const customerFailureDetail = probe.holdNextDetail(customerBPath);
+  const customerFailureRequest = waitForDetailRequest(page, customerBPath);
   await customerB.scrollIntoViewIfNeeded();
   const customerErrorScroll = await page.evaluate(() => window.scrollY);
   await customerB.click();
-  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+  await customerFailureRequest;
+  await expect.poll(customerFailureDetail.state).toBe('started');
+  try {
+    await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+    await expect(customerList).toBeVisible();
+    await expect(customerB).toBeFocused();
+    expect(probe.customerListReads).toBe(customerListReads);
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - customerErrorScroll),
+    ).toBeLessThanOrEqual(2);
+  } finally {
+    customerFailureDetail.release();
+  }
+  await expect.poll(customerFailureDetail.state).toBe('completed');
   await expect(page.getByText('Lỗi giả lập SERVICE_UNAVAILABLE', { exact: true })).toBeVisible();
   await expect(customerList).toBeVisible();
   await expect(page.locator('#customer-detail')).toContainText('Khách An');
@@ -89,10 +145,24 @@ test(bt('browser:system-admin-health', 'user-master-detail-stability'), async ({
     Math.abs((await page.evaluate(() => window.scrollY)) - customerErrorScroll),
   ).toBeLessThanOrEqual(2);
 
+  const customerRetryDetail = probe.holdNextDetail(customerBPath);
+  const customerRetryRequest = waitForDetailRequest(page, customerBPath);
   await customerB.click();
-  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+  await customerRetryRequest;
+  await expect.poll(customerRetryDetail.state).toBe('started');
   const customerRetryScroll = await page.evaluate(() => window.scrollY);
-  await expect(customerB).toBeFocused();
+  try {
+    await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+    await expect(customerList).toBeVisible();
+    await expect(customerB).toBeFocused();
+    expect(probe.customerListReads).toBe(customerListReads);
+    expect(
+      Math.abs((await page.evaluate(() => window.scrollY)) - customerRetryScroll),
+    ).toBeLessThanOrEqual(2);
+  } finally {
+    customerRetryDetail.release();
+  }
+  await expect.poll(customerRetryDetail.state).toBe('completed');
   await expect(page.locator('#customer-detail')).toContainText('Khách Bình');
   await expect(page.locator('#customer-detail').getByRole('heading', { level: 2 })).toBeFocused();
   await expect(page.getByText('Lỗi giả lập SERVICE_UNAVAILABLE', { exact: true })).toHaveCount(0);
@@ -166,17 +236,29 @@ function userButton(page: Page, name: string) {
   return page.locator('button[aria-controls$="-detail"]').filter({ hasText: name });
 }
 
+function waitForDetailRequest(page: Page, path: string) {
+  return page.waitForRequest((request) => {
+    return request.method() === 'GET' && new URL(request.url()).pathname === path;
+  });
+}
+
 async function userFixture(
   page: Page,
   role: Role,
   options: Readonly<{ customerConflict?: boolean }> = {},
 ): Promise<UserProbe> {
+  const detailRequests = new Map<string, ControlledDetailRequestFixture[]>();
   const probe: UserProbe = {
     commands: [],
     customerListReads: 0,
     detailFailures: new Set<string>(),
     detailReads: [],
     employeeListReads: 0,
+    holdNextDetail: (path) => {
+      const request = controlledDetailRequest();
+      detailRequests.set(path, [...(detailRequests.get(path) ?? []), request]);
+      return request;
+    },
   };
   let employeeA = employee(EMPLOYEE_A, 'Nhân viên An', 'an.nv@example.com', 'NV-091');
   const employeeB = employee(EMPLOYEE_B, 'Nhân viên Bình', 'binh.nv@example.com', 'NV-092');
@@ -204,26 +286,28 @@ async function userFixture(
     }
     if (path === `/api/v1/backoffice/employees/${EMPLOYEE_A}` && method === 'GET') {
       probe.detailReads.push(path);
-      await delay(20);
-      return json(route, { data: employeeA });
+      return controlledDetailResponse(route, detailRequests, path, { data: employeeA });
     }
     if (path === `/api/v1/backoffice/employees/${EMPLOYEE_B}` && method === 'GET') {
       probe.detailReads.push(path);
-      await delay(440);
-      return json(route, { data: employeeB });
+      return controlledDetailResponse(route, detailRequests, path, { data: employeeB });
     }
     if (path === `/api/v1/backoffice/customers/${CUSTOMER_A}` && method === 'GET') {
       probe.detailReads.push(path);
-      await delay(20);
-      return json(route, { data: customerA });
+      return controlledDetailResponse(route, detailRequests, path, { data: customerA });
     }
     if (path === `/api/v1/backoffice/customers/${CUSTOMER_B}` && method === 'GET') {
       probe.detailReads.push(path);
-      await delay(320);
       if (probe.detailFailures.delete(path)) {
-        return json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+        return controlledDetailResponse(
+          route,
+          detailRequests,
+          path,
+          errorEnvelope('SERVICE_UNAVAILABLE'),
+          503,
+        );
       }
-      return json(route, { data: customerB });
+      return controlledDetailResponse(route, detailRequests, path, { data: customerB });
     }
 
     if (method !== 'GET') {
@@ -328,6 +412,52 @@ function errorEnvelope(code: string) {
       requestId: `fe09-${code}`,
     },
   };
+}
+
+interface ControlledDetailRequestFixture extends ControlledDetailRequest {
+  readonly markCompleted: () => void;
+  readonly markStarted: () => void;
+  readonly waitForRelease: () => Promise<void>;
+}
+
+function controlledDetailRequest(): ControlledDetailRequestFixture {
+  let requestState: ControlledRequestState = 'waiting';
+  let releaseRequest: (() => void) | undefined;
+  const released = new Promise<void>((resolve) => {
+    releaseRequest = resolve;
+  });
+
+  return {
+    markCompleted: () => {
+      requestState = 'completed';
+    },
+    markStarted: () => {
+      requestState = 'started';
+    },
+    release: () => releaseRequest?.(),
+    state: () => requestState,
+    waitForRelease: () => released,
+  };
+}
+
+async function controlledDetailResponse(
+  route: Route,
+  requests: Map<string, ControlledDetailRequestFixture[]>,
+  path: string,
+  body: unknown,
+  status = 200,
+): Promise<void> {
+  const queuedRequests = requests.get(path);
+  const request = queuedRequests?.shift();
+  if (queuedRequests?.length === 0) requests.delete(path);
+
+  request?.markStarted();
+  try {
+    await request?.waitForRelease();
+    await json(route, body, status);
+  } finally {
+    request?.markCompleted();
+  }
 }
 
 async function json(route: Route, body: unknown, status = 200) {
