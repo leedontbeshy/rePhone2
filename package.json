@@ -63,6 +63,7 @@
     "test:db:down": "docker compose --profile test stop postgres-test",
     "test:db:prepare": "pnpm --filter @rephone/api test:db:prepare",
     "test:browser": "playwright test",
+    "test:browser:release-matrix": "playwright test tests/browser/release-matrix.spec.ts",
     "performance:storefront:build": "cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 API_INTERNAL_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web build",
     "performance:storefront": "pnpm performance:storefront:build && playwright test --config playwright.performance.config.ts",
     "docker:dev": "docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up --build --watch",

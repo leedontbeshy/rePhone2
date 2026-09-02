@@ -749,6 +749,44 @@ export const FRONTEND_BROWSER_SUITES = {
       },
     },
   },
+  'browser:release-matrix': {
+    specFile: 'release-matrix.spec.ts',
+    phase: null,
+    tests: {
+      'skip-links-and-axe': {
+        title: 'keeps representative storefront, auth, customer and backoffice shells skippable',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/login', '/account', '/backoffice'],
+        ownsStates: ['success'],
+      },
+      'reduced-motion': {
+        title: 'honors reduced-motion preferences without breaking critical focus flows',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/backoffice'],
+        ownsStates: ['success'],
+      },
+      'forced-colors-focus': {
+        title: 'keeps representative controls visible and focused in forced-colors mode',
+        ownsRoutes: [],
+        coversRoutes: ['/login', '/backoffice'],
+        ownsStates: ['success'],
+      },
+      'touch-targets-and-reflow-proxy': {
+        title:
+          'keeps critical controls reachable at mobile widths and the 200 percent reflow proxy',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/products/[slug]/units/[inventoryCode]', '/account', '/backoffice'],
+        ownsStates: ['success'],
+      },
+      'keyboard-master-detail-focus': {
+        title:
+          'opens and returns from representative master-detail content using only the keyboard',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/employees'],
+        ownsStates: ['success'],
+      },
+    },
+  },
 } as const satisfies Record<string, FrontendBrowserSuiteDefinition>;
 
 export type FrontendBrowserSuiteId = keyof typeof FRONTEND_BROWSER_SUITES;

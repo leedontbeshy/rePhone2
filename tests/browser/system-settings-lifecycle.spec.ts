@@ -123,7 +123,8 @@ test(bt('browser:system-admin-health', 'settings-validation-focus'), async ({ pa
   expect(probe.patchBodies).toEqual([]);
 
   const fieldLink = summary.getByRole('link', { name: 'Nhập tên cửa hàng.' });
-  await fieldLink.focus();
+  await page.keyboard.press('Tab');
+  await expect(fieldLink).toBeFocused();
   await fieldLink.press('Enter');
   await expect(storeName).toBeFocused();
 

@@ -20,10 +20,6 @@ export async function stabilizeVisualPage(page: Page): Promise<void> {
       [data-shell] > a[href^='#'] {
         display: none !important;
       }
-
-      [data-shell='storefront'] > header {
-        position: static !important;
-      }
     `,
   });
 }
