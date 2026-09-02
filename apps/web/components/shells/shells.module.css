@@ -379,8 +379,10 @@
 
 .contextLink {
   display: inline-flex;
+  min-inline-size: var(--control-height, 44px);
   min-block-size: var(--control-height, 44px);
   align-items: center;
+  justify-content: center;
   color: var(--color-primary, #007c9f);
   font-size: 15px;
   font-weight: var(--font-weight-semibold, 600);
