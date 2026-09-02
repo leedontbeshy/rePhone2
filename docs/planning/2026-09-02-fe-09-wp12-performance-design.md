@@ -27,9 +27,11 @@
   dùng. Backend throughput/availability nằm ngoài scope frontend performance này.
 - Session customer/admin dùng tài khoản test và cookie trong context cục bộ; report
   không ghi cookie, token, email, database URL hoặc query chứa dữ liệu riêng tư.
-- Reliability: zero retry trong performance test; setup thất bại hoặc thiếu metric
-  làm run đỏ. Một context xác thực được giữ tuần tự để refresh-cookie rotation luôn
-  dùng token mới nhất.
+- Reliability: zero retry trong performance test; setup thất bại, thiếu metric hoặc
+  runtime issue luôn làm run đỏ. Chế độ `baseline` chỉ ghi nhận budget để giữ được
+  mốc so sánh ban đầu; chế độ `after` mới dùng budget tuyệt đối làm release gate.
+  Một context xác thực được giữ tuần tự để refresh-cookie rotation luôn dùng token
+  mới nhất.
 - Maintenance: route descriptor sở hữu ready condition và interaction an toàn;
   comparator độc lập sở hữu baseline/after contract.
 - Browser hiện tại là Chromium/Windows theo lựa chọn đã khóa ở WP-11. Kết luận không
@@ -81,8 +83,9 @@ ID/order number được discover trong setup nhưng report chỉ ghi tên route
   liệu riêng tư.
 - `pageerror` luôn làm sample đỏ; console hydration mismatch/server-render warning
   cũng làm đỏ.
-- Metric bằng 0, route chưa ready, setup thất bại hoặc absolute budget vượt ngưỡng
-  đều làm test đỏ.
+- Metric bắt buộc bằng 0, route chưa ready, setup thất bại hoặc runtime issue đều
+  làm test đỏ. Absolute budget vượt ngưỡng được ghi vào baseline để phục vụ chẩn
+  đoán; cùng vi phạm đó ở report `after` làm test đỏ.
 
 ### Report và comparator
 

@@ -378,7 +378,10 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
     await writeFile(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
     expect(report.routeCount).toBe(12);
-    for (const route of routes) assertRouteGate(route.name, route.medians, route.samples);
+    for (const route of routes) {
+      assertRouteSamples(route.name, route.samples);
+      if (REPORT_TYPE === 'after') assertRouteBudget(route.name, route.medians);
+    }
   } finally {
     await admin?.close();
     await customer.close();
@@ -811,12 +814,11 @@ function passesAbsoluteGate(medianSample: PerformanceMedian): boolean {
   );
 }
 
-function assertRouteGate(
-  route: string,
-  medianSample: PerformanceMedian,
-  samples: readonly PerformanceSample[],
-): void {
+function assertRouteSamples(route: string, samples: readonly PerformanceSample[]): void {
   for (const sample of samples) assertSampleComplete(route, sample);
+}
+
+function assertRouteBudget(route: string, medianSample: PerformanceMedian): void {
   expect(medianSample.lcpMs, `${route} median LCP`).toBeLessThanOrEqual(THRESHOLDS.lcpMs);
   expect(medianSample.cls, `${route} median CLS`).toBeLessThanOrEqual(THRESHOLDS.cls);
   expect(medianSample.interactionProxyMs, `${route} median interaction proxy`).toBeLessThanOrEqual(
