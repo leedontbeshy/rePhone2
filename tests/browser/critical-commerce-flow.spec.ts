@@ -55,7 +55,10 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
     await expect(
       customerPage.getByText(`Mã máy: ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
-    await customerPage.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click();
+    await Promise.all([
+      customerPage.waitForURL((url) => url.pathname === '/checkout'),
+      customerPage.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click(),
+    ]);
 
     await fillShippingCheckout(customerPage);
     await customerPage.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
