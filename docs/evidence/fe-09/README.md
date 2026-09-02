@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-11 — PASS; tiếp theo WP-12**<br>
+> Con trỏ triển khai: **WP-12 — PASS cục bộ; tiếp theo WP-13**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -27,6 +27,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-09 operations evidence](./wp-09-operations.md)
 - [WP-10 system administration evidence](./wp-10-system-admin.md)
 - [WP-11 accessibility, responsive và visual evidence](./wp-11-accessibility-responsive-visual.md)
+- [WP-12 performance, client boundary và media evidence](./wp-12-performance-client-media.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -196,6 +197,20 @@ Chromium/Windows; proxy reflow không phải native zoom và Firefox/WebKit chư
 Chi tiết ma trận, ảnh, lịch sử lượt đỏ và giới hạn nằm tại
 [WP-11 accessibility/responsive/visual evidence](./wp-11-accessibility-responsive-visual.md).
 
+## Performance, client boundary và media WP-12
+
+WP-12 đo production web build trên 12 route, một warm-up và ba sample/route. Hai
+lượt `after` tại `e661e8b` đều đạt budget tuyệt đối và không có runtime issue. Login
+CLS giảm `0,1212 → 0,0065`; chi tiết đơn khách hàng giảm `0,596 → 0`. Client/media
+audit ghi 38 client page, 116 client TSX và 5 raw `<img>` occurrence; không chuyển
+boundary/media hàng loạt khi chưa có lợi ích và allowlist proof.
+
+Relative comparator giữ nguyên ngưỡng `>10%` nhưng hai lượt cùng SHA cho drift trên
+nhiều route không sửa. Kết quả đỏ được giữ lại; absolute `after` budget trở thành CI
+gate riêng, còn relative gate chờ baseline cùng runner ở WP-14. Chi tiết report,
+visual proof và quyết định FE9-R08 nằm tại
+[WP-12 performance/client/media evidence](./wp-12-performance-client-media.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -212,7 +227,7 @@ Chi tiết ma trận, ảnh, lịch sử lượt đỏ và giới hạn nằm t�
 | WP-09 | Operations browser/API/visual evidence | PASS có residual — FE9-R15/R16 mở |
 | WP-10 | System administration browser/API/visual evidence | PASS |
 | WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17/R18 mở |
-| WP-12 | Performance và client-boundary report | Chưa có |
+| WP-12 | Performance và client-boundary report | PASS cục bộ; CI artifact chờ push |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
 | WP-14 | Hai release run, production smoke, release SHA và CI URL | Chưa có |
 
@@ -226,8 +241,7 @@ Chi tiết ma trận, ảnh, lịch sử lượt đỏ và giới hạn nằm t�
 
 ## Bước tiếp theo
 
-Triển khai WP-12 cho performance, client boundary và media bằng baseline production
-trên SHA sạch trước mọi tối ưu. Song song, vẫn cần chốt `FE9-R13`–`FE9-R18`, đặc
-biệt fingerprint/version cho checkout preview, idempotency cho mutation vận hành và
-quyết định về native zoom/cross-browser evidence trước WP-14. Chưa chuyển WP-05 hay
-toàn FE-09 sang `DONE` khi các điều kiện release này chưa được xử lý.
+Triển khai WP-13 theo cleanup có consumer proof, mỗi concern một commit và browser
+regression tương ứng. Song song, vẫn cần chốt `FE9-R13`–`FE9-R18`, kiểm performance
+CI artifact trên release SHA và chuẩn bị hai release run sạch ở WP-14. Chưa chuyển
+WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release này chưa được xử lý.

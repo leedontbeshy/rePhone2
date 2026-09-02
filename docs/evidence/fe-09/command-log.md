@@ -511,3 +511,29 @@ Playwright tiếp tục phát warning `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190`, 
 client-query deprecation ở commerce và Docker orphan-container notice. Không dùng
 `--remove-orphans`; proxy `720×450` không được ghi thành native zoom, và không tuyên
 bố Firefox/WebKit khi môi trường chưa có bằng chứng.
+
+## WP-12 verification — baseline `783e029`, after `e661e8b`
+
+### Performance và client/media
+
+| Command / lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm performance:audit-client-media --output ...` | 0 | 38 client page, 116 client TSX, 4 consumer/5 raw `<img>` occurrence |
+| Baseline production | 1 | Report đủ 12 route; login CLS `0,1212`, order-detail CLS `0,596`; harness cũ gate baseline |
+| After production A | 0 | 12/12 route đạt absolute budget, zero runtime issue |
+| After production B | 0 | 12/12 route đạt absolute budget, zero runtime issue; xác nhận host variance |
+| Comparator baseline → after A | 1 | Bốn relative flag; ba delta interaction tuyệt đối nhỏ và order LCP `+10,06%` |
+| Comparator baseline → after B | 1 | Nhiều route không sửa cùng drift; giữ evidence, không nới threshold |
+| Comparator contract | 0 | 9/9 |
+| Auth + order focused component test | 0 | 7/7 |
+| Production web build | 0 | 43/43 static/dynamic route entry; `next-env.d.ts` giữ production import |
+| Prettier, ESLint, typecheck, diff check | 0 | PASS |
+
+Hai lỗi visual/performance thật được sửa ở `11a1971` và `e661e8b`. Ảnh baseline,
+after-pending và after-ready được so cùng `390×844`; CLS observer và geometry test
+xác nhận thay đổi. Report raw ở `.local/release-performance/`; scan không tìm thấy
+credential, email, database URL hoặc production PII.
+
+Harness baseline/after semantics được tách tại `8aefcd3`. Performance CI job riêng
+tại `6b5fa41` dùng Windows, PostgreSQL test sạch, Chromium, production after gate và
+sanitized artifact 14 ngày. CI URL/artifact thật chỉ có sau push và thuộc WP-14.

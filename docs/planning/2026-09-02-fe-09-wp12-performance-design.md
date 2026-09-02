@@ -50,7 +50,8 @@
 ### Runtime và dữ liệu
 
 1. Build web production với API URL test cố định.
-2. Test server reset/migrate/seed PostgreSQL test và chạy compiled Nest API.
+2. Test server reset/migrate/seed PostgreSQL test và chạy Nest full-stack harness
+   qua `tsx`. Compiled API/production-image smoke được giữ cho WP-14.
 3. Setup một customer context và một admin context bằng login UI ngoài timed path.
 4. Customer dùng máy `IP14P-256-001` để tạo một đơn shipping đại diện; máy
    `IP14P-128-001` giữ cho exact-unit và guest cart/checkout.
