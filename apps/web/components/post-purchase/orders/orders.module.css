@@ -197,6 +197,50 @@
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
 }
+.detailLoading {
+  min-block-size: max(48rem, calc(100svh - 8rem));
+}
+.loadingJourney {
+  min-block-size: 13rem;
+}
+.loadingJourney > :first-child {
+  margin-block-end: var(--space-6);
+}
+.loadingJourneySummary {
+  display: none;
+}
+.loadingJourneyStages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.loadingJourneyStage {
+  display: grid;
+  min-inline-size: 0;
+  justify-items: center;
+  gap: var(--space-3);
+}
+.loadingJourneyMarker,
+.loadingJourneyStageMarker {
+  border-radius: 50%;
+}
+.loadingJourneyStageMarker {
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+}
+.loadingJourneyLabel {
+  max-inline-size: 100%;
+}
+.loadingStack,
+.loadingActions {
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+}
+.loadingPanelRows {
+  display: grid;
+  gap: var(--space-4);
+}
 @media (max-width: 64rem) {
   .row {
     grid-template-columns: 1fr auto;
@@ -249,5 +293,29 @@
   }
   .filePickerButton {
     inline-size: 100%;
+  }
+  .loadingJourney {
+    min-block-size: 16rem;
+  }
+  .loadingJourneySummary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-4);
+    margin-block-end: var(--space-6);
+  }
+  .loadingJourneySummary > div {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .loadingJourneyStages {
+    gap: var(--space-3);
+  }
+  .loadingJourneyStageMarker {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+  }
+  .loadingJourneyLabel {
+    display: none;
   }
 }

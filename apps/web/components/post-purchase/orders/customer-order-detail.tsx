@@ -4,7 +4,7 @@ import { DeviceMobileIcon, PackageIcon, UploadSimpleIcon } from '@phosphor-icons
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { Button, InlineAlert } from '@/components/ui';
+import { Button, InlineAlert, Skeleton } from '@/components/ui';
 import {
   ConfirmationDialog,
   DetailGrid,
@@ -223,14 +223,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
   };
 
   if (status === 'loading' || (!notFound && !accessMatchesContext) || (loading && order === null))
-    return (
-      <section>
-        <PostPurchasePageHeader
-          title="Chi tiết đơn hàng"
-          description="Đang tải thông tin mới nhất…"
-        />
-      </section>
-    );
+    return <CustomerOrderDetailSkeleton />;
   if (notFound)
     return (
       <section>
@@ -577,6 +570,73 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
           />
         </>
       ) : null}
+    </section>
+  );
+}
+
+export function CustomerOrderDetailSkeleton() {
+  return (
+    <section
+      className={styles.detailLoading}
+      aria-busy="true"
+      aria-label="Đang tải chi tiết đơn hàng"
+      role="status"
+    >
+      <PostPurchasePageHeader
+        title="Chi tiết đơn hàng"
+        description="Đang tải thông tin mới nhất…"
+        status={<Skeleton height="var(--control-height)" width="7.5rem" />}
+      />
+      <DetailPanel className={styles.loadingJourney}>
+        <Skeleton height="1.75rem" width="11rem" />
+        <div className={styles.loadingJourneySummary} aria-hidden="true">
+          <Skeleton className={styles.loadingJourneyMarker ?? ''} height="4rem" width="4rem" />
+          <div>
+            <Skeleton height="1.25rem" width="9rem" />
+            <Skeleton height="1rem" width="min(100%, 15rem)" />
+          </div>
+        </div>
+        <div className={styles.loadingJourneyStages} aria-hidden="true">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div className={styles.loadingJourneyStage} key={index}>
+              <Skeleton className={styles.loadingJourneyStageMarker ?? ''} />
+              <Skeleton className={styles.loadingJourneyLabel ?? ''} height="1rem" width="5rem" />
+            </div>
+          ))}
+        </div>
+      </DetailPanel>
+      <DetailGrid>
+        <div className={styles.loadingStack}>
+          <DetailPanel>
+            <div className={styles.loadingPanelRows}>
+              <Skeleton height="1.75rem" width="8rem" />
+              <Skeleton height="3.25rem" width="100%" />
+              <Skeleton height="1rem" width="72%" />
+              <Skeleton height="1rem" width="58%" />
+            </div>
+          </DetailPanel>
+          <DetailPanel>
+            <div className={styles.loadingPanelRows}>
+              <Skeleton height="1.75rem" width="7rem" />
+              <Skeleton height="1rem" width="100%" />
+              <Skeleton height="1rem" width="84%" />
+              <Skeleton height="1rem" width="92%" />
+            </div>
+          </DetailPanel>
+        </div>
+        <aside className={styles.loadingActions} aria-hidden="true">
+          <DetailPanel>
+            <div className={styles.loadingPanelRows}>
+              <Skeleton height="1.75rem" width="10rem" />
+              <Skeleton height="1rem" width="100%" />
+              <Skeleton height="1rem" width="88%" />
+              <Skeleton height="1rem" width="96%" />
+              <Skeleton height="1.25rem" width="75%" />
+            </div>
+          </DetailPanel>
+        </aside>
+      </DetailGrid>
+      <span className="rp-visually-hidden">Đang tải chi tiết đơn hàng…</span>
     </section>
   );
 }
