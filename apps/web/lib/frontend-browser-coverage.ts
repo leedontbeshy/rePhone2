@@ -677,6 +677,14 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['error', 'provider-error', 'upload-progress', 'success'],
         specFile: 'system-settings-lifecycle.spec.ts',
       },
+      'audit-workspace-lifecycle': {
+        title:
+          'keeps audit filters, legacy links and redacted detail loading stable through races and local recovery',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/audit-logs', '/backoffice/audit-logs/[id]'],
+        ownsStates: ['error', 'loading', 'stale', 'success'],
+        specFile: 'system-audit-workspace.spec.ts',
+      },
     },
   },
 } as const satisfies Record<string, FrontendBrowserSuiteDefinition>;
