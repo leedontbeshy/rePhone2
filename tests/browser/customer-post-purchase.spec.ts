@@ -307,7 +307,8 @@ test.describe('FE-04 customer post-purchase', () => {
   test(bt('browser:customer-post-purchase', 'warranty-list-detail'), async ({ page }) => {
     await page.goto('/warranties');
     await expect(page.getByRole('heading', { level: 1, name: 'Bảo hành của bạn' })).toBeVisible();
-    await expect(page.getByText('iPhone 15', { exact: true })).toBeVisible();
+    const warrantyList = page.getByRole('region', { name: 'Danh sách bảo hành' });
+    await expect(warrantyList.getByText('iPhone 15', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Xem chi tiết' }).click();
     await expect(page).toHaveURL(new RegExp(`/warranties/${WARRANTY_CODE}`));
     await expect(page.getByRole('heading', { level: 1, name: 'iPhone 15' })).toBeVisible();
