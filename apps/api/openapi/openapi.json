@@ -4059,6 +4059,10 @@
             },
             "type": "array"
           },
+          "previewFingerprint": {
+            "pattern": "^v1:[a-f0-9]{64}$",
+            "type": "string"
+          },
           "pricing": {
             "$ref": "#/components/schemas/CheckoutPricingDto"
           },
@@ -4073,6 +4077,7 @@
           }
         },
         "required": [
+          "previewFingerprint",
           "cartUpdatedAt",
           "fulfillmentType",
           "items",
@@ -4453,6 +4458,10 @@
             "pattern": "^\\d{1,15}$",
             "type": "string"
           },
+          "expectedPreviewFingerprint": {
+            "pattern": "^v1:[a-f0-9]{64}$",
+            "type": "string"
+          },
           "fulfillmentType": {
             "enum": [
               "PICKUP",
@@ -4472,6 +4481,7 @@
         "required": [
           "fulfillmentType",
           "contact",
+          "expectedPreviewFingerprint",
           "expectedCartUpdatedAt",
           "expectedGrandTotal",
           "expectedDepositRequired"
@@ -8622,41 +8632,22 @@
         ],
         "type": "object"
       },
-      "RegisteredAccountDto": {
+      "RegistrationResultDto": {
         "properties": {
-          "email": {
-            "format": "email",
-            "type": "string"
-          },
-          "fullName": {
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "status": {
-            "enum": [
-              "PENDING_VERIFICATION",
-              "ACTIVE",
-              "SUSPENDED",
-              "DISABLED"
-            ],
+          "message": {
+            "example": "Yêu cầu tạo tài khoản đã được tiếp nhận. Bạn có thể đăng nhập để tiếp tục.",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "email",
-          "fullName",
-          "status"
+          "message"
         ],
         "type": "object"
       },
-      "RegisteredAccountResponse": {
+      "RegistrationResultResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/RegisteredAccountDto"
+            "$ref": "#/components/schemas/RegistrationResultDto"
           }
         },
         "required": [
@@ -12696,11 +12687,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RegisteredAccountResponse"
+                  "$ref": "#/components/schemas/RegistrationResultResponse"
                 }
               }
             },
-            "description": ""
+            "description": "Returns the same generic response whether the account is newly created or already exists."
           },
           "400": {
             "content": {
@@ -12711,16 +12702,6 @@
               }
             },
             "description": "VALIDATION_FAILED or MALFORMED_JSON"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponseDto"
-                }
-              }
-            },
-            "description": "DUPLICATE_RESOURCE"
           },
           "429": {
             "content": {
@@ -20484,6 +20465,15 @@
         "operationId": "createRefund",
         "parameters": [
           {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
             "in": "path",
             "name": "id",
             "required": true,
@@ -20562,7 +20552,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "422": {
             "content": {
@@ -23432,7 +23422,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "422": {
             "content": {
@@ -23584,7 +23574,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "413": {
             "content": {
@@ -23750,7 +23740,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "422": {
             "content": {
@@ -24012,7 +24002,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "422": {
             "content": {
@@ -24148,7 +24138,7 @@
                 }
               }
             },
-            "description": "INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
+            "description": "DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION"
           },
           "422": {
             "content": {
