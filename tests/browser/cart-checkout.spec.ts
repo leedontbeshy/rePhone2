@@ -963,7 +963,13 @@ async function clearWishlist(page: Page): Promise<void> {
   });
   while ((await removeButtons.count()) > 0) {
     const previousCount = await removeButtons.count();
+    const removeResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
+    );
     await removeButtons.first().click();
+    expect((await removeResponse).status()).toBe(204);
     await expect(removeButtons).toHaveCount(previousCount - 1);
   }
   await expect(page.getByRole('heading', { name: 'Chưa có sản phẩm ưa thích' })).toBeVisible();
