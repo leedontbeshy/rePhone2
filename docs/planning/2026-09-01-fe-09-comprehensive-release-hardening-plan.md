@@ -59,7 +59,7 @@ bằng chứng đóng work package.
 | WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và full Chromium đã qua gate; Firefox/WebKit cục bộ `2/2`; FE9-R17 đã chấp nhận, CI proof còn mở |
 | WP-12 — Performance/client/media | **PASS cục bộ** | Final production `12/12` route tại `50b6cc9`; relative variance có decision và CI artifact chờ push |
 | WP-13 — Legacy cleanup | **PASS cục bộ** | Zero-consumer cleanup theo owner; full unit/build, hai release matrix và performance absolute đều xanh trên final tree |
-| WP-14 — Release closeout | **LOCAL PASS — RELEASE HOLD** | Hai release run, compiled smoke, exact-set, rollback và cross-browser cục bộ đã xanh; FE9-R16/R17 đã chấp nhận, chỉ chờ CI/artifact |
+| WP-14 — Release closeout | **LOCAL PASS — RELEASE HOLD** | Một orchestration với hai release pass nội bộ, compiled smoke, exact-set, rollback và cross-browser cục bộ đã xanh; FE9-R16/R17 đã chấp nhận, chỉ chờ CI/artifact |
 
 Các trạng thái trên phân biệt rõ **code đã có** với **work package đã đủ bằng
 chứng để đóng**. Một WP không được chuyển `PASS` chỉ vì test cục bộ đơn lẻ xanh.
@@ -91,9 +91,9 @@ FE-09 chỉ được đánh dấu `DONE` khi đồng thời đạt tất cả đ
 9. **Bảo mật giao diện được chứng minh:** guard fail-closed; không lộ token, raw
    identifier, private evidence, cost hoặc internal field sai role qua HTML, URL,
    log, analytics, cache hoặc browser storage.
-10. **Release gate xanh:** `pnpm verify:release` chạy xanh hai lần liên tiếp từ test
-    database sạch, không retry/skip/flaky; có release SHA, CI URL, artifact và
-    residual-risk log.
+10. **Release gate xanh:** một lần chạy `pnpm verify:release` điều phối hai
+    release pass nội bộ liên tiếp từ test database sạch, không
+    retry/skip/flaky; có release SHA, CI URL, artifact và residual-risk log.
 
 ## 3. Phạm vi
 
@@ -688,7 +688,8 @@ quyết định và CI confirmation condition được ghi tại
 
 **Acceptance**
 
-- `pnpm verify:release` xanh hai lần liên tiếp, zero retry/skip/flaky.
+- Một `pnpm verify:release` hoàn tất pass `1/2` và `2/2` liên tiếp, zero
+  retry/skip/flaky.
 - CI xanh trên release SHA và artifact truy cập được.
 - FE-09 chuyển `DONE`; không phase nào còn `IN PROGRESS`.
 - Residual risk có owner, severity và quyết định chấp nhận/hoãn rõ ràng.
@@ -849,7 +850,7 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R01 | shared CSS làm hỏng surface khác | Cao — CLOSED | visual/browser regression ngoài owner | Đóng bằng WP-13 consumer scan, rollback rehearsal và hai final release pass |
 | FE9-R02 | chuyển Server/Client boundary gây hydration hoặc bundle tăng | Cao | hydration warning, request lặp, build delta | đo trước/sau, revert boundary riêng |
 | FE9-R03 | test owner “xanh giả” nhưng không chạy flow thật | Cao | label có nhưng không có test title/selector | executable registry, negative contract test |
-| FE9-R04 | browser suite flaky vì data/time/provider | Cao — CLOSED | retry phụ thuộc thứ tự/thời gian | Đóng bằng hai `verify:release` liên tiếp, mỗi lượt `93/93`, zero retry/skip |
+| FE9-R04 | browser suite flaky vì data/time/provider | Cao — CLOSED | retry phụ thuộc thứ tự/thời gian | Đóng bằng hai pass nội bộ liên tiếp của cùng `verify:release`, mỗi pass `93/93`, zero retry/skip |
 | FE9-R05 | CI làm lộ secret hoặc PII qua artifact | Rất cao | env/log/trace chứa token | fake/local env, redaction, artifact review, rotate secret nếu lộ |
 | FE9-R06 | role/privacy regression khi mở rộng test | Rất cao | request private xuất hiện trước guard | fail-closed negative test, forward-fix trước polish |
 | FE9-R07 | cleanup legacy xóa consumer ngầm | Cao | route compile nhưng UI vỡ | `rg` + build + browser owner, revert cleanup commit |
@@ -879,7 +880,7 @@ Rollback policy:
 | Quyết định | Phương án đã cân nhắc | Lý do |
 | --- | --- | --- |
 | FE-09 bao phủ FE-0…FE-8 | chỉ FE-7/FE-8 | yêu cầu người dùng là hoàn thiện toàn diện |
-| Không thêm backend capability | mở rộng API trong cùng phase | FE-09 là release hardening; tránh trộn contract mới với stabilization |
+| Không thêm operation hoặc tính năng nghiệp vụ mới | mở rộng sản phẩm trong cùng phase | FE-09 là release hardening; chỉ cho phép harden contract security/reliability đang chặn release |
 | Work package theo surface + cross-cutting gate | big-bang refactor | giảm blast radius, commit/rollback rõ |
 | Browser owner phải executable | chấp nhận chuỗi `browser:*` | chuỗi hiện tại chưa chứng minh test tồn tại |
 | Partial loading là chuẩn | skeleton/spinner toàn khung cho mọi request | giữ context và tránh cảm giác reload trang |
@@ -888,7 +889,7 @@ Rollback policy:
 | Cleanup legacy ở cuối | xóa sớm để giảm code | cần consumer/visual proof sau khi surface ổn định |
 | CI là phần DoD | chỉ chạy local thủ công | C9 cần release gate, artifact và CI URL truy xuất được |
 | Commit nhỏ theo concern | một commit lớn theo phase | yêu cầu người dùng và rollback safety |
-| Cho phép remediation contract R13–R15 trong WP-14 | chỉ ghi nhận residual hoặc mở rộng sản phẩm | Đây là các sửa security/reliability chặn release, giữ nguyên capability và có OpenAPI/E2E proof |
+| Cho phép remediation contract R13–R15 trong WP-14 | chỉ ghi nhận residual hoặc mở rộng sản phẩm | Đây là các sửa security/reliability chặn release, giữ nguyên operation set và phạm vi nghiệp vụ, có OpenAPI/E2E proof |
 
 ## 16. Dependency và thứ tự thực hiện
 
