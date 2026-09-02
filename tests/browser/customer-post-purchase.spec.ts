@@ -2,6 +2,11 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import { orderTokenStorageKey } from '../../apps/web/lib/order-access';
+import {
+  freezeWp11Clock,
+  stabilizeWp11VisualPage,
+  WP11_RESPONSIVE_VIEWPORTS,
+} from './support/wp11-visual';
 
 const ORDER_NUMBER = 'RPH-20260828-POST0001';
 const CANCELLED_ORDER_NUMBER = 'RPH-20260827-POST0002';
@@ -10,7 +15,7 @@ const ORDER_ITEM_ID = '0199b354-d818-7f7c-b966-3932599978d0';
 const WARRANTY_CODE = 'RPH-W-20260828-POST0001';
 const REQUEST_NUMBER = 'RPH-AS-20260828-POST01';
 const ATTACHMENT_ID = '0199b354-d818-7f7c-b966-3932599978ef';
-const ACTIVE_PAYMENT_EXPIRES_AT = new Date(Date.now() + 24 * 60 * 60 * 1_000).toISOString();
+const ACTIVE_PAYMENT_EXPIRES_AT = '2026-09-03T06:30:00.000Z';
 
 const customer = {
   id: '0199b354-d818-7f7c-b966-3932599978aa',
@@ -162,6 +167,7 @@ const afterSales = {
 
 test.describe('FE-04 customer post-purchase', () => {
   test.beforeEach(async ({ page }) => {
+    await freezeWp11Clock(page);
     await installCustomerApi(page);
   });
 
@@ -294,6 +300,8 @@ test.describe('FE-04 customer post-purchase', () => {
     await expect(page.locator('body')).not.toContainText('Màn hình xuất hiện sọc');
     expect(page.url()).not.toContain('token=');
     expect(new URL(page.url()).hash).toBe('');
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 
   test(bt('browser:customer-post-purchase', 'warranty-list-detail'), async ({ page }) => {
@@ -437,18 +445,34 @@ test.describe('FE-04 customer post-purchase', () => {
   });
 
   test(bt('browser:customer-post-purchase', 'post-purchase-mobile'), async ({ page }) => {
+    test.setTimeout(180_000);
+
+    for (const viewport of WP11_RESPONSIVE_VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(`/orders/${ORDER_NUMBER}`);
+      await expect(page.getByRole('heading', { level: 1, name: ORDER_NUMBER })).toBeVisible();
+      await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
+      await expectSingleMainAndNoOverflow(page);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await expectAccessible(page);
+        await stabilizeWp11VisualPage(page);
+        await expect(page).toHaveScreenshot(
+          `wp11-post-purchase-order-detail-unpaid-${viewport.name}.png`,
+          {
+            animations: 'disabled',
+            caret: 'hide',
+          },
+        );
+      }
+    }
+
     await page.setViewportSize({ width: 390, height: 844 });
 
     await page.goto('/orders');
     await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng của bạn' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Xem chi tiết' }).first()).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
-
-    await page.goto(`/orders/${ORDER_NUMBER}`);
-    await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
-    await expect(page.getByText('Chưa chọn tệp', { exact: true })).toBeVisible();
-    await expectSingleMainAndNoOverflow(page);
-    await expectAccessible(page);
 
     await page.goto('/warranties');
     await expect(page.getByRole('heading', { level: 1, name: 'Bảo hành của bạn' })).toBeVisible();

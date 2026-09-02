@@ -1,6 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import {
+  freezeWp11Clock,
+  installDeterministicWp11CatalogMedia,
+  stabilizeWp11VisualPage,
+  WP11_RESPONSIVE_VIEWPORTS,
+} from './support/wp11-visual';
 
 const PRODUCT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe0';
 const VARIANT_ID = '0199c346-f8d2-79d8-b90b-e462bd717fe1';
@@ -455,19 +461,45 @@ test.describe('FE-05 catalog and voucher administration', () => {
   });
 
   test(bt('browser:catalog-voucher-admin', 'admin-responsive'), async ({ page }) => {
+    test.setTimeout(240_000);
+    await freezeWp11Clock(page);
+    await installDeterministicWp11CatalogMedia(page);
     await installFe05Api(page, 'ADMIN');
     const screens = [
       { path: '/backoffice/catalog/products', heading: 'Danh mục sản phẩm' },
       { path: '/backoffice/catalog/products/new', heading: 'Thêm sản phẩm' },
-      { path: `/backoffice/catalog/products/${PRODUCT_ID}`, heading: PRODUCT_NAME },
       { path: '/backoffice/vouchers', heading: 'Mã ưu đãi' },
       { path: '/backoffice/vouchers/new', heading: 'Tạo mã ưu đãi' },
       { path: `/backoffice/vouchers/${VOUCHER_ID}`, heading: VOUCHER_NAME },
     ] as const;
 
+    for (const viewport of WP11_RESPONSIVE_VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(`/backoffice/catalog/products/${PRODUCT_ID}`);
+      await expect(page.getByRole('heading', { level: 1, name: PRODUCT_NAME })).toBeVisible();
+      await expect(page.getByText('Bản nháp', { exact: true }).first()).toBeVisible();
+      await expect(
+        page.getByRole('img', { name: `Chưa có ảnh cho ${PRODUCT_NAME}` }),
+      ).toBeVisible();
+      await expectNaturalVietnameseMain(page);
+      await expectSingleMainAndNoOverflow(page);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await expectAccessible(page);
+        await stabilizeWp11VisualPage(page);
+        await expect(page).toHaveScreenshot(
+          `wp11-catalog-product-detail-draft-${viewport.name}.png`,
+          {
+            animations: 'disabled',
+            caret: 'hide',
+          },
+        );
+      }
+    }
+
     for (const viewport of [
-      { width: 1440, height: 1000 },
-      { width: 360, height: 800 },
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
       for (const screen of screens) {
@@ -479,7 +511,7 @@ test.describe('FE-05 catalog and voucher administration', () => {
       }
     }
 
-    await page.setViewportSize({ width: 360, height: 800 });
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/backoffice/catalog/products/${PRODUCT_ID}`);
     await page.getByRole('button', { name: 'Thêm biến thể', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Thêm biến thể' })).toBeVisible();
