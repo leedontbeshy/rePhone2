@@ -629,20 +629,23 @@ export const FRONTEND_BROWSER_SUITES = {
     tests: {
       'live-admin-route-matrix': {
         title: 'renders six system administration routes from live backend projections',
-        ownsRoutes: [
+        ownsRoutes: [],
+        coversRoutes: [
+          '/backoffice',
+          '/backoffice/employees',
+          '/backoffice/customers',
           '/backoffice/settings',
           '/backoffice/audit-logs',
           '/backoffice/audit-logs/[id]',
           '/backoffice/system/health',
         ],
-        coversRoutes: ['/backoffice'],
-        ownsStates: ['success', 'provider-error'],
+        ownsStates: ['success'],
       },
       'user-master-detail-stability': {
         title:
           'keeps employee and customer lists stable while detail requests race without moving scroll or focus',
-        ownsRoutes: ['/backoffice/employees', '/backoffice/customers'],
-        coversRoutes: [],
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/employees', '/backoffice/customers'],
         ownsStates: ['error', 'loading', 'stale'],
         specFile: 'system-user-workspaces.spec.ts',
       },
@@ -690,14 +693,14 @@ export const FRONTEND_BROWSER_SUITES = {
           'renders healthy, degraded, unavailable and not-configured dependencies from backend snapshots',
         ownsRoutes: [],
         coversRoutes: ['/backoffice/system/health'],
-        ownsStates: ['provider-error', 'success', 'unavailable'],
+        ownsStates: ['success', 'unavailable'],
         specFile: 'system-health-overview-states.spec.ts',
       },
       'health-stale-refresh': {
         title: 'keeps the last health snapshot visible when a local refresh fails',
         ownsRoutes: [],
         coversRoutes: ['/backoffice/system/health'],
-        ownsStates: ['error', 'loading', 'stale'],
+        ownsStates: ['error', 'loading', 'provider-error', 'stale'],
         specFile: 'system-health-overview-states.spec.ts',
       },
       'overview-refresh-role-boundary': {
@@ -707,6 +710,35 @@ export const FRONTEND_BROWSER_SUITES = {
         coversRoutes: ['/backoffice'],
         ownsStates: ['error', 'loading', 'permission', 'stale', 'success'],
         specFile: 'system-health-overview-states.spec.ts',
+      },
+      'system-admin-responsive-route-matrix': {
+        title:
+          'renders administrator routes and employee-owned overview and customer routes accessibly at desktop and mobile widths',
+        ownsRoutes: [
+          '/backoffice/employees',
+          '/backoffice/customers',
+          '/backoffice/settings',
+          '/backoffice/audit-logs',
+          '/backoffice/audit-logs/[id]',
+          '/backoffice/system/health',
+        ],
+        coversRoutes: ['/backoffice'],
+        ownsStates: ['success'],
+        specFile: 'system-admin-route-matrix.spec.ts',
+      },
+      'system-admin-immediate-permission-gate': {
+        title:
+          'blocks employee administrator-only routes and all customer or anonymous backoffice access before child requests',
+        ownsRoutes: [],
+        coversRoutes: [
+          '/backoffice/employees',
+          '/backoffice/settings',
+          '/backoffice/audit-logs',
+          '/backoffice/audit-logs/[id]',
+          '/backoffice/system/health',
+        ],
+        ownsStates: ['permission'],
+        specFile: 'system-admin-route-matrix.spec.ts',
       },
     },
   },
