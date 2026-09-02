@@ -93,16 +93,13 @@ test(bt('browser:system-admin-health', 'audit-workspace-lifecycle'), async ({ pa
   const scrollBeforeRace = await page.evaluate(() => window.scrollY);
   const pendingDetailB = probe.holdNextDetail(AUDIT_B);
   try {
-    const detailRequestB = page.waitForRequest((request) => {
-      const path = new URL(request.url()).pathname;
-      return (
-        request.method() === 'GET' &&
-        path === `/api/v1/backoffice/audit-logs/${encodeURIComponent(AUDIT_B)}`
-      );
-    });
     await rowB.click({ noWaitAfter: true });
-    await detailRequestB;
-    await expect.poll(() => pendingDetailB.state()).toBe('started');
+    await expect
+      .poll(() => pendingDetailB.state(), {
+        message: 'the selected audit detail request should start',
+        timeout: 10_000,
+      })
+      .toBe('started');
     await expect(page.getByLabel('Đang tải chi tiết hoạt động')).toBeVisible();
     await expect(listHeading).toBeVisible();
     await expect(rowA).toBeVisible();
