@@ -57,16 +57,20 @@ describe('warranty policy components', () => {
     const readonlyMarkup = renderToStaticMarkup(
       <WarrantyPolicyEditor
         client={client}
+        notice={null}
         policy={detail([])}
         onClose={() => undefined}
+        onNoticeChange={() => undefined}
         onReload={reload}
       />,
     );
     const editableMarkup = renderToStaticMarkup(
       <WarrantyPolicyEditor
         client={client}
+        notice={null}
         policy={detail(['EDIT', 'DEACTIVATE'])}
         onClose={() => undefined}
+        onNoticeChange={() => undefined}
         onReload={reload}
       />,
     );

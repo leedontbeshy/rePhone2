@@ -85,9 +85,18 @@ test.describe('FE09 warranty click-level lifecycle contracts', () => {
     await page.getByLabel('Tên chính sách').fill('Chính sách thao tác FE09');
     await page.getByLabel('Thời hạn mặc định (ngày)').fill('180');
     await page.getByLabel('Điều khoản').fill('Điều khoản được tạo hoàn toàn qua giao diện.');
-    await page.getByRole('button', { name: 'Tạo chính sách', exact: true }).click();
+    const [createResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/api/v1/backoffice/warranty-policies',
+      ),
+      page.getByRole('button', { name: 'Tạo chính sách', exact: true }).click(),
+    ]);
 
+    expect(createResponse.status()).toBe(200);
     await expect(page.getByText('Đã tạo chính sách.', { exact: false })).toBeVisible();
+    expect(lifecycle.detailReads).toBe(1);
     await page.getByLabel('Tên chính sách').fill('Chính sách thao tác FE09 đã chỉnh sửa');
     await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
     await expect(page.getByText('Đã lưu thay đổi chính sách.', { exact: true })).toBeVisible();

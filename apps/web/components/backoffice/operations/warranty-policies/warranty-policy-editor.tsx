@@ -33,6 +33,8 @@ import styles from './warranty-policies.module.css';
 
 export interface WarrantyPolicyEditorProps {
   readonly client: WarrantyApiClient;
+  readonly notice: string | null;
+  readonly onNoticeChange: (notice: string | null) => void;
   readonly onReload: (policyId: string) => Promise<BackofficeWarrantyPolicyDetail>;
   readonly onClose: () => void;
   readonly policy: BackofficeWarrantyPolicyDetail | null;
@@ -40,6 +42,8 @@ export interface WarrantyPolicyEditorProps {
 
 export function WarrantyPolicyEditor({
   client,
+  notice,
+  onNoticeChange,
   onReload,
   onClose,
   policy,
@@ -48,7 +52,6 @@ export function WarrantyPolicyEditor({
   const [draft, setDraft] = useState(() => warrantyPolicyDraftFrom(policy));
   const [errors, setErrors] = useState<WarrantyPolicyDraftErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refreshRequiredId, setRefreshRequiredId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<'archive' | 'deactivate' | null>(null);
@@ -59,7 +62,6 @@ export function WarrantyPolicyEditor({
   useEffect(() => {
     setErrors({});
     setServerError(null);
-    setNotice(null);
     setRefreshRequiredId(null);
     setDialog(null);
     setReason('');
@@ -82,7 +84,7 @@ export function WarrantyPolicyEditor({
     mutationRef.current = true;
     setBusy(true);
     setServerError(null);
-    setNotice(null);
+    onNoticeChange(null);
     try {
       const outcome = await reconcileWarrantyPolicyMutation({
         command,
@@ -90,7 +92,7 @@ export function WarrantyPolicyEditor({
         onReload,
         success,
       });
-      setNotice(outcome.notice);
+      onNoticeChange(outcome.notice);
       setServerError(outcome.serverError);
       setRefreshRequiredId(outcome.refreshRequiredId);
     } finally {
@@ -107,7 +109,7 @@ export function WarrantyPolicyEditor({
     try {
       await onReload(refreshRequiredId);
       setRefreshRequiredId(null);
-      setNotice('Đã tải lại chi tiết mới nhất.');
+      onNoticeChange('Đã tải lại chi tiết mới nhất.');
     } catch (caught) {
       setServerError(messageFrom(caught, 'Chưa thể tải lại chi tiết mới nhất.'));
     } finally {

@@ -67,11 +67,13 @@ export function WarrantyPolicyView() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editorNotice, setEditorNotice] = useState<string | null>(null);
   const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const listErrorRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const foregroundListLoading = useRef(false);
   const listRequest = useRef(0);
+  const selectedPolicyRef = useRef<BackofficeWarrantyPolicyDetail | null>(null);
   const selectedKeyRef = useRef(selectedKey);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
@@ -138,17 +140,26 @@ export function WarrantyPolicyView() {
 
   useEffect(() => {
     if (selectedKey === null || selectedKey === 'new') {
+      selectedPolicyRef.current = null;
       setSelected(null);
       setDetailLoading(false);
       return;
     }
     if (authStatus !== 'authenticated' || !isStaff) return;
+    if (selectedPolicyRef.current?.id === selectedKey) {
+      setDetailLoading(false);
+      return;
+    }
     let active = true;
+    selectedPolicyRef.current = null;
     setSelected(null);
     setDetailLoading(true);
     void getWarrantyPolicy(client, selectedKey)
       .then((result) => {
-        if (active) setSelected(result);
+        if (active) {
+          selectedPolicyRef.current = result;
+          setSelected(result);
+        }
       })
       .catch((caught: unknown) => {
         if (active) setError(messageFrom(caught, 'Không thể mở chính sách đã chọn.'));
@@ -174,11 +185,13 @@ export function WarrantyPolicyView() {
   }
 
   function selectPolicy(policy: string | null) {
+    setEditorNotice(null);
     navigate(filters, pagination.page, policy);
   }
 
   async function reloadPolicy(policyId: string): Promise<BackofficeWarrantyPolicyDetail> {
     const policy = await getWarrantyPolicy(client, policyId);
+    selectedPolicyRef.current = policy;
     setSelected(policy);
     setItems((current) => {
       const exists = current.some((item) => item.id === policy.id);
@@ -187,7 +200,7 @@ export function WarrantyPolicyView() {
         : [policy, ...current];
     });
     void loadPolicies(true);
-    selectPolicy(policy.id);
+    navigate(filters, pagination.page, policy.id);
     return policy;
   }
 
@@ -200,7 +213,9 @@ export function WarrantyPolicyView() {
   ) : selectedKey === 'new' && isAdmin ? (
     <WarrantyPolicyEditor
       client={client}
+      notice={editorNotice}
       policy={null}
+      onNoticeChange={setEditorNotice}
       onReload={reloadPolicy}
       onClose={() => {
         selectPolicy(null);
@@ -209,7 +224,9 @@ export function WarrantyPolicyView() {
   ) : selected !== null ? (
     <WarrantyPolicyEditor
       client={client}
+      notice={editorNotice}
       policy={selected}
+      onNoticeChange={setEditorNotice}
       onReload={reloadPolicy}
       onClose={() => {
         selectPolicy(null);
