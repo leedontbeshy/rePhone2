@@ -220,10 +220,24 @@ test(
           const sidebar = page.getByRole('complementary', {
             name: 'Điều hướng backoffice',
           });
-          const targetScrollTop = await sidebar.evaluate((element) => {
+          await sidebar.evaluate((element) => {
             // Keep the nested scroller at its viewport height while Playwright expands the page
             // for a full-page capture; otherwise dvh growth clamps scrollTop back to zero.
             element.style.blockSize = `${String(element.getBoundingClientRect().height)}px`;
+          });
+          // The shell observes sidebar resizes to keep the active item visible. Let that callback
+          // settle before pinning the exact snapshot scroll offset so it cannot race the capture.
+          await page.evaluate(
+            () =>
+              new Promise<void>((resolve) => {
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    resolve();
+                  });
+                });
+              }),
+          );
+          const targetScrollTop = await sidebar.evaluate((element) => {
             const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
             element.scrollTop = maximumScrollTop;
             return maximumScrollTop;
