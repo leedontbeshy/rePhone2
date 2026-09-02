@@ -10,6 +10,7 @@ type Role = 'ADMIN' | 'EMPLOYEE';
 
 interface UserProbe {
   readonly commands: string[];
+  readonly detailFailures: Set<string>;
   readonly detailReads: string[];
   employeeListReads: number;
   customerListReads: number;
@@ -52,17 +53,55 @@ test(bt('browser:system-admin-health', 'user-master-detail-stability'), async ({
   const customerListReads = probe.customerListReads;
   expect(customerListReads).toBeGreaterThanOrEqual(1);
 
+  const customerA = userButton(page, 'Khách An');
   const customerB = userButton(page, 'Khách Bình');
   await customerB.scrollIntoViewIfNeeded();
   const customerScroll = await page.evaluate(() => window.scrollY);
   await customerB.click();
   await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
   await expect(customerList).toBeVisible();
-  await expect(page.locator('#customer-detail')).toContainText('Khách Bình');
+  await customerA.click();
+  await expect(page.locator('#customer-detail')).toContainText('Khách An');
   await expect(page.locator('#customer-detail').getByRole('heading', { level: 2 })).toBeFocused();
+  await delay(380);
+  await expect(page.locator('#customer-detail')).toContainText('Khách An');
+  await expect(page.locator('#customer-detail')).not.toContainText('Khách Bình');
   expect(probe.customerListReads).toBe(customerListReads);
   expect(
     Math.abs((await page.evaluate(() => window.scrollY)) - customerScroll),
+  ).toBeLessThanOrEqual(2);
+
+  const customerBPath = `/api/v1/backoffice/customers/${CUSTOMER_B}`;
+  const detailReadsBeforeFailure = probe.detailReads.filter(
+    (path) => path === customerBPath,
+  ).length;
+  probe.detailFailures.add(customerBPath);
+  await customerB.scrollIntoViewIfNeeded();
+  const customerErrorScroll = await page.evaluate(() => window.scrollY);
+  await customerB.click();
+  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+  await expect(page.getByText('Lỗi giả lập SERVICE_UNAVAILABLE', { exact: true })).toBeVisible();
+  await expect(customerList).toBeVisible();
+  await expect(page.locator('#customer-detail')).toContainText('Khách An');
+  await expect(customerB).toBeFocused();
+  expect(probe.customerListReads).toBe(customerListReads);
+  expect(
+    Math.abs((await page.evaluate(() => window.scrollY)) - customerErrorScroll),
+  ).toBeLessThanOrEqual(2);
+
+  await customerB.click();
+  await expect(page.getByLabel('Đang tải chi tiết')).toBeVisible();
+  const customerRetryScroll = await page.evaluate(() => window.scrollY);
+  await expect(customerB).toBeFocused();
+  await expect(page.locator('#customer-detail')).toContainText('Khách Bình');
+  await expect(page.locator('#customer-detail').getByRole('heading', { level: 2 })).toBeFocused();
+  await expect(page.getByText('Lỗi giả lập SERVICE_UNAVAILABLE', { exact: true })).toHaveCount(0);
+  expect(probe.detailReads.filter((path) => path === customerBPath)).toHaveLength(
+    detailReadsBeforeFailure + 2,
+  );
+  expect(probe.customerListReads).toBe(customerListReads);
+  expect(
+    Math.abs((await page.evaluate(() => window.scrollY)) - customerRetryScroll),
   ).toBeLessThanOrEqual(2);
 });
 
@@ -135,6 +174,7 @@ async function userFixture(
   const probe: UserProbe = {
     commands: [],
     customerListReads: 0,
+    detailFailures: new Set<string>(),
     detailReads: [],
     employeeListReads: 0,
   };
@@ -180,6 +220,9 @@ async function userFixture(
     if (path === `/api/v1/backoffice/customers/${CUSTOMER_B}` && method === 'GET') {
       probe.detailReads.push(path);
       await delay(320);
+      if (probe.detailFailures.delete(path)) {
+        return json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+      }
       return json(route, { data: customerB });
     }
 
