@@ -67,6 +67,7 @@
     "performance:storefront:build": "cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 API_INTERNAL_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web build",
     "performance:storefront": "pnpm performance:storefront:build && playwright test --config playwright.performance.config.ts",
     "performance:audit-client-media": "node scripts/fe09-client-media-audit.mjs",
+    "performance:compare": "node scripts/fe09-compare-performance.mjs",
     "docker:dev": "docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up --build --watch",
     "docker:dev:down": "docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml down",
     "docker:demo": "docker compose --env-file .env.docker -f compose.yaml -f compose.demo.yaml up --build -d --wait",
