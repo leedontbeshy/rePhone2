@@ -108,6 +108,30 @@ test(bt('browser:system-admin-health', 'settings-conflict-rebase'), async ({ pag
   expect(probe.settings.version).toBe(4);
 });
 
+test(bt('browser:system-admin-health', 'settings-validation-focus'), async ({ page }) => {
+  const probe = await settingsFixture(page);
+  await page.goto('/backoffice/settings');
+
+  const storeName = page.getByLabel(/^Tên cửa hàng/);
+  await expect(storeName).toHaveValue('rePhone FE09');
+  await storeName.fill('');
+  await storeName.press('Enter');
+
+  const summary = page.getByRole('alert').filter({ hasText: 'Kiểm tra lại thông tin' });
+  await expect(summary).toBeFocused();
+  await expect(storeName).toHaveAttribute('aria-invalid', 'true');
+  expect(probe.patchBodies).toEqual([]);
+
+  const fieldLink = summary.getByRole('link', { name: 'Nhập tên cửa hàng.' });
+  await fieldLink.focus();
+  await fieldLink.press('Enter');
+  await expect(storeName).toBeFocused();
+
+  await storeName.fill('rePhone FE09');
+  await expect(summary).toHaveCount(0);
+  await expect(storeName).not.toHaveAttribute('aria-invalid', 'true');
+});
+
 test(bt('browser:system-admin-health', 'settings-qr-lifecycle'), async ({ page }) => {
   const probe = await settingsFixture(page);
   await page.goto('/backoffice/settings');

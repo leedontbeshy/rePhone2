@@ -73,7 +73,6 @@ export default function LoginPage() {
           type="email"
           autoComplete="email"
           disabled={submitting}
-          autoFocus
           label="Email"
           required
           maxLength={320}

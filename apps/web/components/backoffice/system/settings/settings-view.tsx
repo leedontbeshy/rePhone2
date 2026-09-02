@@ -63,6 +63,8 @@ export function SettingsView() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [mutationLock] = useState(createSystemAdminMutationLock);
   const errorRef = useRef<HTMLDivElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  const focusErrorSummary = useRef(false);
 
   const load = useCallback(
     async (replaceDraft: boolean) => {
@@ -95,6 +97,12 @@ export function SettingsView() {
   useEffect(() => {
     if (error !== undefined) errorRef.current?.focus();
   }, [error]);
+
+  useEffect(() => {
+    if (!focusErrorSummary.current || Object.keys(fieldErrors).length === 0) return;
+    focusErrorSummary.current = false;
+    errorSummaryRef.current?.focus();
+  }, [fieldErrors]);
 
   const dirty = useMemo(
     () =>
@@ -129,9 +137,9 @@ export function SettingsView() {
       setError(undefined);
       setNotice(undefined);
       const validation = validateSettingsDraft(settings, draft);
+      focusErrorSummary.current = validation.input === undefined;
       setFieldErrors(validation.errors);
       if (validation.input === undefined) {
-        setError('Một số thông tin chưa hợp lệ. Hãy kiểm tra các trường được đánh dấu.');
         return;
       }
       if (Object.keys(validation.input).length === 1) {
@@ -315,7 +323,7 @@ export function SettingsView() {
 
       <div className={styles.layout}>
         <form className={styles.form} noValidate onSubmit={(event) => void save(event)}>
-          <ErrorSummary errors={summaryErrors} />
+          <ErrorSummary errors={summaryErrors} ref={errorSummaryRef} />
           <SettingsSection
             description="Thông tin khách hàng nhìn thấy khi cần liên hệ hoặc đến nhận máy."
             icon={<StorefrontIcon size={22} />}

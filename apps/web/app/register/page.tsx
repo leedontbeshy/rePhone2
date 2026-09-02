@@ -98,7 +98,6 @@ export default function RegisterPage() {
             name="fullName"
             autoComplete="name"
             disabled={submitting}
-            autoFocus
             label="Họ và tên"
             required
             maxLength={255}

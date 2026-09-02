@@ -672,6 +672,13 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['conflict', 'pending', 'success'],
         specFile: 'system-settings-lifecycle.spec.ts',
       },
+      'settings-validation-focus': {
+        title: 'moves keyboard focus from the validation summary to the exact invalid setting',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/settings'],
+        ownsStates: ['error'],
+        specFile: 'system-settings-lifecycle.spec.ts',
+      },
       'settings-qr-lifecycle': {
         title:
           'validates the custom QR picker and handles upload progress, provider failure and success',
