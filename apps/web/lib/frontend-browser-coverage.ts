@@ -685,6 +685,29 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['error', 'loading', 'stale', 'success'],
         specFile: 'system-audit-workspace.spec.ts',
       },
+      'health-dependency-state-matrix': {
+        title:
+          'renders healthy, degraded, unavailable and not-configured dependencies from backend snapshots',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/system/health'],
+        ownsStates: ['provider-error', 'success', 'unavailable'],
+        specFile: 'system-health-overview-states.spec.ts',
+      },
+      'health-stale-refresh': {
+        title: 'keeps the last health snapshot visible when a local refresh fails',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/system/health'],
+        ownsStates: ['error', 'loading', 'stale'],
+        specFile: 'system-health-overview-states.spec.ts',
+      },
+      'overview-refresh-role-boundary': {
+        title:
+          'renders real-shaped metrics and role-scoped links while refreshing the overview locally',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice'],
+        ownsStates: ['error', 'loading', 'permission', 'stale', 'success'],
+        specFile: 'system-health-overview-states.spec.ts',
+      },
     },
   },
 } as const satisfies Record<string, FrontendBrowserSuiteDefinition>;
