@@ -101,5 +101,6 @@ failure còn lại là strict locator và cùng race chờ option. Sau remediati
 | Order/warranty/after-sales collection và detail hoạt động ở 390 px | **PASS** — đủ bảy route, không overflow, Axe zero serious/critical |
 | Error/provider failure copy cụ thể, không báo validation chung sai nguyên nhân | **PASS** — storage, expired URL, attachment limit, field validation và permission có copy/interaction riêng |
 
-WP-06 không còn blocker trong phạm vi. `FE9-R14` của checkout vẫn mở độc lập và
-không bị coi là đã giải quyết bởi kết quả post-purchase này.
+WP-06 không còn blocker trong phạm vi. Tại thời điểm đóng WP-06, `FE9-R14` của
+checkout vẫn mở độc lập và không được coi là đã giải quyết bởi post-purchase;
+remediation riêng của WP-14 sau đó đã đóng risk này.

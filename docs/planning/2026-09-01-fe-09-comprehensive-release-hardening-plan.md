@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-14 — release closeout**<br>
+> Con trỏ thực thi: **WP-14 — local pass, release hold chờ CI/acceptance**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -19,8 +19,10 @@
 - Phạm vi bao gồm storefront, auth/account, cart/wishlist/checkout, customer
   post-purchase, catalog/voucher administration, inventory, operations và system
   administration — đủ **56 route hiện hành**.
-- FE-09 không thêm nghiệp vụ backend mới. Mọi quyền, state transition, giá, tồn
-  kho, `availableActions`, replay và conflict tiếp tục lấy từ API chính thức.
+- FE-09 không thêm operation hoặc tính năng nghiệp vụ mới. Contract
+  security/reliability chặn release được phép harden có kiểm soát; mọi quyền, state
+  transition, giá, tồn kho, `availableActions`, replay và conflict tiếp tục lấy từ
+  API chính thức.
 - Mục tiêu là đưa sản phẩm tới chất lượng phát hành: giao diện nhất quán, tiếng
   Việt tự nhiên, responsive ổn định, accessibility, hiệu năng, bảo mật hiển thị,
   test và bằng chứng release đầy đủ.
@@ -47,17 +49,17 @@ bằng chứng đóng work package.
 | WP-01 — Coverage + CI | **PASS phần triển khai** | Registry/CI workflow đã có; CI URL và artifact thật chờ push, bắt buộc bổ sung ở WP-14 |
 | WP-02 — Foundation | **PASS** | Shared form, loading, focus, pagination, upload và sidebar đã harden |
 | WP-03 — Storefront | **PASS** | Sáu route public đã qua browser, responsive, accessibility và performance đại diện |
-| WP-04 — Auth/account | **PASS có residual risk** | Flow và privacy đã harden; `FE9-R13` về response đăng ký vẫn mở |
-| WP-05 — Commerce | **BLOCKED** | Frontend/test đã hoàn tất; `FE9-R14` về checkout preview fingerprint chưa có quyết định backend/Product |
+| WP-04 — Auth/account | **PASS** | Flow/privacy đã harden; `FE9-R13` đóng tại WP-14 bằng response đăng ký không phân biệt |
+| WP-05 — Commerce | **PASS** | `FE9-R14` đóng bằng full-preview fingerprint, stale-preview `409` và generated contract |
 | WP-06 — Post-purchase | **PASS** | Bảy route khách hàng, guest credential, eligibility và evidence đã được kiểm tra |
 | WP-07 — Catalog/voucher | **PASS** | Sáu route, lifecycle, role, conflict và local refresh đã qua gate |
 | WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
-| WP-09 — Operations | **PASS có residual risk** | 11 route, lifecycle, API, desktop/mobile, Axe và 22 ảnh đã qua gate; `FE9-R15`–`FE9-R16` còn mở |
+| WP-09 — Operations | **PASS có giới hạn nền tảng** | 11 route/lifecycle/API/visual đã qua gate; `FE9-R15` đóng bằng refund idempotency, `FE9-R16` còn mở |
 | WP-10 — System admin | **PASS** | Sáu route, role matrix, live health, master-detail, CAS/QR, audit, Axe và 25 ảnh đã qua gate |
-| WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và cross-cut matrix đã qua gate; FE9-R17/R18 giữ rõ proxy zoom và Chromium-only |
-| WP-12 — Performance/client/media | **PASS cục bộ** | 12 route đạt absolute budget sau remediation CLS; relative variance có decision và CI artifact chờ push |
+| WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và full Chromium đã qua gate; Firefox/WebKit critical smoke cục bộ `2/2`; FE9-R17 và CI proof còn mở |
+| WP-12 — Performance/client/media | **PASS cục bộ** | Final production `12/12` route tại `50b6cc9`; relative variance có decision và CI artifact chờ push |
 | WP-13 — Legacy cleanup | **PASS cục bộ** | Zero-consumer cleanup theo owner; full unit/build, hai release matrix và performance absolute đều xanh trên final tree |
-| WP-14 — Release closeout | **PENDING** | Hai release run sạch, production smoke, CI artifact, release SHA và quyết định residual risk |
+| WP-14 — Release closeout | **LOCAL PASS — RELEASE HOLD** | Hai release run, compiled smoke, exact-set, rollback và cross-browser cục bộ đã xanh; chờ CI/artifact và quyết định FE9-R16/R17 |
 
 Các trạng thái trên phân biệt rõ **code đã có** với **work package đã đủ bằng
 chứng để đóng**. Một WP không được chuyển `PASS` chỉ vì test cục bộ đơn lẻ xanh.
@@ -538,16 +540,16 @@ stock và stock movements.
 
 **Routes:** 11 route orders, payments, refunds, after-sales, warranties và policies.
 
-**Trạng thái 02/09/2026:** `PASS CÓ RESIDUAL`. Cây code/browser cuối `b10a0d4`
+**Trạng thái 02/09/2026:** `PASS CÓ GIỚI HẠN NỀN TẢNG`. Cây code/browser cuối `b10a0d4`
 đã qua full web `663/663`, API unit/service `106/106`, API E2E `42/42` và hai lượt
 browser `11/11` liên tiếp. Đủ 11 route ở desktop/mobile, Axe bằng zero
 serious/critical, không overflow và 22/22 ảnh current-run đã được review. Chi tiết
 tại [WP-09 operations evidence](../evidence/fe-09/wp-09-operations.md).
 
-Pending lock hiện chỉ chặn gửi lặp cùng frame; chưa có idempotency key cho lỗi mạng
-mơ hồ (`FE9-R15`). Native `datetime-local` trên Windows còn phụ thuộc regional
-locale (`FE9-R16`). Hai residual này không phủ nhận kết quả UI của WP-09 nhưng phải
-được xử lý hoặc chấp nhận rõ trước WP-14.
+WP-14 bổ sung UUID idempotency key, request fingerprint và replay ổn định cho tạo
+hoàn tiền, vì vậy `FE9-R15` đã đóng đúng phạm vi critical mutation này. Native
+`datetime-local` trên Windows còn phụ thuộc regional locale (`FE9-R16`); giới hạn
+mức thấp này cần Product chấp nhận hoặc remediation trước khi FE-09 chuyển `DONE`.
 
 **Tasks**
 
@@ -599,8 +601,9 @@ tại [WP-10 system administration evidence](../evidence/fe-09/wp-10-system-admi
 
 **Trạng thái 02/09/2026:** `PASS CÓ GIỚI HẠN EVIDENCE`. Cây code/browser cuối
 `8351095` có ma trận đại diện cho tám miền, 38 ảnh baseline và hai full
-`browser:release-matrix` cuối đạt `5/5`. Native zoom và Firefox/WebKit chưa có
-bằng chứng, được giữ tại `FE9-R17`–`FE9-R18` thay vì nâng claim quá phạm vi.
+`browser:release-matrix` cuối đạt `5/5`. WP-14 bổ sung critical Firefox/WebKit
+`2/2`; full matrix/PNG vẫn là Chromium và CI artifact chưa có. Native zoom vẫn chưa
+có bằng chứng thật, nên `FE9-R17` tiếp tục mở và `FE9-R18` mới được mitigated cục bộ.
 
 **Tasks**
 
@@ -689,6 +692,20 @@ quyết định và CI confirmation condition được ghi tại
 - FE-09 chuyển `DONE`; không phase nào còn `IN PROGRESS`.
 - Residual risk có owner, severity và quyết định chấp nhận/hoãn rõ ràng.
 
+**Kết quả thực thi cục bộ ngày 02/09/2026**
+
+- Một `pnpm verify:release` trên candidate `de82f60` đạt pass `1/2` và `2/2`; mỗi pass Chromium
+  `93/93`, web `677/677`, API `705/705`, integration `55/55`, E2E `103/103` và
+  coverage `863/863`.
+- Exact-set gate đạt `9/9`: 162 operation, 56 route, 13 state và 93 browser scenario.
+- Runtime SHA `50b6cc9` đạt compiled production smoke, performance `12/12` route và
+  cleanup còn 0 container/network/volume của project smoke.
+- Firefox `1/1`, WebKit `1/1`; rollback shared shell/CSS/performance geometry đều
+  rehearsal xanh trong worktree tạm.
+- `FE9-R13`–`FE9-R15` đã đóng; `FE9-R18` mitigated cục bộ. FE-09 chưa `DONE` vì chưa
+  có CI URL/artifact và chưa có quyết định Product/QA cho `FE9-R16`, `FE9-R17`.
+- Evidence: [WP-14 release closeout](../evidence/fe-09/wp-14-release-closeout.md).
+
 ## 10. Test strategy và quality gates
 
 ### 10.1. Gate theo commit
@@ -714,28 +731,27 @@ quyết định và CI confirmation condition được ghi tại
 
 ### 10.3. Final release gate
 
-- `pnpm verify`
-- `pnpm test:coverage`
-- `pnpm test:browser`
 - `pnpm verify:release`
-- Chạy lại `pnpm verify:release` lần hai từ test DB sạch.
+- Runner gọi tuần tự pass `1/2` và `2/2`; mỗi pass thực thi
+  `pnpm verify:release:once` gồm verify, generated drift, coverage và browser.
 
 DB lifecycle bắt buộc bao quanh release gate:
 
 1. Nếu CI cấp `TEST_DATABASE_URL`, đợi PostgreSQL service ready và không tự quản
    container ngoài run.
-2. Nếu không có `TEST_DATABASE_URL`, dùng `test:db:prepare` hiện hữu để tự bật
-   `postgres-test`, prepare/seed và ghi nhận run sở hữu container này.
-3. Chạy `pnpm verify:release`.
-4. Reset/prepare baseline sạch đã xác định rồi chạy `pnpm verify:release` lần hai.
-5. Cleanup luôn chạy khi success/failure; chỉ stop/down container do run tự tạo.
+2. Nếu không có `TEST_DATABASE_URL`, runner tự bật `postgres-test`, ghi nhận trạng
+   thái container trước run và chỉ sở hữu phần lifecycle nó tạo ra.
+3. Chạy một lệnh `pnpm verify:release`; trong mỗi pass, `verify` gọi
+   `test:db:prepare` để reset/prepare/seed baseline sạch trước integration/E2E.
+4. Sau pass `1/2`, runner gọi pass `2/2` bằng cùng topology và test database guard.
+5. Cleanup luôn chạy khi success/failure; runner khôi phục đúng trạng thái container
+   trước run thay vì dọn tài nguyên không do nó sở hữu.
 
-`verify:release` hiện đã bao gồm `verify`, API coverage và Playwright. Các command
-được liệt kê riêng để evidence chỉ rõ bước nào thất bại và không che lỗi bằng một
-exit code tổng quát. `verify:release` gọi `verify` rồi `test:db:prepare`; script
-prepare hiện có thể tự bật PostgreSQL test khi không được cấp `TEST_DATABASE_URL`.
-WP-01 phải bổ sung ownership/cleanup và nhánh CI service, không viết lại startup
-logic trùng lặp.
+`verify:release` là orchestrator; nó gọi `verify:release:once` hai lần. Mỗi pass mới
+gọi `verify`, và `verify` chứa `test:db:prepare` trước integration/E2E. Evidence vẫn
+ghi từng gate con để chỉ rõ bước lỗi thay vì che bằng một exit code tổng quát.
+Lifecycle container bên ngoài hoặc do runner tạo được xử lý theo ownership guard,
+không viết lại startup logic trùng lặp.
 
 ### 10.4. Browser suite mục tiêu
 
@@ -743,16 +759,16 @@ logic trùng lặp.
 | --- | --- | --- |
 | `frontend-foundation` | có | regression shared shell/primitive/visual đã được mở rộng |
 | `storefront-discovery` | có | perf/responsive/a11y đại diện đã có; chạy lại ở release matrix |
-| `auth-account` | có | mobile/keyboard/state đã mở rộng; `FE9-R13` còn mở |
-| `cart-checkout` | có | partial loading/conflict đã mở rộng; `FE9-R14` chặn closeout |
+| `auth-account` | có | mobile/keyboard/state đã mở rộng; `FE9-R13` đóng tại WP-14 |
+| `cart-checkout` | có | partial loading/conflict và full-preview fingerprint đã qua gate; `FE9-R14` đóng |
 | `customer-post-purchase` | có | evidence/eligibility/error đã qua gate WP-06 |
 | `catalog-voucher-admin` | có | role/state/visual đã qua gate WP-07 |
 | `inventory-stock` | có | axe/workflow resume/privacy đã qua gate WP-08 |
 | `backoffice-access` | có | tiếp tục giữ fail-closed toàn backoffice |
 | `critical-commerce-flow` | có | chạy lại như release smoke end-to-end |
-| `operations-lifecycle` | **thiếu tại baseline** | đã hoàn thiện 11 UI test chia bốn spec; WP-09 PASS có residual |
+| `operations-lifecycle` | **thiếu tại baseline** | đã hoàn thiện 11 UI test chia bốn spec; refund idempotency đóng `FE9-R15` |
 | `system-admin-health` | **thiếu tại baseline** | đã hoàn thiện 12 test qua sáu spec; WP-10 PASS |
-| `release-matrix` | có | `5/5` hai lượt liên tiếp ở WP-11 và lặp lại `5/5` hai lượt sau WP-13; final release gate thuộc WP-14 |
+| `release-matrix` | có | full Chromium cuối `93/93` hai release pass; critical Firefox/WebKit cục bộ `2/2`; CI artifact chờ push |
 
 Browser test dùng fixture/interception chứng minh giao diện, tương tác, loading,
 focus, scroll, role presentation và conflict presentation. API unit/service/E2E
@@ -829,10 +845,10 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 
 | ID | Rủi ro | Mức | Dấu hiệu | Giảm thiểu / rollback |
 | --- | --- | --- | --- | --- |
-| FE9-R01 | shared CSS làm hỏng surface khác | Cao | visual/browser regression ngoài owner | consumer scan, commit nhỏ, revert CSS concern |
+| FE9-R01 | shared CSS làm hỏng surface khác | Cao — CLOSED | visual/browser regression ngoài owner | Đóng bằng WP-13 consumer scan, rollback rehearsal và hai final release pass |
 | FE9-R02 | chuyển Server/Client boundary gây hydration hoặc bundle tăng | Cao | hydration warning, request lặp, build delta | đo trước/sau, revert boundary riêng |
 | FE9-R03 | test owner “xanh giả” nhưng không chạy flow thật | Cao | label có nhưng không có test title/selector | executable registry, negative contract test |
-| FE9-R04 | browser suite flaky vì data/time/provider | Cao | retry phụ thuộc thứ tự/thời gian | deterministic seed/clock/provider fixture, zero retry gate |
+| FE9-R04 | browser suite flaky vì data/time/provider | Cao — CLOSED | retry phụ thuộc thứ tự/thời gian | Đóng bằng hai `verify:release` liên tiếp, mỗi lượt `93/93`, zero retry/skip |
 | FE9-R05 | CI làm lộ secret hoặc PII qua artifact | Rất cao | env/log/trace chứa token | fake/local env, redaction, artifact review, rotate secret nếu lộ |
 | FE9-R06 | role/privacy regression khi mở rộng test | Rất cao | request private xuất hiện trước guard | fail-closed negative test, forward-fix trước polish |
 | FE9-R07 | cleanup legacy xóa consumer ngầm | Cao | route compile nhưng UI vỡ | `rg` + build + browser owner, revert cleanup commit |
@@ -841,12 +857,12 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R10 | full gate quá dài làm bỏ qua kiểm thử | Cao | chỉ chạy subset trước merge | fast PR gate + required release gate + artifact |
 | FE9-R11 | backend contract gap bị vá bằng UI suy diễn | Cao | status/action tự tính ở client | dừng WP, ghi blocker backend, không workaround |
 | FE9-R12 | Docker/test DB khác Supabase runtime | Trung bình | local xanh nhưng provider runtime lỗi | contract/integration parity, provider degradation smoke |
-| FE9-R13 | response đăng ký vẫn để lộ tín hiệu trùng tài khoản qua Network | Trung bình | endpoint trả `409 DUPLICATE_RESOURCE` dù UI dùng nội dung chung | backend/OpenAPI dùng response không phân biệt hoặc Product chấp nhận rủi ro tại WP-14 |
-| FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao | metadata/phân bổ/điểm nhận thay đổi nhưng tổng tiền không đổi | backend/OpenAPI cấp fingerprint/version bất biến hoặc Product chấp nhận và sửa acceptance |
-| FE9-R15 | mutation FE-7 chưa replay an toàn sau lỗi mạng mơ hồ | Cao | pending lock chỉ chặn gửi lặp cùng thời điểm, không có idempotency key | bổ sung contract idempotency hoặc ghi quyết định residual risk trước release |
+| FE9-R13 | response đăng ký để lộ tín hiệu trùng tài khoản | Trung bình — CLOSED | endpoint cũ trả `409 DUPLICATE_RESOURCE` | Đóng bằng generic HTTP `201`/response chung, OpenAPI/client và browser proof |
+| FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao — CLOSED | metadata/phân bổ/điểm nhận đổi nhưng tổng tiền giữ nguyên | Đóng bằng full-preview fingerprint, create expectation và mismatch `409` kèm preview mới |
+| FE9-R15 | tạo hoàn tiền chưa replay an toàn sau lỗi mạng mơ hồ | Cao — CLOSED | pending lock không phân biệt lost response | Đóng bằng UUID idempotency key, request fingerprint, persistence và sequential/concurrent replay test |
 | FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | shared accessible `DateTimeField` hoặc Product chấp nhận hành vi native trước release |
 | FE9-R17 | bằng chứng reflow dùng proxy viewport, chưa phải native zoom 200% | Thấp | `720×450` chứng minh geometry/hit-test nhưng không đổi browser zoom thật | chạy native zoom trên release build hoặc thu hẹp claim và chấp nhận limitation |
-| FE9-R18 | browser matrix hiện chỉ có Chromium/Windows | Trung bình | Firefox/WebKit chưa có binary/CI artifact được xác nhận | chạy critical smoke hai engine hoặc release owner chấp nhận phạm vi Chromium rõ ràng |
+| FE9-R18 | full visual/browser matrix chủ yếu Chromium/Windows | Trung bình — MITIGATED | Firefox/WebKit CI artifact chưa có | Local critical smoke Firefox/WebKit `2/2`; workflow đã có, cần CI URL/artifact để đóng |
 
 Rollback policy:
 
@@ -871,6 +887,7 @@ Rollback policy:
 | Cleanup legacy ở cuối | xóa sớm để giảm code | cần consumer/visual proof sau khi surface ổn định |
 | CI là phần DoD | chỉ chạy local thủ công | C9 cần release gate, artifact và CI URL truy xuất được |
 | Commit nhỏ theo concern | một commit lớn theo phase | yêu cầu người dùng và rollback safety |
+| Cho phép remediation contract R13–R15 trong WP-14 | chỉ ghi nhận residual hoặc mở rộng sản phẩm | Đây là các sửa security/reliability chặn release, giữ nguyên capability và có OpenAPI/E2E proof |
 
 ## 16. Dependency và thứ tự thực hiện
 
@@ -898,18 +915,18 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Con trỏ hiện tại là **WP-14**. WP-13 đã hoàn tất consumer proof, owner regression,
-hai lượt release matrix và performance absolute trên tree `a66c114`; chi tiết nằm
-tại [WP-13 evidence](../evidence/fe-09/wp-13-legacy-cleanup.md). Thứ tự tiếp tục:
+Con trỏ hiện tại là **WP-14 release hold**. Local closeout đã hoàn tất trên release
+candidate `de82f60`: hai release pass, exact-set ownership, production compiled
+smoke/performance, cross-browser critical smoke và ba rollback rehearsal đều xanh;
+chi tiết tại [WP-14 evidence](../evidence/fe-09/wp-14-release-closeout.md). Thứ tự còn
+lại:
 
-1. Chốt `FE9-R13`–`FE9-R18` bằng remediation hoặc quyết định residual risk có owner,
-   severity và phạm vi rõ ràng.
-2. Chạy release gate từ test database sạch, production compiled smoke và exact-set
-   ownership trên release candidate cuối.
-3. Rehearse rollback shared shell/CSS/client-boundary trong worktree tạm và chứng
-   minh tree phục hồi sạch.
-4. Sau khi được phép push/mở PR, lấy CI URL, kiểm artifact thật trên release SHA và
-   chỉ khi đó cập nhật FE-09 sang `DONE`.
+1. Sau khi được phép push/mở PR, lấy CI URL và review artifact thật trên release SHA,
+   gồm redaction, performance và cross-browser job.
+2. Product/QA chấp nhận rõ `FE9-R16` về native date/time theo regional locale và
+   `FE9-R17` về proxy reflow, hoặc yêu cầu remediation tương ứng.
+3. Chỉ khi CI xanh và hai quyết định trên được ghi nhận mới cập nhật FE-09 sang
+   `DONE`; merge vẫn là hành động riêng cần yêu cầu của người dùng.
 
 Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc
 merge chỉ thực hiện khi được yêu cầu; FE-09 chỉ chuyển `DONE` sau WP-14.

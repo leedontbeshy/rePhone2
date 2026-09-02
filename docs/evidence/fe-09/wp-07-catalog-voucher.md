@@ -94,5 +94,6 @@ typecheck được chạy lại trên cây đã format.
 | Employee không truy cập admin-only voucher mutation | **PASS** — browser negative role flow xác nhận mutation bị chặn |
 | Product/voucher lifecycle và conflict test xanh | **PASS** — product/media/conflict và voucher create/activate/edit/pause đạt 4/4 hai lượt liên tiếp |
 
-WP-07 không còn blocker trong phạm vi. `FE9-R14` của checkout vẫn mở độc lập;
-kết quả catalog/voucher không đóng WP-05 hoặc toàn bộ FE-09.
+WP-07 không còn blocker trong phạm vi. Tại thời điểm đóng WP-07, `FE9-R14` vẫn mở
+độc lập; kết quả catalog/voucher không đóng risk này. Remediation checkout riêng ở
+WP-14 sau đó đã đóng `FE9-R14`; toàn FE-09 vẫn chờ CI và acceptance cuối.

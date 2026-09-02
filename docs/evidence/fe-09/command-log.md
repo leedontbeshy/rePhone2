@@ -582,3 +582,86 @@ mobile chỉ đổi sau khi review cùng viewport chứng minh icon dịch `11 p
 target `44 px`; không bulk-update và không nới threshold. Performance raw report ở
 `.local/release-performance/wp13-after.json`; advisory client/media report ở
 `.local/release-performance/wp13-client-media.json`. Cả hai không được commit.
+
+## WP-14 local release closeout — release candidate `de82f60`
+
+### Contract remediation
+
+| Residual | Commit | Focused proof |
+| --- | --- | --- |
+| FE9-R13 — registration enumeration | `266e2ce`, `fdc4242`, `890622c` | Email mới/trùng cùng HTTP `201` và response chung; browser không thấy `DUPLICATE_RESOURCE`; generated contract sạch |
+| FE9-R14 — checkout preview authority | `88b1da9`, `d818e0a`, `890622c` | Fingerprint bao phủ full preview; stale fingerprint trả `409` kèm preview mới; downstream fixture đồng bộ tại `467bc48`, `cc2cb1d` |
+| FE9-R15 — refund replay | `e8aefbe`, `26bfa48`, `890622c` | UUID idempotency key + request fingerprint; sequential/concurrent replay hội tụ, payload mismatch bị từ chối |
+| FE9-R18 — engine coverage | `587be7c`, `65ed527`, `5958751` | WebKit skip-link fix, cross-browser smoke config và CI job đa engine |
+
+### Exact ownership
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm fe:coverage` | 0 | 2 file, `9/9`; 162 operation, 56 route, 13 state, 12 browser suite, 93 scenario trong 20 spec file |
+| `pnpm verify:generated` | 0 | OpenAPI/generated client không drift |
+
+Coverage contract kiểm exact set và fail-closed: operation manifest bằng OpenAPI,
+56 route đều `EXISTING` và có đúng một primary owner, mọi state có owner, không có
+browser test thiếu/ngoài registry.
+
+### Lịch sử gate đỏ và remediation
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Full release sau contract change | 1 | 32 API E2E đỏ vì fixture downstream chưa gửi preview fingerprint; sửa riêng tại `467bc48`, `cc2cb1d`, targeted downstream `36/36` |
+| Production smoke đầu | 1 | Tất cả probe runtime xanh; cleanup guard từ chối vì harness đọc label container sai vị trí. Project được kiểm đúng rồi dọn có kiểm soát; `50b6cc9` sửa phép đọc label |
+| Performance preflight đầu | 1 | Clean-tree guard từ chối do tệp infra của agent song song chưa commit; không phải regression runtime |
+| Rollback shell đầu | 1 | Harness đọc unstaged thay vì staged diff và gọi Vitest config không tồn tại; sửa harness rồi rehearsal lại |
+| Release trước candidate cuối | 1 | Chromium `89` đạt, `2` lỗi, `2` chưa chạy: auth test còn copy đăng ký cũ và snapshot mobile lệch 107 pixel do touch target 44 px có chủ ý |
+| Targeted remediation | 0 | Auth/account full file `9/9`; visual update `1/1`, strict no-update `1/1`; commit `ecdc8e0`, `de82f60` |
+
+### Hai release pass nội bộ cuối trên `de82f60`
+
+| Gate trong mỗi pass `verify:release:once` | Pass 1/2 | Pass 2/2 |
+| --- | ---: | ---: |
+| Format, lint, typecheck | PASS | PASS |
+| Web unit/component | 139 file, `677/677` | 139 file, `677/677` |
+| API unit | 119 file, `705/705` | 119 file, `705/705` |
+| Script contract | `11/11` | `11/11` |
+| Test database | 13 migration | 13 migration |
+| Integration | 12 file, `55/55` | 12 file, `55/55` |
+| API E2E | 14 file, `103/103` | 14 file, `103/103` |
+| Coverage | 145 file, `863/863` | 145 file, `863/863` |
+| Production build | 43 page/route entry | 43 page/route entry |
+| Full Chromium | `93/93` | `93/93` |
+
+Hai pass có cùng coverage: statements `88,11%`, branches `76,17%`, functions
+`84,06%`, lines `93,19%`. Không retry/skip/fixme để đạt kết quả cuối.
+
+### Production smoke và performance tại runtime SHA `50b6cc9`
+
+| Gate | Exit | Kết quả |
+| --- | ---: | --- |
+| `Invoke-ProductionSmoke.ps1` lượt cuối | 0 | Compiled `api-operations`, `api-runtime`, `web-runtime`; PostgreSQL `17.6`; TLS `verify-full`; internal-only network |
+| Runtime probes | 0 | Live/ready/public; anonymous account `401`; customer account `200`; customer backoffice `403`; admin overview/health; version SHA; web health |
+| Dependency projection | 0 | Database/API healthy; storage và mail cố ý offline bằng `example.invalid` và được báo đúng trạng thái |
+| Cleanup proof | 0 | Còn `0` container, `0` network, `0` volume của project smoke |
+| `pnpm performance:release` | 0 | `12/12` route đạt absolute budget; zero runtime issue; Chromium Windows `390×844`, CPU ×4, latency 40 ms |
+
+`git diff 50b6cc9..de82f60` chỉ có auth browser test copy và một PNG snapshot catalog
+mobile đã review; không có thay đổi runtime production giữa hai SHA.
+
+### Cross-browser và rollback
+
+| Gate | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm test:browser:cross-browser-smoke` | 0 | Firefox `1/1`, WebKit `1/1` |
+| Revert shared shell `a39c923` | 0 | Đúng một file; shell `7/7`, lint/typecheck xanh |
+| Revert global CSS `a66c114` | 0 | Inventory 20 file, `68/68`; lint/typecheck/build 43 route xanh |
+| Revert geometry `11a1971` | 0 | Auth `5/5`; lint/typecheck/build 43 route xanh |
+
+Rehearsal chạy trong worktree tạm và được dọn sạch; không rollback database hoặc
+business state.
+
+### Release hold còn lại
+
+WP-14 là **LOCAL PASS — RELEASE HOLD** nhưng FE-09 vẫn `IN PROGRESS`. Chưa push nên
+chưa có CI URL, performance/cross-browser artifact hoặc redaction review
+(`FE9-R05`, `FE9-R08`, `FE9-R10`, `FE9-R18`). `FE9-R16` và `FE9-R17` vẫn cần
+Product/QA chấp nhận hoặc remediation. Tổng hợp tại `wp-14-release-closeout.md`.

@@ -132,6 +132,7 @@ orphan-container notice; tất cả command thoát `0`. Không dùng `--remove-o
 | Stale settings 409, session revoke, audit redaction và provider degradation xanh | **PASS** — browser + API unit/E2E chia đúng trust boundary |
 | Sáu route FE-8 có responsive/Axe/visual evidence | **PASS** — đủ desktop/mobile, zero serious/critical, không document overflow và 25 ảnh đã review |
 
-WP-10 không còn blocker triển khai đã biết trong contract hiện tại. Các residual
-`FE9-R13`–`FE9-R16` vẫn mở ở auth, checkout, operations và native date/time; chúng
-không được đóng bằng bằng chứng system administration.
+WP-10 không còn blocker triển khai đã biết trong contract hiện tại. Tại thời điểm
+đóng WP-10, `FE9-R13`–`FE9-R16` vẫn mở và không được đóng bằng bằng chứng system
+administration. Remediation riêng ở WP-14 đã đóng `FE9-R13`–`FE9-R15`; `FE9-R16`
+vẫn còn mở.

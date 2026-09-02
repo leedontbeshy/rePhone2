@@ -1,6 +1,6 @@
 # FE-09 WP-09 — Hoàn thiện không gian vận hành
 
-> Trạng thái: **PASS CÓ RỦI RO CÒN MỞ — chưa phải trạng thái phát hành hoàn toàn an toàn**<br>
+> Trạng thái: **PASS — còn giới hạn nền tảng FE9-R16**<br>
 > Routes: `/backoffice/orders`, `/backoffice/orders/[id]`,
 > `/backoffice/payments`, `/backoffice/payments/[id]`, `/backoffice/refunds`,
 > `/backoffice/refunds/[id]`, `/backoffice/after-sales`,
@@ -9,7 +9,7 @@
 > Phạm vi commit: `2caa6da` → `b10a0d4`<br>
 > Cây code và browser cuối: `b10a0d495654fd1c47ededd65c8251cfa79acb75`<br>
 > Ngày kiểm tra: 02/09/2026<br>
-> Rủi ro còn mở: `FE9-R15`, `FE9-R16`
+> Rủi ro còn mở: `FE9-R16`
 
 ## Kết quả triển khai
 
@@ -25,6 +25,7 @@
 | Đơn hàng và route matrix | `1c9a8f3` | Phủ nhận tại cửa hàng, giao thành công, giao thất bại/hoàn hàng và đủ 11 route |
 | Chi tiết liên hệ | `91f2870` | Email phổ biến nằm trọn một dòng ở desktop và xuống dòng an toàn ở mobile |
 | Dữ liệu ảnh kiểm tra | `b10a0d4` | Chi tiết đơn dùng sản phẩm thực tế thay cho khung sản phẩm rỗng trong bằng chứng visual |
+| Idempotency hoàn tiền WP-14 | `e8aefbe`, `26bfa48`, `890622c` | API lưu UUID idempotency key cùng request fingerprint; retry cùng intent hội tụ về một kết quả, payload khác bị từ chối; client tái sử dụng key khi lỗi mạng mơ hồ |
 
 ## Hàng đợi, trạng thái tải và điều hướng
 
@@ -60,9 +61,12 @@
   có nội dung riêng và không bị gộp thành lỗi “Kiểm tra lại thông tin”.
 - Hoàn tiền kiểm tra luồng tiền mặt, chuyển khoản ngân hàng và xuất PDF. Double-click
   chỉ tạo một command trong lượt thao tác đang diễn ra.
-- Pending lock hiện tại **không phải** idempotency sau lỗi mạng mơ hồ. Nếu server đã
-  commit nhưng response bị thất lạc, client chưa có idempotency key để replay an
-  toàn; giới hạn này được theo dõi tại `FE9-R15`.
+- Pending lock vẫn chặn double-submit trong cùng frame. Với thao tác tạo hoàn tiền,
+  WP-14 bổ sung UUID idempotency key và request fingerprint ở backend; client giữ
+  nguyên key theo intent khi retry sau lỗi mạng mơ hồ. Replay tuần tự hoặc đồng thời
+  trả cùng kết quả; dùng cùng key cho payload khác bị từ chối. `FE9-R15` đã đóng đúng
+  phạm vi critical mutation này, không được diễn giải thành mọi mutation FE-7 đều có
+  idempotency contract.
 
 ## Hỗ trợ sau mua và bảo hành
 
@@ -126,10 +130,12 @@ kiểm soát được chuỗi này. Label, giá trị và validation vẫn đún
 | Acceptance WP-09 | Đánh giá |
 | --- | --- |
 | FE-7 operation owner không còn trỏ tới suite giả | **PASS** — `operations-lifecycle` có 11 flow đăng ký qua bốn spec và coverage contract xanh |
-| Critical mutation có pending lock, success/refetch và conflict/replay test | **PASS trong contract hiện có** — chặn double-submit cùng frame, refetch projection và xử lý 409 đã được khóa; replay sau lỗi mạng mơ hồ vẫn là `FE9-R15` |
+| Critical mutation có pending lock, success/refetch và conflict/replay test | **PASS** — chặn double-submit, refetch projection và xử lý 409 đã được khóa; tạo hoàn tiền có idempotency persistence/replay riêng tại WP-14 |
 | Tất cả 11 route có desktop/mobile/axe representative evidence | **PASS** — đủ 11 route ở hai viewport, zero serious/critical, không overflow và 22 ảnh đã review |
 
-WP-09 không còn lỗi triển khai đã biết trong phạm vi contract hiện tại, nhưng chưa
-thể tuyên bố release-safe hoàn toàn khi `FE9-R15` và `FE9-R16` còn mở. `FE9-R13`
-và `FE9-R14` vẫn mở độc lập; kết quả operations không đóng rủi ro auth enumeration
-hoặc checkout preview fingerprint.
+WP-09 không còn lỗi triển khai đã biết trong phạm vi contract hiện tại. `FE9-R15` đã
+đóng bằng schema/service/API E2E và client retry regression ở WP-14; `FE9-R13` và
+`FE9-R14` cũng được đóng bởi remediation độc lập của auth và checkout. `FE9-R16` về
+hiển thị native date/time theo regional locale vẫn là giới hạn mức thấp cần Product
+chấp nhận hoặc thay bằng shared field trước khi FE-09 chuyển `DONE`. Chi tiết tại
+[WP-14 release closeout](./wp-14-release-closeout.md).

@@ -1,6 +1,6 @@
 # FE-09 WP-11 — Ma trận accessibility, responsive và visual
 
-> Trạng thái: **PASS trong phạm vi Chromium cục bộ, kèm giới hạn đã ghi rõ**<br>
+> Trạng thái: **PASS — visual matrix Chromium và critical smoke Firefox/WebKit cục bộ**<br>
 > Phạm vi: tám miền giao diện từ storefront đến quản trị hệ thống<br>
 > Viewport chuẩn: `320×844`, `390×844`, `768×1024`, `1024×768`, `1440×900`<br>
 > Ngày kiểm tra: 02/09/2026<br>
@@ -15,10 +15,11 @@ inventory, operations và system administration. Hai lượt cuối của releas
 được chọn; các kiểm tra bàn phím, skip link, touch target, reduced motion, forced
 colors và hình học sticky đều xanh.
 
-Kết quả này không được diễn giải thành chứng nhận WCAG đầy đủ hoặc bằng chứng đa
-trình duyệt. Ma trận hiện chạy trên Chromium/Windows; kiểm tra “200%” là proxy CSS
-viewport `720×450`, không phải native browser zoom. Các giới hạn được ghi chi tiết ở
-cuối tài liệu.
+Kết quả này không được diễn giải thành chứng nhận WCAG đầy đủ hoặc full ma trận đa
+trình duyệt. Ma trận `93` scenario và PNG baseline chạy trên Chromium/Windows;
+WP-14 bổ sung critical smoke Firefox `1/1` và WebKit `1/1`. Kiểm tra “200%” vẫn là
+proxy CSS viewport `720×450`, không phải native browser zoom. Các giới hạn được ghi
+chi tiết ở cuối tài liệu.
 
 ## Ma trận tám miền
 
@@ -211,6 +212,7 @@ xác nhận cho hành vi đó.
 | Auth matrix | PASS — `2/2` |
 | FE-0 exact-unit strict | PASS — `1/1`, 2 snapshot |
 | Release-matrix executable ownership | PASS — coverage/browser contract `9/9` |
+| Critical cross-browser smoke WP-14 | PASS cục bộ — Firefox `1/1`, WebKit `1/1`; CI artifact còn chờ push |
 | Release-matrix lint/format/typecheck theo phạm vi | PASS |
 
 Playwright giữ warning môi trường `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190` và Docker
@@ -242,9 +244,9 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
 - **Không phải native zoom:** `720×450` chỉ là proxy reflow xác định cho 200% của
   `1440×900`; vẫn cần manual/native zoom smoke nếu release policy yêu cầu bằng chứng
   browser zoom thật.
-- **Chromium-only:** toàn bộ kết quả WP-11 hiện tại và PNG baseline là Chromium trên
-  Windows. Firefox/WebKit critical smoke chưa có bằng chứng cục bộ; chỉ chạy khi CI
-  cung cấp môi trường ổn định.
+- **Phạm vi đa trình duyệt:** full 93-scenario matrix và PNG baseline vẫn là Chromium
+  trên Windows. Critical smoke cục bộ đã đạt Firefox `1/1` và WebKit `1/1`; workflow
+  CI đã có nhưng chưa có URL/artifact thật nên `FE9-R18` mới ở trạng thái mitigated.
 - **Không phải chứng nhận WCAG:** Axe zero serious/critical không phát hiện mọi vấn đề;
   forced-colors, touch và keyboard chỉ dùng representative journey/control.
 - **Không phải full Cartesian matrix:** không chạy mọi route × mọi state × năm
@@ -255,9 +257,10 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
   được khóa bằng assertion riêng; screen-reader manual pass chưa được thực hiện.
 - **Thiết bị thật chưa được đo:** viewport là CSS emulation; chưa bao gồm browser
   chrome, safe-area, bàn phím ảo hoặc mật độ điểm ảnh của thiết bị vật lý.
-- **CI/release artifact chưa chốt:** SHA phát hành, URL CI, artifact và critical
-  Firefox/WebKit smoke thuộc WP-14; không được suy ra từ local pass này.
+- **CI/release artifact chưa chốt:** release candidate cục bộ là `de82f60`; URL CI,
+  artifact và cross-browser CI proof vẫn thuộc WP-14, không được suy ra từ local pass.
 
 Với các giới hạn trên được giữ nguyên, WP-11 đạt acceptance cho representative
-accessibility/responsive/visual matrix và có thể chuyển con trỏ sang WP-12. Các giới
-hạn không được tự động đóng hoặc nâng thành claim rộng hơn trong WP-14.
+accessibility/responsive/visual matrix. `FE9-R17` vẫn chờ quyết định về proxy reflow;
+`FE9-R18` chờ CI artifact dù local Firefox/WebKit đã xanh. Tổng hợp hiện hành nằm tại
+[WP-14 release closeout](./wp-14-release-closeout.md).

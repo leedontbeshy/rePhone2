@@ -1,9 +1,9 @@
 # FE-09 WP-05 — Commerce hardening
 
-> Trạng thái: **BLOCKED — CONTRACT DECISION (FE9-R14)**  
-> Routes: `/cart`, `/wishlist`, `/checkout`  
-> Phạm vi commit: `5206793` → `727193d`  
-> Cây sản phẩm và kiểm thử cuối: `727193d034126cff3886eebe8c781f8ec337a1c8`  
+> Trạng thái: **PASS — FE9-R14 đã đóng tại WP-14**<br>
+> Routes: `/cart`, `/wishlist`, `/checkout`<br>
+> Phạm vi commit: `5206793` → `727193d`<br>
+> Cây sản phẩm và kiểm thử cuối: `727193d034126cff3886eebe8c781f8ec337a1c8`<br>
 > Ngày kiểm tra trình duyệt: 02/09/2026
 
 ## Kết quả triển khai
@@ -26,7 +26,8 @@
 | Responsive, accessibility và visual | `c07c1c4`, `c5d9432`, `12a21c1`, `36c7b59` | 20 ảnh ở năm viewport; không tràn ngang, không có axe serious/critical; màu chữ nhỏ đạt tương phản |
 | Tạo đơn full-stack | `bb1d26e` | Guest shipping và customer pickup dùng API/DB thật đến trang chi tiết đơn; không giả lập response tạo đơn |
 | Ổn định visual identity | `9bac07e`, `727193d` | Visual matrix có budget riêng và tài khoản test riêng, không va giới hạn đăng nhập của các scenario trước |
-| Contract blocker | `ab1e1c9` | Ghi nhận `FE9-R14`; frontend không suy diễn projection khi API create chưa xác nhận toàn bộ preview |
+| Contract gap ban đầu | `ab1e1c9` | Ghi nhận đúng `FE9-R14`; frontend không suy diễn projection khi API create chưa xác nhận toàn bộ preview |
+| Full-preview fingerprint WP-14 | `88b1da9`, `d818e0a`, `890622c` | Backend tạo fingerprint bất biến cho toàn bộ business preview; create bắt buộc gửi fingerprint và trả `409` kèm preview mới khi projection lệch; OpenAPI/client được đồng bộ |
 
 ## Browser và visual evidence
 
@@ -118,27 +119,21 @@ scenario; fixture commerce riêng đóng flake này. Hai lượt cuối đều x
 `format:check` cũng từng bắt `auth-provider.tsx` lệch Prettier; commit `8121362` chỉ
 chuẩn hóa định dạng rồi gate cuối xanh.
 
-## Acceptance mapping và blocker
+## Acceptance mapping và closeout
 
 | Acceptance WP-05 | Đánh giá |
 | --- | --- |
 | Guest shipping và customer pickup end-to-end xanh | **PASS** — cả hai tạo đơn bằng API/DB thật và mở projection chi tiết |
 | Merge/reconfirm/conflict không mất sản phẩm hoặc double submit | **PASS** — unit, API E2E và browser state/recovery đều xanh |
-| Money, voucher và fulfillment option luôn từ server | **BLOCKED — FE9-R14** |
+| Money, voucher và fulfillment option luôn từ server | **PASS** — create gắn với fingerprint của toàn bộ preview server và buộc review lại khi fingerprint đổi |
 
-Preview trả đủ item, line price/discount, voucher, shipping fee, fulfillment và pickup
-store. Tuy nhiên create hiện chỉ so `cartUpdatedAt`, `grandTotal` và
-`depositRequired`. Cửa hàng pickup, tên/metadata sản phẩm hoặc phân bổ giá theo dòng
-có thể đổi mà ba giá trị này vẫn giữ nguyên; backend vẫn có thể commit projection
-khác với projection khách vừa xác nhận.
+Preview trả đủ item, line price/discount, voucher, shipping fee, fulfillment và
+pickup store. Remediation WP-14 băm projection nghiệp vụ ổn định, không phụ thuộc
+`calculatedAt`; create nhận `expectedPreviewFingerprint`. Nếu giá, phân bổ, metadata,
+voucher, fulfillment hoặc điểm nhận thay đổi, backend trả `409` cùng preview mới để
+khách xác nhận lại, không commit projection khác với màn hình vừa duyệt.
 
-Theo non-goal FE-09, frontend không tự tạo fingerprint hoặc suy diễn contract. WP-05
-chỉ được đóng khi một trong hai quyết định được ghi nhận:
-
-1. Backend/OpenAPI bổ sung preview fingerprint/version bất biến bao phủ toàn bộ
-   business projection và allocation location; mismatch trả `409` kèm preview mới.
-2. Product Owner chấp nhận hoãn `FE9-R14` và sửa acceptance/known-risk trước WP-14.
-
-Các hạng mục frontend trong phạm vi WP-05 đã hoàn tất và có bằng chứng chạy lại;
-work package vẫn giữ trạng thái **BLOCKED — CONTRACT DECISION** cho tới khi có quyết
-định trên.
+`FE9-R14` được đóng bằng `88b1da9`, `d818e0a` và generated contract `890622c`.
+Fixture downstream được đồng bộ tại `467bc48`, `cc2cb1d`; checkout E2E và toàn bộ
+release gate chạy xanh trên release candidate `de82f60`. Chi tiết tổng hợp nằm tại
+[WP-14 release closeout](./wp-14-release-closeout.md).

@@ -15,6 +15,7 @@
 | Browser contract | `5eaded0` | Mở rộng registry và browser suite cho token, đăng ký, nhân viên, hồ sơ, địa chỉ, đăng xuất, bảo mật, lỗi mạng và privacy |
 | Responsive 320 px | `11af652` | Bỏ giới hạn chiều rộng gốc gây thanh cuộn ngang khi trang dài có scrollbar; thêm regression cho `/account/security` tại 320 px |
 | Visual helper | `7551933` | Giữ hành vi chụp ảnh ổn định nhưng tuân thủ lint bắt buộc |
+| Quyền riêng tư đăng ký WP-14 | `266e2ce`, `fdc4242`, `890622c` | Email mới và email đã tồn tại cùng trả HTTP `201`, nội dung chung và không phát tín hiệu `DUPLICATE_RESOURCE`; OpenAPI/client được đồng bộ |
 
 ## Browser và visual evidence
 
@@ -64,9 +65,10 @@ không-update `2/2`.
 - Lỗi mạng khi đăng xuất giữ context, hiện cảnh báo có độ tương phản đạt chuẩn và cho
   thử lại; không tự phát lại mutation.
 
-HTTP `409 DUPLICATE_RESOURCE` của đăng ký vẫn có thể quan sát trong Network dù UI
-đã dùng nội dung chung. Đây là quyết định contract phía backend, được ghi tại
-`FE9-R13`; không được coi là đã đóng chỉ bằng frontend.
+Remediation WP-14 đã đóng `FE9-R13`: endpoint đăng ký trả cùng HTTP `201` và response
+chung cho email mới lẫn email đã tồn tại. Browser kiểm response không chứa
+`DUPLICATE_RESOURCE`, UI giữ nội dung “Đã tiếp nhận yêu cầu” trong cả hai trường hợp;
+OpenAPI/generated client không còn quảng bá nhánh duplicate riêng cho operation này.
 
 ## Test evidence
 

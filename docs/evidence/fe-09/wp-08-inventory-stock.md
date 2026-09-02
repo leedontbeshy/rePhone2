@@ -120,6 +120,6 @@ colors và accessible name là bằng chứng tự động cho phần đó.
 | Intake/inspection/stock critical journey xanh ở desktop/mobile | **PASS** — 9/9 hai lượt liên tiếp; đủ chín route ở 1440/360 px, Axe và overflow đều xanh |
 | Không raw identifier trong URL, analytics hoặc log | **PASS trong phạm vi quan sát được** — POST body có mã cần tra cứu; URL/query/DOM sau xử lý chỉ có masked value; API unit xác nhận audit writer không nhận mã gốc |
 
-WP-08 không còn blocker trong phạm vi. `FE9-R13` và `FE9-R14` vẫn mở độc lập;
-kết quả inventory không thay đổi quyết định auth enumeration hoặc checkout preview
-contract.
+WP-08 không còn blocker trong phạm vi. Tại thời điểm đóng WP-08, `FE9-R13` và
+`FE9-R14` vẫn mở độc lập; inventory không được dùng để đóng hai contract đó.
+Remediation auth/checkout riêng ở WP-14 sau đó đã đóng cả hai risk.

@@ -153,6 +153,15 @@ refresh, không có endpoint/N+1 mới.
 - Comparator contract: `9/9`.
 - Prettier, ESLint, typecheck, production build và `git diff --check`: PASS.
 
+### Xác nhận production WP-14
+
+WP-14 chạy lại production performance trên runtime code SHA `50b6cc9` với cùng
+profile `390×844`, CPU ×4 và latency 40 ms: **12/12 route đạt absolute budget**,
+zero runtime issue. Production container smoke cũng dựng compiled API/web cùng
+PostgreSQL test cô lập, kiểm health/projection rồi dọn còn 0 container/network/volume
+của project smoke. Hai commit sau runtime SHA chỉ đổi auth test copy và một PNG
+baseline đã review; không đổi code runtime.
+
 CI job chưa thể có URL/artifact thật khi nhánh chưa được push. Đây là điều kiện còn
 lại của WP-14, không làm thay đổi kết luận local WP-12.
 
@@ -162,8 +171,9 @@ lại của WP-14, không làm thay đổi kết luận local WP-12.
   test hay kết luận cross-browser.
 - Interaction proxy bằng hai animation frame, không phải field INP.
 - API performance harness chạy source qua `tsx`; compiled API/production image smoke
-  thuộc WP-14.
+  đã đạt cục bộ ở WP-14, còn CI artifact trên release SHA chưa có.
 - Static boundary audit không tự chứng minh một chuyển đổi Server Component an toàn.
 - Raw report và ảnh giữ ở `.local/`; chỉ summary đã làm sạch được commit.
-- WP-13 chỉ xóa legacy sau consumer scan, build và browser proof; WP-14 phải kiểm CI
-  artifact trên release SHA và chốt FE9-R13–R18.
+- WP-13 chỉ xóa legacy sau consumer scan, build và browser proof; WP-14 đã đóng
+  FE9-R13–R15 cục bộ, nhưng vẫn phải kiểm CI artifact và chốt FE9-R16/R17 trước khi
+  chuyển FE-09 sang `DONE`.
