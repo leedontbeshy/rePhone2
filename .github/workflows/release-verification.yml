@@ -309,6 +309,7 @@ jobs:
       DIRECT_URL: postgresql://postgres:root@localhost:5432/rephone_test
       TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
       PLAYWRIGHT_WEB_SERVER: production
+      PLAYWRIGHT_SHARED_REPORT: 'true'
 
     steps:
       - name: Check out repository
@@ -383,12 +384,17 @@ jobs:
         name: Run Firefox and WebKit critical smoke
         run: pnpm test:browser:cross-browser-smoke
 
+      - id: artifact_redaction
+        name: Verify shared browser reports are sanitized
+        run: pnpm verify:browser-artifacts
+
       - name: Write sanitized browser-gate summary
         if: always()
         shell: bash
         env:
           BROWSER_OUTCOME: ${{ steps.browser.outcome }}
           CROSS_BROWSER_OUTCOME: ${{ steps.cross-browser.outcome }}
+          ARTIFACT_REDACTION_OUTCOME: ${{ steps.artifact_redaction.outcome }}
         run: |
           mkdir -p .local/ci-summary
           {
@@ -396,6 +402,7 @@ jobs:
             echo "runner=${RUNNER_OS}"
             echo "browser=${BROWSER_OUTCOME}"
             echo "cross_browser=${CROSS_BROWSER_OUTCOME}"
+            echo "artifact_redaction=${ARTIFACT_REDACTION_OUTCOME}"
           } > .local/ci-summary/browser-gate.txt
 
       - name: Upload browser report and summary
@@ -411,18 +418,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Upload browser failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: browser-failure-diagnostics-${{ github.run_attempt }}
-          path: |
-            .local/playwright-results
-            .local/playwright-cross-browser-results
-          include-hidden-files: true
-          if-no-files-found: ignore
-          retention-days: 7
 
   performance-gate:
     name: Production performance gate (Windows)

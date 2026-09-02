@@ -1,8 +1,14 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 
 const webOrigin = 'http://localhost:3001';
 const apiBaseUrl = 'http://localhost:4001/api/v1';
 const useProductionWebServer = process.env.PLAYWRIGHT_WEB_SERVER === 'production';
+const writeSharedReport = process.env.PLAYWRIGHT_SHARED_REPORT === 'true';
+
+export const createPlaywrightReporters = (outputFolder: string): ReporterDescription[] =>
+  writeSharedReport
+    ? [['list'], ['./scripts/playwright-shared-artifact-reporter.mjs', { outputFolder }]]
+    : [['list'], ['html', { open: 'never', outputFolder }]];
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -12,7 +18,8 @@ export default defineConfig({
   workers: 1,
   timeout: 90_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { open: 'never', outputFolder: '.local/playwright-report' }]],
+  captureGitInfo: { commit: false, diff: false },
+  reporter: createPlaywrightReporters('.local/playwright-report'),
   outputDir: '.local/playwright-results',
   use: {
     baseURL: webOrigin,
