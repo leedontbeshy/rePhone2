@@ -17,6 +17,7 @@ export default defineConfig({
   use: {
     baseURL: webOrigin,
     ...devices['Desktop Chrome'],
+    timezoneId: 'Asia/Ho_Chi_Minh',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
