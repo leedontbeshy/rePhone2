@@ -31,6 +31,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @rephone/web exec next start -p 3001',
       env: {
+        NODE_ENV: 'production',
         NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
         API_INTERNAL_BASE_URL: apiBaseUrl,
       },
