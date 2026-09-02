@@ -11,16 +11,17 @@ interface FixtureResponse<T> {
 
 interface SystemProbe {
   healthReads: number;
-  holdNextHealthFailure(): ControlledHealthRequest;
+  holdNextHealthFailure(): ControlledRequest;
+  holdNextOverview(): ControlledRequest;
   overviewReads: number;
 }
 
-interface ControlledHealthRequest {
+interface ControlledRequest {
   state(): 'waiting' | 'started' | 'completed';
   release(): void;
 }
 
-interface HealthRequestGate extends ControlledHealthRequest {
+interface RequestGate extends ControlledRequest {
   readonly released: Promise<void>;
   markCompleted(): void;
   markStarted(): void;
@@ -144,11 +145,7 @@ test(
     const initial = overviewSnapshot(12, '2026-09-02T02:00:00.000Z');
     const refreshed = overviewSnapshot(14, '2026-09-02T02:05:00.000Z');
     const adminProbe = await installSystemFixture(page, 'ADMIN', {
-      overview: [
-        { body: initial },
-        { body: refreshed, delayMs: 320 },
-        { delayMs: 320, status: 503 },
-      ],
+      overview: [{ body: initial }, { body: refreshed }, { status: 503 }],
     });
 
     await page.goto('/backoffice');
@@ -162,14 +159,45 @@ test(
     await expectAdminQuickLinks(page, true);
 
     const routeBeforeRefresh = page.url();
-    await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
-    const dashboard = page.locator('[aria-busy="true"]').filter({ hasText: 'Tình hình vận hành' });
-    await expect(dashboard).toContainText('thông tin hiện tại vẫn có thể sử dụng');
-    await expect(page.getByLabel('Đơn đang xử lý: 12. Mở danh sách')).toBeVisible();
+    const pendingRefresh = adminProbe.holdNextOverview();
+    try {
+      const refreshRequest = page.waitForRequest((request) => {
+        return (
+          request.method() === 'GET' &&
+          new URL(request.url()).pathname === '/api/v1/backoffice/overview'
+        );
+      });
+      await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
+      await refreshRequest;
+      await expect.poll(() => pendingRefresh.state()).toBe('started');
+      const dashboard = page
+        .locator('[aria-busy="true"]')
+        .filter({ hasText: 'Tình hình vận hành' });
+      await expect(dashboard).toContainText('thông tin hiện tại vẫn có thể sử dụng');
+      await expect(page.getByLabel('Đơn đang xử lý: 12. Mở danh sách')).toBeVisible();
+    } finally {
+      pendingRefresh.release();
+    }
+    await expect.poll(() => pendingRefresh.state()).toBe('completed');
     await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
     expect(page.url()).toBe(routeBeforeRefresh);
 
-    await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
+    const pendingFailure = adminProbe.holdNextOverview();
+    try {
+      const failureRequest = page.waitForRequest((request) => {
+        return (
+          request.method() === 'GET' &&
+          new URL(request.url()).pathname === '/api/v1/backoffice/overview'
+        );
+      });
+      await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
+      await failureRequest;
+      await expect.poll(() => pendingFailure.state()).toBe('started');
+      await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
+    } finally {
+      pendingFailure.release();
+    }
+    await expect.poll(() => pendingFailure.state()).toBe('completed');
     await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
     await expect(
       page.getByText('Dữ liệu có thể chưa phải mới nhất', { exact: true }),
@@ -224,12 +252,18 @@ async function installSystemFixture(
     overview?: readonly FixtureResponse<ReturnType<typeof overviewSnapshot>>[];
   }>,
 ): Promise<SystemProbe> {
-  let nextHealthFailure: HealthRequestGate | undefined;
+  let nextHealthFailure: RequestGate | undefined;
+  let nextOverview: RequestGate | undefined;
   const probe: SystemProbe = {
     healthReads: 0,
     holdNextHealthFailure() {
-      const gate = createHealthRequestGate();
+      const gate = createRequestGate();
       nextHealthFailure = gate;
+      return gate;
+    },
+    holdNextOverview() {
+      const gate = createRequestGate();
+      nextOverview = gate;
       return gate;
     },
     overviewReads: 0,
@@ -262,7 +296,17 @@ async function installSystemFixture(
     if (request.method() === 'GET' && path === '/api/v1/backoffice/overview') {
       const response = responseAt(responses.overview, probe.overviewReads);
       probe.overviewReads += 1;
-      return respond(route, response);
+      const overviewGate = nextOverview;
+      nextOverview = undefined;
+      if (overviewGate === undefined) return respond(route, response);
+      overviewGate.markStarted();
+      await overviewGate.released;
+      try {
+        await respond(route, response);
+      } finally {
+        overviewGate.markCompleted();
+      }
+      return;
     }
     return json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404);
   });
@@ -405,8 +449,8 @@ async function delay(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function createHealthRequestGate(): HealthRequestGate {
-  let state: ReturnType<ControlledHealthRequest['state']> = 'waiting';
+function createRequestGate(): RequestGate {
+  let state: ReturnType<ControlledRequest['state']> = 'waiting';
   let release = () => undefined;
   const released = new Promise<void>((resolve) => {
     release = resolve;
