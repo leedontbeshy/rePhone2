@@ -368,6 +368,9 @@ jobs:
         run: |
           node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
 
+      - name: Build production web app
+        run: pnpm test:browser:build
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium firefox webkit
 

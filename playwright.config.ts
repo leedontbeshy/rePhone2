@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const webOrigin = 'http://localhost:3001';
+const apiBaseUrl = 'http://localhost:4001/api/v1';
+const useProductionWebServer = process.env.CI === 'true';
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -28,8 +30,14 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command:
-        'pnpm exec cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 API_INTERNAL_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web exec next dev -p 3001',
+      command: useProductionWebServer
+        ? 'pnpm --filter @rephone/web exec next start -p 3001'
+        : 'pnpm --filter @rephone/web exec next dev -p 3001',
+      env: {
+        NODE_ENV: useProductionWebServer ? 'production' : 'development',
+        NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
+        API_INTERNAL_BASE_URL: apiBaseUrl,
+      },
       url: `${webOrigin}/login`,
       timeout: 120_000,
       reuseExistingServer: false,
