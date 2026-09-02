@@ -9,6 +9,7 @@ import {
 const preview = {
   calculatedAt: '2026-08-27T00:00:00.000Z',
   cartUpdatedAt: '2026-08-27T00:00:00.000Z',
+  previewFingerprint: `v1:${'a'.repeat(64)}`,
   fulfillmentType: 'SHIPPING',
   fulfillmentSummary: { type: 'SHIPPING' },
   items: [
@@ -87,6 +88,7 @@ describe('parseChangedCheckoutPreview', () => {
     const cases = [
       { ...preview, items: [{ ...preview.items[0], quantity: 0 }] },
       { ...preview, pricing: { ...preview.pricing, grandTotal: '10.5' } },
+      { ...preview, previewFingerprint: 'v1:wrong' },
       {
         ...preview,
         fulfillmentType: 'PICKUP',

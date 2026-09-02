@@ -69,6 +69,8 @@ function isCheckoutPreview(value: unknown): value is CheckoutPreview {
   if (
     typeof value['calculatedAt'] !== 'string' ||
     typeof value['cartUpdatedAt'] !== 'string' ||
+    typeof value['previewFingerprint'] !== 'string' ||
+    !/^v1:[a-f0-9]{64}$/.test(value['previewFingerprint']) ||
     (value['fulfillmentType'] !== 'PICKUP' && value['fulfillmentType'] !== 'SHIPPING') ||
     !Array.isArray(value['items']) ||
     !value['items'].every(isPreviewItem) ||

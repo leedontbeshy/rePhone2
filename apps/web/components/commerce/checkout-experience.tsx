@@ -398,6 +398,7 @@ function CheckoutSession() {
         ...(shippingAddress === undefined ? {} : { shippingAddress }),
         ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
         ...(form.customerNote.trim() === '' ? {} : { customerNote: form.customerNote.trim() }),
+        expectedPreviewFingerprint: preview.previewFingerprint,
         expectedCartUpdatedAt: preview.cartUpdatedAt,
         expectedGrandTotal: preview.pricing.grandTotal,
         expectedDepositRequired: preview.pricing.depositRequired,
