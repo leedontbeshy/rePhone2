@@ -630,15 +630,36 @@ export const FRONTEND_BROWSER_SUITES = {
       'live-admin-route-matrix': {
         title: 'renders six system administration routes from live backend projections',
         ownsRoutes: [
-          '/backoffice/employees',
-          '/backoffice/customers',
           '/backoffice/settings',
           '/backoffice/audit-logs',
           '/backoffice/audit-logs/[id]',
           '/backoffice/system/health',
         ],
         coversRoutes: ['/backoffice'],
-        ownsStates: ['loading', 'error', 'success', 'stale', 'provider-error'],
+        ownsStates: ['success', 'provider-error'],
+      },
+      'user-master-detail-stability': {
+        title:
+          'keeps employee and customer lists stable while detail requests race without moving scroll or focus',
+        ownsRoutes: ['/backoffice/employees', '/backoffice/customers'],
+        coversRoutes: [],
+        ownsStates: ['error', 'loading', 'stale'],
+        specFile: 'system-user-workspaces.spec.ts',
+      },
+      'user-lifecycle-conflict-and-lock': {
+        title:
+          'locks duplicate user lifecycle commands and restores authoritative state after conflicts',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/employees', '/backoffice/customers'],
+        ownsStates: ['conflict', 'pending', 'success'],
+        specFile: 'system-user-workspaces.spec.ts',
+      },
+      'customer-staff-role-boundary': {
+        title: 'keeps customer lifecycle controls and requests administrator-only',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/customers'],
+        ownsStates: ['permission'],
+        specFile: 'system-user-workspaces.spec.ts',
       },
     },
   },
