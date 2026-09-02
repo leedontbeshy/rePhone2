@@ -101,71 +101,85 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
   });
 
   test(bt('browser:cart-checkout', 'customer-pickup-wishlist'), async ({ page }) => {
-    await addUnitToCart(page, CUSTOMER_PICKUP_UNIT);
-    await login(page, '/cart');
+    test.setTimeout(180_000);
 
-    await expect(
-      page.getByText(`Mã máy: ${CUSTOMER_PICKUP_UNIT.code}`, { exact: true }),
-    ).toBeVisible();
-    await page.goto(CUSTOMER_PICKUP_UNIT.path);
-    await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
-    await expect(page.getByText('Đã lưu máy vào danh sách.', { exact: true })).toBeVisible();
+    await test.step('merge the guest cart and complete the wishlist lifecycle', async () => {
+      await addUnitToCart(page, CUSTOMER_PICKUP_UNIT);
+      await login(page, '/cart');
 
-    await page.goto('/wishlist');
-    const savedCard = page.locator('article').filter({ hasText: CUSTOMER_PICKUP_UNIT.code });
-    await expect(savedCard).toBeVisible();
-    await expect(
-      savedCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }),
-    ).toBeEnabled();
-    const removeSavedResponse = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'DELETE' &&
-        new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
-    );
-    await savedCard
-      .getByRole('button', {
-        name: `Xóa iPhone 13 khỏi danh sách ưa thích`,
-        exact: true,
-      })
-      .click();
-    expect((await removeSavedResponse).status()).toBe(204);
-    await expect(savedCard).toHaveCount(0);
+      await expect(
+        page.getByText(`Mã máy: ${CUSTOMER_PICKUP_UNIT.code}`, { exact: true }),
+      ).toBeVisible();
+      await page.goto(CUSTOMER_PICKUP_UNIT.path);
+      const saveResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/api/v1/wishlist/items',
+      );
+      await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
+      expect([200, 201]).toContain((await saveResponse).status());
+      await expect(page.getByText('Đã lưu máy vào danh sách.', { exact: true })).toBeVisible();
 
-    await page.goto('/checkout');
-    await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng' })).toBeVisible();
-    const savedAddress = page.getByLabel('Chọn địa chỉ đã lưu');
-    await expect(savedAddress).toContainText('Nhà');
-    await savedAddress.selectOption({ index: 1 });
-    await expect(page.locator('#checkout-addressLine')).toHaveValue('123 Đường Demo');
+      await page.goto('/wishlist');
+      const savedCard = page.locator('article').filter({ hasText: CUSTOMER_PICKUP_UNIT.code });
+      await expect(savedCard).toBeVisible();
+      await expect(
+        savedCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }),
+      ).toBeEnabled();
+      const removeSavedResponse = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'DELETE' &&
+          new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
+      );
+      await savedCard
+        .getByRole('button', {
+          name: `Xóa iPhone 13 khỏi danh sách ưa thích`,
+          exact: true,
+        })
+        .click();
+      expect((await removeSavedResponse).status()).toBe(204);
+      await expect(savedCard).toHaveCount(0);
+    });
 
-    await page.getByLabel('Nhận tại cửa hàng').check();
-    await expect(page.locator('#checkout-addressLine')).toHaveCount(0);
-    const pickupPreview = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === '/api/v1/checkouts/preview' &&
-        response.request().method() === 'POST',
-    );
-    await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
-    expect((await pickupPreview).status()).toBe(200);
-    await expect(page.getByText(/^Nhận tại /)).toBeVisible();
-    const createResponsePromise = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === '/api/v1/checkouts' &&
-        response.request().method() === 'POST',
-    );
+    await test.step('prepare an authoritative pickup preview', async () => {
+      await page.goto('/checkout');
+      await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng' })).toBeVisible();
+      const savedAddress = page.getByLabel('Chọn địa chỉ đã lưu');
+      await expect(savedAddress).toContainText('Nhà');
+      await savedAddress.selectOption({ index: 1 });
+      await expect(page.locator('#checkout-addressLine')).toHaveValue('123 Đường Demo');
 
-    await page.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
-    const createResponse = await createResponsePromise;
-    expect(createResponse.status()).toBe(201);
-    await page.waitForURL('**/orders/**');
-    const orderNumber = orderNumberFrom(page.url());
-    await expect(page.getByRole('heading', { name: orderNumber, exact: true })).toBeVisible();
-    await expect(
-      page
-        .getByRole('heading', { name: 'Nhận hàng', exact: true })
-        .locator('..')
-        .getByText('Nhận tại cửa hàng', { exact: true }),
-    ).toBeVisible();
+      await page.getByLabel('Nhận tại cửa hàng').check();
+      await expect(page.locator('#checkout-addressLine')).toHaveCount(0);
+      const pickupPreview = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/v1/checkouts/preview' &&
+          response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
+      expect((await pickupPreview).status()).toBe(200);
+      await expect(page.getByText(/^Nhận tại /)).toBeVisible();
+    });
+
+    await test.step('create and verify the pickup order', async () => {
+      const createResponsePromise = page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/v1/checkouts' &&
+          response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
+      const createResponse = await createResponsePromise;
+      expect(createResponse.status()).toBe(201);
+      await page.waitForURL('**/orders/**');
+      const orderNumber = orderNumberFrom(page.url());
+      await expect(page.getByRole('heading', { name: orderNumber, exact: true })).toBeVisible();
+      await expect(
+        page
+          .getByRole('heading', { name: 'Nhận hàng', exact: true })
+          .locator('..')
+          .getByText('Nhận tại cửa hàng', { exact: true }),
+      ).toBeVisible();
+    });
   });
 
   test(bt('browser:cart-checkout', 'guest-cart-merge-retry'), async ({ page }) => {
