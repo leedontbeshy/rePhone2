@@ -159,7 +159,7 @@ async function login(
 ): Promise<void> {
   await page.goto(`/login?returnTo=${encodeURIComponent(destination)}`);
   await page.getByLabel('Email').fill(credentials.email);
-  await page.getByLabel('Mật khẩu').fill(credentials.password);
+  await page.locator('#password').fill(credentials.password);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await page.waitForURL(destination);
 }

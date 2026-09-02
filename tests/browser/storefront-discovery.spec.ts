@@ -681,7 +681,7 @@ async function expectPublicPrimaryAction(
 async function loginCustomer(page: Page): Promise<void> {
   await page.goto('/login');
   await page.getByLabel('Email').fill('customer@rephone.local');
-  await page.getByLabel('Mật khẩu').fill('CustomerDemo123');
+  await page.locator('#password').fill('CustomerDemo123');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await page.waitForURL('/account');
 }
