@@ -216,6 +216,15 @@ test(
 
       if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
         await stabilizeVisualPage(page);
+        if (viewport.name === 'desktop-1440') {
+          const sidebar = page.getByRole('complementary', {
+            name: 'Điều hướng backoffice',
+          });
+          await sidebar.evaluate((element) => {
+            element.scrollTop = 0;
+          });
+          await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBe(0);
+        }
         await expect(page).toHaveScreenshot(
           `wp11-system-admin-audit-selected-${viewport.name}.png`,
           {

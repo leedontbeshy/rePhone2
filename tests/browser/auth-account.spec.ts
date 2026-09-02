@@ -251,6 +251,7 @@ test.describe('FE-2 authentication and account', () => {
     await expectNoHorizontalOverflow(page);
     await expectNoSeriousAccessibilityViolations(page, '/login error (390px)');
     await stabilizeVisualPage(page);
+    await page.mouse.move(0, 0);
     await expect(page).toHaveScreenshot('fe2-login-error-mobile-390.png', {
       animations: 'disabled',
       caret: 'hide',
