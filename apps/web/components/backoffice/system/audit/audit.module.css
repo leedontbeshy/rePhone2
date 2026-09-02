@@ -232,6 +232,12 @@
   background: var(--color-primary);
 }
 
+.auditRow[data-selected='true'] .rowCopy span,
+.auditRow[data-selected='true'] .rowCopy small,
+.auditRow[data-selected='true'] time {
+  color: var(--color-body);
+}
+
 .auditRow:focus-visible {
   z-index: var(--z-raised);
   outline: 2px solid var(--color-primary);
@@ -327,12 +333,16 @@
 }
 
 .detailHeading > p {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   line-height: var(--line-height-label);
   text-transform: uppercase;
+}
+
+.detailHeading > span {
+  color: var(--color-body);
 }
 
 .detailHeading h2:focus {
@@ -370,7 +380,7 @@
 
 .detailSummary dt,
 .payloadFields dt {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
   line-height: var(--line-height-label);
 }
