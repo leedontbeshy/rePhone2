@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { BROWSER_COMMERCE_ACCOUNT } from '../../apps/api/test/browser/auth-fixtures';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { installDeterministicPublicMedia } from './support/deterministic-public-media';
 import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const CUSTOMER = {
@@ -41,6 +42,10 @@ const COMMERCE_VIEWPORTS = [
 ] as const;
 
 test.describe('FE-03 cart, wishlist and checkout', () => {
+  test.beforeEach(async ({ context }) => {
+    await installDeterministicPublicMedia(context);
+  });
+
   test(bt('browser:cart-checkout', 'guest-shipping-order'), async ({ page }) => {
     await addUnitToCart(page, GUEST_ORDER_UNIT);
     await page.goto('/cart');
@@ -730,6 +735,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     test.setTimeout(240_000);
     const commerceViolations: string[] = [];
     const cartContext = await browser.newContext();
+    await installDeterministicPublicMedia(cartContext);
     const cartPage = await cartContext.newPage();
     await addUnitToCart(cartPage, GUEST_UNIT);
     for (const viewport of COMMERCE_VIEWPORTS) {
@@ -750,6 +756,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await cartContext.close();
 
     const wishlistContext = await browser.newContext();
+    await installDeterministicPublicMedia(wishlistContext);
     const wishlistPage = await wishlistContext.newPage();
     await loginAs(wishlistPage, BROWSER_COMMERCE_ACCOUNT, '/wishlist');
     await clearWishlist(wishlistPage);
@@ -775,6 +782,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await wishlistContext.close();
 
     const checkoutContext = await browser.newContext();
+    await installDeterministicPublicMedia(checkoutContext);
     const checkoutPage = await checkoutContext.newPage();
     await addUnitToCart(checkoutPage, GUEST_UNIT);
     await checkoutPage.route('**/api/v1/checkouts', async (route) => {
