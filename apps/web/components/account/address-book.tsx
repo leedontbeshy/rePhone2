@@ -115,6 +115,16 @@ export function AddressBook() {
   }, [ownerId]);
 
   useEffect(() => {
+    if (!announcement.startsWith('Đã xóa địa chỉ')) return;
+    const frame = window.requestAnimationFrame(() => {
+      announcementRef.current?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [announcement]);
+
+  useEffect(() => {
     if (visibleEditor !== null || editorPending) return;
     const returnFocusId = pendingEditorFocusIdRef.current;
     if (returnFocusId === null) return;
@@ -230,7 +240,6 @@ export function AddressBook() {
             ? 'Đã xóa địa chỉ mặc định. Chưa có địa chỉ mặc định mới.'
             : 'Đã xóa địa chỉ.',
         );
-        window.requestAnimationFrame(() => announcementRef.current?.focus());
       } catch (caught) {
         if (ownerIdRef.current !== mutationOwnerId) return;
         setLoadError(
