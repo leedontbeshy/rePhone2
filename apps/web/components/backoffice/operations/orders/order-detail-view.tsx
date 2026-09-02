@@ -25,7 +25,7 @@ import {
   type BackofficeOrderLocation,
   type FulfillmentAction,
 } from '@/lib/fulfillment-api';
-import { createRefund } from '@/lib/refund-api';
+import { createRefund, createRefundIntentKeyStore } from '@/lib/refund-api';
 import { OperationsShell } from '../operations-shell';
 import {
   isPositiveMoney,
@@ -69,6 +69,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [refundIntentKeys] = useState(createRefundIntentKeyStore);
   const busyRef = useRef<BusyAction>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +147,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
     action: FulfillmentAction,
     operation: () => Promise<unknown>,
     success: string,
+    afterSuccess?: () => void,
   ) {
     if (!claimBusy(action)) return;
     setError(null);
@@ -153,6 +155,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
     try {
       await operation();
       await loadOrder();
+      afterSuccess?.();
       setNotice(success);
     } catch (caught) {
       const message = orderError(caught, 'Không thể cập nhật đơn hàng.');
@@ -426,16 +429,20 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
       showError('Lý do hoàn tiền phải có từ 5 đến 500 ký tự.');
       return;
     }
+    const input = {
+      ...(refundPaymentId === '' ? {} : { paymentId: refundPaymentId }),
+      amount,
+      method: refundMethod,
+      reason,
+    };
+    const idempotencyKey = refundIntentKeys.keyFor(orderId, input);
     void runAction(
       selectedAction,
-      () =>
-        createRefund(client, orderId, {
-          ...(refundPaymentId === '' ? {} : { paymentId: refundPaymentId }),
-          amount,
-          method: refundMethod,
-          reason,
-        }),
+      () => createRefund(client, orderId, input, idempotencyKey),
       'Đã tạo yêu cầu hoàn tiền.',
+      () => {
+        refundIntentKeys.clear();
+      },
     );
   }
 

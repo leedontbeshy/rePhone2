@@ -34,6 +34,18 @@ export interface RefundListResult {
   };
 }
 
+export interface CreateRefundInput {
+  paymentId?: string;
+  amount: string;
+  method: Exclude<RefundMethod, 'OTHER'>;
+  reason: string;
+}
+
+export interface RefundIntentKeyStore {
+  clear(): void;
+  keyFor(orderId: string, input: CreateRefundInput): string;
+}
+
 export const REFUND_EVIDENCE_TYPES = [
   'image/jpeg',
   'image/png',
@@ -113,18 +125,41 @@ export async function getBackofficeRefund(
 export async function createRefund(
   client: unknown,
   orderId: string,
-  input: {
-    paymentId?: string;
-    amount: string;
-    method: Exclude<RefundMethod, 'OTHER'>;
-    reason: string;
-  },
+  input: CreateRefundInput,
+  idempotencyKey: string,
 ): Promise<RefundDetail> {
   const result = await runtimeClient(client).POST('/api/v1/backoffice/orders/{id}/refunds', {
-    params: { path: { id: orderId } },
+    params: {
+      path: { id: orderId },
+      header: { 'Idempotency-Key': idempotencyKey },
+    },
     body: input,
   });
   return commandData(result, 'Không thể tạo yêu cầu hoàn tiền.');
+}
+
+export function createRefundIntentKeyStore(
+  generateKey: () => string = () => crypto.randomUUID(),
+): RefundIntentKeyStore {
+  let current: { signature: string; key: string } | null = null;
+  return {
+    clear() {
+      current = null;
+    },
+    keyFor(orderId, input) {
+      const signature = JSON.stringify([
+        orderId,
+        input.paymentId ?? null,
+        input.amount,
+        input.method,
+        input.reason,
+      ]);
+      if (current?.signature === signature) return current.key;
+      const key = generateKey();
+      current = { signature, key };
+      return key;
+    },
+  };
 }
 
 export function startRefundProcessing(client: unknown, refundId: string, note?: string) {
