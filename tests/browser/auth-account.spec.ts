@@ -349,9 +349,9 @@ test.describe('FE-2 authentication and account', () => {
     await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
     expect((await registerResponse).status()).toBe(201);
 
-    await expect(page.getByText('Tài khoản đã được tạo', { exact: true })).toBeVisible();
+    await expect(page.getByText('Đã tiếp nhận yêu cầu', { exact: true })).toBeVisible();
     await expect(
-      page.locator('div[tabindex="-1"]').filter({ hasText: 'Tài khoản đã được tạo' }),
+      page.locator('div[tabindex="-1"]').filter({ hasText: 'Đã tiếp nhận yêu cầu' }),
     ).toBeFocused();
     await expect(page).toHaveURL('/register');
     await expectNoRefreshCookie(page);
