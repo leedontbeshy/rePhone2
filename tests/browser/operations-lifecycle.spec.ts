@@ -10,7 +10,19 @@ type Role = 'ADMIN' | 'EMPLOYEE';
 interface Probe {
   commands: Array<{ body: unknown; path: string }>;
   evidence: number;
+  holdNextOrderQueueRefresh(): ControlledOrderQueueRequest;
   reads: string[];
+}
+
+interface ControlledOrderQueueRequest {
+  release(): void;
+  state(): 'waiting' | 'started' | 'completed';
+}
+
+interface OrderQueueRequestGate extends ControlledOrderQueueRequest {
+  readonly released: Promise<void>;
+  markCompleted(): void;
+  markStarted(): void;
 }
 
 type OrderFlow = 'pickup' | 'shipping-delivery' | 'shipping-return';
@@ -225,14 +237,32 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
     );
 
     await page.getByLabel('Tìm đơn hàng').fill('RPH-FE09-NEW');
-    await page.getByRole('button', { name: 'Lọc đơn hàng' }).click();
-    await expect(page.getByText('Đang cập nhật danh sách…', { exact: true })).toBeVisible();
-    await expect(page.getByText('iPhone hàng chờ 01', { exact: true })).toBeVisible();
-    await page.evaluate(() => {
-      window.scrollTo(0, 620);
-    });
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
-    const scrollBefore = await page.evaluate(() => window.scrollY);
+    const pendingRefresh = probe.holdNextOrderQueueRefresh();
+    let scrollBefore = 0;
+    try {
+      await Promise.all([
+        page.waitForRequest((request) => {
+          const url = new URL(request.url());
+          return (
+            request.method() === 'GET' &&
+            url.pathname === '/api/v1/backoffice/orders' &&
+            url.searchParams.get('q') === 'RPH-FE09-NEW'
+          );
+        }),
+        page.getByRole('button', { name: 'Lọc đơn hàng' }).click(),
+      ]);
+      await expect.poll(() => pendingRefresh.state()).toBe('started');
+      await expect(page.getByText('Đang cập nhật danh sách…', { exact: true })).toBeVisible();
+      await expect(page.getByText('iPhone hàng chờ 01', { exact: true })).toBeVisible();
+      await page.evaluate(() => {
+        window.scrollTo(0, 620);
+      });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500);
+      scrollBefore = await page.evaluate(() => window.scrollY);
+    } finally {
+      pendingRefresh.release();
+    }
+    await expect.poll(() => pendingRefresh.state()).toBe('completed');
 
     await expect(page.getByText('Kết quả bộ lọc FE09', { exact: true })).toBeVisible();
     expect(
@@ -271,7 +301,17 @@ async function submitOrderAction(
 }
 
 async function fixture(page: Page, role: Role, options: FixtureOptions = {}): Promise<Probe> {
-  const probe: Probe = { commands: [], evidence: 0, reads: [] };
+  let nextOrderQueueRefresh: OrderQueueRequestGate | undefined;
+  const probe: Probe = {
+    commands: [],
+    evidence: 0,
+    holdNextOrderQueueRefresh() {
+      const gate = createOrderQueueRequestGate();
+      nextOrderQueueRefresh = gate;
+      return gate;
+    },
+    reads: [],
+  };
   let orderConflictPending = options.orderConflictOnce === true;
   const orderState: OrderFixtureState | null =
     options.orderFlow === undefined
@@ -332,7 +372,18 @@ async function fixture(page: Page, role: Role, options: FixtureOptions = {}): Pr
       });
     if (apiPath.endsWith('/orders') && options.orderQueueRefresh === true) {
       const filtered = url.searchParams.get('q') === 'RPH-FE09-NEW';
-      if (filtered) await delay(700);
+      const refreshGate = filtered ? nextOrderQueueRefresh : undefined;
+      if (refreshGate !== undefined) {
+        nextOrderQueueRefresh = undefined;
+        refreshGate.markStarted();
+        await refreshGate.released;
+        try {
+          await json(route, paged(filteredOrderQueueItems()));
+        } finally {
+          refreshGate.markCompleted();
+        }
+        return;
+      }
       return json(route, paged(filtered ? filteredOrderQueueItems() : orderQueueItems()));
     }
     if (apiPath.endsWith(`/orders/${ID}`) && orderState !== null)
@@ -788,9 +839,6 @@ function safeBody(route: Route): unknown {
     return route.request().postData();
   }
 }
-async function delay(milliseconds: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
 async function json(route: Route, body: unknown, status = 200) {
   await route.fulfill({
     body: JSON.stringify(body),
@@ -802,6 +850,26 @@ async function json(route: Route, body: unknown, status = 200) {
     status,
   });
 }
+
+function createOrderQueueRequestGate(): OrderQueueRequestGate {
+  let state: ReturnType<ControlledOrderQueueRequest['state']> = 'waiting';
+  let release = () => undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return {
+    markCompleted() {
+      state = 'completed';
+    },
+    markStarted() {
+      state = 'started';
+    },
+    release,
+    released,
+    state: () => state,
+  };
+}
+
 async function preflight(route: Route) {
   await route.fulfill({
     headers: {
