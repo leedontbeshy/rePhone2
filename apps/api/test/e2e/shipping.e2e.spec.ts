@@ -888,6 +888,7 @@ async function createCustomerShippingCheckout(
         district: 'Quận 1',
         province: 'TP.HCM',
       },
+      expectedPreviewFingerprint: stringProperty(preview, 'previewFingerprint'),
       expectedCartUpdatedAt: stringProperty(preview, 'cartUpdatedAt'),
       expectedGrandTotal: stringProperty(pricing, 'grandTotal'),
       expectedDepositRequired: stringProperty(pricing, 'depositRequired'),
