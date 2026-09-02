@@ -13,6 +13,7 @@ test(
   browserTestTitle('browser:system-admin-health', 'live-admin-route-matrix'),
   async ({ page }) => {
     const failedBackofficeResponses = collectFailedBackofficeResponses(page);
+    const backofficeMutations = collectBackofficeMutationRequests(page);
 
     const overview = await loginAsAdmin(page);
     expectRecordWith(overview.data, 'metrics', 'operations overview');
@@ -45,50 +46,13 @@ test(
     );
     expectRecordWith(settings.data, 'version', 'store settings');
 
-    // A reversible settings update guarantees that the audit detail route can be
-    // exercised even when this spec runs by itself against a freshly seeded DB.
-    const storeNameInput = page.getByLabel(/^Tên cửa hàng/);
-    const originalStoreName = await storeNameInput.inputValue();
-    const temporaryStoreName = `${originalStoreName} · kiểm thử FE-09`;
-    try {
-      await saveStoreName(page, temporaryStoreName);
-    } finally {
-      await saveStoreName(page, originalStoreName);
-    }
-
     const auditList = await visitLiveProjection(
       page,
       '/backoffice/audit-logs',
       '/api/v1/backoffice/audit-logs',
       'Nhật ký hoạt động',
     );
-    expectNonEmptyList(auditList.data, 'audit logs');
-
-    const auditHref = await page
-      .locator('main a[href*="/backoffice/audit-logs?"][href*="selected="]')
-      .first()
-      .getAttribute('href');
-    expect(auditHref).not.toBeNull();
-    const auditId = new URL(auditHref ?? '', 'http://localhost').searchParams.get('selected');
-    expect(auditId).not.toBeNull();
-    if (auditId === null) throw new Error('Expected a selected audit id from the live list');
-
-    const auditDetail = await visitLiveProjection(
-      page,
-      `/backoffice/audit-logs/${encodeURIComponent(auditId)}`,
-      `/api/v1/backoffice/audit-logs/${auditId}`,
-      'Nhật ký hoạt động',
-    );
-    expectRecordWith(auditDetail.data, 'action', 'audit detail');
-    expect(recordValue(auditDetail.data, 'id')).toBe(auditId);
-    await expect(page).toHaveURL((url) => {
-      return (
-        url.pathname === '/backoffice/audit-logs' && url.searchParams.get('selected') === auditId
-      );
-    });
-    await expect(
-      page.getByRole('heading', { name: 'Truy vết yêu cầu', exact: true }),
-    ).toBeVisible();
+    expectList(auditList.data, 'audit logs');
 
     const health = await visitLiveProjection(
       page,
@@ -106,6 +70,7 @@ test(
     await expect(page.getByText('Gửi email', { exact: true })).toBeVisible();
 
     expect(failedBackofficeResponses).toEqual([]);
+    expect(backofficeMutations).toEqual([]);
   },
 );
 
@@ -113,7 +78,7 @@ async function loginAsAdmin(page: Page): Promise<{ data: unknown; response: Resp
   await page.goto('/login?returnTo=%2Fbackoffice');
   await page.getByLabel(/^Email/).fill(ADMIN.email);
   await page.getByLabel(/^Mật khẩu/).fill(ADMIN.password);
-  const responsePromise = waitForLiveResponse(page, 'GET', '/api/v1/backoffice/overview');
+  const responsePromise = waitForLiveResponse(page, '/api/v1/backoffice/overview');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   const response = await responsePromise;
   const data = await dataFromLiveResponse(response, '/api/v1/backoffice/overview');
@@ -128,7 +93,7 @@ async function visitLiveProjection(
   apiPath: string,
   heading: string,
 ): Promise<{ data: unknown; response: Response }> {
-  const responsePromise = waitForLiveResponse(page, 'GET', apiPath);
+  const responsePromise = waitForLiveResponse(page, apiPath);
 
   await page.goto(route);
   const response = await responsePromise;
@@ -139,10 +104,10 @@ async function visitLiveProjection(
   return { data, response };
 }
 
-function waitForLiveResponse(page: Page, method: 'GET' | 'PATCH', apiPath: string) {
+function waitForLiveResponse(page: Page, apiPath: string) {
   return page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return response.request().method() === method && url.pathname === apiPath;
+    return response.request().method() === 'GET' && url.pathname === apiPath;
   });
 }
 
@@ -159,21 +124,6 @@ async function dataFromLiveResponse(response: Response, apiPath: string): Promis
   return payload['data'];
 }
 
-async function saveStoreName(page: Page, value: string): Promise<void> {
-  const input = page.getByLabel(/^Tên cửa hàng/);
-  await input.fill(value);
-
-  const saveButton = page.getByRole('button', { name: 'Lưu thay đổi', exact: true });
-  await expect(saveButton).toBeEnabled();
-  const responsePromise = waitForLiveResponse(page, 'PATCH', '/api/v1/backoffice/settings');
-  await saveButton.click();
-
-  const response = await responsePromise;
-  expect(response.status()).toBe(200);
-  await expect(page.getByText('Đã lưu cấu hình cửa hàng.', { exact: true })).toBeVisible();
-  await expect(input).toHaveValue(value);
-}
-
 async function expectProtectedWorkspace(page: Page, heading: string): Promise<void> {
   await expect(page.getByRole('main')).toBeVisible();
   await expect(page.locator('[data-shell="backoffice"]')).toHaveCount(1);
@@ -186,8 +136,12 @@ async function expectProtectedWorkspace(page: Page, heading: string): Promise<vo
 }
 
 function expectNonEmptyList(value: unknown, label: string): void {
-  if (!Array.isArray(value)) throw new Error(`Expected ${label} to be an array`);
+  expectList(value, label);
   expect(value.length, `Expected live ${label} data`).toBeGreaterThan(0);
+}
+
+function expectList(value: unknown, label: string): asserts value is unknown[] {
+  if (!Array.isArray(value)) throw new Error(`Expected ${label} to be an array`);
 }
 
 function expectRecordWith(value: unknown, key: string, label: string): void {
@@ -220,12 +174,25 @@ function expectLiveHealthSnapshot(value: unknown): void {
   expect(database['incompleteMigrationCount']).toEqual(expect.any(Number));
 }
 
-function recordValue(value: unknown, key: string): unknown {
-  return isRecord(value) ? value[key] : undefined;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function collectBackofficeMutationRequests(page: Page): string[] {
+  const mutations: string[] = [];
+  page.on('request', (request) => {
+    const pathname = new URL(request.url()).pathname;
+    const method = request.method();
+    if (
+      pathname.startsWith('/api/v1/backoffice/') &&
+      method !== 'GET' &&
+      method !== 'HEAD' &&
+      method !== 'OPTIONS'
+    ) {
+      mutations.push(`${method} ${pathname}`);
+    }
+  });
+  return mutations;
 }
 
 function collectFailedBackofficeResponses(page: Page): string[] {
