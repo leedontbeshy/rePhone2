@@ -117,12 +117,18 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expect(
       savedCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }),
     ).toBeEnabled();
+    const removeSavedResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
+    );
     await savedCard
       .getByRole('button', {
         name: `Xóa iPhone 13 khỏi danh sách ưa thích`,
         exact: true,
       })
       .click();
+    expect((await removeSavedResponse).status()).toBe(204);
     await expect(savedCard).toHaveCount(0);
 
     await page.goto('/checkout');
@@ -181,7 +187,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
       await route.continue();
     });
 
-    await login(page, '/cart');
+    await login(page, '/cart', 503);
     await expect(page.getByText('Chưa thể cập nhật giỏ hàng', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
     await expect(page.getByText('Chưa thể cập nhật giỏ hàng', { exact: true })).toHaveCount(0);
@@ -361,7 +367,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expect(cartRow).toBeVisible();
     await expect(cartSummary).toBeVisible();
 
-    const retryStarted = deferred();
+    let retryStarted = false;
     const releaseRetry = deferred();
     let cartRefreshes = 0;
     await page.route('**/api/v1/cart/items/*', async (route) => {
@@ -388,7 +394,7 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
         });
         return;
       }
-      retryStarted.resolve();
+      retryStarted = true;
       await releaseRetry.promise;
       await route.continue();
     });
@@ -399,17 +405,19 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expect(cartSummary).toBeVisible();
 
     await page.getByRole('button', { name: 'Tải lại', exact: true }).click();
-    await retryStarted.promise;
+    await expect.poll(() => retryStarted).toBe(true);
 
     const busyCartRegion = page.locator('[aria-busy="true"]:not(button)');
-    await expect(busyCartRegion).toHaveCount(1);
-    await expect(busyCartRegion).toContainText(GUEST_UNIT.code);
-    await expect(busyCartRegion).toContainText('Tóm tắt giỏ hàng');
-    await expect(cartRow).toBeVisible();
-    await expect(cartSummary).toBeVisible();
-    await expect(page.getByLabel('Đang tải giỏ hàng')).toHaveCount(0);
-
-    releaseRetry.resolve();
+    try {
+      await expect(busyCartRegion).toHaveCount(1);
+      await expect(busyCartRegion).toContainText(GUEST_UNIT.code);
+      await expect(busyCartRegion).toContainText('Tóm tắt giỏ hàng');
+      await expect(cartRow).toBeVisible();
+      await expect(cartSummary).toBeVisible();
+      await expect(page.getByLabel('Đang tải giỏ hàng')).toHaveCount(0);
+    } finally {
+      releaseRetry.resolve();
+    }
     await expect(page.getByText('Chưa thể tải giỏ hàng', { exact: true })).toHaveCount(0);
     await expect(busyCartRegion).toHaveCount(0);
     await expect(cartRow).toBeVisible();
@@ -481,14 +489,14 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
 
     const iphoneCard = page.locator('article').filter({ hasText: GUEST_UNIT.code });
     await expect(iphoneCard).toBeVisible();
-    const addStarted = deferred();
+    let addStarted = false;
     const releaseAdd = deferred();
     await page.route('**/api/v1/cart/items', async (route) => {
       if (route.request().method() !== 'POST') {
         await route.continue();
         return;
       }
-      addStarted.resolve();
+      addStarted = true;
       await releaseAdd.promise;
       await route.fulfill({
         status: 503,
@@ -498,27 +506,42 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
         }),
       });
     });
+    const failedAddResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/cart/items',
+    );
     await iphoneCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
-    await addStarted.promise;
-    await expect(
-      iphoneCard.getByRole('button', { name: 'Đang thêm vào giỏ hàng', exact: true }),
-    ).toHaveAttribute('aria-busy', 'true');
-    releaseAdd.resolve();
+    await expect.poll(() => addStarted).toBe(true);
+    try {
+      await expect(
+        iphoneCard.getByRole('button', { name: 'Đang thêm vào giỏ hàng', exact: true }),
+      ).toHaveAttribute('aria-busy', 'true');
+    } finally {
+      releaseAdd.resolve();
+    }
+    expect((await failedAddResponse).status()).toBe(503);
     await expect(iphoneCard.getByRole('alert')).toContainText(
       'Dịch vụ đang tạm gián đoạn. Vui lòng thử lại sau.',
     );
     await page.unroute('**/api/v1/cart/items');
+    const successfulAddResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/cart/items',
+    );
     await iphoneCard.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    expect((await successfulAddResponse).status()).toBe(201);
     await expect(iphoneCard.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
 
-    const removeStarted = deferred();
+    let removeStarted = false;
     const releaseRemove = deferred();
     await page.route('**/api/v1/wishlist/items/*', async (route) => {
       if (route.request().method() !== 'DELETE') {
         await route.continue();
         return;
       }
-      removeStarted.resolve();
+      removeStarted = true;
       await releaseRemove.promise;
       await route.fulfill({
         status: 503,
@@ -528,21 +551,36 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
         }),
       });
     });
+    const failedRemoveResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
+    );
     await iphoneCard
       .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
       .click();
-    await removeStarted.promise;
-    await expect(
-      iphoneCard.getByRole('button', { name: 'Đang xóa sản phẩm', exact: true }),
-    ).toHaveAttribute('aria-busy', 'true');
-    releaseRemove.resolve();
+    await expect.poll(() => removeStarted).toBe(true);
+    try {
+      await expect(
+        iphoneCard.getByRole('button', { name: 'Đang xóa sản phẩm', exact: true }),
+      ).toHaveAttribute('aria-busy', 'true');
+    } finally {
+      releaseRemove.resolve();
+    }
+    expect((await failedRemoveResponse).status()).toBe(503);
     await expect(iphoneCard.getByRole('alert')).toContainText(
       'Chưa thể xóa sản phẩm khỏi danh sách.',
     );
     await page.unroute('**/api/v1/wishlist/items/*');
+    const successfulRemoveResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'DELETE' &&
+        new URL(response.url()).pathname.startsWith('/api/v1/wishlist/items/'),
+    );
     await iphoneCard
       .getByRole('button', { name: `Xóa iPhone 14 Pro khỏi danh sách ưa thích`, exact: true })
       .click();
+    expect((await successfulRemoveResponse).status()).toBe(204);
     await expect(iphoneCard).toHaveCount(0);
 
     await page.goto('/products/cu-sac-usb-c-20w');
@@ -849,24 +887,42 @@ async function addUnitToCart(
 ): Promise<void> {
   await page.goto(unit.path);
   await expect(page.getByText(`Ảnh thật · Mã máy ${unit.code}`, { exact: true })).toBeVisible();
+  const addResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/cart/items',
+  );
   await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+  expect([200, 201]).toContain((await addResponse).status());
   await expect(page.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
 }
 
-async function login(page: Page, returnTo: string): Promise<void> {
-  await loginAs(page, CUSTOMER, returnTo);
+async function login(page: Page, returnTo: string, expectedMergeStatus = 200): Promise<void> {
+  await loginAs(page, CUSTOMER, returnTo, expectedMergeStatus);
 }
 
 async function loginAs(
   page: Page,
   credentials: { readonly email: string; readonly password: string },
   returnTo: string,
+  expectedMergeStatus = 200,
 ): Promise<void> {
   await page.goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
   await page.getByLabel('Email').fill(credentials.email);
   await page.locator('#password').fill(credentials.password);
+  const mergeResponse =
+    credentials.email === EMPLOYEE.email || credentials.email === ADMIN.email
+      ? undefined
+      : page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/api/v1/cart/merge',
+        );
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   await page.waitForURL(returnTo);
+  if (mergeResponse !== undefined) {
+    expect((await mergeResponse).status()).toBe(expectedMergeStatus);
+  }
 }
 
 async function addUnitToWishlist(
@@ -875,7 +931,13 @@ async function addUnitToWishlist(
 ): Promise<void> {
   await page.goto(unit.path);
   await expect(page.getByText(`Ảnh thật · Mã máy ${unit.code}`, { exact: true })).toBeVisible();
+  const addResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/v1/wishlist/items',
+  );
   await page.getByRole('button', { name: 'Lưu máy', exact: true }).click();
+  expect([200, 201]).toContain((await addResponse).status());
   await expect(page.getByText('Đã lưu máy vào danh sách.', { exact: true })).toBeVisible();
 }
 
