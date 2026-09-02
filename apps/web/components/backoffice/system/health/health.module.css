@@ -147,7 +147,7 @@
 }
 
 .summaryBand dt {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-label);
@@ -167,6 +167,7 @@
 
 .summaryBand small {
   display: block;
+  color: var(--color-body);
 }
 
 .summaryBand small + small {
@@ -232,12 +233,20 @@
 }
 
 .guidanceLabel {
-  color: var(--color-primary) !important;
+  color: var(--color-primary-hover) !important;
   font-size: var(--font-size-label) !important;
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
   line-height: var(--line-height-label) !important;
   text-transform: uppercase;
+}
+
+.guidance > p:not(.guidanceLabel) {
+  color: var(--color-body);
+}
+
+.guidanceLink {
+  color: var(--color-primary-active) !important;
 }
 
 .checkedAt {
