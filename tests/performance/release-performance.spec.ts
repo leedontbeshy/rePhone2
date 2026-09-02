@@ -650,8 +650,8 @@ async function measureInteraction(page: Page, interaction: () => Promise<void>):
         () => {
           const startedAt = performance.now();
           requestAnimationFrame(() => {
-            requestAnimationFrame((paintedAt) => {
-              resolve(paintedAt - startedAt);
+            requestAnimationFrame(() => {
+              resolve(performance.now() - startedAt);
             });
           });
         },

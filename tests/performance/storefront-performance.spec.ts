@@ -205,8 +205,8 @@ async function measureMenuInteraction(page: Page): Promise<number> {
         () => {
           const startedAt = performance.now();
           requestAnimationFrame(() => {
-            requestAnimationFrame((paintedAt) => {
-              resolve(paintedAt - startedAt);
+            requestAnimationFrame(() => {
+              resolve(performance.now() - startedAt);
             });
           });
         },
