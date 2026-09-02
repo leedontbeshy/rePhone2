@@ -9,6 +9,11 @@ interface Operation {
   security?: Array<Record<string, unknown>>;
 }
 
+interface Schema {
+  properties?: Record<string, { pattern?: string }>;
+  required?: string[];
+}
+
 const EXPECTED_OPERATION_IDS = [
   'previewCheckout',
   'createCheckout',
@@ -22,7 +27,10 @@ describe('Slice 06 OpenAPI contract', () => {
     readFileSync(resolve(process.cwd(), 'openapi/openapi.json'), 'utf8'),
   ) as {
     paths: Record<string, Record<string, Operation>>;
-    components?: { securitySchemes?: Record<string, unknown> };
+    components?: {
+      schemas?: Record<string, Schema>;
+      securitySchemes?: Record<string, unknown>;
+    };
   };
   const operations = Object.values(document.paths)
     .flatMap((pathItem) => Object.values(pathItem))
@@ -60,5 +68,15 @@ describe('Slice 06 OpenAPI contract', () => {
     expect(responseStatuses).toEqual(
       expect.arrayContaining(['400', '401', '403', '409', '422', '429', '503']),
     );
+  });
+
+  it('publishes the versioned preview fingerprint handshake', () => {
+    const preview = document.components?.schemas?.['CheckoutPreviewDto'];
+    const create = document.components?.schemas?.['CreateCheckoutRequestDto'];
+
+    expect(preview?.required).toContain('previewFingerprint');
+    expect(preview?.properties?.['previewFingerprint']?.pattern).toBe('^v1:[a-f0-9]{64}$');
+    expect(create?.required).toContain('expectedPreviewFingerprint');
+    expect(create?.properties?.['expectedPreviewFingerprint']?.pattern).toBe('^v1:[a-f0-9]{64}$');
   });
 });

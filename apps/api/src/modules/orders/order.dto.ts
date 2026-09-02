@@ -15,6 +15,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { CHECKOUT_PREVIEW_FINGERPRINT_PATTERN } from './checkout-preview-fingerprint.js';
 
 export const FULFILLMENT_TYPES = ['PICKUP', 'SHIPPING'] as const;
 const MONEY_PATTERN = /^\d{1,15}$/;
@@ -127,6 +128,10 @@ export class CreateCheckoutRequestDto extends CheckoutPreviewRequestDto {
   @IsString()
   @MaxLength(500)
   public customerNote?: string;
+
+  @ApiProperty({ type: String, pattern: '^v1:[a-f0-9]{64}$' })
+  @Matches(CHECKOUT_PREVIEW_FINGERPRINT_PATTERN)
+  public expectedPreviewFingerprint!: string;
 
   @ApiProperty({ type: String, format: 'date-time' })
   @IsISO8601({ strict: true })
