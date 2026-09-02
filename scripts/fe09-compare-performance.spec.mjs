@@ -70,7 +70,38 @@ test('fails every relative metric only when it regresses by more than ten percen
   ]);
 });
 
-test('fails absolute LCP, CLS and interaction budgets for either report', () => {
+test('keeps baseline budget breaches informational when after is within budget', () => {
+  const comparison = comparePerformanceReports(
+    report({ medians: { cls: 0.101, interactionProxyMs: 201, lcpMs: 2_501 } }),
+    report({
+      commitSha: AFTER_SHA,
+      medians: { cls: 0.09, interactionProxyMs: 190, lcpMs: 2_400 },
+    }),
+  );
+
+  assert.equal(comparison.status, 'pass');
+  assert.deepEqual(comparison.failures, []);
+  assert.deepEqual(comparison.baselineBudgetFindings.map(({ metric }) => metric).sort(), [
+    'cls',
+    'interactionProxyMs',
+    'lcpMs',
+  ]);
+  assert.equal(
+    comparison.routes[0].absolute.every(({ afterPassed }) => afterPassed),
+    true,
+  );
+  assert.equal(
+    comparison.routes[0].absolute.every(({ baselinePassed }) => !baselinePassed),
+    true,
+  );
+
+  const markdown = formatPerformanceComparisonMarkdown(comparison);
+  assert.match(markdown, /Baseline vượt ngân sách \(thông tin\)/);
+  assert.match(markdown, /After đạt · baseline vượt/);
+  assert.match(markdown, /Kết quả: \*\*ĐẠT\*\*/);
+});
+
+test('fails absolute LCP, CLS and interaction budgets for the after report', () => {
   const comparison = comparePerformanceReports(
     report({ medians: { cls: 0.101, lcpMs: 2_501 } }),
     report({
@@ -85,8 +116,12 @@ test('fails absolute LCP, CLS and interaction budgets for either report', () => 
       .filter(({ code }) => code === 'ABSOLUTE_BUDGET')
       .map(({ metric, phase }) => `${phase}:${metric}`)
       .sort(),
-    ['after:cls', 'after:interactionProxyMs', 'after:lcpMs', 'baseline:cls', 'baseline:lcpMs'],
+    ['after:cls', 'after:interactionProxyMs', 'after:lcpMs'],
   );
+  assert.deepEqual(comparison.baselineBudgetFindings.map(({ metric }) => metric).sort(), [
+    'cls',
+    'lcpMs',
+  ]);
 });
 
 test('rejects schema, profile, route-set and zero-metric mismatches with stable codes', () => {

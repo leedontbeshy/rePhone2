@@ -73,6 +73,7 @@ export function comparePerformanceReports(baselineInput, afterInput) {
   );
   assertSameRouteSet(baseline.routeNames, after.routeNames);
 
+  const baselineBudgetFindings = [];
   const failures = [];
   const routes = baseline.routeNames.map((routeName) => {
     const baselineMetrics = baseline.routes.get(routeName);
@@ -84,7 +85,13 @@ export function comparePerformanceReports(baselineInput, afterInput) {
       );
     }
 
-    const absolute = absoluteBudgetChecks(routeName, baselineMetrics, afterMetrics, failures);
+    const absolute = absoluteBudgetChecks(
+      routeName,
+      baselineMetrics,
+      afterMetrics,
+      baselineBudgetFindings,
+      failures,
+    );
     const relative = RELATIVE_METRICS.map((metric) => {
       const baselineValue = baselineMetrics[metric.key];
       const afterValue = afterMetrics[metric.key];
@@ -114,8 +121,7 @@ export function comparePerformanceReports(baselineInput, afterInput) {
     return {
       absolute,
       passed:
-        absolute.every((check) => check.baselinePassed && check.afterPassed) &&
-        relative.every((check) => check.passed),
+        absolute.every((check) => check.afterPassed) && relative.every((check) => check.passed),
       relative,
       route: routeName,
     };
@@ -124,6 +130,7 @@ export function comparePerformanceReports(baselineInput, afterInput) {
   return {
     afterCommitSha: after.commitSha,
     baselineCommitSha: baseline.commitSha,
+    baselineBudgetFindings,
     comparisonSchemaVersion: 1,
     failures,
     performanceReportSchemaVersion: baseline.schemaVersion,
@@ -162,7 +169,16 @@ export function formatPerformanceComparisonMarkdown(comparison) {
   for (const route of comparison.routes) {
     for (const check of route.absolute) {
       lines.push(
-        `| ${escapeMarkdownCell(route.route)} | ${escapeMarkdownCell(check.label)} | ${formatMetric(check.baseline, check.unit)} | ${formatMetric(check.after, check.unit)} | <= ${formatMetric(check.budget, check.unit)} | ${check.baselinePassed && check.afterPassed ? 'Đạt' : 'Vượt ngân sách'} |`,
+        `| ${escapeMarkdownCell(route.route)} | ${escapeMarkdownCell(check.label)} | ${formatMetric(check.baseline, check.unit)} | ${formatMetric(check.after, check.unit)} | <= ${formatMetric(check.budget, check.unit)} | ${absoluteResultLabel(check)} |`,
+      );
+    }
+  }
+
+  if (comparison.baselineBudgetFindings.length > 0) {
+    lines.push('', '## Baseline vượt ngân sách (thông tin)', '');
+    for (const finding of comparison.baselineBudgetFindings) {
+      lines.push(
+        `- ${escapeMarkdownCell(finding.route)} — ${escapeMarkdownCell(finding.metric)} vượt ngân sách ở baseline; bản after mới quyết định kết quả gate.`,
       );
     }
   }
@@ -368,7 +384,7 @@ function detectClientJsSourceKey(routeEntries, label) {
   return detected;
 }
 
-function absoluteBudgetChecks(route, baseline, after, failures) {
+function absoluteBudgetChecks(route, baseline, after, baselineBudgetFindings, failures) {
   return [
     { key: 'lcpMs', label: 'LCP', unit: 'ms' },
     { key: 'cls', label: 'CLS', unit: '' },
@@ -380,11 +396,10 @@ function absoluteBudgetChecks(route, baseline, after, failures) {
     const baselinePassed = baselineValue <= budget;
     const afterPassed = afterValue <= budget;
     if (!baselinePassed) {
-      failures.push({
+      baselineBudgetFindings.push({
         budget,
-        code: 'ABSOLUTE_BUDGET',
+        code: 'BASELINE_ABSOLUTE_BUDGET',
         metric: key,
-        phase: 'baseline',
         route,
         value: baselineValue,
       });
@@ -513,6 +528,12 @@ function formatMetric(value, unit) {
 function formatPercent(value) {
   const prefix = value > 0 ? '+' : '';
   return `${prefix}${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 }).format(value)}%`;
+}
+
+function absoluteResultLabel(check) {
+  if (!check.afterPassed) return 'After vượt ngân sách';
+  if (!check.baselinePassed) return 'After đạt · baseline vượt';
+  return 'Đạt';
 }
 
 function failureSummary(failure) {
