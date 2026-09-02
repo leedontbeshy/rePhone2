@@ -1,12 +1,15 @@
 # FE-09 WP-14 — Release closeout
 
-> Trạng thái: **LOCAL PASS — chờ CI/artifact**<br>
+> Trạng thái: **PASS — FE-09 DONE**<br>
 > Release candidate code SHA: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
 > Production smoke/performance code SHA: `50b6cc9b1786accadc205489882342d8c6dd5752`<br>
+> Final CI head SHA: `ce4939dd6438b22bdc7a6994eb305e81732d0c2a`<br>
+> Final CI merge SHA: `e1ba2ebbbd65832a88569d0132483e30b9883ea6`<br>
+> Final CI: [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254) — 5/5 job xanh<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Ngày chạy cuối: 02/09/2026
+> Ngày chạy cuối: 03/09/2026
 
-## Kết luận hiện tại
+## Kết luận
 
 Phần kiểm tra cục bộ của WP-14 đã hoàn tất. Một lần chạy `pnpm verify:release` trên
 release candidate `de82f60` hoàn thành cả pass `1/2` và `2/2`; full Chromium đạt
@@ -14,9 +17,12 @@ release candidate `de82f60` hoàn thành cả pass `1/2` và `2/2`; full Chromiu
 162 operation, 56 route hiện hữu, 13 state bắt buộc và toàn bộ browser owner khớp
 registry.
 
-FE-09 vẫn giữ **IN PROGRESS** cho tới khi CI/artifact được kiểm. Người dùng đã cho
-phép push và chấp nhận rõ hai giới hạn mức thấp `FE9-R16`, `FE9-R17` ngày 02/09/2026;
-hai mục này không còn chặn release.
+Final CI trên rebased equivalent `e1ba2eb` đã xanh đủ 5/5 job. Artifact trình duyệt,
+performance, client/media và database coverage đã được tải về, kiểm schema, thống kê
+và quét dữ liệu nhạy cảm. Không có credential, token, PII, signed URL hoặc fixture
+nhạy cảm; release SHA trong performance artifact là metadata có chủ đích. FE-09 đã
+chuyển **DONE**. Người dùng đã chấp nhận hai giới hạn mức thấp `FE9-R16`, `FE9-R17`
+ngày 02/09/2026; hai mục này không chặn release.
 
 ## Release candidate và phạm vi thay đổi WP-14
 
@@ -77,9 +83,9 @@ Coverage giống nhau ở hai pass: statements `88,11%` (`7237/8213`), branches
 | Firefox | `1/1` |
 | WebKit | `1/1` |
 
-Đây là critical smoke cục bộ, không mở rộng claim thành full 93-scenario matrix trên
-mọi engine. Workflow CI đã có cùng smoke, nhưng `FE9-R18` chỉ được đóng hoàn toàn sau
-khi có artifact CI thật trên release SHA.
+Đây là critical smoke, không mở rộng claim thành full 93-scenario matrix trên mọi
+engine. Final CI xác nhận Firefox `1/1` và WebKit `1/1`; `FE9-R18` đã đóng. Full
+93-scenario matrix và PNG baseline tiếp tục thuộc Chromium/Windows.
 
 ## Production compiled smoke và performance
 
@@ -101,6 +107,10 @@ Nguồn chạy lại: [production smoke runner](../../../scripts/infra/Invoke-Pr
 | Performance production | PASS `12/12` route, zero runtime issue |
 | Profile | Chromium Windows, `390×844`, CPU ×4, latency 40 ms |
 | Raw report | `.local/release-performance/wp12-baseline.json` — local-only, không commit |
+
+Final CI đo lại đúng 12 route trên Windows/Chromium với một warm-up và ba sample mỗi
+route. Cả 12 route đạt absolute budget và không có runtime issue; artifact ghi đúng
+merge SHA `e1ba2eb`.
 
 Trước production smoke, máy chỉ còn khoảng 1,5 GB ổ đĩa. Khoảng 40 GB cache có thể
 tạo lại trong `.turbo/cache` và `apps/web/.next/dev` được xác định đúng workspace rồi
@@ -129,29 +139,34 @@ Các worktree tạm được dọn sạch sau rehearsal; chỉ còn worktree ch�
 | Rollback shell đầu | Harness không chứng minh đúng diff và gọi config test không tồn tại | Sửa phép đo staged/unstaged và dùng lệnh test hiện hữu; rehearsal sau đó xanh |
 | Full release đầu sau contract change | 32 API E2E lỗi | Fixture downstream chưa gửi preview fingerprint; sửa tại `467bc48`, `cc2cb1d`, targeted downstream `36/36` rồi mới chạy lại full gate |
 | Release gate trước candidate cuối | Browser `89` đạt, `2` lỗi, `2` chưa chạy | Test auth còn copy cũ; snapshot mobile lệch 107 pixel do touch target 44 px có chủ ý. Sửa riêng tại `ecdc8e0`, `de82f60`, targeted strict xanh rồi hai full run xanh |
+| CI `33679727560` | Customer pickup hết timeout tổng | Tách budget cho hành trình dài, đặt tên từng bước và chờ response wishlist tại `0ed9082` |
+| CI `33682872256` | Cart merge trả `500` dưới tải Windows | Giữ transaction mặc định, chỉ tăng budget cho cart merge tại `4f11f9b`; integration `55/55`, E2E `103/103` |
+| CI `33686115334` | Wishlist visual chạy trước khi DELETE cuối hoàn tất | Chờ đúng response `204` tại `3dc5ef5`; targeted visual xanh |
+| CI `33688132546` | Audit race dùng hai cơ chế chờ trùng, hết 270 giây | Bỏ listener dư, giữ request gate và timeout chẩn đoán 10 giây tại `ce4939d`; lặp production-like `10/10` |
+| CI `33690470254` | PASS | 5/5 job; Chromium `93/93`, Firefox/WebKit `2/2`, zero retry/skip/flaky; artifact sạch |
 
 Không xóa hoặc mô tả lại các lượt đỏ thành flake. Mỗi lỗi đều có nguyên nhân được
 chứng minh và lần chạy lại trên tree sau sửa.
 
-## Residual risk và điều kiện đóng FE-09
+## Residual risk sau final CI
 
-| ID | Trạng thái sau local gate | Việc còn lại |
+| ID | Trạng thái cuối | Bằng chứng / quyết định |
 | --- | --- | --- |
 | FE9-R04 | CLOSED | Hai pass `1/2` và `2/2` tuần tự, không retry/flaky đã hoàn tất |
-| FE9-R05 | OPEN | Push, review CI artifact và xác nhận không có token/PII |
-| FE9-R08 | MITIGATED — CI PENDING | Performance local `12/12`; cần performance CI xanh |
-| FE9-R10 | MITIGATED — CI PENDING | Workflow có sẵn; cần CI URL thật |
+| FE9-R05 | CLOSED | Artifact redaction gate, schema verifier và scan bổ sung đều sạch |
+| FE9-R08 | CLOSED | Performance CI `12/12`, zero runtime issue; artifact đã rà soát |
+| FE9-R10 | CLOSED | Final CI 5/5 trên rebased equivalent; URL và artifact đã lưu |
 | FE9-R13 | CLOSED | Generic registration response đã có backend/OpenAPI/browser proof |
 | FE9-R14 | CLOSED | Full-preview fingerprint và stale-preview `409` đã có contract/test |
 | FE9-R15 | CLOSED | Refund intent có idempotency key ổn định và replay test |
 | FE9-R16 | ACCEPTED — LOW | Người dùng/Product chấp nhận `datetime-local` theo regional locale ngày 02/09/2026; shared field là cải tiến sau release |
 | FE9-R17 | ACCEPTED — LOW | Người dùng/Product chấp nhận proxy reflow `720×450` ngày 02/09/2026; native zoom proof là cải tiến evidence sau release |
-| FE9-R18 | MITIGATED — CI PENDING | Local Firefox/WebKit `2/2`; cần CI artifact trên release SHA |
+| FE9-R18 | CLOSED | Final CI Firefox `1/1`, WebKit `1/1`; artifact zero retry/skip/flaky |
 
-## Điều kiện chuyển FE-09 sang DONE
+## Definition of done
 
-1. Có CI xanh trên release candidate/rebased equivalent.
-2. Ghi CI URL, review artifact và xác nhận artifact không chứa credential, token, PII
-   hoặc signed URL. Quyền push và acceptance `FE9-R16`/`FE9-R17` đã được xác nhận.
-3. Sau đó mới cập nhật `plan-fe.md`, frontend coverage phase và evidence index sang
-   `DONE`; việc merge vẫn cần yêu cầu riêng của người dùng.
+1. CI xanh trên rebased equivalent: **Đạt** — run `33690470254`, 5/5 job.
+2. Artifact không chứa credential, token, PII hoặc signed URL: **Đạt** — redaction
+   gate, schema verifier và scan bổ sung đều sạch.
+3. `plan-fe.md`, executable phase status và evidence index cùng `DONE`: **Đạt**.
+4. Merge: chưa thực hiện; đây là hành động riêng cần người dùng yêu cầu.

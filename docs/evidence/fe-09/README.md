@@ -1,16 +1,16 @@
 # FE-09 — Evidence index
 
-> Trạng thái: **IN PROGRESS**<br>
+> Trạng thái: **DONE**<br>
 > Product baseline: `3e79db7`<br>
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-14 — CI chức năng xanh, đang làm sạch artifact**<br>
+> Con trỏ triển khai: **WP-14 — PASS, artifact đã rà soát**<br>
 > Release candidate cục bộ: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
-> CI head SHA: `42b08da066098842e4ee8e4422bae75d8cd540b5`<br>
-> CI merge SHA: `4e91e438839aeaf3a6aee73ae441a2d1e5493f61`<br>
-> CI run: [33638277842](https://github.com/leedontbeshy/rePhone2/actions/runs/33638277842) — **5/5 job xanh**<br>
-> Điều kiện còn mở: **Báo cáo trình duyệt còn metadata Git và giá trị fixture; cần artifact mới đã làm sạch**<br>
+> CI head SHA: `ce4939dd6438b22bdc7a6994eb305e81732d0c2a`<br>
+> CI merge SHA: `e1ba2ebbbd65832a88569d0132483e30b9883ea6`<br>
+> CI run: [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254) — **5/5 job xanh**<br>
+> Điều kiện còn mở: **Không còn điều kiện chặn FE-09; PR #23 vẫn chờ quyết định merge riêng**<br>
 > Giới hạn đã chấp nhận: **FE9-R16, FE9-R17 — 02/09/2026**
 
 ## Phạm vi bằng chứng
@@ -70,8 +70,8 @@ projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài regi
 | Visual determinism | PASS | 2/2 test ảnh chạy xanh hai lượt liên tiếp sau khi review 6 ảnh |
 | Fast quality gates | PASS | format, lint, typecheck, unit/component, a11y, build và generated drift |
 | Release DB guard | PASS | Chặn DB không có hậu tố `_test` và host từ xa; lifecycle test 2/2 |
-| CI workflow | IMPLEMENTED | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
-| CI run URL | PENDING | Chỉ có sau khi nhánh được push; bắt buộc bổ sung trước WP-14 closeout |
+| CI workflow | PASS | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
+| CI run URL | PASS | [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254), 5/5 job xanh |
 
 ## Foundation và shared UX consistency WP-02
 
@@ -242,7 +242,7 @@ typecheck, build, hai lượt release matrix `5/5` và performance production `1
 route. Chi tiết consumer proof, lịch sử lượt đỏ và rollback checkpoint nằm tại
 [WP-13 legacy cleanup evidence](./wp-13-legacy-cleanup.md).
 
-## Release closeout cục bộ WP-14
+## Release closeout WP-14
 
 Một lần `pnpm verify:release` trên candidate `de82f60` đạt cả pass `1/2` và `2/2`.
 Mỗi pass có
@@ -257,12 +257,19 @@ global CSS và performance geometry đều được rehearsal trong worktree t�
 sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).
 
+Final CI [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254)
+trên head `ce4939d` / merge SHA `e1ba2eb` đạt đủ 5/5 job. Báo cáo Chromium có
+`93/93` expected, Firefox/WebKit có `2/2` expected; cả hai có zero
+unexpected/flaky/skipped/retry. Performance đạt `12/12` route, database/API và hai
+fast gate đều xanh. Artifact redaction gate, schema verifier và scan bổ sung không
+tìm thấy credential, token, PII, signed URL hay fixture nhạy cảm.
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
 | --- | --- | --- |
 | WP-00 | Evidence index, command log, residual risks | Có |
-| WP-01 | Browser ownership registry và release workflow | Có; CI URL chờ push |
+| WP-01 | Browser ownership registry và release workflow | PASS; CI 5/5 và artifact đã rà soát |
 | WP-02 | Foundation/browser/visual evidence | PASS |
 | WP-03 | Storefront browser/visual/performance evidence | PASS |
 | WP-04 | Auth/account browser/visual/security evidence | PASS |
@@ -272,10 +279,10 @@ sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng n�
 | WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
 | WP-09 | Operations browser/API/visual evidence | PASS — FE9-R15 đóng; FE9-R16 đã chấp nhận |
 | WP-10 | System administration browser/API/visual evidence | PASS |
-| WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17 đã chấp nhận, FE9-R18 chờ CI |
-| WP-12 | Performance và client-boundary report | PASS cục bộ; CI artifact chờ push |
-| WP-13 | Consumer scan, owner regression và rollback checkpoint | PASS cục bộ |
-| WP-14 | Hai release run, production smoke, exact-set, rollback và cross-browser | LOCAL PASS — chờ CI/artifact; FE9-R16/R17 đã chấp nhận |
+| WP-11 | Accessibility, responsive và visual matrix | PASS; Firefox/WebKit CI `2/2`, FE9-R17 đã chấp nhận |
+| WP-12 | Performance và client-boundary report | PASS; CI `12/12` route và artifact sạch |
+| WP-13 | Consumer scan, owner regression và rollback checkpoint | PASS |
+| WP-14 | Hai release run, production smoke, exact-set, rollback và cross-browser | PASS; final CI 5/5, FE9-R16/R17 đã chấp nhận |
 
 ## Quy tắc cập nhật
 
@@ -285,10 +292,8 @@ sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng n�
 4. Selected screenshot chỉ được theo dõi sau khi đã review đúng viewport/state.
 5. Không đánh dấu FE-09 `DONE` trước khi WP-14 chứng minh toàn bộ definition of done.
 
-## Bước tiếp theo
+## Trạng thái bàn giao
 
-WP-14 cục bộ đã đóng `FE9-R13`–`FE9-R15`, chạy hai release pass từ database sạch,
-production smoke compiled, ownership exact-set, rollback rehearsal và Firefox/WebKit
-critical smoke. Người dùng đã chấp nhận `FE9-R16`, `FE9-R17` ngày 02/09/2026. Việc
-còn lại là push, lấy/review CI artifact trên release SHA; trước đó toàn FE-09 vẫn giữ
-`IN PROGRESS`.
+WP-14 đã đóng `FE9-R05`, `FE9-R08`, `FE9-R10`, `FE9-R13`–`FE9-R15` và `FE9-R18`;
+`FE9-R16`, `FE9-R17` đã được người dùng chấp nhận ngày 02/09/2026. FE-09 đã chuyển
+`DONE`. PR #23 vẫn mở; merge chỉ thực hiện khi người dùng yêu cầu riêng.
