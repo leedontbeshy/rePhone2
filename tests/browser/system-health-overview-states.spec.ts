@@ -10,9 +10,20 @@ interface FixtureResponse<T> {
 }
 
 interface SystemProbe {
-  failNextHealth: boolean;
   healthReads: number;
+  holdNextHealthFailure(): ControlledHealthRequest;
   overviewReads: number;
+}
+
+interface ControlledHealthRequest {
+  state(): 'waiting' | 'started' | 'completed';
+  release(): void;
+}
+
+interface HealthRequestGate extends ControlledHealthRequest {
+  readonly released: Promise<void>;
+  markCompleted(): void;
+  markStarted(): void;
 }
 
 test(bt('browser:system-admin-health', 'health-dependency-state-matrix'), async ({ context }) => {
@@ -97,12 +108,25 @@ test(bt('browser:system-admin-health', 'health-stale-refresh'), async ({ page })
   ).toBeVisible();
 
   const routeBeforeRefresh = page.url();
-  probe.failNextHealth = true;
-  await page.getByRole('button', { name: 'Kiểm tra lại', exact: true }).click();
-  await expect(panel).toHaveAttribute('aria-busy', 'true');
-  await expect(panel).toContainText('Đang cập nhật');
-  await expect(panel).toContainText('Kho tệp');
-  await expect(page.getByLabel('Đang kiểm tra trạng thái hệ thống')).toHaveCount(0);
+  const pendingRefresh = probe.holdNextHealthFailure();
+  try {
+    const refreshRequest = page.waitForRequest((request) => {
+      return (
+        request.method() === 'GET' &&
+        new URL(request.url()).pathname === '/api/v1/backoffice/system/health'
+      );
+    });
+    await page.getByRole('button', { name: 'Kiểm tra lại', exact: true }).click();
+    await refreshRequest;
+    await expect.poll(() => pendingRefresh.state()).toBe('started');
+    await expect(panel).toHaveAttribute('aria-busy', 'true');
+    await expect(panel).toContainText('Đang cập nhật');
+    await expect(panel).toContainText('Kho tệp');
+    await expect(page.getByLabel('Đang kiểm tra trạng thái hệ thống')).toHaveCount(0);
+  } finally {
+    pendingRefresh.release();
+  }
+  await expect.poll(() => pendingRefresh.state()).toBe('completed');
 
   await expect(page.getByText('Chưa thể hoàn tất kiểm tra', { exact: true })).toBeVisible();
   await expect(panel).not.toHaveAttribute('aria-busy', 'true');
@@ -200,7 +224,16 @@ async function installSystemFixture(
     overview?: readonly FixtureResponse<ReturnType<typeof overviewSnapshot>>[];
   }>,
 ): Promise<SystemProbe> {
-  const probe: SystemProbe = { failNextHealth: false, healthReads: 0, overviewReads: 0 };
+  let nextHealthFailure: HealthRequestGate | undefined;
+  const probe: SystemProbe = {
+    healthReads: 0,
+    holdNextHealthFailure() {
+      const gate = createHealthRequestGate();
+      nextHealthFailure = gate;
+      return gate;
+    },
+    overviewReads: 0,
+  };
   await page.route('**/api/v1/auth/refresh', (route) =>
     json(route, { data: { accessToken: `fe09-${role}`, user: staff(role) } }),
   );
@@ -212,10 +245,17 @@ async function installSystemFixture(
     if (request.method() === 'GET' && path === '/api/v1/backoffice/system/health') {
       const response = responseAt(responses.health, probe.healthReads);
       probe.healthReads += 1;
-      if (probe.failNextHealth) {
-        probe.failNextHealth = false;
-        await delay(320);
-        return json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+      const failureGate = nextHealthFailure;
+      nextHealthFailure = undefined;
+      if (failureGate !== undefined) {
+        failureGate.markStarted();
+        await failureGate.released;
+        try {
+          await json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+        } finally {
+          failureGate.markCompleted();
+        }
+        return;
       }
       return respond(route, response);
     }
@@ -363,4 +403,23 @@ async function preflight(route: Route): Promise<void> {
 
 async function delay(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function createHealthRequestGate(): HealthRequestGate {
+  let state: ReturnType<ControlledHealthRequest['state']> = 'waiting';
+  let release = () => undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return {
+    markCompleted() {
+      state = 'completed';
+    },
+    markStarted() {
+      state = 'started';
+    },
+    release,
+    released,
+    state: () => state,
+  };
 }
