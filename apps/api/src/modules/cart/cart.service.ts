@@ -62,11 +62,11 @@ export class CartService {
             guestToken: issuedGuestToken,
             guestTokenHash: this.guestIdentity.digestToken(issuedGuestToken),
           };
+    const offer = await this.resolveOfferForAdd(input);
     const result = await this.transactions.run('cart.add-item', async (transaction) => {
       await this.carts.lockIdentity(identityKey(identity), transaction);
       const cart = await this.findOrCreateActive(identity, transaction);
       await this.carts.lockCart(cart.id, transaction);
-      const offer = await this.resolveOfferForAdd(input, transaction);
       const existing = cart.items.find((item) =>
         input.itemType === 'IPHONE'
           ? item.inventoryUnitId === offer.inventoryUnitId
@@ -264,10 +264,7 @@ export class CartService {
     );
   }
 
-  private async resolveOfferForAdd(
-    input: AddCartItemDto,
-    transaction: Prisma.TransactionClient,
-  ): Promise<CommerceOffer> {
+  private async resolveOfferForAdd(input: AddCartItemDto): Promise<CommerceOffer> {
     if (
       (input.itemType === 'IPHONE' &&
         (input.inventoryCode === undefined ||
@@ -282,8 +279,8 @@ export class CartService {
     }
     const offer =
       input.itemType === 'IPHONE'
-        ? await this.offers.findIphoneByInventoryCode(input.inventoryCode as string, transaction)
-        : await this.offers.findAccessoryByVariantId(input.variantId as string, transaction);
+        ? await this.offers.findIphoneByInventoryCode(input.inventoryCode as string)
+        : await this.offers.findAccessoryByVariantId(input.variantId as string);
     if (
       offer === null ||
       offer.itemType !== input.itemType ||

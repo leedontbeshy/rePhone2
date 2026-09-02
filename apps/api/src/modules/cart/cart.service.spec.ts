@@ -18,6 +18,71 @@ const CUSTOMER_CART_ID = '00000000-0000-4000-8000-000000000002';
 const GUEST_CART_ID = '00000000-0000-4000-8000-000000000003';
 const VARIANT_ID = '00000000-0000-4000-8000-000000000004';
 const ITEM_ID = '00000000-0000-4000-8000-000000000005';
+const INVENTORY_UNIT_ID = '00000000-0000-4000-8000-000000000006';
+const INVENTORY_CODE = 'RPH-U-CART-0001';
+
+describe('CartService add item', () => {
+  it('resolves the commerce offer before opening the serializable cart transaction', async () => {
+    let releaseOffer!: (offer: CommerceOffer) => void;
+    const offerPromise = new Promise<CommerceOffer>((resolve) => {
+      releaseOffer = resolve;
+    });
+    const existingCart = iphoneCart();
+    const repository = {
+      lockIdentity: vi.fn(() => Promise.resolve(undefined)),
+      lockCart: vi.fn(() => Promise.resolve(undefined)),
+      findActiveForCustomer: vi.fn(() => Promise.resolve(existingCart)),
+      findActiveById: vi.fn(() => Promise.resolve(existingCart)),
+    } as unknown as CartRepository;
+    const transaction = {} as Prisma.TransactionClient;
+    const runTransaction = vi.fn(
+      async <T>(
+        _operation: string,
+        work: (client: Prisma.TransactionClient) => Promise<T>,
+      ): Promise<T> => work(transaction),
+    );
+    const runner = {
+      run: runTransaction,
+    } as unknown as SerializableTransactionRunner;
+    const offer = iphoneOffer();
+    const findIphoneByInventoryCode = vi.fn(() => offerPromise);
+    const offers = {
+      findIphoneByInventoryCode,
+      readOffers: vi.fn(() =>
+        Promise.resolve(new Map([[offerKey(offer.variantId, offer.inventoryUnitId), offer]])),
+      ),
+    } as unknown as CommerceOfferReader;
+    const service = new CartService(
+      repository,
+      offers,
+      runner,
+      {} as GuestCartIdentityService,
+      {} as AppConfig,
+    );
+
+    const resultPromise = service.addItem(
+      {
+        auth: {
+          userId: CUSTOMER_ID,
+          role: 'CUSTOMER',
+          sessionId: 'session-a',
+        },
+      } as Request,
+      { itemType: 'IPHONE', inventoryCode: INVENTORY_CODE },
+    );
+
+    await vi.waitFor(() => {
+      expect(findIphoneByInventoryCode).toHaveBeenCalledOnce();
+    });
+    expect(findIphoneByInventoryCode).toHaveBeenCalledWith(INVENTORY_CODE);
+    expect(runTransaction).not.toHaveBeenCalled();
+
+    releaseOffer(offer);
+
+    await expect(resultPromise).resolves.toMatchObject({ created: false });
+    expect(runTransaction).toHaveBeenCalledOnce();
+  });
+});
 
 describe('CartService merge', () => {
   it('keeps capped warnings scoped to the transaction attempt that commits', async () => {
@@ -108,6 +173,42 @@ function accessoryOffer(): CommerceOffer {
     currentUnitPrice: '100000',
     availabilityStatus: 'AVAILABLE',
     availableQuantity: 200,
+    media: null,
+  };
+}
+
+function iphoneCart(): CartRecord {
+  return {
+    id: CUSTOMER_CART_ID,
+    status: 'ACTIVE',
+    expiresAt: null,
+    items: [
+      {
+        id: ITEM_ID,
+        cartId: CUSTOMER_CART_ID,
+        variantId: VARIANT_ID,
+        inventoryUnitId: INVENTORY_UNIT_ID,
+        quantity: 1,
+        priceAtAddition: '10000000',
+      },
+    ],
+  } as unknown as CartRecord;
+}
+
+function iphoneOffer(): CommerceOffer {
+  return {
+    itemType: 'IPHONE',
+    productId: '00000000-0000-4000-8000-000000000007',
+    productSlug: 'iphone-demo',
+    productName: 'iPhone Demo',
+    productType: 'IPHONE',
+    variantId: VARIANT_ID,
+    variantName: '128 GB Demo',
+    inventoryUnitId: INVENTORY_UNIT_ID,
+    inventoryCode: INVENTORY_CODE,
+    currentUnitPrice: '10000000',
+    availabilityStatus: 'AVAILABLE',
+    availableQuantity: 1,
     media: null,
   };
 }
