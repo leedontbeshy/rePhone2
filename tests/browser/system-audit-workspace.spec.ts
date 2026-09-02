@@ -14,8 +14,7 @@ interface AuditProbe {
 }
 
 interface ControlledDetailRequest {
-  readonly completed: Promise<void>;
-  readonly started: Promise<void>;
+  state(): 'waiting' | 'started' | 'completed';
   release(): void;
 }
 
@@ -94,19 +93,26 @@ test(bt('browser:system-admin-health', 'audit-workspace-lifecycle'), async ({ pa
   const scrollBeforeRace = await page.evaluate(() => window.scrollY);
   const pendingDetailB = probe.holdNextDetail(AUDIT_B);
   try {
-    await rowB.dispatchEvent('click');
-    await pendingDetailB.started;
-    expect(probe.detailReads).toContain(AUDIT_B);
+    const detailRequestB = page.waitForRequest((request) => {
+      const path = new URL(request.url()).pathname;
+      return (
+        request.method() === 'GET' &&
+        path === `/api/v1/backoffice/audit-logs/${encodeURIComponent(AUDIT_B)}`
+      );
+    });
+    await rowB.click({ noWaitAfter: true });
+    await detailRequestB;
+    await expect.poll(() => pendingDetailB.state()).toBe('started');
     await expect(page.getByLabel('Đang tải chi tiết hoạt động')).toBeVisible();
     await expect(listHeading).toBeVisible();
     await expect(rowA).toBeVisible();
-    await rowA.dispatchEvent('click');
+    await rowA.click({ noWaitAfter: true });
     await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
     await expect(page.locator('#audit-detail-title')).toBeFocused();
   } finally {
     pendingDetailB.release();
-    await pendingDetailB.completed;
   }
+  await expect.poll(() => pendingDetailB.state()).toBe('completed');
   await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
   await expect(page.getByRole('heading', { name: 'Đã vô hiệu hóa nhân viên' })).toHaveCount(0);
   expect(probe.listReads).toBe(listReadsBeforeDetailWork);
@@ -389,17 +395,20 @@ async function delay(milliseconds: number): Promise<void> {
 }
 
 function createDetailRequestGate(): DetailRequestGate {
-  let markStarted = () => undefined;
+  let state: ReturnType<ControlledDetailRequest['state']> = 'waiting';
   let release = () => undefined;
-  let markCompleted = () => undefined;
-  const started = new Promise<void>((resolve) => {
-    markStarted = resolve;
-  });
   const released = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const completed = new Promise<void>((resolve) => {
-    markCompleted = resolve;
-  });
-  return { completed, markCompleted, markStarted, release, released, started };
+  return {
+    markCompleted() {
+      state = 'completed';
+    },
+    markStarted() {
+      state = 'started';
+    },
+    release,
+    released,
+    state: () => state,
+  };
 }
