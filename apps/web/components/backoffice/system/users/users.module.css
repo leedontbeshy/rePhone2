@@ -231,7 +231,7 @@
 
 .avatar[data-tone='green'],
 .avatarLarge[data-tone='green'] {
-  color: var(--color-success);
+  color: var(--color-success-strong);
   background: var(--color-success-soft);
 }
 
@@ -281,6 +281,11 @@
   line-height: var(--line-height-label);
 }
 
+.recordButton[data-selected] .recordIdentity span,
+.recordButton[data-selected] .recordIdentity small {
+  color: var(--color-body);
+}
+
 .listFooter {
   margin-block-start: auto;
   padding: var(--space-3) var(--space-5);
@@ -327,7 +332,7 @@
 }
 
 .detailIdentityAside span {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.06em;
@@ -350,7 +355,7 @@
   max-inline-size: 100%;
   margin: 0;
   overflow-wrap: anywhere;
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
   line-height: var(--line-height-small);
 }
@@ -392,6 +397,7 @@
   display: grid;
   min-inline-size: 0;
   gap: 0.125rem;
+  margin: 0;
 }
 
 .detailSummaryCopy dt {
