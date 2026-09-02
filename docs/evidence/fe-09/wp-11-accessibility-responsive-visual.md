@@ -1,9 +1,9 @@
 # FE-09 WP-11 — Ma trận accessibility, responsive và visual
 
-> Trạng thái: **PASS trong phạm vi Chromium cục bộ, kèm giới hạn đã ghi rõ**  
-> Phạm vi: tám miền giao diện từ storefront đến quản trị hệ thống  
-> Viewport chuẩn: `320×844`, `390×844`, `768×1024`, `1024×768`, `1440×900`  
-> Ngày kiểm tra: 02/09/2026  
+> Trạng thái: **PASS trong phạm vi Chromium cục bộ, kèm giới hạn đã ghi rõ**<br>
+> Phạm vi: tám miền giao diện từ storefront đến quản trị hệ thống<br>
+> Viewport chuẩn: `320×844`, `390×844`, `768×1024`, `1024×768`, `1440×900`<br>
+> Ngày kiểm tra: 02/09/2026<br>
 > Release SHA và CI artifact cuối: ghi tại WP-14 sau khi cây thay đổi được commit
 
 ## Kết luận
