@@ -889,6 +889,8 @@ model Payment {
 
 model Refund {
   id                 String              @id @default(uuid(7)) @db.Uuid
+  idempotencyKey     String?             @unique @map("idempotency_key") @db.Uuid
+  requestFingerprint String?             @map("request_fingerprint") @db.Char(64)
   orderId            String              @map("order_id") @db.Uuid
   paymentId          String?             @map("payment_id") @db.Uuid
   amount             Decimal             @db.Decimal(15, 0)

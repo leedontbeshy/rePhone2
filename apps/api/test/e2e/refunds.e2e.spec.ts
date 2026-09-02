@@ -75,7 +75,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
         call: (headers: Record<string, string>) =>
           request(server)
             .post(`/api/v1/backoffice/orders/${MISSING_ID}/refunds`)
-            .set(headers)
+            .set({ ...headers, 'Idempotency-Key': randomUUID() })
             .send({
               amount: '10000',
               method: 'CASH',
@@ -225,6 +225,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     const created = await request(server)
       .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
       .set(bearer(employee))
+      .set('Idempotency-Key', randomUUID())
       .send({
         paymentId: fixture.paymentId,
         amount: '30000',
@@ -294,6 +295,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     const exceedsPaid = await request(server)
       .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
       .set(bearer(employee))
+      .set('Idempotency-Key', randomUUID())
       .send({
         amount: '80000',
         method: 'CASH',
@@ -354,6 +356,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     const created = await request(server)
       .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
       .set(bearer(employee))
+      .set('Idempotency-Key', randomUUID())
       .send({
         amount: '30000',
         method: 'CASH',
@@ -421,6 +424,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     const created = await request(server)
       .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
       .set(bearer(employee))
+      .set('Idempotency-Key', randomUUID())
       .send({
         amount: '50000',
         method: 'BANK_TRANSFER',
@@ -495,6 +499,72 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
     );
   });
 
+  it('requires a UUID idempotency key and replays sequential and concurrent refund creates once', async () => {
+    const fixture = await createPaidOrder(prisma, {
+      status: 'COMPLETED',
+      paidAmount: '100000',
+      grandTotal: '100000',
+    });
+    const employee = await login(server, 'EMPLOYEE');
+    const idempotencyKey = randomUUID();
+    const payload = {
+      amount: '40000',
+      method: 'CASH',
+      reason: 'Hoàn tiền theo một yêu cầu có khóa chống gửi trùng',
+    } as const;
+
+    const missingHeader = await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+      .set(bearer(employee))
+      .send(payload)
+      .expect(400);
+    expectNoStore(missingHeader);
+
+    const invalidHeader = await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+      .set(bearer(employee))
+      .set('Idempotency-Key', 'not-a-uuid')
+      .send(payload)
+      .expect(400);
+    expect(errorCode(invalidHeader)).toBe('VALIDATION_FAILED');
+
+    const createCall = () =>
+      request(server)
+        .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+        .set(bearer(employee))
+        .set('Idempotency-Key', idempotencyKey)
+        .send(payload)
+        .expect(201);
+    const [first, concurrentReplay] = await Promise.all([createCall(), createCall()]);
+    const refundId = stringProperty(successRecord(first), 'id');
+    expect(successRecord(concurrentReplay)).toMatchObject({ id: refundId });
+
+    const sequentialReplay = await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+      .set(bearer(employee))
+      .set('Idempotency-Key', idempotencyKey)
+      .send(payload)
+      .expect(201);
+    expect(successRecord(sequentialReplay)).toMatchObject({ id: refundId });
+
+    const mismatch = await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
+      .set(bearer(employee))
+      .set('Idempotency-Key', idempotencyKey)
+      .send({ ...payload, reason: 'Cùng khóa nhưng là một yêu cầu hoàn tiền khác' })
+      .expect(409);
+    expect(errorCode(mismatch)).toBe('DUPLICATE_RESOURCE');
+
+    expect(await prisma.refund.count({ where: { orderId: fixture.orderId, idempotencyKey } })).toBe(
+      1,
+    );
+    expect(
+      await prisma.auditLog.count({
+        where: { action: 'refund.created', resourceType: 'Refund', resourceId: refundId },
+      }),
+    ).toBe(1);
+  });
+
   it('serializes concurrent manual creates so active refund obligations never exceed paid money', async () => {
     const fixture = await createPaidOrder(prisma, {
       status: 'COMPLETED',
@@ -511,6 +581,7 @@ describe('Slice 10 cancellation and refund HTTP contract', () => {
         return request(server)
           .post(`/api/v1/backoffice/orders/${fixture.orderId}/refunds`)
           .set(bearer(token))
+          .set('Idempotency-Key', randomUUID())
           .send({
             amount: '70000',
             method: index === 0 ? 'CASH' : 'BANK_TRANSFER',

@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Headers,
   Inject,
   Param,
   Post,
@@ -19,6 +20,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
+  ApiHeader,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -26,6 +28,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { isUUID } from 'class-validator';
+import { ApiError } from '../../common/errors/api-error.js';
 import { ApiErrorResponses } from '../../common/http/api-error-response.dto.js';
 import { BackofficeRateLimit } from '../auth/backoffice-rate-limit.decorator.js';
 import { BackofficeRateLimitGuard } from '../auth/backoffice-rate-limit.guard.js';
@@ -66,7 +70,7 @@ const REFUND_MUTATION_ERRORS = [
   ...REFUND_QUERY_ERRORS,
   {
     status: 409 as const,
-    description: 'INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION',
+    description: 'DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION',
   },
   {
     status: 422 as const,
@@ -277,14 +281,39 @@ export class BackofficeOrderRefundController {
   @ApiOperation({ operationId: 'createRefund', summary: 'Create a manual refund obligation' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: CreateRefundDto })
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: true,
+    schema: { type: 'string', format: 'uuid' },
+  })
   @ApiCreatedResponse({ type: RefundDetailResponse })
   @ApiErrorResponses(...REFUND_MUTATION_ERRORS)
   public create(
     @Param() params: RefundOrderIdParamsDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
     @Body() input: CreateRefundDto,
     @CurrentAuth() auth: AuthContext,
     @Req() request: Request,
   ) {
-    return this.commands.create(params.id, input, auth, request);
+    return this.commands.create(
+      params.id,
+      requiredIdempotencyKey(idempotencyKey),
+      input,
+      auth,
+      request,
+    );
   }
+}
+
+function requiredIdempotencyKey(value: string | undefined): string {
+  if (value === undefined || !isUUID(value)) {
+    throw new ApiError('VALIDATION_FAILED', undefined, [
+      {
+        field: 'Idempotency-Key',
+        code: 'IS_UUID',
+        message: 'Idempotency-Key phải là UUID hợp lệ.',
+      },
+    ]);
+  }
+  return value;
 }

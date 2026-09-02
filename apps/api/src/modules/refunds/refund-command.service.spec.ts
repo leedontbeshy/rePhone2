@@ -23,6 +23,7 @@ const PAYMENT_ID = cryptoId(2);
 const SECOND_PAYMENT_ID = cryptoId(3);
 const REFUND_ID = cryptoId(4);
 const STAFF_ID = cryptoId(5);
+const IDEMPOTENCY_KEY = cryptoId(6);
 const NOW = new Date('2026-08-24T05:00:00.000Z');
 
 describe('RefundCommandService.create', () => {
@@ -37,6 +38,7 @@ describe('RefundCommandService.create', () => {
     await expect(
       fixture.service.create(
         ORDER_ID,
+        IDEMPOTENCY_KEY,
         {
           amount: '300001',
           method: 'BANK_TRANSFER',
@@ -65,6 +67,7 @@ describe('RefundCommandService.create', () => {
     await expect(
       fixture.service.create(
         ORDER_ID,
+        IDEMPOTENCY_KEY,
         {
           paymentId: PAYMENT_ID,
           amount: '100001',
@@ -85,6 +88,7 @@ describe('RefundCommandService.create', () => {
     await expect(
       fixture.service.create(
         ORDER_ID,
+        IDEMPOTENCY_KEY,
         {
           amount: '100000',
           method: 'CASH',
@@ -113,6 +117,7 @@ describe('RefundCommandService.create', () => {
       await expect(
         fixture.service.create(
           ORDER_ID,
+          IDEMPOTENCY_KEY,
           {
             paymentId: PAYMENT_ID,
             amount: '250000',
@@ -134,8 +139,13 @@ describe('RefundCommandService.create', () => {
           reason: 'Hoàn một phần cho khách hàng',
           requestedByType: 'STAFF',
           requestedById: STAFF_ID,
+          idempotencyKey: IDEMPOTENCY_KEY,
         },
       });
+      const createInput = fixture.refundCreate.mock.calls[0]?.[0] as {
+        data: { requestFingerprint: string };
+      };
+      expect(createInput.data.requestFingerprint).toMatch(/^[0-9a-f]{64}$/);
       expect(fixture.audit.write.mock.calls[0]?.[2]).toMatchObject({
         action: 'refund.created',
         resourceType: 'Refund',
@@ -143,6 +153,55 @@ describe('RefundCommandService.create', () => {
       });
     },
   );
+
+  it('returns the original refund for an exact idempotency replay without a second audit', async () => {
+    const fixture = commandFixture();
+    const input = {
+      paymentId: PAYMENT_ID,
+      amount: '250000',
+      method: 'BANK_TRANSFER' as const,
+      reason: 'Hoàn một phần cho khách hàng',
+    };
+
+    await fixture.service.create(ORDER_ID, IDEMPOTENCY_KEY, input, staffAuth(), staffRequest());
+    const createInput = fixture.refundCreate.mock.calls[0]?.[0] as {
+      data: { requestFingerprint: string };
+    };
+    fixture.refundFindUnique.mockResolvedValue({
+      id: REFUND_ID,
+      requestFingerprint: createInput.data.requestFingerprint,
+    });
+
+    await expect(
+      fixture.service.create(ORDER_ID, IDEMPOTENCY_KEY, input, staffAuth(), staffRequest()),
+    ).resolves.toMatchObject({ id: REFUND_ID });
+    expect(fixture.refundCreate).toHaveBeenCalledOnce();
+    expect(fixture.audit.write).toHaveBeenCalledOnce();
+  });
+
+  it('rejects reuse of an idempotency key with a different request fingerprint', async () => {
+    const fixture = commandFixture();
+    fixture.refundFindUnique.mockResolvedValue({
+      id: REFUND_ID,
+      requestFingerprint: 'f'.repeat(64),
+    });
+
+    await expect(
+      fixture.service.create(
+        ORDER_ID,
+        IDEMPOTENCY_KEY,
+        {
+          amount: '250000',
+          method: 'CASH',
+          reason: 'Một yêu cầu hoàn tiền khác',
+        },
+        staffAuth(),
+        staffRequest(),
+      ),
+    ).rejects.toMatchObject({ code: 'DUPLICATE_RESOURCE' });
+    expect(fixture.refundCreate).not.toHaveBeenCalled();
+    expect(fixture.audit.write).not.toHaveBeenCalled();
+  });
 });
 
 function commandFixture(
@@ -160,6 +219,9 @@ function commandFixture(
     void input;
     return { id: REFUND_ID };
   });
+  const refundFindUnique = vi.fn(
+    async () => null as { id: string; requestFingerprint: string } | null,
+  );
   const transaction = {
     $queryRaw: vi.fn(async () => [{ id: ORDER_ID }]),
     order: {
@@ -169,7 +231,7 @@ function commandFixture(
         status: orderStatus,
       })),
     },
-    refund: { create: refundCreate },
+    refund: { create: refundCreate, findUnique: refundFindUnique },
   } as unknown as Prisma.TransactionClient;
   const transactions = {
     run: vi.fn(
@@ -217,7 +279,15 @@ function commandFixture(
     { now: () => NOW },
     {} as RefundNotificationService,
   );
-  return { service, transaction, refundCreate, lockFinance, repository, audit };
+  return {
+    service,
+    transaction,
+    refundCreate,
+    refundFindUnique,
+    lockFinance,
+    repository,
+    audit,
+  };
 }
 
 function verifiedPayment(id: string, receivedAmount: string) {
@@ -243,6 +313,8 @@ function refundFinance(status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED', amount:
 function refundRecord(overrides: Partial<RefundOperationsRecord> = {}): RefundOperationsRecord {
   return {
     id: REFUND_ID,
+    idempotencyKey: IDEMPOTENCY_KEY,
+    requestFingerprint: 'a'.repeat(64),
     orderId: ORDER_ID,
     paymentId: PAYMENT_ID,
     amount: 250_000n,

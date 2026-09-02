@@ -34,7 +34,9 @@ describe('Slice 10 refund workflow database invariants', () => {
         AND column_name IN (
           'evidence_mime_type',
           'evidence_file_size',
-          'evidence_sha256'
+          'evidence_sha256',
+          'idempotency_key',
+          'request_fingerprint'
         )
       ORDER BY column_name
     `;
@@ -45,6 +47,7 @@ describe('Slice 10 refund workflow database invariants', () => {
         'orders_refunded_not_above_paid_check',
         'payments_id_order_id_key',
         'refunds_evidence_shape_check',
+        'refunds_idempotency_shape_check',
         'refunds_payment_id_order_id_fkey',
         'refunds_requester_check',
         'refunds_status_timestamp_check',
@@ -63,7 +66,8 @@ describe('Slice 10 refund workflow database invariants', () => {
       WHERE schemaname = 'public'
         AND indexname IN (
           'refunds_status_created_at_id_idx',
-          'refunds_status_processing_at_id_idx'
+          'refunds_status_processing_at_id_idx',
+          'refunds_idempotency_key_key'
         )
       ORDER BY indexname
     `;
@@ -72,20 +76,31 @@ describe('Slice 10 refund workflow database invariants', () => {
       'evidence_file_size',
       'evidence_mime_type',
       'evidence_sha256',
+      'idempotency_key',
+      'request_fingerprint',
     ]);
     expect(constraints.map(({ constraintName }) => constraintName)).toEqual([
       'orders_refunded_not_above_paid_check',
       'payments_id_order_id_key',
       'refunds_evidence_shape_check',
+      'refunds_idempotency_shape_check',
       'refunds_payment_id_order_id_fkey',
       'refunds_requester_check',
       'refunds_status_timestamp_check',
       'refunds_values_check',
     ]);
     expect(legacyPaymentForeignKey).toEqual([{ count: 0 }]);
-    expect(indexes).toHaveLength(2);
-    expect(indexes[0]?.indexdef).toContain('(status, created_at, id)');
-    expect(indexes[1]?.indexdef).toContain('(status, processing_at, id)');
+    expect(indexes).toHaveLength(3);
+    expect(
+      indexes.find(({ indexname }) => indexname === 'refunds_idempotency_key_key')?.indexdef,
+    ).toContain('UNIQUE');
+    expect(
+      indexes.find(({ indexname }) => indexname === 'refunds_status_created_at_id_idx')?.indexdef,
+    ).toContain('(status, created_at, id)');
+    expect(
+      indexes.find(({ indexname }) => indexname === 'refunds_status_processing_at_id_idx')
+        ?.indexdef,
+    ).toContain('(status, processing_at, id)');
   });
 
   it('enforces requester, lifecycle, evidence, and Payment ownership invariants', async () => {
