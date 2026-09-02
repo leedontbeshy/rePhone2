@@ -511,7 +511,7 @@
 
 .ordersHeader {
   padding: var(--space-3) var(--space-4);
-  color: var(--color-muted);
+  color: var(--color-body);
   background: var(--color-surface-subtle);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
