@@ -8,9 +8,21 @@ const AUDIT_C = '0199d020-0000-7000-8000-000000000003';
 interface AuditProbe {
   readonly detailReads: string[];
   readonly listQueries: URLSearchParams[];
-  delayNextDetail(id: string, milliseconds: number): void;
   failNextDetail(id: string): void;
+  holdNextDetail(id: string): ControlledDetailRequest;
   listReads: number;
+}
+
+interface ControlledDetailRequest {
+  readonly completed: Promise<void>;
+  readonly started: Promise<void>;
+  release(): void;
+}
+
+interface DetailRequestGate extends ControlledDetailRequest {
+  readonly released: Promise<void>;
+  markCompleted(): void;
+  markStarted(): void;
 }
 
 test(bt('browser:system-admin-health', 'audit-workspace-lifecycle'), async ({ page }) => {
@@ -80,15 +92,21 @@ test(bt('browser:system-admin-health', 'audit-workspace-lifecycle'), async ({ pa
   await expect(rowA).toBeInViewport();
   await expect(rowB).toBeInViewport();
   const scrollBeforeRace = await page.evaluate(() => window.scrollY);
-  probe.delayNextDetail(AUDIT_B, 520);
-  await rowB.click();
-  await expect(page.getByLabel('Đang tải chi tiết hoạt động')).toBeVisible();
-  await expect(listHeading).toBeVisible();
-  await expect(rowA).toBeVisible();
-  await rowA.click();
-  await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
-  await expect(page.locator('#audit-detail-title')).toBeFocused();
-  await delay(620);
+  const pendingDetailB = probe.holdNextDetail(AUDIT_B);
+  try {
+    await rowB.dispatchEvent('click');
+    await pendingDetailB.started;
+    expect(probe.detailReads).toContain(AUDIT_B);
+    await expect(page.getByLabel('Đang tải chi tiết hoạt động')).toBeVisible();
+    await expect(listHeading).toBeVisible();
+    await expect(rowA).toBeVisible();
+    await rowA.dispatchEvent('click');
+    await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
+    await expect(page.locator('#audit-detail-title')).toBeFocused();
+  } finally {
+    pendingDetailB.release();
+    await pendingDetailB.completed;
+  }
   await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
   await expect(page.getByRole('heading', { name: 'Đã vô hiệu hóa nhân viên' })).toHaveCount(0);
   expect(probe.listReads).toBe(listReadsBeforeDetailWork);
@@ -178,17 +196,19 @@ async function auditFixture(page: Page): Promise<AuditProbe> {
       }),
     ],
   ]);
-  const detailDelays = new Map<string, number[]>();
+  const detailGates = new Map<string, DetailRequestGate[]>();
   const detailFailures = new Map<string, number>();
   const probe: AuditProbe = {
     detailReads: [],
     listQueries: [],
     listReads: 0,
-    delayNextDetail(id, milliseconds) {
-      detailDelays.set(id, [...(detailDelays.get(id) ?? []), milliseconds]);
-    },
     failNextDetail(id) {
       detailFailures.set(id, (detailFailures.get(id) ?? 0) + 1);
+    },
+    holdNextDetail(id) {
+      const gate = createDetailRequestGate();
+      detailGates.set(id, [...(detailGates.get(id) ?? []), gate]);
+      return gate;
     },
   };
 
@@ -209,19 +229,32 @@ async function auditFixture(page: Page): Promise<AuditProbe> {
     if (path.startsWith('/api/v1/backoffice/audit-logs/') && request.method() === 'GET') {
       const id = decodeURIComponent(path.slice('/api/v1/backoffice/audit-logs/'.length));
       probe.detailReads.push(id);
-      const delays = detailDelays.get(id) ?? [];
-      const nextDelay = delays.shift() ?? 15;
-      detailDelays.set(id, delays);
-      await delay(nextDelay);
-      const failures = detailFailures.get(id) ?? 0;
-      if (failures > 0) {
-        detailFailures.set(id, failures - 1);
-        return json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+      const gates = detailGates.get(id) ?? [];
+      const gate = gates.shift();
+      detailGates.set(id, gates);
+      if (gate === undefined) {
+        await delay(15);
+      } else {
+        gate.markStarted();
+        await gate.released;
       }
-      const detail = detailById.get(id);
-      return detail === undefined
-        ? json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404)
-        : json(route, { data: detail });
+      try {
+        const failures = detailFailures.get(id) ?? 0;
+        if (failures > 0) {
+          detailFailures.set(id, failures - 1);
+          await json(route, errorEnvelope('SERVICE_UNAVAILABLE'), 503);
+          return;
+        }
+        const detail = detailById.get(id);
+        if (detail === undefined) {
+          await json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404);
+          return;
+        }
+        await json(route, { data: detail });
+      } finally {
+        gate?.markCompleted();
+      }
+      return;
     }
     return json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404);
   });
@@ -353,4 +386,20 @@ async function preflight(route: Route) {
 
 async function delay(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function createDetailRequestGate(): DetailRequestGate {
+  let markStarted = () => undefined;
+  let release = () => undefined;
+  let markCompleted = () => undefined;
+  const started = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const completed = new Promise<void>((resolve) => {
+    markCompleted = resolve;
+  });
+  return { completed, markCompleted, markStarted, release, released, started };
 }
