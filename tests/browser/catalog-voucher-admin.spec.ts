@@ -135,17 +135,17 @@ test.describe('FE-05 catalog and voucher administration', () => {
     await page.goto('/backoffice/catalog/products?page=99');
     await expect(page.getByRole('heading', { level: 1, name: 'Danh mục sản phẩm' })).toBeVisible();
     await expect(page).toHaveURL('/backoffice/catalog/products');
+    const typeFilter = page.getByLabel('Loại sản phẩm');
+    const productBoard = page.getByRole('region', { name: 'Danh sách sản phẩm' });
+    await expect(productBoard).not.toHaveAttribute('aria-busy', 'true');
+    await expect(productBoard.getByRole('heading', { level: 2, name: PRODUCT_NAME })).toBeVisible();
     expect(
       probe.catalogQueries.some(
         (query) => query.includes('sortBy=releaseYear') && query.includes('sortOrder=desc'),
       ),
     ).toBe(true);
 
-    let releaseFilter: (() => void) | undefined;
-    let markFilterStarted: (() => void) | undefined;
-    const filterStarted = new Promise<void>((resolve) => {
-      markFilterStarted = resolve;
-    });
+    let releaseFilter = () => undefined;
     const filterRelease = new Promise<void>((resolve) => {
       releaseFilter = resolve;
     });
@@ -160,19 +160,30 @@ test.describe('FE-05 catalog and voucher administration', () => {
         await route.fallback();
         return;
       }
-      markFilterStarted?.();
       await filterRelease;
       await route.fallback();
     });
-    const typeFilter = page.getByLabel('Loại sản phẩm');
-    const productBoard = page.getByRole('region', { name: 'Danh sách sản phẩm' });
-    await typeFilter.focus();
-    await typeFilter.selectOption('ACCESSORY');
-    await filterStarted;
-    await expect(productBoard).toHaveAttribute('aria-busy', 'true');
-    await expect(productBoard.getByRole('heading', { level: 2, name: PRODUCT_NAME })).toBeVisible();
-    await expect(typeFilter).toBeFocused();
-    releaseFilter?.();
+    const filteredRequest = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return (
+        request.method() === 'GET' &&
+        url.pathname === '/api/v1/backoffice/products' &&
+        url.searchParams.get('type') === 'ACCESSORY' &&
+        url.searchParams.get('pageSize') === '6'
+      );
+    });
+    try {
+      await typeFilter.focus();
+      await typeFilter.selectOption('ACCESSORY');
+      await filteredRequest;
+      await expect(productBoard).toHaveAttribute('aria-busy', 'true');
+      await expect(
+        productBoard.getByRole('heading', { level: 2, name: PRODUCT_NAME }),
+      ).toBeVisible();
+      await expect(typeFilter).toBeFocused();
+    } finally {
+      releaseFilter();
+    }
     await expect(productBoard).not.toHaveAttribute('aria-busy', 'true');
     await expect(page).toHaveURL(/type=ACCESSORY/);
 
