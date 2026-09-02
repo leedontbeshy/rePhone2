@@ -308,6 +308,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
       DIRECT_URL: postgresql://postgres:root@localhost:5432/rephone_test
       TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
+      PLAYWRIGHT_WEB_SERVER: production
 
     steps:
       - name: Check out repository
