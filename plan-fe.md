@@ -393,21 +393,27 @@ Contract chung cho mọi phase:
 
 ### FE-9 — Coverage, accessibility, performance và release hardening
 
-| Thuộc tính        | Nội dung                                                                                                                                                                                                        |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Trạng thái        | **IN PROGRESS**                                                                                                                                                                                                 |
-| Mục tiêu          | Chứng minh 162/162 coverage, xóa legacy có kiểm soát và đạt release quality trên desktop/mobile/keyboard.                                                                                                       |
-| Non-goal          | Không thêm operation/tính năng nghiệp vụ mới; chỉ harden contract security/reliability chặn release, và không polish che lấp lỗi contract.                                                                      |
-| Dependency        | C1–C8 hoàn tất.                                                                                                                                                                                                 |
-| Route             | Toàn bộ route hiện hành và route mới; representative visual matrix cho mỗi surface.                                                                                                                             |
-| API group         | Không thêm operation; assert union coverage ledger đúng bằng OpenAPI.                                                                                                                                           |
-| Design anchor     | Consistency, content normalization, stable responsive layout, no orphan legacy style, measured performance.                                                                                                     |
-| State bắt buộc    | Full loading/empty/error/permission/conflict/terminal matrix; offline/provider failure nơi contract hỗ trợ.                                                                                                     |
-| Test              | Operation coverage assertion; unit/component; Playwright desktop/mobile; keyboard/axe; visual snapshots; bundle/client boundary; performance; `pnpm verify:release`.                                            |
-| Commit dự kiến    | `test(web): enforce operation coverage`; `refactor(web): remove legacy frontend paths`; `test(web): harden frontend release`.                                                                                   |
-| DoD/checkpoint C9 | OpenAPI IDs = ledger IDs = implemented coverage manifest, đúng 162 unique; không business op Swagger-only; release gates xanh; rollback evidence đầy đủ.                                                        |
-| Rollback          | Revert cleanup/performance change riêng; không quay lại nếu làm mất security/ownership fix. Không có database rollback.                                                                                         |
-| Evidence          | Local WP-14: `docs/evidence/fe-09/wp-14-release-closeout.md`; candidate `de82f60` đạt hai release pass, exact-set, production smoke/performance và rollback. FE9-R16/R17 đã chấp nhận; CI URL/artifact còn chờ. |
+| Thuộc tính        | Nội dung                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trạng thái        | **IN PROGRESS**                                                                                                                                                      |
+| Mục tiêu          | Chứng minh 162/162 coverage, xóa legacy có kiểm soát và đạt release quality trên desktop/mobile/keyboard.                                                            |
+| Non-goal          | Không thêm operation/tính năng nghiệp vụ mới; chỉ harden contract security/reliability chặn release, và không polish che lấp lỗi contract.                           |
+| Dependency        | C1–C8 hoàn tất.                                                                                                                                                      |
+| Route             | Toàn bộ route hiện hành và route mới; representative visual matrix cho mỗi surface.                                                                                  |
+| API group         | Không thêm operation; assert union coverage ledger đúng bằng OpenAPI.                                                                                                |
+| Design anchor     | Consistency, content normalization, stable responsive layout, no orphan legacy style, measured performance.                                                          |
+| State bắt buộc    | Full loading/empty/error/permission/conflict/terminal matrix; offline/provider failure nơi contract hỗ trợ.                                                          |
+| Test              | Operation coverage assertion; unit/component; Playwright desktop/mobile; keyboard/axe; visual snapshots; bundle/client boundary; performance; `pnpm verify:release`. |
+| Commit dự kiến    | `test(web): enforce operation coverage`; `refactor(web): remove legacy frontend paths`; `test(web): harden frontend release`.                                        |
+| DoD/checkpoint C9 | OpenAPI IDs = ledger IDs = implemented coverage manifest, đúng 162 unique; không business op Swagger-only; release gates xanh; rollback evidence đầy đủ.             |
+| Rollback          | Revert cleanup/performance change riêng; không quay lại nếu làm mất security/ownership fix. Không có database rollback.                                              |
+| Evidence          | WP-14 local pass; CI chức năng xanh; artifact privacy remediation đang mở. FE9-R16/R17 đã chấp nhận.                                                                 |
+
+Bằng chứng tạm thời: `docs/evidence/fe-09/wp-14-release-closeout.md`; candidate
+`de82f60` đạt hai release pass. CI
+[33638277842](https://github.com/leedontbeshy/rePhone2/actions/runs/33638277842)
+xanh 5/5 trên head `42b08da` / merge SHA `4e91e43`, nhưng browser artifact còn
+metadata Git và giá trị fixture. FE09 giữ `IN PROGRESS` tới khi artifact mới sạch.
 
 ## 8. Quality gates và checkpoint policy
 

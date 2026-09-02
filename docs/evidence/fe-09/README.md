@@ -5,9 +5,12 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-14 — local pass, chờ CI/artifact**<br>
+> Con trỏ triển khai: **WP-14 — CI chức năng xanh, đang làm sạch artifact**<br>
 > Release candidate cục bộ: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
-> Điều kiện còn mở: **CI/artifact thật trên release SHA**<br>
+> CI head SHA: `42b08da066098842e4ee8e4422bae75d8cd540b5`<br>
+> CI merge SHA: `4e91e438839aeaf3a6aee73ae441a2d1e5493f61`<br>
+> CI run: [33638277842](https://github.com/leedontbeshy/rePhone2/actions/runs/33638277842) — **5/5 job xanh**<br>
+> Điều kiện còn mở: **Báo cáo trình duyệt còn metadata Git và giá trị fixture; cần artifact mới đã làm sạch**<br>
 > Giới hạn đã chấp nhận: **FE9-R16, FE9-R17 — 02/09/2026**
 
 ## Phạm vi bằng chứng
