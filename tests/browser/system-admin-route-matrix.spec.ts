@@ -221,6 +221,9 @@ test(
             name: 'Điều hướng backoffice',
           });
           const targetScrollTop = await sidebar.evaluate((element) => {
+            // Keep the nested scroller at its viewport height while Playwright expands the page
+            // for a full-page capture; otherwise dvh growth clamps scrollTop back to zero.
+            element.style.blockSize = `${String(element.getBoundingClientRect().height)}px`;
             const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
             element.scrollTop = maximumScrollTop;
             return maximumScrollTop;
