@@ -32,6 +32,7 @@ import {
   formatSettingsDuration,
   formatSettingsMoney,
   hasSettingsChanges,
+  qrFileReadyForUpload,
   settingsToDraft,
   validateQrFile,
   validateSettingsDraft,
@@ -616,7 +617,7 @@ export function SettingsView() {
                 </p>
               )}
               <Button
-                disabled={qrFile === undefined || qrError !== undefined || busy !== undefined}
+                disabled={!qrFileReadyForUpload(qrFile) || busy !== undefined}
                 loading={busy === 'qr'}
                 loadingLabel="Đang cập nhật ảnh QR"
                 type="submit"

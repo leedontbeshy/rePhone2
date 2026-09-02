@@ -6,6 +6,7 @@ import {
   formatSettingsDuration,
   formatSettingsMoney,
   hasSettingsChanges,
+  qrFileReadyForUpload,
   settingsToDraft,
   validateQrFile,
   validateSettingsDraft,
@@ -123,6 +124,16 @@ describe('settings model', () => {
         }),
       ),
     ).toContain('5 MiB');
+  });
+
+  it('keeps a valid selected QR eligible when retrying after a request error', () => {
+    const selected = new File(['qr-data'], 'qr.png', { type: 'image/png' });
+
+    expect(qrFileReadyForUpload(selected)).toBe(true);
+    expect(qrFileReadyForUpload(undefined)).toBe(false);
+    expect(qrFileReadyForUpload(new File(['not-qr'], 'qr.pdf', { type: 'application/pdf' }))).toBe(
+      false,
+    );
   });
 
   it('formats applied values for the settings summary without changing source data', () => {
