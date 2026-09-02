@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-09 — PASS có residual; tiếp theo WP-10**<br>
+> Con trỏ triển khai: **WP-10 — PASS; tiếp theo WP-11**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -25,6 +25,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-07 catalog/voucher evidence](./wp-07-catalog-voucher.md)
 - [WP-08 inventory/stock evidence](./wp-08-inventory-stock.md)
 - [WP-09 operations evidence](./wp-09-operations.md)
+- [WP-10 system administration evidence](./wp-10-system-admin.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -163,6 +164,20 @@ có idempotency key cho lỗi mạng mơ hồ (`FE9-R15`); control ngày giờ n
 Windows vẫn phụ thuộc regional locale (`FE9-R16`). Chi tiết proof boundary, commit,
 test và acceptance nằm tại [WP-09 operations evidence](./wp-09-operations.md).
 
+## System administration hardening WP-10
+
+WP-10 kết thúc code/browser tại `37527d7` với master-detail người dùng giữ
+list/scroll/focus, mutation lock, settings CAS, QR upload/retry/cleanup, audit
+redaction/deep link, health backend thật và overview refresh cục bộ. Full web unit
+đạt `674/674`; API unit/service đạt `79/79`; API E2E đạt `15/15`; browser system
+administration đạt `12/12` hai lượt liên tiếp.
+
+Sáu route FE-8 cùng overview được kiểm tra ở 1440/360 px. ADMIN, EMPLOYEE,
+CUSTOMER và anonymous có role matrix deterministic; trường hợp bị từ chối không
+mount hoặc fetch child. Axe bằng zero serious/critical, không document overflow và
+25/25 ảnh current-run đã được review. Chi tiết trust boundary, commit và acceptance
+nằm tại [WP-10 system administration evidence](./wp-10-system-admin.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -177,7 +192,7 @@ test và acceptance nằm tại [WP-09 operations evidence](./wp-09-operations.m
 | WP-07 | Catalog/voucher browser/responsive/accessibility evidence | PASS |
 | WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
 | WP-09 | Operations browser/API/visual evidence | PASS có residual — FE9-R15/R16 mở |
-| WP-10 | System administration evidence | Chưa có |
+| WP-10 | System administration browser/API/visual evidence | PASS |
 | WP-11 | Accessibility, responsive và visual matrix | Chưa có |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
@@ -193,7 +208,8 @@ test và acceptance nằm tại [WP-09 operations evidence](./wp-09-operations.m
 
 ## Bước tiếp theo
 
-Triển khai WP-10 cho system administration hardening. Song song, vẫn cần chốt
+Triển khai WP-11 cho accessibility, responsive và visual matrix toàn sản phẩm.
+Song song, vẫn cần chốt
 `FE9-R13`–`FE9-R16`, đặc biệt fingerprint/version cho checkout preview và
 idempotency cho mutation vận hành, hoặc có quyết định chấp nhận rủi ro rõ trước
 WP-14. Chưa chuyển WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release này

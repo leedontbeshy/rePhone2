@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-10 — FE-8 system administration hardening**<br>
+> Con trỏ thực thi: **WP-11 — accessibility, responsive và visual matrix**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -53,8 +53,8 @@ bằng chứng đóng work package.
 | WP-07 — Catalog/voucher | **PASS** | Sáu route, lifecycle, role, conflict và local refresh đã qua gate |
 | WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
 | WP-09 — Operations | **PASS có residual risk** | 11 route, lifecycle, API, desktop/mobile, Axe và 22 ảnh đã qua gate; `FE9-R15`–`FE9-R16` còn mở |
-| WP-10 — System admin | **IN PROGRESS** | Route matrix cơ bản đã có; hardening master-detail, mutation lock, CAS/QR cleanup, audit, health và overview chưa đóng |
-| WP-11 — A11y/responsive/visual | **PENDING** | Chạy ma trận toàn sản phẩm sau WP-10 |
+| WP-10 — System admin | **PASS** | Sáu route, role matrix, live health, master-detail, CAS/QR, audit, Axe và 25 ảnh đã qua gate |
+| WP-11 — A11y/responsive/visual | **IN PROGRESS** | Chạy ma trận toàn sản phẩm sau WP-10 |
 | WP-12 — Performance/client/media | **PENDING** | Đo production baseline/after và tối ưu theo số liệu |
 | WP-13 — Legacy cleanup | **PENDING** | Chỉ bắt đầu sau browser/visual gate của owner tương ứng |
 | WP-14 — Release closeout | **PENDING** | Hai release run sạch, production smoke, CI artifact, release SHA và quyết định residual risk |
@@ -571,6 +571,13 @@ system health — tổng 6 URL. `/backoffice` overview tiếp tục thuộc rout
 operation `getBackofficeOperationsOverview` thuộc FE-8 nên được kiểm thử chéo trong
 suite `system-admin-health`, không đổi hoặc nhân đôi route ownership.
 
+**Trạng thái 02/09/2026:** `PASS`. Cây code/browser cuối `37527d7` đã qua full web
+`674/674`, API unit/service `79/79`, API E2E `15/15` và hai lượt browser `12/12`
+liên tiếp. Sáu route FE-8 cùng overview có role matrix, desktop/mobile, Axe zero
+serious/critical, không overflow và 25/25 ảnh current-run đã được review. Live smoke
+dùng backend thật, chỉ đọc và đối chiếu trực tiếp health response với UI. Chi tiết
+tại [WP-10 system administration evidence](../evidence/fe-09/wp-10-system-admin.md).
+
 **Tasks**
 
 - Tạo `system-admin-health` browser suite thật.
@@ -732,7 +739,7 @@ logic trùng lặp.
 | `backoffice-access` | có | tiếp tục giữ fail-closed toàn backoffice |
 | `critical-commerce-flow` | có | chạy lại như release smoke end-to-end |
 | `operations-lifecycle` | **thiếu tại baseline** | đã hoàn thiện 11 UI test chia bốn spec; WP-09 PASS có residual |
-| `system-admin-health` | **thiếu** | route matrix cơ bản đã có; hardening sâu thuộc WP-10 |
+| `system-admin-health` | **thiếu tại baseline** | đã hoàn thiện 12 test qua sáu spec; WP-10 PASS |
 | `release-matrix` | **thiếu** | chưa tạo đầy đủ; thuộc WP-11/WP-14 |
 
 Browser test dùng fixture/interception chứng minh giao diện, tương tác, loading,
@@ -877,18 +884,19 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Con trỏ hiện tại là **WP-10**. Thứ tự tiếp tục:
+Con trỏ hiện tại là **WP-11**. Thứ tự tiếp tục:
 
-1. Khóa gửi lặp đồng bộ cho mutation nhân viên, khách hàng, cấu hình và QR; bổ sung
-   test cùng-frame trước khi mở rộng browser coverage.
-2. Dọn QR cũ theo best-effort sau khi thay QR thành công, không xóa nhầm object mới
-   và không rollback transaction đã commit chỉ vì cleanup provider thất bại.
-3. Mở rộng `system-admin-health` thành các spec master-detail, settings/QR,
-   audit và health/overview; kiểm tra role, conflict, provider degradation,
-   local loading, scroll/focus và response cũ.
-4. Chạy sáu route FE-8 ở desktop/mobile, Axe, overflow và visual review; sau đó
-   viết `wp-10-system-admin.md` trước khi chuyển WP-10 sang `PASS`.
-5. Tiếp tục lần lượt WP-11 → WP-12 → WP-13 → WP-14.
+1. Lập ma trận executable cho tám domain surface từ evidence/browser owner hiện có;
+   chọn success cùng error/permission state đại diện mà không nhân đôi route owner.
+2. Chạy viewport 320/390/768/1024/1440, zoom 200%, reduced motion và forced colors;
+   khóa document overflow, control bị che và touch target của critical journey.
+3. Chạy Axe cùng keyboard-only journey cho skip link, filter, modal/drawer,
+   error-summary, focus trap/restore và list-detail focus.
+4. Tạo visual baseline xác định cho storefront, auth/account, commerce,
+   post-purchase, catalog, inventory, operations và system administration; review
+   đúng state/viewport sau mỗi remediation.
+5. Chạy matrix cuối hai lượt, viết `wp-11-accessibility-responsive-visual.md`, rồi
+   tiếp tục WP-12 → WP-13 → WP-14.
 6. Trước WP-14, chốt `FE9-R13`–`FE9-R16`, lấy CI URL/artifact thật và chạy
    production release gate hai lần từ test database sạch.
 

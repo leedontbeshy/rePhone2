@@ -396,3 +396,54 @@ assertion về landmark, focus, accessible name và document overflow. Pending l
 chỉ chặn double-submit trong cùng frame; replay sau lỗi mạng mơ hồ vẫn là
 `FE9-R15`. Chuỗi trống của native `datetime-local` trên Windows vẫn phụ thuộc
 regional locale và được ghi tại `FE9-R16`.
+
+## WP-10 verification — code/browser tree `37527d7`
+
+### Commit ledger
+
+| Nhóm | Commit |
+| --- | --- |
+| QR cleanup và mutation safety | `945105b`, `f4b45d4`, `e29722d` |
+| User master-detail/lifecycle | `bbaca6e`, `9575c11` |
+| Settings, audit, health và overview browser lifecycle | `cc5df77`, `708a5c5`, `49a0b4d` |
+| Live read-only projection và health binding | `b827261`, `56cd39c` |
+| Accessibility remediation | `c83406e`, `5381d17`, `aa18e48`, `3f20abe`, `7f230e6` |
+| Route/role/visual matrix | `ee1e837` |
+| Workspace format gate | `37527d7` |
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 138 file, 674/674 test |
+| Targeted API system administration unit/service | 0 | 10 file, 79/79 test |
+| Targeted API system administration E2E | 0 | 3 file, 15/15 test trên DB sạch |
+| `pnpm fe:coverage` | 0 | 2 file, 9/9 executable coverage contract |
+| `pnpm fe:a11y` | 0 | 4 file, 21/21 shared accessibility contract |
+| Web/API typecheck | 0 | PASS |
+| Web/API lint | 0 | PASS, zero warning |
+| `pnpm format:check` | 0 | PASS sau formatting-only commit `37527d7` |
+| `pnpm build` | 0 | API/web production build; Next sinh đủ route hiện hành |
+| `git diff --check` | 0 | PASS |
+
+### Browser, responsive và accessibility gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| System administration A, có capture | 0 | 12/12, Chromium, 1 worker, khoảng 1,8 phút; tạo 25 ảnh current-run |
+| System administration B | 0 | 12/12, Chromium, 1 worker, khoảng 1,7 phút |
+| Role matrix | 0 | ADMIN đủ sáu route FE-8; EMPLOYEE allow/deny đúng; CUSTOMER/anonymous fail-closed trước child request |
+| Responsive/overflow | 0 | 1440×900 và 360×844; zero document overflow |
+| Axe | 0 | Zero serious/critical trên success và permission states |
+| Visual review | 0 | 25/25 ảnh `.local/fe09/wp10-audit/` đã review |
+
+Route matrix đầu tiên đã đỏ tuần tự tại overview, user administration, settings,
+audit và health do contrast/definition-list semantics thật. Các concern được sửa
+trong năm commit production riêng rồi matrix mới được chạy lại; lịch sử lỗi không
+bị xóa. Browser fixture chứng minh UI/state/role/geometry; API unit/E2E chứng minh
+authorization, CAS, redaction, provider và persistence. Live smoke dùng backend
+thật, chỉ đọc và đối chiếu health response với nhãn DOM.
+
+Playwright giữ lại warning `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190` và Docker
+orphan-container notice. Test vẫn thoát `0`; không dùng `--remove-orphans` vì cleanup
+destructive đó ngoài phạm vi WP-10.
