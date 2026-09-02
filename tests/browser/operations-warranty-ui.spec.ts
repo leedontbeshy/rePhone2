@@ -51,7 +51,9 @@ test.describe('FE09 warranty click-level lifecycle contracts', () => {
     await admin.getByRole('button', { name: 'Vô hiệu bảo hành' }).click();
     const dialog = admin.getByRole('dialog', { name: 'Vô hiệu bảo hành này?' });
     await dialog.getByLabel('Lý do vô hiệu').fill('Bảo hành được cấp nhầm cho thiết bị');
+    const authoritativeDetail = warrantyDetailResponse(admin);
     await dialog.getByRole('button', { name: 'Vô hiệu bảo hành', exact: true }).dblclick();
+    expect((await authoritativeDetail).status()).toBe(200);
 
     await expect(admin.getByText('Đã vô hiệu bảo hành.', { exact: false })).toBeVisible();
     await expect(admin.getByText('Không còn hiệu lực', { exact: true }).first()).toBeVisible();
@@ -66,7 +68,9 @@ test.describe('FE09 warranty click-level lifecycle contracts', () => {
     await conflict.getByRole('button', { name: 'Vô hiệu bảo hành' }).click();
     const conflictDialog = conflict.getByRole('dialog', { name: 'Vô hiệu bảo hành này?' });
     await conflictDialog.getByLabel('Lý do vô hiệu').fill('Dữ liệu vừa được xử lý ở phiên khác');
+    const conflictDetail = warrantyDetailResponse(conflict);
     await conflictDialog.getByRole('button', { name: 'Vô hiệu bảo hành', exact: true }).click();
+    expect((await conflictDetail).status()).toBe(200);
 
     await expect(conflict.getByText('Dữ liệu vừa được cập nhật. Hãy tải lại trang.')).toBeVisible();
     await expect(conflict.getByText('Không còn hiệu lực', { exact: true }).first()).toBeVisible();
@@ -157,6 +161,14 @@ test.describe('FE09 warranty click-level lifecycle contracts', () => {
     await conflict.close();
   });
 });
+
+function warrantyDetailResponse(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === `/api/v1/backoffice/warranties/${WARRANTY_ID}`,
+  );
+}
 
 async function warrantyFixture(
   page: Page,
