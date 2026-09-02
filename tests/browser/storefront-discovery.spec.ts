@@ -506,10 +506,12 @@ test.describe('FE-1 storefront discovery', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(EXACT_UNIT_PATH);
 
-    await page.locator('#unit-purchase-actions').scrollIntoViewIfNeeded();
-    await page.evaluate(() => {
-      window.scrollBy({ top: 900 });
-    });
+    const purchaseActions = page.locator('#unit-purchase-actions');
+    await purchaseActions.scrollIntoViewIfNeeded();
+    await expect(purchaseActions).toBeInViewport();
+    await page.getByRole('region', { name: 'Thông tin chi tiết' }).scrollIntoViewIfNeeded();
+    await expect(purchaseActions).not.toBeInViewport();
+    await expect(page.locator('footer')).not.toBeInViewport();
     await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toBeVisible();
 
     await page.locator('footer').scrollIntoViewIfNeeded();

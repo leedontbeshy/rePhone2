@@ -125,7 +125,7 @@ export function CartView() {
                   </InlineAlert>
                 </>
               ) : (
-                <Link className={styles.primaryLink} href="/checkout">
+                <Link className={styles.primaryLink} href="/checkout" scroll={false}>
                   Tiếp tục đặt hàng <ArrowRightIcon aria-hidden="true" size={20} />
                 </Link>
               )}

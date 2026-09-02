@@ -10,7 +10,7 @@ import {
   TruckIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce, type Cart, type CartItem } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
@@ -130,10 +130,21 @@ function CheckoutSession() {
   if (previewRequests.current === null) previewRequests.current = createCheckoutRequestEpoch();
   if (createRequests.current === null) createRequests.current = createCheckoutRequestEpoch();
 
-  useEffect(() => {
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    root.style.scrollBehavior = previousScrollBehavior;
   }, []);
+
+  useEffect(() => {
+    if (pageError !== null) pageErrorRef.current?.focus();
+  }, [pageError]);
+
+  useEffect(() => {
+    if (reviewRequired) reviewRef.current?.focus();
+  }, [reviewRequired]);
 
   useEffect(
     () => () => {
@@ -231,10 +242,6 @@ function CheckoutSession() {
     }
   };
 
-  const focusPageError = () => {
-    requestAnimationFrame(() => pageErrorRef.current?.focus());
-  };
-
   const validate = () => {
     const errors = validateCheckoutForm(form, fulfillmentType);
     setFieldErrors(errors);
@@ -306,7 +313,6 @@ function CheckoutSession() {
         setUncertainRequest(request);
         if (action === 'recover') {
           setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
-          focusPageError();
         }
         return;
       }
@@ -321,23 +327,19 @@ function CheckoutSession() {
           setUncertainRequest(null);
           setPreview(failure.preview);
           setReviewRequired(true);
-          requestAnimationFrame(() => reviewRef.current?.focus());
         } else if (failure.kind === 'conflict') {
           setUncertainRequest(null);
           setPreview(null);
           setReviewRequired(false);
           setPageError(failure.message);
-          focusPageError();
         } else if (failure.kind === 'uncertain') {
           setUncertainRequest(request);
           if (action === 'recover') {
             setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
-            focusPageError();
           }
         } else {
           setUncertainRequest(null);
           setPageError(failure.message);
-          focusPageError();
         }
         return;
       }
@@ -355,7 +357,6 @@ function CheckoutSession() {
         setUncertainRequest(request);
         if (action === 'recover') {
           setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
-          focusPageError();
         }
       }
     } finally {
