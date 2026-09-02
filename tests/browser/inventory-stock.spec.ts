@@ -27,7 +27,17 @@ interface Fe06ApiOptions {
   readonly inspectionType?: InspectionType;
   readonly lookupOutcome?: 'success' | 'not-found' | 'provider-error';
   readonly mediaCount?: number;
-  readonly resumeDelayMs?: number;
+}
+
+interface ControlledResumeRequest {
+  state(): 'waiting' | 'started' | 'completed';
+  release(): void;
+}
+
+interface ResumeRequestGate extends ControlledResumeRequest {
+  readonly released: Promise<void>;
+  markCompleted(): void;
+  markStarted(): void;
 }
 
 interface MovementFixture {
@@ -40,6 +50,7 @@ interface MovementFixture {
 
 interface Fe06Probe {
   costRequests: number;
+  holdNextResumeInspection(): ControlledResumeRequest;
   inspectionCompleteRequests: number;
   inspectionPatchBodies: Array<Record<string, unknown>>;
   inspectionStatus: InspectionStatus;
@@ -286,18 +297,32 @@ test.describe('FE-06 inventory and stock workspace', () => {
   });
 
   test(bt('browser:inventory-stock', 'intake-resume-upload'), async ({ page }) => {
-    const probe = await installFe06Api(page, 'EMPLOYEE', {
-      mediaCount: 0,
-      resumeDelayMs: 400,
-    });
+    const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 0 });
+    const pendingResume = probe.holdNextResumeInspection();
 
-    await page.goto(
-      `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
-      { waitUntil: 'domcontentloaded' },
-    );
-    await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
-    await expect(page.getByLabel('Sản phẩm iPhone')).toHaveCount(0);
-    await expect(page.getByText('Đang mở lại tiến độ nhập máy…')).toBeAttached();
+    try {
+      const resumeRequest = page.waitForRequest((request) => {
+        return (
+          request.method() === 'GET' &&
+          new URL(request.url()).pathname === `/api/v1/backoffice/inspections/${INSPECTION_ID}`
+        );
+      });
+      await page.goto(
+        `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      await resumeRequest;
+      await expect.poll(() => pendingResume.state()).toBe('started');
+      await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
+      await expect(page.getByLabel('Sản phẩm iPhone')).toHaveCount(0);
+      await expect(page.getByText('Đang mở lại tiến độ nhập máy…')).toBeAttached();
+      await expect(
+        page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
+      ).toHaveCount(0);
+    } finally {
+      pendingResume.release();
+    }
+    await expect.poll(() => pendingResume.state()).toBe('completed');
     await expect(
       page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
     ).toBeVisible();
@@ -601,9 +626,14 @@ async function installFe06Api(
   role: StaffRole,
   options: Fe06ApiOptions = {},
 ): Promise<Fe06Probe> {
-  const resumeDelayMs = Math.max(0, options.resumeDelayMs ?? 0);
+  let nextResumeInspection: ResumeRequestGate | undefined;
   const probe: Fe06Probe = {
     costRequests: 0,
+    holdNextResumeInspection() {
+      const gate = createResumeRequestGate();
+      nextResumeInspection = gate;
+      return gate;
+    },
     inspectionCompleteRequests: 0,
     inspectionPatchBodies: [],
     inspectionStatus: 'DRAFT',
@@ -706,7 +736,6 @@ async function installFe06Api(
       pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}/inspections`) &&
       method === 'GET'
     ) {
-      await delay(resumeDelayMs);
       await fulfillJson(route, paged([inspectionSummary(probe)], 50));
       return;
     }
@@ -716,7 +745,6 @@ async function installFe06Api(
       return;
     }
     if (pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}`) && method === 'GET') {
-      await delay(resumeDelayMs);
       await fulfillJson(route, { data: inventoryUnit(probe) });
       return;
     }
@@ -745,7 +773,18 @@ async function installFe06Api(
       return;
     }
     if (pathname.endsWith(`/backoffice/inspections/${INSPECTION_ID}`) && method === 'GET') {
-      await delay(resumeDelayMs);
+      const resumeGate = nextResumeInspection;
+      nextResumeInspection = undefined;
+      if (resumeGate !== undefined) {
+        resumeGate.markStarted();
+        await resumeGate.released;
+        try {
+          await fulfillJson(route, { data: inspectionDetail(probe) });
+        } finally {
+          resumeGate.markCompleted();
+        }
+        return;
+      }
       await fulfillJson(route, { data: inspectionDetail(probe) });
       return;
     }
@@ -1119,11 +1158,23 @@ function passingInspectionValues(): Record<string, unknown> {
   };
 }
 
-async function delay(milliseconds: number): Promise<void> {
-  if (milliseconds <= 0) return;
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, milliseconds);
+function createResumeRequestGate(): ResumeRequestGate {
+  let state: ReturnType<ControlledResumeRequest['state']> = 'waiting';
+  let release = () => undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
   });
+  return {
+    markCompleted() {
+      state = 'completed';
+    },
+    markStarted() {
+      state = 'started';
+    },
+    release,
+    released,
+    state: () => state,
+  };
 }
 
 async function fulfillPreflight(route: Route): Promise<void> {
