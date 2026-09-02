@@ -27,7 +27,7 @@ describe('AuthService register and login', () => {
         },
         metadata,
       ),
-    ).resolves.toMatchObject({ id: USER_ID, status: 'ACTIVE' });
+    ).resolves.toEqual({ message: expect.stringContaining('đã được tiếp nhận') });
     expect(fixture.rateLimiter.register).toHaveBeenCalledWith(metadata.ipAddress);
     expect(fixture.password.hash).toHaveBeenCalledWith('Password123');
     expect(fixture.users.createCustomer).toHaveBeenCalledWith({
@@ -47,7 +47,12 @@ describe('AuthService register and login', () => {
     );
   });
 
-  it('maps only Prisma unique violations to DUPLICATE_RESOURCE', async () => {
+  it('returns the same generic result for a unique violation and rethrows other failures', async () => {
+    const created = createFixture();
+    const createdResult = await created.service.register(
+      { email: 'new@example.com', password: 'Password123', fullName: 'New' },
+      metadata,
+    );
     const duplicate = createFixture({
       users: {
         createCustomer: vi.fn(async () =>
@@ -60,7 +65,7 @@ describe('AuthService register and login', () => {
         { email: 'taken@example.com', password: 'Password123', fullName: 'Taken' },
         metadata,
       ),
-    ).rejects.toMatchObject({ code: 'DUPLICATE_RESOURCE' } satisfies Partial<ApiError>);
+    ).resolves.toEqual(createdResult);
 
     const databaseFailure = new Error('database offline');
     const failed = createFixture({

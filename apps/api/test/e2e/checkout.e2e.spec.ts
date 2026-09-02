@@ -5,6 +5,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { AuthRateLimiter } from '../../src/modules/auth/auth-rate-limiter.service.js';
 import { OrderRateLimiter } from '../../src/modules/orders/order-rate-limiter.service.js';
 import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
@@ -30,6 +31,7 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
   });
 
   beforeEach(async () => {
+    app.get(AuthRateLimiter).clear();
     app.get(OrderRateLimiter).clear();
     await resetTestDatabase(prisma);
     await seedDatabase(prisma);

@@ -7,7 +7,7 @@
 
 | Method/path | Auth | Request chính | Success | Lỗi chính |
 |---|---|---|---|---|
-| `POST /api/v1/auth/register` | Public | `email`, `password`, `fullName`, `phone?` | `201 RegisteredAccountDto`; tạo CUSTOMER `ACTIVE`, không tạo session/token/cookie | `VALIDATION_FAILED`, `DUPLICATE_RESOURCE`, `RATE_LIMITED` |
+| `POST /api/v1/auth/register` | Public | `email`, `password`, `fullName`, `phone?` | `201 RegistrationResultDto`; response chung dù tạo mới hay email đã tồn tại; không tạo session/token/cookie | `VALIDATION_FAILED`, `RATE_LIMITED` |
 | `POST /api/v1/auth/login` | Public | `email`, `password` | `200`; access token/user, set refresh cookie | `VALIDATION_FAILED`, `INVALID_CREDENTIALS`, `ACCOUNT_UNAVAILABLE`, `RATE_LIMITED` |
 | `POST /api/v1/auth/refresh` | Refresh cookie | Không body | `200`; rotate refresh, trả access token/user | `AUTH_REQUIRED`, `SESSION_REVOKED`, `CSRF_VALIDATION_FAILED` |
 | `POST /api/v1/auth/logout` | Refresh cookie | Không body | `204`; revoke current session, clear cookie | `CSRF_VALIDATION_FAILED`; idempotent khi cookie không còn hợp lệ |
@@ -17,6 +17,8 @@
 
 ### Anti-enumeration
 
+- Register trả cùng `201`/message dù tạo tài khoản mới hay email đã tồn tại; response
+  không chứa ID, email, số điện thoại, họ tên hoặc trạng thái tài khoản.
 - Forgot-password trả cùng `202`/message dù email không tồn tại hoặc không đủ điều kiện.
 - Timing nên được giữ tương đối đồng đều; không trả field nói email có tồn tại.
 - Login có thể trả credential error chung cho sai email/password.
@@ -24,7 +26,8 @@
 
 ### Transaction/side effect
 
-- Register atomically tạo customer; response chỉ gồm `id`, `email`, `fullName`, `status`. Client chuyển sang login riêng.
+- Register tạo CUSTOMER `ACTIVE` khi email chưa tồn tại; unique conflict trở thành
+  no-op với cùng response chung. Client chuyển sang login riêng.
 - Register/reset/invitation thay đổi database bằng transaction phù hợp.
 - Reset password consume one-time token, đổi password/passwordChangedAt và revoke mọi AuthSession atomically.
 - Accept invitation consume token, activate employee và hoàn tất password atomically.

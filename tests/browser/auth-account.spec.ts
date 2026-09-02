@@ -219,13 +219,12 @@ test.describe('FE-2 authentication and account', () => {
         response.request().method() === 'POST',
     );
     await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
-    expect((await responsePromise).status()).toBe(409);
-
-    const error = page.getByRole('alert').filter({ hasText: 'Không thể hoàn tất đăng ký.' });
-    await expect(error).toContainText('Không thể hoàn tất đăng ký.');
-    await expect(error).not.toContainText('đã được dùng');
-    await expect(error).not.toContainText('đã tồn tại');
-    await expect(page.locator('#email')).not.toHaveAttribute('aria-invalid', 'true');
+    const response = await responsePromise;
+    expect(response.status()).toBe(201);
+    const responseText = await response.text();
+    expect(responseText).not.toContain(BROWSER_RESET_ACCOUNT.email);
+    expect(responseText).not.toContain('DUPLICATE_RESOURCE');
+    await expect(page.getByText('Tài khoản đã được tạo', { exact: true })).toBeVisible();
   });
 
   test(bt('browser:auth-account', 'auth-route-state-matrix'), async ({ page }) => {

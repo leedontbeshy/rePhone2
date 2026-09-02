@@ -39,16 +39,29 @@ describe('auth and account HTTP contract', () => {
     await app.close();
   });
 
-  it('registers without creating a session and returns generic login errors', async () => {
+  it('keeps registration and login responses enumeration-safe without creating a session', async () => {
     const registration = await registerCustomer(server, 'alice@example.com', 'Alice');
 
-    expect(successData(registration)).toMatchObject({
-      email: 'alice@example.com',
-      fullName: 'Alice',
-      status: 'ACTIVE',
+    expect(successData(registration)).toEqual({
+      message: 'Yêu cầu tạo tài khoản đã được tiếp nhận. Bạn có thể đăng nhập để tiếp tục.',
     });
+    expect(
+      await prisma.user.findUniqueOrThrow({ where: { normalizedEmail: 'alice@example.com' } }),
+    ).toMatchObject({ email: 'alice@example.com', fullName: 'Alice', status: 'ACTIVE' });
+
+    const duplicate = await request(server)
+      .post('/api/v1/auth/register')
+      .send({
+        email: ' ALICE@example.com ',
+        password: 'Different123',
+        fullName: 'Different Name',
+      })
+      .expect(201);
+    expect(successData(duplicate)).toEqual(successData(registration));
+    expect(await prisma.user.count({ where: { normalizedEmail: 'alice@example.com' } })).toBe(1);
     expect(await prisma.authSession.count()).toBe(0);
     expect(registration.headers['set-cookie']).toBeUndefined();
+    expect(duplicate.headers['set-cookie']).toBeUndefined();
 
     const unknown = await request(server)
       .post('/api/v1/auth/login')

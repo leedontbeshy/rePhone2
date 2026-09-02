@@ -248,7 +248,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     '/api/v1/auth/register',
     'Anonymous',
     '/register',
-    'Tạo bằng registerAccount; validation, pending, success, conflict',
+    'Tạo bằng registerAccount; validation, pending, success, phản hồi chung khi trùng',
     'FE-2',
     'browser:auth-account',
     'DONE',
