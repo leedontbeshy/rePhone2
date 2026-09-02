@@ -134,5 +134,5 @@ orphan-container notice; tất cả command thoát `0`. Không dùng `--remove-o
 
 WP-10 không còn blocker triển khai đã biết trong contract hiện tại. Tại thời điểm
 đóng WP-10, `FE9-R13`–`FE9-R16` vẫn mở và không được đóng bằng bằng chứng system
-administration. Remediation riêng ở WP-14 đã đóng `FE9-R13`–`FE9-R15`; `FE9-R16`
-vẫn còn mở.
+administration. Remediation riêng ở WP-14 đã đóng `FE9-R13`–`FE9-R15`; giới hạn
+`FE9-R16` sau đó được người dùng/Product chấp nhận cho release này.

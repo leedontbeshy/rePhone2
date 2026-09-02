@@ -661,7 +661,7 @@ business state.
 
 ### Release hold còn lại
 
-WP-14 là **LOCAL PASS — RELEASE HOLD** nhưng FE-09 vẫn `IN PROGRESS`. Chưa push nên
-chưa có CI URL, performance/cross-browser artifact hoặc redaction review
-(`FE9-R05`, `FE9-R08`, `FE9-R10`, `FE9-R18`). `FE9-R16` và `FE9-R17` vẫn cần
-Product/QA chấp nhận hoặc remediation. Tổng hợp tại `wp-14-release-closeout.md`.
+WP-14 là **LOCAL PASS — RELEASE HOLD** nhưng FE-09 vẫn `IN PROGRESS`. Người
+dùng/Product đã chấp nhận `FE9-R16`, `FE9-R17` ngày 02/09/2026. Chưa push nên chưa
+có CI URL, performance/cross-browser artifact hoặc redaction review (`FE9-R05`,
+`FE9-R08`, `FE9-R10`, `FE9-R18`). Tổng hợp tại `wp-14-release-closeout.md`.

@@ -1,6 +1,6 @@
 # FE-09 WP-09 — Hoàn thiện không gian vận hành
 
-> Trạng thái: **PASS — còn giới hạn nền tảng FE9-R16**<br>
+> Trạng thái: **PASS — giới hạn FE9-R16 đã được chấp nhận**<br>
 > Routes: `/backoffice/orders`, `/backoffice/orders/[id]`,
 > `/backoffice/payments`, `/backoffice/payments/[id]`, `/backoffice/refunds`,
 > `/backoffice/refunds/[id]`, `/backoffice/after-sales`,
@@ -9,7 +9,7 @@
 > Phạm vi commit: `2caa6da` → `b10a0d4`<br>
 > Cây code và browser cuối: `b10a0d495654fd1c47ededd65c8251cfa79acb75`<br>
 > Ngày kiểm tra: 02/09/2026<br>
-> Rủi ro còn mở: `FE9-R16`
+> Giới hạn đã chấp nhận: `FE9-R16` — 02/09/2026
 
 ## Kết quả triển khai
 
@@ -106,7 +106,8 @@ bằng chứng tự động cho accessibility.
 Ô `datetime-local` native trên Windows Chromium vẫn hiển thị chuỗi trống theo thiết
 lập vùng của hệ điều hành. `lang`, browser locale/timezone và `placeholder` không
 kiểm soát được chuỗi này. Label, giá trị và validation vẫn đúng, nhưng việc Việt hóa
-ổn định cần shared accessible field hoặc quyết định chấp nhận tại `FE9-R16`.
+ổn định cần shared accessible field; người dùng/Product đã chấp nhận giới hạn thấp
+`FE9-R16` ngày 02/09/2026 cho release này.
 
 ## Test evidence
 
@@ -136,6 +137,7 @@ kiểm soát được chuỗi này. Label, giá trị và validation vẫn đún
 WP-09 không còn lỗi triển khai đã biết trong phạm vi contract hiện tại. `FE9-R15` đã
 đóng bằng schema/service/API E2E và client retry regression ở WP-14; `FE9-R13` và
 `FE9-R14` cũng được đóng bởi remediation độc lập của auth và checkout. `FE9-R16` về
-hiển thị native date/time theo regional locale vẫn là giới hạn mức thấp cần Product
-chấp nhận hoặc thay bằng shared field trước khi FE-09 chuyển `DONE`. Chi tiết tại
+hiển thị native date/time theo regional locale là giới hạn mức thấp đã được người
+dùng/Product chấp nhận ngày 02/09/2026; shared field được chuyển thành cải tiến sau
+release. Chi tiết tại
 [WP-14 release closeout](./wp-14-release-closeout.md).

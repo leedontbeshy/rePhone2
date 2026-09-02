@@ -104,6 +104,6 @@ thoát `0`, không có console/page/request runtime issue.
 
 Tại thời điểm đóng WP-13, handoff yêu cầu WP-14 chốt `FE9-R13`–`FE9-R18`, release
 gate, production smoke, ownership exact-set, rollback và CI thật. WP-14 sau đó đã
-đóng `FE9-R13`–`FE9-R15` và hoàn tất toàn bộ gate cục bộ; hiện chỉ còn CI/artifact
-cùng quyết định `FE9-R16`, `FE9-R17` trước khi FE-09 được chuyển `DONE`. Trạng thái
-hiện hành nằm tại [WP-14 release closeout](./wp-14-release-closeout.md).
+đóng `FE9-R13`–`FE9-R15` và hoàn tất toàn bộ gate cục bộ. Người dùng đã chấp nhận
+`FE9-R16`, `FE9-R17`; hiện chỉ còn CI/artifact trước khi FE-09 được chuyển `DONE`.
+Trạng thái hiện hành nằm tại [WP-14 release closeout](./wp-14-release-closeout.md).

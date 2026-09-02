@@ -1,6 +1,6 @@
 # FE-09 WP-14 — Release closeout
 
-> Trạng thái: **LOCAL PASS — chờ CI và quyết định FE9-R16/FE9-R17**<br>
+> Trạng thái: **LOCAL PASS — chờ CI/artifact**<br>
 > Release candidate code SHA: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
 > Production smoke/performance code SHA: `50b6cc9b1786accadc205489882342d8c6dd5752`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
@@ -14,10 +14,9 @@ release candidate `de82f60` hoàn thành cả pass `1/2` và `2/2`; full Chromiu
 162 operation, 56 route hiện hữu, 13 state bắt buộc và toàn bộ browser owner khớp
 registry.
 
-FE-09 vẫn giữ **IN PROGRESS**. Chưa có quyền push trong lượt triển khai này nên chưa
-có CI URL hoặc artifact trên GitHub để kiểm redaction. Hai giới hạn mức thấp
-`FE9-R16` và `FE9-R17` cũng cần Product/QA chấp nhận rõ hoặc được khắc phục trước khi
-chuyển phase sang `DONE`.
+FE-09 vẫn giữ **IN PROGRESS** cho tới khi CI/artifact được kiểm. Người dùng đã cho
+phép push và chấp nhận rõ hai giới hạn mức thấp `FE9-R16`, `FE9-R17` ngày 02/09/2026;
+hai mục này không còn chặn release.
 
 ## Release candidate và phạm vi thay đổi WP-14
 
@@ -145,16 +144,14 @@ chứng minh và lần chạy lại trên tree sau sửa.
 | FE9-R13 | CLOSED | Generic registration response đã có backend/OpenAPI/browser proof |
 | FE9-R14 | CLOSED | Full-preview fingerprint và stale-preview `409` đã có contract/test |
 | FE9-R15 | CLOSED | Refund intent có idempotency key ổn định và replay test |
-| FE9-R16 | OPEN — LOW | Product chấp nhận `datetime-local` theo regional locale hoặc triển khai field dùng chung |
-| FE9-R17 | OPEN — LOW | Product/QA chấp nhận proxy reflow `720×450` hoặc bổ sung native zoom 200% proof |
+| FE9-R16 | ACCEPTED — LOW | Người dùng/Product chấp nhận `datetime-local` theo regional locale ngày 02/09/2026; shared field là cải tiến sau release |
+| FE9-R17 | ACCEPTED — LOW | Người dùng/Product chấp nhận proxy reflow `720×450` ngày 02/09/2026; native zoom proof là cải tiến evidence sau release |
 | FE9-R18 | MITIGATED — CI PENDING | Local Firefox/WebKit `2/2`; cần CI artifact trên release SHA |
 
 ## Điều kiện chuyển FE-09 sang DONE
 
-1. Được phép push nhánh và có CI xanh trên release candidate/rebased equivalent.
+1. Có CI xanh trên release candidate/rebased equivalent.
 2. Ghi CI URL, review artifact và xác nhận artifact không chứa credential, token, PII
-   hoặc signed URL.
-3. Product/QA chấp nhận rõ `FE9-R16` và `FE9-R17`, hoặc hai concern được khắc phục và
-   chạy lại gate phù hợp.
-4. Sau đó mới cập nhật `plan-fe.md`, frontend coverage phase và evidence index sang
+   hoặc signed URL. Quyền push và acceptance `FE9-R16`/`FE9-R17` đã được xác nhận.
+3. Sau đó mới cập nhật `plan-fe.md`, frontend coverage phase và evidence index sang
    `DONE`; việc merge vẫn cần yêu cầu riêng của người dùng.

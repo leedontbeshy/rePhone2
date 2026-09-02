@@ -5,9 +5,10 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-14 — local pass, chờ CI/acceptance**<br>
+> Con trỏ triển khai: **WP-14 — local pass, chờ CI/artifact**<br>
 > Release candidate cục bộ: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
-> Quyết định còn mở: **FE9-R16, FE9-R17 và CI/artifact thật trên release SHA**
+> Điều kiện còn mở: **CI/artifact thật trên release SHA**<br>
+> Giới hạn đã chấp nhận: **FE9-R16, FE9-R17 — 02/09/2026**
 
 ## Phạm vi bằng chứng
 
@@ -171,8 +172,9 @@ serious/critical.
 
 WP-14 đóng `FE9-R15` cho thao tác tạo hoàn tiền bằng UUID idempotency key, request
 fingerprint và replay ổn định ở `e8aefbe`, `26bfa48`. Control ngày giờ native trên
-Windows vẫn phụ thuộc regional locale (`FE9-R16`). Chi tiết proof boundary, commit,
-test và acceptance nằm tại [WP-09 operations evidence](./wp-09-operations.md).
+Windows vẫn phụ thuộc regional locale; giới hạn thấp `FE9-R16` đã được người dùng
+chấp nhận ngày 02/09/2026. Chi tiết proof boundary, commit, test và acceptance nằm
+tại [WP-09 operations evidence](./wp-09-operations.md).
 
 ## System administration hardening WP-10
 
@@ -265,12 +267,12 @@ sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng n�
 | WP-06 | Customer post-purchase browser/ownership/responsive evidence | PASS |
 | WP-07 | Catalog/voucher browser/responsive/accessibility evidence | PASS |
 | WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
-| WP-09 | Operations browser/API/visual evidence | PASS — FE9-R15 đóng; FE9-R16 còn mở |
+| WP-09 | Operations browser/API/visual evidence | PASS — FE9-R15 đóng; FE9-R16 đã chấp nhận |
 | WP-10 | System administration browser/API/visual evidence | PASS |
-| WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17 mở, FE9-R18 chờ CI |
+| WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17 đã chấp nhận, FE9-R18 chờ CI |
 | WP-12 | Performance và client-boundary report | PASS cục bộ; CI artifact chờ push |
 | WP-13 | Consumer scan, owner regression và rollback checkpoint | PASS cục bộ |
-| WP-14 | Hai release run, production smoke, exact-set, rollback và cross-browser | LOCAL PASS — chờ CI/artifact và chấp nhận FE9-R16/R17 |
+| WP-14 | Hai release run, production smoke, exact-set, rollback và cross-browser | LOCAL PASS — chờ CI/artifact; FE9-R16/R17 đã chấp nhận |
 
 ## Quy tắc cập nhật
 
@@ -284,6 +286,6 @@ sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng n�
 
 WP-14 cục bộ đã đóng `FE9-R13`–`FE9-R15`, chạy hai release pass từ database sạch,
 production smoke compiled, ownership exact-set, rollback rehearsal và Firefox/WebKit
-critical smoke. Việc còn lại là được phép push, lấy/review CI artifact trên release
-SHA và chốt quyết định Product/QA cho `FE9-R16`, `FE9-R17`; trước đó toàn FE-09 vẫn
-giữ `IN PROGRESS`.
+critical smoke. Người dùng đã chấp nhận `FE9-R16`, `FE9-R17` ngày 02/09/2026. Việc
+còn lại là push, lấy/review CI artifact trên release SHA; trước đó toàn FE-09 vẫn giữ
+`IN PROGRESS`.

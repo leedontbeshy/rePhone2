@@ -175,5 +175,5 @@ lại của WP-14, không làm thay đổi kết luận local WP-12.
 - Static boundary audit không tự chứng minh một chuyển đổi Server Component an toàn.
 - Raw report và ảnh giữ ở `.local/`; chỉ summary đã làm sạch được commit.
 - WP-13 chỉ xóa legacy sau consumer scan, build và browser proof; WP-14 đã đóng
-  FE9-R13–R15 cục bộ, nhưng vẫn phải kiểm CI artifact và chốt FE9-R16/R17 trước khi
-  chuyển FE-09 sang `DONE`.
+  FE9-R13–R15 cục bộ và người dùng đã chấp nhận FE9-R16/R17. Chỉ còn CI/artifact
+  trước khi chuyển FE-09 sang `DONE`.

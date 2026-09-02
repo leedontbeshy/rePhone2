@@ -261,6 +261,7 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
   artifact và cross-browser CI proof vẫn thuộc WP-14, không được suy ra từ local pass.
 
 Với các giới hạn trên được giữ nguyên, WP-11 đạt acceptance cho representative
-accessibility/responsive/visual matrix. `FE9-R17` vẫn chờ quyết định về proxy reflow;
-`FE9-R18` chờ CI artifact dù local Firefox/WebKit đã xanh. Tổng hợp hiện hành nằm tại
+accessibility/responsive/visual matrix. Người dùng/Product đã chấp nhận proxy reflow
+`FE9-R17` ngày 02/09/2026; `FE9-R18` chờ CI artifact dù local Firefox/WebKit đã
+xanh. Tổng hợp hiện hành nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).

@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-14 — local pass, release hold chờ CI/acceptance**<br>
+> Con trỏ thực thi: **WP-14 — local pass, release hold chờ CI/artifact**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -54,12 +54,12 @@ bằng chứng đóng work package.
 | WP-06 — Post-purchase | **PASS** | Bảy route khách hàng, guest credential, eligibility và evidence đã được kiểm tra |
 | WP-07 — Catalog/voucher | **PASS** | Sáu route, lifecycle, role, conflict và local refresh đã qua gate |
 | WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
-| WP-09 — Operations | **PASS có giới hạn nền tảng** | 11 route/lifecycle/API/visual đã qua gate; `FE9-R15` đóng bằng refund idempotency, `FE9-R16` còn mở |
+| WP-09 — Operations | **PASS có giới hạn nền tảng** | 11 route/lifecycle/API/visual đã qua gate; `FE9-R15` đóng, `FE9-R16` đã được chấp nhận |
 | WP-10 — System admin | **PASS** | Sáu route, role matrix, live health, master-detail, CAS/QR, audit, Axe và 25 ảnh đã qua gate |
-| WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và full Chromium đã qua gate; Firefox/WebKit critical smoke cục bộ `2/2`; FE9-R17 và CI proof còn mở |
+| WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và full Chromium đã qua gate; Firefox/WebKit cục bộ `2/2`; FE9-R17 đã chấp nhận, CI proof còn mở |
 | WP-12 — Performance/client/media | **PASS cục bộ** | Final production `12/12` route tại `50b6cc9`; relative variance có decision và CI artifact chờ push |
 | WP-13 — Legacy cleanup | **PASS cục bộ** | Zero-consumer cleanup theo owner; full unit/build, hai release matrix và performance absolute đều xanh trên final tree |
-| WP-14 — Release closeout | **LOCAL PASS — RELEASE HOLD** | Hai release run, compiled smoke, exact-set, rollback và cross-browser cục bộ đã xanh; chờ CI/artifact và quyết định FE9-R16/R17 |
+| WP-14 — Release closeout | **LOCAL PASS — RELEASE HOLD** | Hai release run, compiled smoke, exact-set, rollback và cross-browser cục bộ đã xanh; FE9-R16/R17 đã chấp nhận, chỉ chờ CI/artifact |
 
 Các trạng thái trên phân biệt rõ **code đã có** với **work package đã đủ bằng
 chứng để đóng**. Một WP không được chuyển `PASS` chỉ vì test cục bộ đơn lẻ xanh.
@@ -548,8 +548,8 @@ tại [WP-09 operations evidence](../evidence/fe-09/wp-09-operations.md).
 
 WP-14 bổ sung UUID idempotency key, request fingerprint và replay ổn định cho tạo
 hoàn tiền, vì vậy `FE9-R15` đã đóng đúng phạm vi critical mutation này. Native
-`datetime-local` trên Windows còn phụ thuộc regional locale (`FE9-R16`); giới hạn
-mức thấp này cần Product chấp nhận hoặc remediation trước khi FE-09 chuyển `DONE`.
+`datetime-local` trên Windows còn phụ thuộc regional locale (`FE9-R16`); người
+dùng/Product đã chấp nhận giới hạn mức thấp này ngày 02/09/2026.
 
 **Tasks**
 
@@ -603,7 +603,8 @@ tại [WP-10 system administration evidence](../evidence/fe-09/wp-10-system-admi
 `8351095` có ma trận đại diện cho tám miền, 38 ảnh baseline và hai full
 `browser:release-matrix` cuối đạt `5/5`. WP-14 bổ sung critical Firefox/WebKit
 `2/2`; full matrix/PNG vẫn là Chromium và CI artifact chưa có. Native zoom vẫn chưa
-có bằng chứng thật, nên `FE9-R17` tiếp tục mở và `FE9-R18` mới được mitigated cục bộ.
+có bằng chứng thật; người dùng/Product đã chấp nhận `FE9-R17` ngày 02/09/2026 và
+`FE9-R18` mới được mitigated cục bộ cho tới khi có CI artifact.
 
 **Tasks**
 
@@ -702,8 +703,8 @@ quyết định và CI confirmation condition được ghi tại
   cleanup còn 0 container/network/volume của project smoke.
 - Firefox `1/1`, WebKit `1/1`; rollback shared shell/CSS/performance geometry đều
   rehearsal xanh trong worktree tạm.
-- `FE9-R13`–`FE9-R15` đã đóng; `FE9-R18` mitigated cục bộ. FE-09 chưa `DONE` vì chưa
-  có CI URL/artifact và chưa có quyết định Product/QA cho `FE9-R16`, `FE9-R17`.
+- `FE9-R13`–`FE9-R15` đã đóng; `FE9-R16`/`FE9-R17` đã được chấp nhận và `FE9-R18`
+  mitigated cục bộ. FE-09 chưa `DONE` chỉ vì chưa có CI URL/artifact.
 - Evidence: [WP-14 release closeout](../evidence/fe-09/wp-14-release-closeout.md).
 
 ## 10. Test strategy và quality gates
@@ -860,8 +861,8 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R13 | response đăng ký để lộ tín hiệu trùng tài khoản | Trung bình — CLOSED | endpoint cũ trả `409 DUPLICATE_RESOURCE` | Đóng bằng generic HTTP `201`/response chung, OpenAPI/client và browser proof |
 | FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao — CLOSED | metadata/phân bổ/điểm nhận đổi nhưng tổng tiền giữ nguyên | Đóng bằng full-preview fingerprint, create expectation và mismatch `409` kèm preview mới |
 | FE9-R15 | tạo hoàn tiền chưa replay an toàn sau lỗi mạng mơ hồ | Cao — CLOSED | pending lock không phân biệt lost response | Đóng bằng UUID idempotency key, request fingerprint, persistence và sequential/concurrent replay test |
-| FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | shared accessible `DateTimeField` hoặc Product chấp nhận hành vi native trước release |
-| FE9-R17 | bằng chứng reflow dùng proxy viewport, chưa phải native zoom 200% | Thấp | `720×450` chứng minh geometry/hit-test nhưng không đổi browser zoom thật | chạy native zoom trên release build hoặc thu hẹp claim và chấp nhận limitation |
+| FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp — ACCEPTED | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | Người dùng/Product chấp nhận ngày 02/09/2026; shared accessible `DateTimeField` là cải tiến sau release |
+| FE9-R17 | bằng chứng reflow dùng proxy viewport, chưa phải native zoom 200% | Thấp — ACCEPTED | `720×450` chứng minh geometry/hit-test nhưng không đổi browser zoom thật | Người dùng/Product chấp nhận proxy ngày 02/09/2026; native zoom proof là cải tiến evidence sau release |
 | FE9-R18 | full visual/browser matrix chủ yếu Chromium/Windows | Trung bình — MITIGATED | Firefox/WebKit CI artifact chưa có | Local critical smoke Firefox/WebKit `2/2`; workflow đã có, cần CI URL/artifact để đóng |
 
 Rollback policy:
@@ -921,12 +922,11 @@ smoke/performance, cross-browser critical smoke và ba rollback rehearsal đều
 chi tiết tại [WP-14 evidence](../evidence/fe-09/wp-14-release-closeout.md). Thứ tự còn
 lại:
 
-1. Sau khi được phép push/mở PR, lấy CI URL và review artifact thật trên release SHA,
-   gồm redaction, performance và cross-browser job.
-2. Product/QA chấp nhận rõ `FE9-R16` về native date/time theo regional locale và
-   `FE9-R17` về proxy reflow, hoặc yêu cầu remediation tương ứng.
-3. Chỉ khi CI xanh và hai quyết định trên được ghi nhận mới cập nhật FE-09 sang
-   `DONE`; merge vẫn là hành động riêng cần yêu cầu của người dùng.
+1. Push/mở PR, lấy CI URL và review artifact thật trên release SHA, gồm redaction,
+   performance và cross-browser job.
+2. `FE9-R16` và `FE9-R17` đã được người dùng/Product chấp nhận ngày 02/09/2026.
+3. Khi CI xanh mới cập nhật FE-09 sang `DONE`; merge vẫn là hành động riêng cần yêu
+   cầu của người dùng.
 
 Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc
 merge chỉ thực hiện khi được yêu cầu; FE-09 chỉ chuyển `DONE` sau WP-14.
