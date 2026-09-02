@@ -58,7 +58,20 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
     const expectedDeposit = moneyDigits(await depositLine.locator('strong').innerText());
     expect(Number(expectedDeposit)).toBeGreaterThan(0);
 
+    let createResponsePromise = checkoutCreateResponse(customerPage);
     await customerPage.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
+    let createResponse = await createResponsePromise;
+    if (createResponse.status() >= 500) {
+      const recovery = customerPage.getByRole('button', {
+        name: 'Kiểm tra trạng thái đơn hàng',
+        exact: true,
+      });
+      await expect(recovery).toBeVisible();
+      createResponsePromise = checkoutCreateResponse(customerPage);
+      await recovery.click();
+      createResponse = await createResponsePromise;
+    }
+    expect(createResponse.status()).toBe(201);
     await customerPage.waitForURL('**/orders/**');
     const orderNumber = orderNumberFrom(customerPage.url());
     await expect(
@@ -181,6 +194,14 @@ function moneyDigits(value: string): string {
   const digits = value.replace(/\D/g, '');
   if (digits.length === 0) throw new Error(`Expected money text, received ${value}`);
   return digits;
+}
+
+function checkoutCreateResponse(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/v1/checkouts' &&
+      response.request().method() === 'POST',
+  );
 }
 
 function orderNumberFrom(url: string): string {
