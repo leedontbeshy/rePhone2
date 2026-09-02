@@ -23,7 +23,7 @@ $secretNames = @(
   'SMOKE_DB_PASSWORD', 'SMOKE_RUNTIME_DB_PASSWORD', 'SMOKE_DIRECT_URL', 'SMOKE_RUNTIME_URL',
   'SMOKE_JWT_SECRET', 'SMOKE_IDENTIFIER_ENCRYPTION_KEY', 'SMOKE_IDENTIFIER_HMAC_KEY',
   'SMOKE_STORAGE_KEY', 'SMOKE_ADMIN_EMAIL', 'SMOKE_ADMIN_PASSWORD',
-  'SMOKE_CUSTOMER_EMAIL', 'SMOKE_CUSTOMER_PASSWORD'
+  'SMOKE_CUSTOMER_EMAIL', 'SMOKE_CUSTOMER_PASSWORD', 'SMOKE_RELEASE_SHA'
 )
 
 function New-HexSecret([int]$Bytes = 32) {
@@ -102,6 +102,10 @@ try {
 
   $dbPassword = New-HexSecret
   $runtimePassword = New-HexSecret
+  $releaseSha = (& git -C $repoRoot rev-parse HEAD).Trim()
+  if ($LASTEXITCODE -ne 0 -or $releaseSha -notmatch '^[0-9a-f]{40}$') {
+    throw 'Could not resolve the release commit SHA.'
+  }
   $env:SMOKE_PROJECT = $project
   $env:SMOKE_NONCE = $nonce
   $env:SMOKE_OPS_IMAGE = "$project-api-operations"
@@ -119,6 +123,7 @@ try {
   $env:SMOKE_ADMIN_PASSWORD = "A9!$(New-HexSecret 16)"
   $env:SMOKE_CUSTOMER_EMAIL = "customer-$($nonce.Substring(0, 8))@example.invalid"
   $env:SMOKE_CUSTOMER_PASSWORD = "C9!$(New-HexSecret 16)"
+  $env:SMOKE_RELEASE_SHA = $releaseSha
   $smokeConfigured = $true
 
   Invoke-Docker @('compose', '--project-name', $project, '--file', $composeFile, 'config', '--quiet')

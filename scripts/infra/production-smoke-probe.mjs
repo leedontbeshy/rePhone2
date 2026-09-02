@@ -31,12 +31,12 @@ await expectStatus(
 
 const adminToken = await login(required('SMOKE_ADMIN_EMAIL'), required('SMOKE_ADMIN_PASSWORD'));
 await expectStatus('Admin overview', `${api}/api/v1/backoffice/overview`, 200, adminToken);
-await expectStatus(
+const systemHealth = await getJson(
   'Admin system health',
   `${api}/api/v1/backoffice/system/health`,
-  200,
   adminToken,
 );
+assertSystemHealth(systemHealth);
 
 await expectStatus('Web health', `${web}/api/health`, 204);
 for (const route of ['/', '/login', '/account', '/backoffice']) {
@@ -83,6 +83,36 @@ async function jsonRequest(name, url, expectedStatus, options) {
   const payload = await response.json();
   process.stdout.write(`${name}: PASS\n`);
   return payload;
+}
+
+async function getJson(name, url, token) {
+  const response = await fetchWithTimeout(url, {
+    headers: { authorization: `Bearer ${token}` },
+    redirect: 'manual',
+  });
+  if (response.status !== 200) {
+    throw new Error(`${name} returned ${String(response.status)}; expected 200`);
+  }
+  const payload = await response.json();
+  process.stdout.write(`${name}: PASS\n`);
+  return payload;
+}
+
+function assertSystemHealth(payload) {
+  const health = payload?.data;
+  if (health?.state !== 'degraded') throw new Error('System health must report degraded offline');
+  if (health?.api?.state !== 'healthy') throw new Error('API health is not healthy');
+  if (health?.database?.state !== 'healthy') throw new Error('Database health is not healthy');
+  if (health?.api?.version !== required('SMOKE_RELEASE_SHA')) {
+    throw new Error('API version does not match the release SHA');
+  }
+  for (const dependency of ['storage', 'mail']) {
+    const state = health?.[dependency]?.state;
+    if (state !== 'unavailable' && state !== 'not_configured') {
+      throw new Error(`${dependency} must stay offline during isolated smoke`);
+    }
+  }
+  process.stdout.write('System health detail: PASS\n');
 }
 
 function fetchWithTimeout(url, options) {

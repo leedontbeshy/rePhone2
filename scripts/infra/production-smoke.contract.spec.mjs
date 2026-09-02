@@ -39,6 +39,8 @@ test('keeps external providers inert and secrets ephemeral', async () => {
   assert.doesNotMatch(runner, /--env-file|\.env\.docker|Get-Content\s+.*\.env/i);
   assert.match(runner, /RandomNumberGenerator/);
   assert.match(runner, /Remove-Item -Path "Env:\$name"/);
+  assert.match(runner, /SMOKE_RELEASE_SHA/);
+  assert.match(compose, /APP_VERSION: \$\{SMOKE_RELEASE_SHA/);
 });
 
 test('fails closed before cleanup and covers the critical production probes', async () => {
@@ -57,5 +59,7 @@ test('fails closed before cleanup and covers the critical production probes', as
   assert.match(probe, /Customer backoffice denied/);
   assert.match(probe, /Admin overview/);
   assert.match(probe, /Admin system health/);
+  assert.match(probe, /System health detail/);
+  assert.match(probe, /API version does not match the release SHA/);
   assert.match(probe, /Web health/);
 });
