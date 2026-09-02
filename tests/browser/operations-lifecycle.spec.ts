@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const ID = '0199d009-0000-7000-8000-000000000001';
 type Role = 'ADMIN' | 'EMPLOYEE';
@@ -16,6 +17,7 @@ type OrderFlow = 'pickup' | 'shipping-delivery' | 'shipping-return';
 interface FixtureOptions {
   readonly orderConflictOnce?: boolean;
   readonly orderFlow?: OrderFlow;
+  readonly orderInitialStage?: number;
   readonly orderQueueRefresh?: boolean;
 }
 interface OrderFixtureState {
@@ -42,7 +44,7 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
     test.slow();
     for (const viewport of [
       { width: 1440, height: 900 },
-      { width: 360, height: 844 },
+      { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
       for (const [route, text] of ROUTES) {
@@ -79,6 +81,49 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
           await capture(isolated, route, viewport.width);
         await isolated.close();
       }
+    }
+
+    for (const viewport of [
+      { name: 'mobile-320', width: 320, height: 844 },
+      { name: 'mobile-390', width: 390, height: 844 },
+      { name: 'tablet-768', width: 768, height: 1024 },
+      { name: 'desktop-1024', width: 1024, height: 768 },
+      { name: 'desktop-1440', width: 1440, height: 900 },
+    ] as const) {
+      const isolated = await page.context().newPage();
+      await isolated.setViewportSize({ width: viewport.width, height: viewport.height });
+      await fixture(isolated, 'EMPLOYEE', {
+        orderFlow: 'shipping-delivery',
+        orderInitialStage: 2,
+      });
+      await isolated.goto(`/backoffice/orders/${ID}`, { waitUntil: 'domcontentloaded' });
+      await expect(
+        isolated
+          .getByRole('region', { name: 'Tổng quan đơn hàng' })
+          .getByText('Đang giao hàng', { exact: true }),
+      ).toBeVisible();
+      const deliveryAction = isolated.getByRole('button', {
+        name: 'Xác nhận giao thành công',
+        exact: true,
+      });
+      await expect(deliveryAction).toHaveAttribute('aria-pressed', 'true');
+      await expectNoDocumentOverflow(isolated, `order processing ${viewport.name}`);
+      await expectStickyTopbarAndReachableAction(isolated, deliveryAction);
+      const detailRail = isolated.locator('aside[class*="orderDetailRail"]');
+      await expect(detailRail).toHaveCSS('position', viewport.width >= 1024 ? 'sticky' : 'static');
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await prepareWp11Visual(isolated);
+        await expect(isolated).toHaveScreenshot(
+          `wp11-operations-order-processing-${viewport.name}.png`,
+          {
+            animations: 'disabled',
+            caret: 'hide',
+            fullPage: true,
+          },
+        );
+      }
+      await isolated.close();
     }
   });
 
@@ -121,6 +166,7 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
     await expect(
       conflictPage.getByText('Đơn vừa được xử lý ở phiên khác. Hãy tải lại.', { exact: true }),
     ).toBeVisible();
+    await expectNoSeriousAxeViolations(conflictPage);
     await expect(choice).toBeEnabled();
     await submitOrderAction(conflictPage, 'Xác nhận đơn hàng');
     expect(conflictProbe.commands.map(({ path }) => path)).toEqual([
@@ -228,7 +274,9 @@ async function fixture(page: Page, role: Role, options: FixtureOptions = {}): Pr
   const probe: Probe = { commands: [], evidence: 0, reads: [] };
   let orderConflictPending = options.orderConflictOnce === true;
   const orderState: OrderFixtureState | null =
-    options.orderFlow === undefined ? null : { flow: options.orderFlow, stage: 0 };
+    options.orderFlow === undefined
+      ? null
+      : { flow: options.orderFlow, stage: options.orderInitialStage ?? 0 };
   await page.route('**/api/v1/auth/refresh', (route) =>
     json(route, { data: { accessToken: `fe09-${role}`, user: staff(role) } }),
   );
@@ -434,7 +482,7 @@ function shipmentForState(state: OrderFixtureState): Record<string, unknown> {
           : state.stage >= 3
             ? 'DELIVERED'
             : state.stage >= 2
-              ? 'IN_TRANSIT'
+              ? 'HANDED_TO_CARRIER'
               : 'CREATED',
     trackingCode: 'TRACK-FE09',
     trackingUrl: 'https://tracking.example/fe09',
@@ -780,5 +828,70 @@ async function capture(page: Page, route: string, width: number) {
     animations: 'disabled',
     fullPage: true,
     path: path.join(directory, `${slug}-${String(width)}.png`),
+  });
+}
+
+async function expectNoDocumentOverflow(page: Page, label: string): Promise<void> {
+  const size = await page.evaluate(() => ({
+    client: document.documentElement.clientWidth,
+    scroll: document.documentElement.scrollWidth,
+  }));
+  expect(size.scroll, `${label} không tràn ngang`).toBeLessThanOrEqual(size.client);
+}
+
+async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
+  const axe = await new AxeBuilder({ page }).exclude('nextjs-portal').analyze();
+  expect(
+    axe.violations.filter(({ impact }) => impact === 'serious' || impact === 'critical'),
+  ).toEqual([]);
+}
+
+async function expectStickyTopbarAndReachableAction(page: Page, action: Locator): Promise<void> {
+  await action.scrollIntoViewIfNeeded();
+  await expect(action).toBeInViewport();
+  const geometry = await action.evaluate((element) => {
+    const actionRect = element.getBoundingClientRect();
+    const topbar = document.querySelector<HTMLElement>('[data-shell="backoffice"] > header');
+    const topbarRect = topbar?.getBoundingClientRect();
+    const centerX = Math.min(
+      window.innerWidth - 1,
+      Math.max(0, actionRect.left + actionRect.width / 2),
+    );
+    const centerY = Math.min(
+      window.innerHeight - 1,
+      Math.max(0, actionRect.top + actionRect.height / 2),
+    );
+    const hit = document.elementFromPoint(centerX, centerY);
+    return {
+      actionBottom: actionRect.bottom,
+      actionTop: actionRect.top,
+      hit: hit === element || (hit !== null && element.contains(hit)),
+      topbarBottom: topbarRect?.bottom ?? 0,
+      topbarPosition: topbar === null ? null : getComputedStyle(topbar).position,
+      topbarTop: topbarRect?.top ?? null,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(geometry.topbarPosition).toBe('sticky');
+  expect(geometry.topbarTop).not.toBeNull();
+  expect(Math.abs(geometry.topbarTop ?? 0)).toBeLessThanOrEqual(1);
+  expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.topbarBottom - 1);
+  expect(geometry.actionBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+  expect(geometry.hit).toBe(true);
+}
+
+async function prepareWp11Visual(page: Page): Promise<void> {
+  await stabilizeVisualPage(page);
+  await page.evaluate(async () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
   });
 }

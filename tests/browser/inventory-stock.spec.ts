@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const UNIT_ID = '0199d006-0000-7000-8000-000000000001';
 const INSPECTION_ID = '0199d006-0000-7000-8000-000000000002';
@@ -148,6 +149,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
       await expect(isolated.locator('main [role="alert"]')).toContainText(
         lookupOutcome === 'not-found' ? 'IMEI chưa khớp với máy nào' : 'Dịch vụ đang tạm gián đoạn',
       );
+      await expectAccessible(isolated);
       await expect(field).toHaveValue('');
       expect(isolated.url()).not.toContain(RAW_IMEI);
       expect(isolatedProbe.lookupRequests[0]?.method).toBe('POST');
@@ -506,8 +508,8 @@ test.describe('FE-06 inventory and stock workspace', () => {
     const mobileCaptures = new Set(['overview', 'units', 'unit-detail', 'inspection', 'stock']);
 
     for (const viewport of [
-      { width: 1440, height: 1000 },
-      { width: 360, height: 800 },
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
       for (const screen of screens) {
@@ -532,7 +534,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
         await expectNaturalVietnameseMain(page);
         await expectSingleMainAndNoOverflow(page);
         await expectAccessible(page);
-        if (viewport.width === 360) {
+        if (viewport.width === 390) {
           const currentNavigationItem = page
             .getByRole('navigation', { name: 'Các khu vực vận hành' })
             .locator('a[aria-current="page"]');
@@ -556,6 +558,38 @@ test.describe('FE-06 inventory and stock workspace', () => {
         ) {
           await captureAuditScreenshot(page, `${screen.slug}-${String(viewport.width)}`);
         }
+      }
+    }
+
+    for (const viewport of [
+      { name: 'mobile-320', width: 320, height: 844 },
+      { name: 'mobile-390', width: 390, height: 844 },
+      { name: 'tablet-768', width: 768, height: 1024 },
+      { name: 'desktop-1024', width: 1024, height: 768 },
+      { name: 'desktop-1440', width: 1440, height: 900 },
+    ] as const) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(
+        `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      await expect(
+        page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
+      ).toBeVisible();
+      const fileInput = page.locator('#inventory-media-file');
+      await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
+      const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
+      await expect(uploadButton).toBeEnabled();
+      await expectSingleMainAndNoOverflow(page);
+      await expectStickyTopbarAndReachableAction(page, uploadButton);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await prepareWp11Visual(page);
+        await expect(page).toHaveScreenshot(`wp11-inventory-intake-resume-${viewport.name}.png`, {
+          animations: 'disabled',
+          caret: 'hide',
+          fullPage: true,
+        });
       }
     }
     expect(browserErrors).toEqual([]);
@@ -1187,6 +1221,59 @@ async function expectAccessible(page: Page): Promise<void> {
         })),
       })),
   ).toEqual([]);
+}
+
+async function expectStickyTopbarAndReachableAction(
+  page: Page,
+  action: ReturnType<Page['getByRole']>,
+): Promise<void> {
+  await action.scrollIntoViewIfNeeded();
+  await expect(action).toBeInViewport();
+  const geometry = await action.evaluate((element) => {
+    const actionRect = element.getBoundingClientRect();
+    const topbar = document.querySelector<HTMLElement>('[data-shell="backoffice"] > header');
+    const topbarRect = topbar?.getBoundingClientRect();
+    const centerX = Math.min(
+      window.innerWidth - 1,
+      Math.max(0, actionRect.left + actionRect.width / 2),
+    );
+    const centerY = Math.min(
+      window.innerHeight - 1,
+      Math.max(0, actionRect.top + actionRect.height / 2),
+    );
+    const hit = document.elementFromPoint(centerX, centerY);
+    return {
+      actionBottom: actionRect.bottom,
+      actionTop: actionRect.top,
+      hit: hit === element || (hit !== null && element.contains(hit)),
+      topbarBottom: topbarRect?.bottom ?? 0,
+      topbarPosition: topbar === null ? null : getComputedStyle(topbar).position,
+      topbarTop: topbarRect?.top ?? null,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(geometry.topbarPosition).toBe('sticky');
+  expect(geometry.topbarTop).not.toBeNull();
+  expect(Math.abs(geometry.topbarTop ?? 0)).toBeLessThanOrEqual(1);
+  expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.topbarBottom - 1);
+  expect(geometry.actionBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+  expect(geometry.hit).toBe(true);
+}
+
+async function prepareWp11Visual(page: Page): Promise<void> {
+  await stabilizeVisualPage(page);
+  await page.evaluate(async () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+  });
 }
 
 let auditScreenshotSequence = 0;
