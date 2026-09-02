@@ -220,10 +220,15 @@ test(
           const sidebar = page.getByRole('complementary', {
             name: 'Điều hướng backoffice',
           });
-          await sidebar.evaluate((element) => {
-            element.scrollTop = 0;
+          const targetScrollTop = await sidebar.evaluate((element) => {
+            const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
+            element.scrollTop = maximumScrollTop;
+            return maximumScrollTop;
           });
-          await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBe(0);
+          await expect
+            .poll(() => sidebar.evaluate((element) => element.scrollTop))
+            .toBe(targetScrollTop);
+          await expect(activeNavigation).toBeInViewport();
         }
         await expect(page).toHaveScreenshot(
           `wp11-system-admin-audit-selected-${viewport.name}.png`,
