@@ -438,10 +438,6 @@
   grid-area: rail;
 }
 
-.orderDetailRail :global(.rp-button) {
-  width: 100%;
-}
-
 .detailSections,
 .railStack {
   gap: var(--space-4);
