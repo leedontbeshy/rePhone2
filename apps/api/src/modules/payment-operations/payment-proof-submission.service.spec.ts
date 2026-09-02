@@ -60,6 +60,65 @@ describe('PaymentProofSubmissionService replay', () => {
     expect(isProofSubmissionReplay({ ...payment, submittedAt: null })).toBe(false);
     expect(isProofSubmissionReplay({ ...payment, status: 'VERIFIED' })).toBe(false);
   });
+
+  it('budgets the multi-write proof transaction without changing global defaults', async () => {
+    const payment = {
+      ...paymentFixture(),
+      status: 'AWAITING_PROOF',
+      evidenceBucket: null,
+      evidenceObjectPath: null,
+      customerDeclaredAt: null,
+      submittedAt: null,
+    } as PaymentOperationsRecord;
+    const payments = { findById: vi.fn().mockResolvedValue(payment) };
+    const evidenceValidator = {
+      validate: vi.fn().mockResolvedValue({
+        bytes: Buffer.from('proof'),
+        extension: 'png',
+        mimeType: 'image/png',
+        fileSize: 5,
+      }),
+    };
+    const storage = {
+      upload: vi.fn().mockResolvedValue({
+        bucket: 'private-test',
+        objectPath: `payments/${payment.id}/proof.png`,
+        mimeType: 'image/png',
+        fileSize: 5,
+      }),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
+    const transactionFailure = new Error('transaction unavailable');
+    const transactions = { run: vi.fn().mockRejectedValue(transactionFailure) };
+    const ownership = { assertAccess: vi.fn() };
+    const inventory = { transitionOrderReservationReason: vi.fn() };
+    const audit = { write: vi.fn() };
+    const clock = { now: vi.fn().mockReturnValue(new Date('2026-08-22T10:01:00.000Z')) };
+    const notifications = { sendProofSubmitted: vi.fn() };
+    const service = new PaymentProofSubmissionService(
+      payments as unknown as PaymentOperationsRepository,
+      evidenceValidator,
+      storage as unknown as StorageProvider,
+      { storage: { privateBucket: 'private-test' } } as AppConfig,
+      transactions as unknown as SerializableTransactionRunner,
+      ownership as unknown as OrderOwnershipPolicy,
+      inventory as unknown as CheckoutInventoryGateway,
+      audit,
+      clock,
+      notifications as unknown as PaymentLifecycleNotificationService,
+    );
+
+    await expect(service.submit({} as Request, payment.id, undefined)).rejects.toBe(
+      transactionFailure,
+    );
+    expect(transactions.run).toHaveBeenCalledWith(
+      'payments.submit-proof',
+      expect.any(Function),
+      undefined,
+      { maxWaitMs: 5_000, timeoutMs: 15_000 },
+    );
+    expect(storage.delete).toHaveBeenCalledOnce();
+  });
 });
 
 function paymentFixture(): PaymentOperationsRecord {

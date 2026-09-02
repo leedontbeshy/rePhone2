@@ -21,6 +21,11 @@ import {
   type PaymentOperationsRecord,
 } from './payment-operations.repository.js';
 
+const PAYMENT_PROOF_TRANSACTION_OPTIONS = {
+  maxWaitMs: 5_000,
+  timeoutMs: 15_000,
+} as const;
+
 @Injectable()
 export class PaymentProofSubmissionService {
   private readonly logger = new Logger(PaymentProofSubmissionService.name);
@@ -74,57 +79,62 @@ export class PaymentProofSubmissionService {
 
     let outcome: ProofSubmissionOutcome;
     try {
-      outcome = await this.transactions.run('payments.submit-proof', async (transaction) => {
-        const payment = await this.payments.lockPaymentRoot(paymentId, transaction);
-        if (payment === null) throw new ApiError('ORDER_NOT_FOUND');
-        const now = this.clock.now();
-        this.ownership.assertAccess(request, payment.order, now);
-        if (isProofSubmissionReplay(payment)) {
-          return { submitted: false, payment };
-        }
-        assertProofSubmissionState(payment, now);
-        await this.payments.lockActiveReservations(payment.order.id, transaction);
-        const attached = await transaction.payment.updateMany({
-          where: {
-            id: payment.id,
-            status: 'AWAITING_PROOF',
-            evidenceBucket: null,
-            evidenceObjectPath: null,
-          },
-          data: {
-            evidenceBucket: stored.bucket,
-            evidenceObjectPath: stored.objectPath,
-            customerDeclaredAt: now,
-            submittedAt: now,
-            status: 'UNDER_REVIEW',
-          },
-        });
-        if (attached.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
-        await this.inventory.transitionOrderReservationReason(
-          payment.order.id,
-          'DEPOSIT',
-          'REVIEW',
-          null,
-          transaction,
-        );
-        await this.audit.write(transaction, paymentAuditActor(request), {
-          action: 'payment.proof_submitted',
-          resourceType: 'Payment',
-          resourceId: payment.id,
-          changes: {
-            before: { status: payment.status, reservationReason: 'DEPOSIT' },
-            after: { status: 'UNDER_REVIEW', reservationReason: 'REVIEW' },
-          },
-          metadata: {
-            orderNumber: payment.order.orderNumber,
-            mimeType: evidence.mimeType,
-            fileSize: evidence.fileSize,
-          },
-        });
-        const updated = await this.payments.findById(payment.id, transaction);
-        if (updated === null) throw new ApiError('INTERNAL_ERROR');
-        return { submitted: true, payment: updated };
-      });
+      outcome = await this.transactions.run(
+        'payments.submit-proof',
+        async (transaction) => {
+          const payment = await this.payments.lockPaymentRoot(paymentId, transaction);
+          if (payment === null) throw new ApiError('ORDER_NOT_FOUND');
+          const now = this.clock.now();
+          this.ownership.assertAccess(request, payment.order, now);
+          if (isProofSubmissionReplay(payment)) {
+            return { submitted: false, payment };
+          }
+          assertProofSubmissionState(payment, now);
+          await this.payments.lockActiveReservations(payment.order.id, transaction);
+          const attached = await transaction.payment.updateMany({
+            where: {
+              id: payment.id,
+              status: 'AWAITING_PROOF',
+              evidenceBucket: null,
+              evidenceObjectPath: null,
+            },
+            data: {
+              evidenceBucket: stored.bucket,
+              evidenceObjectPath: stored.objectPath,
+              customerDeclaredAt: now,
+              submittedAt: now,
+              status: 'UNDER_REVIEW',
+            },
+          });
+          if (attached.count !== 1) throw new ApiError('CONCURRENT_MODIFICATION');
+          await this.inventory.transitionOrderReservationReason(
+            payment.order.id,
+            'DEPOSIT',
+            'REVIEW',
+            null,
+            transaction,
+          );
+          await this.audit.write(transaction, paymentAuditActor(request), {
+            action: 'payment.proof_submitted',
+            resourceType: 'Payment',
+            resourceId: payment.id,
+            changes: {
+              before: { status: payment.status, reservationReason: 'DEPOSIT' },
+              after: { status: 'UNDER_REVIEW', reservationReason: 'REVIEW' },
+            },
+            metadata: {
+              orderNumber: payment.order.orderNumber,
+              mimeType: evidence.mimeType,
+              fileSize: evidence.fileSize,
+            },
+          });
+          const updated = await this.payments.findById(payment.id, transaction);
+          if (updated === null) throw new ApiError('INTERNAL_ERROR');
+          return { submitted: true, payment: updated };
+        },
+        undefined,
+        PAYMENT_PROOF_TRANSACTION_OPTIONS,
+      );
     } catch (error) {
       await this.deleteBestEffort(paymentId, stored.bucket, stored.objectPath, request);
       throw error;
