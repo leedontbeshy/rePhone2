@@ -112,6 +112,10 @@
   text-transform: uppercase;
 }
 
+.summaryEyebrow {
+  color: var(--color-primary-hover) !important;
+}
+
 .section h2,
 .summaryCard h2,
 .qrCard h2 {
@@ -170,7 +174,7 @@
 }
 
 .saveStatus small {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
   line-height: var(--line-height-label);
 }
@@ -287,7 +291,7 @@
   display: grid;
   gap: var(--space-1);
   padding: var(--space-4) var(--space-5);
-  color: var(--color-muted);
+  color: var(--color-body);
   background: var(--color-surface-subtle);
   font-size: var(--font-size-label);
   line-height: var(--line-height-label);
@@ -339,6 +343,7 @@
 .qrEmpty {
   padding: var(--space-4);
   border-radius: var(--radius-control);
+  color: var(--color-body) !important;
   background: var(--color-surface-subtle);
   text-align: center;
 }
@@ -391,7 +396,7 @@
 }
 
 .filePicker small {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-label);
 }
 
