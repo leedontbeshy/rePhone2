@@ -9,6 +9,36 @@ const ADMIN = {
 const HEALTH_STATES = new Set(['healthy', 'degraded', 'unavailable']);
 const DEPENDENCY_STATES = new Set(['healthy', 'degraded', 'unavailable', 'not_configured']);
 
+type HealthState = 'healthy' | 'degraded' | 'unavailable';
+type DependencyState = HealthState | 'not_configured';
+
+interface LiveHealthSnapshot {
+  readonly api: LiveHealthProbe;
+  readonly checkedAt: string;
+  readonly database: LiveHealthProbe;
+  readonly durationMs: number;
+  readonly mail: LiveHealthProbe;
+  readonly state: HealthState;
+  readonly storage: LiveHealthProbe;
+}
+
+interface LiveHealthProbe {
+  readonly state: DependencyState;
+}
+
+const HEALTH_SUMMARY_LABELS: Readonly<Record<HealthState, string>> = {
+  degraded: 'Hệ thống đang hoạt động hạn chế',
+  healthy: 'Hệ thống đang hoạt động ổn định',
+  unavailable: 'Hệ thống đang gián đoạn',
+};
+
+const HEALTH_PROBE_LABELS: Readonly<Record<DependencyState, string>> = {
+  degraded: 'Cần chú ý',
+  healthy: 'Ổn định',
+  not_configured: 'Chưa cấu hình',
+  unavailable: 'Gián đoạn',
+};
+
 test(
   browserTestTitle('browser:system-admin-health', 'live-admin-route-matrix'),
   async ({ page }) => {
@@ -62,6 +92,7 @@ test(
     );
     expect(health.response.headers()['cache-control']).toContain('no-store');
     expectLiveHealthSnapshot(health.data);
+    await expectLiveHealthPresentation(page, health.data);
     await expect(
       page.getByRole('heading', { name: 'Thông tin lần kiểm tra', exact: true }),
     ).toBeVisible();
@@ -150,7 +181,7 @@ function expectRecordWith(value: unknown, key: string, label: string): void {
   }
 }
 
-function expectLiveHealthSnapshot(value: unknown): void {
+function expectLiveHealthSnapshot(value: unknown): asserts value is LiveHealthSnapshot {
   if (!isRecord(value)) throw new Error('Expected a live health snapshot object');
   expect(HEALTH_STATES.has(String(value['state']))).toBe(true);
   expect(Number.isNaN(Date.parse(String(value['checkedAt'])))).toBe(false);
@@ -172,6 +203,28 @@ function expectLiveHealthSnapshot(value: unknown): void {
   expect(api['uptimeSeconds']).toEqual(expect.any(Number));
   expect(database['appliedMigrationCount']).toEqual(expect.any(Number));
   expect(database['incompleteMigrationCount']).toEqual(expect.any(Number));
+}
+
+async function expectLiveHealthPresentation(
+  page: Page,
+  snapshot: LiveHealthSnapshot,
+): Promise<void> {
+  const panel = page.locator('section[aria-labelledby="system-health-summary-title"]');
+  await expect(
+    panel.getByRole('heading', { name: HEALTH_SUMMARY_LABELS[snapshot.state], exact: true }),
+  ).toBeVisible();
+
+  for (const dependency of [
+    { key: 'api', label: 'API' },
+    { key: 'database', label: 'Cơ sở dữ liệu' },
+    { key: 'storage', label: 'Kho tệp' },
+    { key: 'mail', label: 'Gửi email' },
+  ] as const) {
+    const row = panel.getByText(dependency.label, { exact: true }).locator('..');
+    await expect(
+      row.getByText(HEALTH_PROBE_LABELS[snapshot[dependency.key].state], { exact: true }),
+    ).toBeVisible();
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
