@@ -3,10 +3,21 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const EMPLOYEE_ID = '0199d030-0000-7000-8000-000000000001';
 const CUSTOMER_ID = '0199d030-0000-7000-8000-000000000002';
 const AUDIT_ID = '0199d030-0000-7000-8000-000000000003';
+const AUDIT_REQUEST_ID = 'request-fe09-release-matrix-correlation-000030';
+const AUDIT_RESOURCE_ID = '0199d030-0000-7000-8000-000000000030';
+
+const RELEASE_VIEWPORTS = [
+  { height: 844, name: 'mobile-320', width: 320 },
+  { height: 844, name: 'mobile-390', width: 390 },
+  { height: 1024, name: 'tablet-768', width: 768 },
+  { height: 768, name: 'desktop-1024', width: 1024 },
+  { height: 900, name: 'desktop-1440', width: 1440 },
+] as const;
 
 type AuthenticatedRole = 'ADMIN' | 'CUSTOMER' | 'EMPLOYEE';
 type MatrixRole = AuthenticatedRole | 'ANONYMOUS';
@@ -159,6 +170,65 @@ test(
   },
 );
 
+test(
+  bt('browser:system-admin-health', 'system-admin-audit-selected-release-matrix'),
+  async ({ page }) => {
+    test.setTimeout(180_000);
+    await installMatrixFixture(page, 'ADMIN');
+
+    for (const viewport of RELEASE_VIEWPORTS) {
+      await page.setViewportSize({ height: viewport.height, width: viewport.width });
+      await page.goto(`/backoffice/audit-logs/${AUDIT_ID}`, {
+        waitUntil: 'domcontentloaded',
+      });
+
+      await expect(page.locator('#audit-detail-title')).toHaveText('Đã cập nhật cấu hình cửa hàng');
+      await expect(page).toHaveURL((url) => {
+        return (
+          url.pathname === '/backoffice/audit-logs' && url.searchParams.get('selected') === AUDIT_ID
+        );
+      });
+
+      const activeNavigation = page.locator(
+        'aside[aria-label="Điều hướng backoffice"] [aria-current="page"]',
+      );
+      await expect(activeNavigation).toHaveText('Nhật ký hoạt động');
+      await expect(activeNavigation).toBeInViewport();
+
+      const selectedAudit = page.locator(`main a[href*="selected=${AUDIT_ID}"]`);
+      await expect(selectedAudit).toHaveAttribute('aria-current', 'page');
+      await expect(selectedAudit).toHaveAttribute('data-selected', 'true');
+      await expect(selectedAudit).toContainText('Đang chọn');
+      await expect(selectedAudit).toBeVisible();
+
+      const detailPanel = page.locator('aside[aria-labelledby="audit-detail-title"]');
+      await expect(detailPanel).toContainText(AUDIT_REQUEST_ID);
+      await expect(detailPanel).toContainText(AUDIT_RESOURCE_ID);
+      const technicalDisclosures = detailPanel.locator('details');
+      for (let index = 0; index < (await technicalDisclosures.count()); index += 1) {
+        await technicalDisclosures.nth(index).locator('summary').click();
+      }
+      await expect(detailPanel.locator('pre').first()).toContainText('[REDACTED]');
+
+      const routeLabel = `ADMIN audit selected ${viewport.name}`;
+      await expectNoHorizontalOverflow(page, routeLabel, viewport.width);
+      await expectNoSeriousAccessibilityViolations(page, routeLabel, viewport.width);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await stabilizeVisualPage(page);
+        await expect(page).toHaveScreenshot(
+          `wp11-system-admin-audit-selected-${viewport.name}.png`,
+          {
+            animations: 'disabled',
+            caret: 'hide',
+            fullPage: true,
+          },
+        );
+      }
+    }
+  },
+);
+
 async function installMatrixFixture(page: Page, role: MatrixRole): Promise<MatrixProbe> {
   const probe: MatrixProbe = { childRequests: [] };
   await page.route('**/api/v1/auth/refresh', (route) => {
@@ -303,7 +373,7 @@ function auditItem() {
     action: 'settings.updated',
     actor: {
       employeeCode: 'ADM-09',
-      fullName: 'Quản trị FE09',
+      fullName: 'Quản trị viên hệ thống Nguyễn Minh Anh phụ trách cửa hàng trung tâm',
       id: 'staff-ADMIN',
       role: 'ADMIN',
     },
@@ -312,8 +382,8 @@ function auditItem() {
     createdAt: '2026-09-02T02:00:00.000Z',
     id: AUDIT_ID,
     metadata: null,
-    requestId: 'request-matrix-030',
-    resourceId: 'store-settings',
+    requestId: AUDIT_REQUEST_ID,
+    resourceId: AUDIT_RESOURCE_ID,
     resourceType: 'StoreSettings',
   };
 }
@@ -322,12 +392,29 @@ function auditDetail() {
   return {
     ...auditItem(),
     changes: {
-      after: { storeName: 'rePhone Ma trận' },
-      before: { storeName: 'rePhone' },
+      after: {
+        defaultWarrantyTerms:
+          'Bảo hành tại cửa hàng trung tâm Thành phố Hồ Chí Minh theo chính sách hiện hành.',
+        storeName: 'rePhone Ma trận phát hành toàn diện FE09',
+      },
+      before: {
+        defaultWarrantyTerms: 'Bảo hành theo chính sách rePhone.',
+        storeName: 'rePhone',
+      },
+      protectedCredential: '[REDACTED]',
     },
     ipAddress: '203.0.113.30',
-    metadata: { fields: ['storeName'] },
-    userAgent: 'Trình duyệt kiểm thử FE09',
+    metadata: {
+      fields: ['storeName', 'defaultWarrantyTerms'],
+      requestContext: {
+        correlationReference:
+          'correlation-fe09-release-hardening-system-administration-visual-baseline-000030',
+        sessionCredential: '[REDACTED]',
+      },
+      result: 'success',
+    },
+    userAgent:
+      'Trình duyệt kiểm thử FE09 trên thiết bị quản trị có chuỗi nhận diện dài để kiểm tra xuống dòng',
   };
 }
 

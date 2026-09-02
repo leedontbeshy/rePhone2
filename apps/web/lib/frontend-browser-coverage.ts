@@ -733,6 +733,13 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['success'],
         specFile: 'system-admin-route-matrix.spec.ts',
       },
+      'system-admin-audit-selected-release-matrix': {
+        title: 'keeps a selected redacted audit record aligned across the release viewport matrix',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/audit-logs', '/backoffice/audit-logs/[id]'],
+        ownsStates: ['success'],
+        specFile: 'system-admin-route-matrix.spec.ts',
+      },
       'system-admin-immediate-permission-gate': {
         title:
           'blocks employee administrator-only routes and all customer or anonymous backoffice access before child requests',
