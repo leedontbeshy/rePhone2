@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Response, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const CASE_ID = '0199d009-0000-7000-8000-000000000101';
@@ -111,13 +111,21 @@ test.describe('FE-09 after-sales click-level lifecycle', () => {
     });
     await rejectPage.goto(`/backoffice/after-sales/${CASE_ID}`);
     const initialReads = rejection.detailReads;
-    await rejectAfterSales(rejectPage, 'Kiểm tra đồng thời đã thay đổi hồ sơ.');
+    const conflictResponse = await rejectAfterSales(
+      rejectPage,
+      'Kiểm tra đồng thời đã thay đổi hồ sơ.',
+    );
+    expect(conflictResponse.status()).toBe(409);
     await expect(
       rejectPage.getByText('Hồ sơ vừa được xử lý ở phiên khác. Hãy tải lại.'),
     ).toBeVisible();
     await expect.poll(() => rejection.detailReads).toBeGreaterThan(initialReads);
 
-    await rejectAfterSales(rejectPage, 'Không đủ điều kiện hỗ trợ sau khi kiểm tra.');
+    const rejectionResponse = await rejectAfterSales(
+      rejectPage,
+      'Không đủ điều kiện hỗ trợ sau khi kiểm tra.',
+    );
+    expect(rejectionResponse.status()).toBe(200);
     await expect(rejectPage.getByText('Không chấp thuận', { exact: true }).first()).toBeVisible();
     expect(commandCount(rejection, 'reject')).toBe(2);
     await rejectPage.close();
@@ -243,11 +251,17 @@ async function resolveAfterSales(
   return probe;
 }
 
-async function rejectAfterSales(page: Page, reason: string): Promise<void> {
+async function rejectAfterSales(page: Page, reason: string): Promise<Response> {
   await page.getByRole('button', { name: 'Không chấp thuận', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Không chấp thuận yêu cầu?' });
   await dialog.getByLabel('Lý do không chấp thuận').fill(reason);
+  const response = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === 'POST' &&
+      new URL(candidate.url()).pathname.endsWith('/reject'),
+  );
   await dialog.getByRole('button', { name: 'Xác nhận không chấp thuận' }).click();
+  return response;
 }
 
 function evidenceItem(page: Page, label: string) {

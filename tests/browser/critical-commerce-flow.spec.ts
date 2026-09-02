@@ -43,7 +43,13 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
       customerPage.getByText(`Ảnh thật · Mã máy ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
 
+    const addToCart = customerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/cart/items',
+    );
     await customerPage.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    expect((await addToCart).status()).toBe(201);
     await expect(customerPage.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await customerPage.goto('/cart');
     await expect(
@@ -173,8 +179,18 @@ async function login(
   await page.goto(`/login?returnTo=${encodeURIComponent(destination)}`);
   await page.getByLabel('Email').fill(credentials.email);
   await page.locator('#password').fill(credentials.password);
+  const destinationReady = page.waitForURL(destination);
+  const cartReady =
+    destination === '/account'
+      ? page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/api/v1/cart/merge',
+        )
+      : Promise.resolve(undefined);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await page.waitForURL(destination);
+  const [, cartResponse] = await Promise.all([destinationReady, cartReady]);
+  if (cartResponse !== undefined) expect(cartResponse.status()).toBe(200);
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {
