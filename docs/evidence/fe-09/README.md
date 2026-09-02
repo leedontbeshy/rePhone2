@@ -5,7 +5,7 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-10 — PASS; tiếp theo WP-11**<br>
+> Con trỏ triển khai: **WP-11 — PASS; tiếp theo WP-12**<br>
 > Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
 
 ## Phạm vi bằng chứng
@@ -26,6 +26,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-08 inventory/stock evidence](./wp-08-inventory-stock.md)
 - [WP-09 operations evidence](./wp-09-operations.md)
 - [WP-10 system administration evidence](./wp-10-system-admin.md)
+- [WP-11 accessibility, responsive và visual evidence](./wp-11-accessibility-responsive-visual.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -178,6 +179,23 @@ mount hoặc fetch child. Axe bằng zero serious/critical, không document over
 25/25 ảnh current-run đã được review. Chi tiết trust boundary, commit và acceptance
 nằm tại [WP-10 system administration evidence](./wp-10-system-admin.md).
 
+## Accessibility, responsive và visual matrix WP-11
+
+WP-11 kết thúc code/browser tại `8351095` với ma trận đại diện cho tám miền, đủ
+năm viewport chuẩn trên toàn sản phẩm và 38 ảnh baseline liên quan. Cross-cut
+release matrix kiểm bốn shell bằng skip link/Axe, hành trình bàn phím thật, touch
+target `44×44 px` trên storefront/customer/backoffice, reduced motion, forced
+colors và proxy reflow `720×450` có geometry + hit-test. Hai full matrix cuối đạt
+`5/5` liên tiếp; full web unit đạt `674/674`, coverage contract `9/9`, shared a11y
+`21/21`, typecheck/lint/build đều xanh.
+
+Review bắt và sửa thêm bốn lỗi sản phẩm: auth `autoFocus` bỏ qua skip link, validation
+cấu hình không đưa focus tới tóm tắt lỗi, liên kết icon backoffice mobile chỉ rộng
+`22 px`, và timeline đơn đang vận chuyển ghi nhầm “Đã giao hàng”. Bằng chứng hiện là
+Chromium/Windows; proxy reflow không phải native zoom và Firefox/WebKit chưa chạy.
+Chi tiết ma trận, ảnh, lịch sử lượt đỏ và giới hạn nằm tại
+[WP-11 accessibility/responsive/visual evidence](./wp-11-accessibility-responsive-visual.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -193,7 +211,7 @@ nằm tại [WP-10 system administration evidence](./wp-10-system-admin.md).
 | WP-08 | Inventory/stock browser/responsive/accessibility evidence | PASS |
 | WP-09 | Operations browser/API/visual evidence | PASS có residual — FE9-R15/R16 mở |
 | WP-10 | System administration browser/API/visual evidence | PASS |
-| WP-11 | Accessibility, responsive và visual matrix | Chưa có |
+| WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17/R18 mở |
 | WP-12 | Performance và client-boundary report | Chưa có |
 | WP-13 | Consumer scan và rollback evidence | Chưa có |
 | WP-14 | Hai release run, production smoke, release SHA và CI URL | Chưa có |
@@ -208,9 +226,8 @@ nằm tại [WP-10 system administration evidence](./wp-10-system-admin.md).
 
 ## Bước tiếp theo
 
-Triển khai WP-11 cho accessibility, responsive và visual matrix toàn sản phẩm.
-Song song, vẫn cần chốt
-`FE9-R13`–`FE9-R16`, đặc biệt fingerprint/version cho checkout preview và
-idempotency cho mutation vận hành, hoặc có quyết định chấp nhận rủi ro rõ trước
-WP-14. Chưa chuyển WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release này
-chưa được xử lý.
+Triển khai WP-12 cho performance, client boundary và media bằng baseline production
+trên SHA sạch trước mọi tối ưu. Song song, vẫn cần chốt `FE9-R13`–`FE9-R18`, đặc
+biệt fingerprint/version cho checkout preview, idempotency cho mutation vận hành và
+quyết định về native zoom/cross-browser evidence trước WP-14. Chưa chuyển WP-05 hay
+toàn FE-09 sang `DONE` khi các điều kiện release này chưa được xử lý.

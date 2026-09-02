@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-11 — accessibility, responsive và visual matrix**<br>
+> Con trỏ thực thi: **WP-12 — performance, client boundary và media**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -54,8 +54,8 @@ bằng chứng đóng work package.
 | WP-08 — Inventory/stock | **PASS** | Chín route, intake/inspection/lookup/cost privacy/stock đã qua gate |
 | WP-09 — Operations | **PASS có residual risk** | 11 route, lifecycle, API, desktop/mobile, Axe và 22 ảnh đã qua gate; `FE9-R15`–`FE9-R16` còn mở |
 | WP-10 — System admin | **PASS** | Sáu route, role matrix, live health, master-detail, CAS/QR, audit, Axe và 25 ảnh đã qua gate |
-| WP-11 — A11y/responsive/visual | **IN PROGRESS** | Chạy ma trận toàn sản phẩm sau WP-10 |
-| WP-12 — Performance/client/media | **PENDING** | Đo production baseline/after và tối ưu theo số liệu |
+| WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và cross-cut matrix đã qua gate; FE9-R17/R18 giữ rõ proxy zoom và Chromium-only |
+| WP-12 — Performance/client/media | **IN PROGRESS** | Khóa production baseline cùng profile/SHA trước mọi tối ưu |
 | WP-13 — Legacy cleanup | **PENDING** | Chỉ bắt đầu sau browser/visual gate của owner tương ứng |
 | WP-14 — Release closeout | **PENDING** | Hai release run sạch, production smoke, CI artifact, release SHA và quyết định residual risk |
 
@@ -597,6 +597,11 @@ tại [WP-10 system administration evidence](../evidence/fe-09/wp-10-system-admi
 
 ### WP-11 — Accessibility, responsive và visual matrix toàn sản phẩm
 
+**Trạng thái 02/09/2026:** `PASS CÓ GIỚI HẠN EVIDENCE`. Cây code/browser cuối
+`8351095` có ma trận đại diện cho tám miền, 38 ảnh baseline và hai full
+`browser:release-matrix` cuối đạt `5/5`. Native zoom và Firefox/WebKit chưa có
+bằng chứng, được giữ tại `FE9-R17`–`FE9-R18` thay vì nâng claim quá phạm vi.
+
 **Tasks**
 
 1. Tạo representative route/state fixture cho tám domain surface.
@@ -884,20 +889,21 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Con trỏ hiện tại là **WP-11**. Thứ tự tiếp tục:
+Con trỏ hiện tại là **WP-12**. Thứ tự tiếp tục:
 
-1. Lập ma trận executable cho tám domain surface từ evidence/browser owner hiện có;
-   chọn success cùng error/permission state đại diện mà không nhân đôi route owner.
-2. Chạy viewport 320/390/768/1024/1440, zoom 200%, reduced motion và forced colors;
-   khóa document overflow, control bị che và touch target của critical journey.
-3. Chạy Axe cùng keyboard-only journey cho skip link, filter, modal/drawer,
-   error-summary, focus trap/restore và list-detail focus.
-4. Tạo visual baseline xác định cho storefront, auth/account, commerce,
-   post-purchase, catalog, inventory, operations và system administration; review
-   đúng state/viewport sau mỗi remediation.
-5. Chạy matrix cuối hai lượt, viết `wp-11-accessibility-responsive-visual.md`, rồi
-   tiếp tục WP-12 → WP-13 → WP-14.
-6. Trước WP-14, chốt `FE9-R13`–`FE9-R16`, lấy CI URL/artifact thật và chạy
+1. Chốt SHA sạch sau WP-11, profile production, dữ liệu deterministic và format
+   báo cáo; không dùng lại baseline storefront cũ thuộc SHA khác.
+2. Mở rộng harness cho route đại diện storefront, auth/account, commerce,
+   post-purchase, catalog, inventory, operations và system administration; setup
+   session/data nằm ngoài timed path.
+3. Đo baseline với warm-up và tối thiểu ba sample, ghi median LCP/CLS/interaction,
+   navigation, transferred bytes, client JS và request-path count; bắt hydration
+   warning/page error/N+1.
+4. Chỉ tối ưu client boundary, skeleton hoặc media khi baseline chỉ ra hotspot;
+   mỗi concern có after report cùng profile/SHA và browser regression riêng.
+5. Viết `wp-12-performance-client-media.md`, cập nhật evidence rồi tiếp tục
+   WP-13 → WP-14.
+6. Trước WP-14, chốt `FE9-R13`–`FE9-R18`, lấy CI URL/artifact thật và chạy
    production release gate hai lần từ test database sạch.
 
 Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc

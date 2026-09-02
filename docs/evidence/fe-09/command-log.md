@@ -447,3 +447,67 @@ thật, chỉ đọc và đối chiếu health response với nhãn DOM.
 Playwright giữ lại warning `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190` và Docker
 orphan-container notice. Test vẫn thoát `0`; không dùng `--remove-orphans` vì cleanup
 destructive đó ngoài phạm vi WP-10.
+
+## WP-11 verification — code/browser tree `8351095`
+
+### Commit ledger
+
+| Nhóm | Commit |
+| --- | --- |
+| Post-purchase và catalog five-viewport baseline | `310ba32` |
+| Timeline trạng thái giao hàng | `f4eb615` |
+| Inventory và operations five-viewport baseline | `1987f26` |
+| Skip link và validation focus | `79d8949` |
+| Backoffice mobile touch target | `3425590` |
+| Cross-cut accessibility/reflow matrix | `0960af8` |
+| System administration audit visual matrix | `8351095` |
+
+### Fast gate cuối
+
+| Command | Exit | Kết quả |
+| --- | ---: | --- |
+| `pnpm --filter @rephone/web test` | 0 | 138 file, 674/674 test |
+| `pnpm --filter @rephone/web test:coverage-contract` | 0 | 2 file, 9/9 executable coverage contract |
+| `pnpm fe:a11y` | 0 | 4 file, 21/21 shared accessibility contract |
+| `pnpm --filter @rephone/web typecheck` | 0 | PASS |
+| `pnpm --filter @rephone/web lint` | 0 | PASS, zero warning |
+| `pnpm format:check` | 0 | PASS |
+| `pnpm --filter @rephone/web build` | 0 | Production build; Next sinh đủ route hiện hành |
+| `git diff --check` | 0 | PASS |
+
+### Browser, responsive, accessibility và visual gate
+
+| Lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Post-purchase + catalog update | 0 | 2/2; tạo bốn ảnh mobile/desktop đã review |
+| Post-purchase + catalog strict | 0 | 2/2; error/permission Axe riêng 2/2 |
+| Inventory + operations baseline | 0 | 4/4; bốn ảnh mobile/desktop đã review |
+| Operations sau sửa timeline | 0 | Update 1/1; hai lượt strict tiếp theo đều 1/1 |
+| Settings validation keyboard | 0 | 1/1; Tab tới summary link, Enter tới field sai |
+| System audit matrix update | 0 | 1/1; hai ảnh 390/1440 đã review |
+| System audit matrix strict | 0 | 1/1 ở đủ năm viewport |
+| FE-0 exact-unit strict | 0 | 1/1; hai ảnh đã review |
+| Auth/account strict | 0 | 2/2 |
+| Commerce visual strict | 0 | 1/1; 20 snapshot ở năm viewport |
+| Release matrix cuối 1 | 0 | 5/5, Chromium, 56,7 giây |
+| Release matrix cuối 2 | 0 | 5/5, Chromium, 52,7 giây |
+
+Lịch sử đỏ được giữ lại. FE-0 baseline cũ còn nội dung tiếng Anh “Grade A”; sau khi
+đặt ảnh cũ và current cùng viewport, current tiếng Việt “Ngoại hình loại A” được xác
+nhận là đúng và hai baseline được cập nhật. Commerce wishlist lệch 69 pixel ở badge
+do baseline cũ; reference/current/diff cùng trạng thái đã được review trước khi cập
+nhật đủ năm viewport rồi strict run mới chạy xanh.
+
+Cross-cut matrix ban đầu lộ auth `autoFocus` bỏ qua skip link, focus target không
+thật và timing sticky; các lỗi được sửa mà không nới geometry/hit-test. Review độc
+lập sau đó bắt registry overclaim, keyboard test đặt focus trực tiếp, audit fixture
+không hợp contract và icon “Về cửa hàng” mobile chỉ rộng `22 px`. Sau remediation,
+touch target storefront/customer/backoffice đều tối thiểu `44×44 px`, Axe chạy cả
+bốn shell và hai full matrix cuối xanh liên tiếp. Một targeted reflow run gặp
+exact-unit `404` môi trường một lần; lần targeted kế tiếp và cả hai full run cuối đều
+xanh, không retry bên trong test.
+
+Playwright tiếp tục phát warning `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190`, `pg`
+client-query deprecation ở commerce và Docker orphan-container notice. Không dùng
+`--remove-orphans`; proxy `720×450` không được ghi thành native zoom, và không tuyên
+bố Firefox/WebKit khi môi trường chưa có bằng chứng.
