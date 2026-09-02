@@ -661,6 +661,22 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['permission'],
         specFile: 'system-user-workspaces.spec.ts',
       },
+      'settings-conflict-rebase': {
+        title:
+          'rebases a settings draft through both conflict choices and submits each version once',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/settings'],
+        ownsStates: ['conflict', 'pending', 'success'],
+        specFile: 'system-settings-lifecycle.spec.ts',
+      },
+      'settings-qr-lifecycle': {
+        title:
+          'validates the custom QR picker and handles upload progress, provider failure and success',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/settings'],
+        ownsStates: ['error', 'provider-error', 'upload-progress', 'success'],
+        specFile: 'system-settings-lifecycle.spec.ts',
+      },
     },
   },
 } as const satisfies Record<string, FrontendBrowserSuiteDefinition>;
