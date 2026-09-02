@@ -66,19 +66,22 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
     };
   }, [client, status, unitId, user?.role]);
 
-  const readCoreProjection = useCallback(async (signal?: AbortSignal): Promise<InventoryUnitCoreProjection> => {
-    const options = signal === undefined ? {} : { signal };
-    const [nextUnit, inspectionPage, nextLocations] = await Promise.all([
-      getInventoryUnit(client, unitId, options),
-      listInventoryUnitInspections(client, unitId, { page: 1, pageSize: 50 }, options),
-      listInventoryLocations(client, options),
-    ]);
-    return {
-      inspections: inspectionPage.data,
-      locations: nextLocations,
-      unit: nextUnit,
-    };
-  }, [client, unitId]);
+  const readCoreProjection = useCallback(
+    async (signal?: AbortSignal): Promise<InventoryUnitCoreProjection> => {
+      const options = signal === undefined ? {} : { signal };
+      const [nextUnit, inspectionPage, nextLocations] = await Promise.all([
+        getInventoryUnit(client, unitId, options),
+        listInventoryUnitInspections(client, unitId, { page: 1, pageSize: 50 }, options),
+        listInventoryLocations(client, options),
+      ]);
+      return {
+        inspections: inspectionPage.data,
+        locations: nextLocations,
+        unit: nextUnit,
+      };
+    },
+    [client, unitId],
+  );
 
   const applyCoreProjection = useCallback((projection: InventoryUnitCoreProjection) => {
     setUnit(projection.unit);
@@ -86,16 +89,16 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
     setLocations(projection.locations);
   }, []);
 
-  const refetchCore = useCallback(async (expectedGeneration?: number) => {
-    setIdentifiers(null);
-    const projection = await readCoreProjection();
-    if (
-      expectedGeneration !== undefined &&
-      expectedGeneration !== sessionGeneration.current
-    )
-      return;
-    applyCoreProjection(projection);
-  }, [applyCoreProjection, readCoreProjection]);
+  const refetchCore = useCallback(
+    async (expectedGeneration?: number) => {
+      setIdentifiers(null);
+      const projection = await readCoreProjection();
+      if (expectedGeneration !== undefined && expectedGeneration !== sessionGeneration.current)
+        return;
+      applyCoreProjection(projection);
+    },
+    [applyCoreProjection, readCoreProjection],
+  );
 
   useEffect(() => {
     if (!canLoad) {

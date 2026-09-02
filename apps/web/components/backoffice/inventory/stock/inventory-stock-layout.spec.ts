@@ -18,8 +18,6 @@ describe('inventory stock layout contracts', () => {
       'utf8',
     );
 
-    expect(primitives).toMatch(
-      /select\.control\s*\{[^}]*padding-block:\s*var\(--space-2\);/,
-    );
+    expect(primitives).toMatch(/select\.control\s*\{[^}]*padding-block:\s*var\(--space-2\);/);
   });
 });

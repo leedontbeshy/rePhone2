@@ -6,14 +6,10 @@ import { StockController } from './stock.controller.js';
 
 describe('StockController ledger contract', () => {
   it('exposes stock movements as an employee-safe read-only collection route', () => {
-    const controllerRoles = Reflect.getMetadata(
-      ROLES_METADATA_KEY,
-      StockController,
-    ) as unknown;
+    const controllerRoles = Reflect.getMetadata(ROLES_METADATA_KEY, StockController) as unknown;
     const routes = Object.getOwnPropertyNames(StockController.prototype).flatMap((name) => {
       const handler = Object.getOwnPropertyDescriptor(StockController.prototype, name)?.value as
-        | ((...args: unknown[]) => unknown)
-        | undefined;
+        ((...args: unknown[]) => unknown) | undefined;
       if (handler === undefined) return [];
       const path = Reflect.getMetadata(PATH_METADATA, handler) as unknown;
       const method = Reflect.getMetadata(METHOD_METADATA, handler) as unknown;

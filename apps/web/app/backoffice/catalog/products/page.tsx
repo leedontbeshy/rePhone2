@@ -227,8 +227,11 @@ function CatalogProductsPageContent() {
   const currentError = loadError?.queryKey === queryKey ? loadError.message : null;
   const showingPreviousResults =
     currentError !== null && ownedSnapshot !== null && ownedSnapshot.queryKey !== queryKey;
-  const pagination =
-    ownedSnapshot?.pagination ?? { ...EMPTY_PAGINATION, page: query.page, pageSize: query.pageSize };
+  const pagination = ownedSnapshot?.pagination ?? {
+    ...EMPTY_PAGINATION,
+    page: query.page,
+    pageSize: query.pageSize,
+  };
 
   return (
     <CatalogVoucherShell breadcrumbs={[{ label: 'Vận hành' }, { label: 'Danh mục' }]}>
