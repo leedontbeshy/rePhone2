@@ -832,6 +832,7 @@ async function createCustomerPickupCheckout(
         email: 'pickup-slice08@example.com',
         phone: '0900000000',
       },
+      expectedPreviewFingerprint: stringProperty(preview, 'previewFingerprint'),
       expectedCartUpdatedAt: stringProperty(preview, 'cartUpdatedAt'),
       expectedGrandTotal: stringProperty(pricing, 'grandTotal'),
       expectedDepositRequired: stringProperty(pricing, 'depositRequired'),

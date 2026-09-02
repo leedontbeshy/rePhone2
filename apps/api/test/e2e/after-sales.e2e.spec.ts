@@ -703,6 +703,7 @@ async function completeAccessoryPickup(
         email: 'slice11-after-sales@example.com',
         phone: '0900000000',
       },
+      expectedPreviewFingerprint: stringProperty(preview, 'previewFingerprint'),
       expectedCartUpdatedAt: stringProperty(preview, 'cartUpdatedAt'),
       expectedGrandTotal: stringProperty(pricing, 'grandTotal'),
       expectedDepositRequired: stringProperty(pricing, 'depositRequired'),
