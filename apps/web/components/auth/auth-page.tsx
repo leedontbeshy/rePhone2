@@ -1,6 +1,6 @@
 import type { FormHTMLAttributes, ReactNode } from 'react';
 import { AuthShell } from '@/components/shells';
-import { InlineAlert } from '@/components/ui';
+import { InlineAlert, Skeleton } from '@/components/ui';
 import styles from './auth.module.css';
 
 interface AuthPageProps {
@@ -47,10 +47,23 @@ export function AuthSecurityNote({ children }: Readonly<{ children: ReactNode }>
 
 export function AuthPending({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className={styles.loadingBlock}>
+    <div className={styles.loadingBlock} aria-busy="true">
       <InlineAlert role="status" tone="neutral" aria-live="polite">
         <p className={styles.statusCopy}>{children}</p>
       </InlineAlert>
+      <div className={styles.pendingForm} aria-hidden="true">
+        <div className={styles.pendingField}>
+          <Skeleton height="1rem" width="38%" />
+          <Skeleton height="2.75rem" width="100%" />
+        </div>
+        <div className={styles.pendingField}>
+          <Skeleton height="1rem" width="32%" />
+          <Skeleton height="2.75rem" width="100%" />
+        </div>
+        <Skeleton height="2.75rem" width="100%" />
+        <Skeleton height="1rem" width="46%" />
+        <Skeleton height="1rem" width="72%" />
+      </div>
     </div>
   );
 }

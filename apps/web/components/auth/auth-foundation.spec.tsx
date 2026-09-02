@@ -4,6 +4,7 @@ import { ErrorSummary } from '@/components/ui';
 import { AuthActionError } from '@/app/auth-provider';
 import {
   AuthForm,
+  AuthPending,
   AuthPage,
   PasswordFields,
   authDestination,
@@ -34,6 +35,18 @@ describe('auth UI foundation', () => {
     expect(html).toContain('aria-controls="password"');
     expect(html).toContain('role="alert"');
     expect(html).toContain('noValidate=""');
+  });
+
+  it('keeps the pending auth form stable without exposing placeholder content', () => {
+    const html = renderToStaticMarkup(<AuthPending>Đang chuẩn bị biểu mẫu…</AuthPending>);
+
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('Đang chuẩn bị biểu mẫu…');
+    expect(html.match(/aria-hidden="true"/g)?.length).toBeGreaterThanOrEqual(6);
+    expect(html).not.toContain('<input');
+    expect(html).not.toContain('<button');
   });
 
   it('clears only the edited field issue while preserving unrelated and global errors', () => {

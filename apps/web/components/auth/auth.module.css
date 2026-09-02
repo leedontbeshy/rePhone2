@@ -64,6 +64,18 @@
 .loadingBlock {
   display: grid;
   gap: var(--space-3);
+  min-block-size: 22.9375rem;
+}
+
+.pendingForm {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.pendingField {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .terminalState {
