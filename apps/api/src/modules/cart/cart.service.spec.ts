@@ -108,17 +108,16 @@ describe('CartService merge', () => {
         update: vi.fn(() => Promise.resolve(undefined)),
       },
     } as unknown as Prisma.TransactionClient;
-    const runner = {
-      run: vi.fn(
-        async <T>(
-          _operation: string,
-          work: (client: Prisma.TransactionClient) => Promise<T>,
-        ): Promise<T> => {
-          await work(transaction);
-          return work(transaction);
-        },
-      ),
-    } as unknown as SerializableTransactionRunner;
+    const runTransaction = vi.fn(
+      async <T>(
+        _operation: string,
+        work: (client: Prisma.TransactionClient) => Promise<T>,
+      ): Promise<T> => {
+        await work(transaction);
+        return work(transaction);
+      },
+    );
+    const runner = { run: runTransaction } as unknown as SerializableTransactionRunner;
     const offer = accessoryOffer();
     const offers = {
       readOffers: vi.fn(() =>
@@ -137,6 +136,10 @@ describe('CartService merge', () => {
     );
 
     expect(findActiveForGuest).toHaveBeenCalledTimes(2);
+    expect(runTransaction).toHaveBeenCalledWith('cart.merge', expect.any(Function), undefined, {
+      maxWaitMs: 5_000,
+      timeoutMs: 15_000,
+    });
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({ quantity: 99, warnings: [] });
     expect(result.warnings).toEqual([]);

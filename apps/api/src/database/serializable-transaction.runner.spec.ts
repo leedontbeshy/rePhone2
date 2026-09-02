@@ -53,6 +53,32 @@ describe('SerializableTransactionRunner', () => {
     });
   });
 
+  it('applies a bounded operation-specific wait and timeout to every retry', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const transaction = vi
+      .fn()
+      .mockRejectedValueOnce({ code: 'P2034' })
+      .mockResolvedValueOnce('completed');
+    const runner = new SerializableTransactionRunner({ $transaction: transaction } as never);
+
+    const result = runner.run('cart.merge', () => Promise.resolve('ignored'), undefined, {
+      maxWaitMs: 5_000,
+      timeoutMs: 15_000,
+    });
+    await vi.runAllTimersAsync();
+
+    await expect(result).resolves.toBe('completed');
+    expect(transaction).toHaveBeenCalledTimes(2);
+    for (const call of transaction.mock.calls) {
+      expect(call[1]).toEqual({
+        isolationLevel: 'Serializable',
+        maxWait: 5_000,
+        timeout: 15_000,
+      });
+    }
+  });
+
   it('fails closed after the bounded retry budget', async () => {
     vi.useFakeTimers();
     vi.spyOn(Math, 'random').mockReturnValue(0);
