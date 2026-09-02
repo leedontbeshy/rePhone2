@@ -361,350 +361,6 @@ main > p:not(.eyebrow) {
   color: #176b3a;
 }
 
-.payment-panel-heading,
-.backoffice-page-heading,
-.payment-queue-summary,
-.payment-review-specs > div,
-.payment-order-item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.payment-panel-heading {
-  align-items: center;
-}
-
-.payment-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eef2f5;
-  color: #536577;
-  font-size: 0.76rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.payment-status-badge.under_review {
-  background: #fff4d6;
-  color: #845200;
-}
-
-.payment-status-badge.awaiting_proof {
-  background: #e9f1fb;
-  color: #235f9f;
-}
-
-.payment-status-badge.verified {
-  background: #e9f8ef;
-  color: #176b3a;
-}
-
-.payment-status-badge.requested {
-  background: #e9f1fb;
-  color: #235f9f;
-}
-
-.payment-status-badge.processing {
-  background: #fff4d6;
-  color: #845200;
-}
-
-.payment-status-badge.completed {
-  background: #e9f8ef;
-  color: #176b3a;
-}
-
-.payment-status-badge.rejected,
-.payment-status-badge.expired,
-.payment-status-badge.cancelled {
-  background: #fbeaea;
-  color: #942828;
-}
-
-.payment-qr {
-  display: block;
-  width: min(220px, 100%);
-  height: auto;
-  margin-top: 18px;
-  border: 1px solid #d8e0e7;
-  border-radius: 12px;
-}
-
-.payment-proof-form,
-.payment-rejection {
-  display: grid;
-  gap: 10px;
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid #d8e0e7;
-  border-radius: 12px;
-  background: #f7f9fa;
-}
-
-.payment-proof-form label,
-.payment-review-filters label,
-.review-action-card label {
-  display: grid;
-  gap: 7px;
-  color: #425466;
-  font-size: 0.84rem;
-  font-weight: 750;
-}
-
-.payment-proof-form input,
-.payment-review-filters input,
-.payment-review-filters select,
-.review-action-card input,
-.review-action-card textarea {
-  width: 100%;
-  min-height: 44px;
-  padding: 9px 11px;
-  border: 1px solid #b8c4cf;
-  border-radius: 9px;
-  background: #fff;
-  color: #17202a;
-  font: inherit;
-}
-
-.payment-proof-form p,
-.review-action-card p {
-  margin: 0;
-  color: #66788a;
-  font-size: 0.84rem;
-  line-height: 1.55;
-}
-
-.payment-rejection {
-  border-color: #e6b8b8;
-  background: #fff5f5;
-  color: #8d1c1c;
-}
-
-.payment-review-shell {
-  width: min(1240px, calc(100% - 32px));
-}
-
-.backoffice-page-heading {
-  margin-bottom: 28px;
-}
-
-.backoffice-page-heading h1 {
-  font-size: clamp(2.4rem, 6vw, 4.8rem);
-}
-
-.backoffice-page-heading p:last-child {
-  color: #536577;
-}
-
-.payment-review-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
-  padding: 22px;
-  border: 1px solid #d8e0e7;
-  border-radius: 16px;
-  background: #fff;
-}
-
-.payment-review-filters .filter-wide {
-  grid-column: span 2;
-}
-
-.payment-review-filters input:focus,
-.payment-review-filters select:focus,
-.payment-proof-form input:focus,
-.review-action-card input:focus,
-.review-action-card textarea:focus,
-.payment-review-shell .button:focus-visible {
-  border-color: #2b6cb0;
-  outline: 3px solid rgb(43 108 176 / 18%);
-  outline-offset: 2px;
-}
-
-.payment-queue-summary {
-  align-items: center;
-  margin: 28px 0 16px;
-  color: #66788a;
-}
-
-.payment-queue-summary strong {
-  color: #17202a;
-}
-
-.payment-queue-summary span {
-  margin-left: auto;
-}
-
-.payment-queue {
-  display: grid;
-  gap: 12px;
-}
-
-.payment-queue-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
-  padding: 20px;
-  border: 1px solid #d8e0e7;
-  border-radius: 15px;
-  background: #fff;
-  text-decoration: none;
-}
-
-.payment-queue-card:hover,
-.payment-queue-card:focus-visible {
-  border-color: #9fb0bf;
-  box-shadow: 0 10px 30px rgb(31 49 66 / 7%);
-}
-
-.payment-queue-primary,
-.payment-queue-meta {
-  display: grid;
-  gap: 7px;
-}
-
-.payment-queue-primary > span,
-.payment-queue-primary > small,
-.payment-queue-meta > time {
-  color: #66788a;
-}
-
-.payment-queue-primary > strong {
-  font-size: 1.35rem;
-}
-
-.payment-queue-meta {
-  justify-items: end;
-  text-align: right;
-}
-
-.overdue-label {
-  color: #a33a22;
-  font-size: 0.8rem;
-}
-
-.payment-review-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  align-items: start;
-  gap: 24px;
-}
-
-.payment-review-main,
-.payment-review-actions {
-  display: grid;
-  gap: 18px;
-}
-
-.payment-review-actions {
-  position: sticky;
-  top: 88px;
-}
-
-.payment-review-specs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 22px;
-  margin: 20px 0;
-}
-
-.payment-review-specs > div {
-  padding: 11px 0;
-  border-bottom: 1px solid #e3e8ed;
-}
-
-.payment-review-specs dt {
-  color: #66788a;
-}
-
-.payment-review-specs dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-weight: 750;
-  text-align: right;
-}
-
-.payment-contact {
-  display: grid;
-  gap: 5px;
-  margin: 18px 0;
-  padding: 14px;
-  border-radius: 10px;
-  background: #f5f7f9;
-  font-style: normal;
-}
-
-.payment-contact span,
-.payment-order-item span {
-  color: #66788a;
-}
-
-.payment-order-item {
-  padding: 13px 0;
-  border-top: 1px solid #e3e8ed;
-}
-
-.payment-order-item > div {
-  display: grid;
-  gap: 5px;
-}
-
-.payment-order-item > div:last-child {
-  justify-items: end;
-  text-align: right;
-}
-
-.payment-timeline {
-  display: grid;
-  gap: 0;
-  margin: 18px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.payment-timeline li {
-  display: grid;
-  gap: 5px;
-  padding: 12px 0 12px 20px;
-  border-left: 2px solid #cad4dd;
-}
-
-.payment-timeline time {
-  color: #66788a;
-  font-size: 0.86rem;
-}
-
-.review-action-card {
-  display: grid;
-  gap: 14px;
-  padding: 22px;
-  border: 1px solid #d8e0e7;
-  border-radius: 16px;
-  background: #fff;
-}
-
-.review-action-card h2 {
-  margin: 0;
-}
-
-.review-action-card textarea {
-  min-height: 100px;
-  resize: vertical;
-}
-
-.review-action-card.verify {
-  border-color: #acd1b9;
-}
-
-.review-action-card.reject {
-  border-color: #e6b8b8;
-}
-
 .fulfillment-shell {
   width: min(1240px, calc(100% - 32px));
 }
@@ -1029,16 +685,10 @@ main > p:not(.eyebrow) {
     grid-template-columns: 1fr;
   }
 
-  .payment-review-filters,
   .fulfillment-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .payment-review-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .payment-review-actions,
   .fulfillment-command-panel {
     position: static;
   }
@@ -1076,34 +726,25 @@ main > p:not(.eyebrow) {
     padding: 20px 16px;
   }
 
-  .payment-review-filters,
-  .payment-review-specs,
   .fulfillment-filters,
   .fulfillment-record-list dl,
   .fulfillment-payment {
     grid-template-columns: 1fr;
   }
 
-  .payment-review-filters .filter-wide,
   .fulfillment-filters .filter-wide {
     grid-column: span 1;
   }
 
-  .backoffice-page-heading,
-  .payment-queue-card,
-  .payment-order-item,
   .fulfillment-order-card {
     display: grid;
   }
 
-  .payment-queue-card,
   .fulfillment-order-card,
   .refund-order-row {
     grid-template-columns: 1fr;
   }
 
-  .payment-queue-meta,
-  .payment-order-item > div:last-child,
   .fulfillment-order-finance,
   .fulfillment-order-statuses {
     justify-items: start;
