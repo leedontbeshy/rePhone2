@@ -537,3 +537,48 @@ credential, email, database URL hoặc production PII.
 Harness baseline/after semantics được tách tại `8aefcd3`. Performance CI job riêng
 tại `6b5fa41` dùng Windows, PostgreSQL test sạch, Chromium, production after gate và
 sanitized artifact 14 ngày. CI URL/artifact thật chỉ có sau push và thuộc WP-14.
+
+## WP-13 verification — cleanup tree `a66c114`
+
+### Commit/consumer sequence
+
+WP-13 xóa compatibility và global CSS theo 10 cleanup concern độc lập, cùng hai
+snapshot-only commit và hai test/determinism commit. Danh sách đầy đủ cùng rollback
+checkpoint nằm trong `wp-13-legacy-cleanup.md`. Consumer scan cuối giữ lại các
+bridge `.status`, `.button`, `.eyebrow`, `.wizard-*` và `.inspection-result` vì còn
+được intake/inspection dùng thật.
+
+| Gate theo surface | Exit | Kết quả |
+| --- | ---: | --- |
+| Operations mobile visual strict | 0 | `1/1` sau expected/current/diff review |
+| Auth/account focused unit | 0 | `38/38` |
+| Auth/account browser | 0 | `9/9`; hai locator stale được sửa và targeted `2/2` |
+| Storefront/auth/account browser | 0 | `20/20` sau locator remediation |
+| Commerce focused unit | 0 | `25/25` |
+| Cart/customer/critical-commerce browser | 0 | `19/19`, gồm 5 viewport visual |
+| Payment focused unit/API | 0 | `9/9` + `8/8` |
+| Operations browser | 0 | `6/6` |
+| Orders/refunds focused unit | 0 | `33/33` |
+| Inventory focused unit | 0 | `43/43` |
+| Inventory browser | 0 | `9/9` sau một baseline icon stale; strict target `1/1` |
+| Production build sau từng concern | 0 | PASS |
+
+### Final tree gate
+
+| Command / lượt | Exit | Kết quả |
+| --- | ---: | --- |
+| Full web unit/component | 0 | 139 file, `676/676` |
+| `pnpm fe:coverage` | 0 | 2 file, `9/9` |
+| `pnpm fe:a11y` | 0 | 4 file, `21/21` |
+| Web lint/typecheck/build | 0 | PASS; build sinh 43 route entry |
+| Release matrix A | 0 | `5/5`, Chromium, khoảng 58 giây |
+| Release matrix B | 0 | `5/5`, Chromium, 56,7 giây |
+| `pnpm performance:release` | 0 | `12/12` route đạt budget; zero runtime issue |
+| Client/media static audit | 0 | 38 client page, 115 client TSX, 3 raw-image consumer / 4 occurrence, 5 layout |
+| `git status --short` | 0 | Sạch trước khi ghi evidence |
+
+`globals.css` giảm từ 2.777 xuống 167 dòng vật lý theo cùng phép đếm. Hai snapshot
+mobile chỉ đổi sau khi review cùng viewport chứng minh icon dịch `11 px` vì touch
+target `44 px`; không bulk-update và không nới threshold. Performance raw report ở
+`.local/release-performance/wp13-after.json`; advisory client/media report ở
+`.local/release-performance/wp13-client-media.json`. Cả hai không được commit.

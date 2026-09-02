@@ -5,8 +5,8 @@
 > Kế hoạch được khóa tại: `1b6f4b2`<br>
 > Baseline thực thi tại: `1b6f4b2`<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
-> Con trỏ triển khai: **WP-12 — PASS cục bộ; tiếp theo WP-13**<br>
-> Quyết định còn mở: **WP-05 — BLOCKED bởi FE9-R14**
+> Con trỏ triển khai: **WP-14 — release closeout**<br>
+> Quyết định còn mở: **FE9-R13–FE9-R18 và CI thật trên release SHA**
 
 ## Phạm vi bằng chứng
 
@@ -28,6 +28,7 @@ FE-1–FE-8 sở hữu; FE-09 không nhân đôi hoặc chuyển ownership.
 - [WP-10 system administration evidence](./wp-10-system-admin.md)
 - [WP-11 accessibility, responsive và visual evidence](./wp-11-accessibility-responsive-visual.md)
 - [WP-12 performance, client boundary và media evidence](./wp-12-performance-client-media.md)
+- [WP-13 legacy cleanup evidence](./wp-13-legacy-cleanup.md)
 - [Kế hoạch triển khai](../../planning/2026-09-01-fe-09-comprehensive-release-hardening-plan.md)
 - [Frontend delivery authority](../../../plan-fe.md)
 
@@ -211,6 +212,20 @@ gate riêng, còn relative gate chờ baseline cùng runner ở WP-14. Chi tiế
 visual proof và quyết định FE9-R08 nằm tại
 [WP-12 performance/client/media evidence](./wp-12-performance-client-media.md).
 
+## Legacy cleanup có kiểm soát WP-13
+
+WP-13 kết thúc local tree tại `a66c114` với compatibility component catalog và các
+nhóm selector global zero-consumer được xóa theo từng owner/commit. `globals.css`
+giảm từ 2.777 xuống 167 dòng vật lý; các bridge còn consumer thật của shared
+primitive và inventory intake/inspection vẫn được giữ. Hai baseline icon mobile chỉ
+được cập nhật sau review expected/current/diff cùng viewport và chứng minh thay đổi
+vị trí `11 px` đến từ touch target `44 px` có chủ ý.
+
+Final tree đạt full web unit `676/676`, coverage `9/9`, a11y `21/21`, lint,
+typecheck, build, hai lượt release matrix `5/5` và performance production `12/12`
+route. Chi tiết consumer proof, lịch sử lượt đỏ và rollback checkpoint nằm tại
+[WP-13 legacy cleanup evidence](./wp-13-legacy-cleanup.md).
+
 ## Artifact index
 
 | Work package | Artifact theo dõi | Trạng thái |
@@ -228,7 +243,7 @@ visual proof và quyết định FE9-R08 nằm tại
 | WP-10 | System administration browser/API/visual evidence | PASS |
 | WP-11 | Accessibility, responsive và visual matrix | PASS cục bộ; FE9-R17/R18 mở |
 | WP-12 | Performance và client-boundary report | PASS cục bộ; CI artifact chờ push |
-| WP-13 | Consumer scan và rollback evidence | Chưa có |
+| WP-13 | Consumer scan, owner regression và rollback checkpoint | PASS cục bộ |
 | WP-14 | Hai release run, production smoke, release SHA và CI URL | Chưa có |
 
 ## Quy tắc cập nhật
@@ -241,7 +256,7 @@ visual proof và quyết định FE9-R08 nằm tại
 
 ## Bước tiếp theo
 
-Triển khai WP-13 theo cleanup có consumer proof, mỗi concern một commit và browser
-regression tương ứng. Song song, vẫn cần chốt `FE9-R13`–`FE9-R18`, kiểm performance
-CI artifact trên release SHA và chuẩn bị hai release run sạch ở WP-14. Chưa chuyển
-WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release này chưa được xử lý.
+Triển khai WP-14: chốt `FE9-R13`–`FE9-R18`, chạy hai release pass từ database sạch,
+production smoke compiled, ownership exact-set, rollback rehearsal và CI thật trên
+release SHA. Chưa chuyển WP-05 hay toàn FE-09 sang `DONE` khi các điều kiện release
+này chưa được xử lý.

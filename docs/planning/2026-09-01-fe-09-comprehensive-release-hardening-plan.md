@@ -6,7 +6,7 @@
 > Cập nhật gần nhất: **02/09/2026**<br>
 > Nhánh triển khai: `feat/fe-9-release-hardening`  
 > Start SHA: `3e79db7` — merge FE-08 order-detail refinement vào `main`  
-> Con trỏ thực thi: **WP-13 — legacy cleanup có kiểm soát**<br>
+> Con trỏ thực thi: **WP-14 — release closeout**<br>
 > Delivery authority: [plan-fe.md](../../plan-fe.md)  
 > Design authority: [design.md](../../design.md)  
 > HTTP authority: [apps/api/openapi/openapi.json](../../apps/api/openapi/openapi.json)  
@@ -56,7 +56,7 @@ bằng chứng đóng work package.
 | WP-10 — System admin | **PASS** | Sáu route, role matrix, live health, master-detail, CAS/QR, audit, Axe và 25 ảnh đã qua gate |
 | WP-11 — A11y/responsive/visual | **PASS có giới hạn evidence** | Tám miền, năm viewport, 38 ảnh và cross-cut matrix đã qua gate; FE9-R17/R18 giữ rõ proxy zoom và Chromium-only |
 | WP-12 — Performance/client/media | **PASS cục bộ** | 12 route đạt absolute budget sau remediation CLS; relative variance có decision và CI artifact chờ push |
-| WP-13 — Legacy cleanup | **PENDING** | Chỉ bắt đầu sau browser/visual gate của owner tương ứng |
+| WP-13 — Legacy cleanup | **PASS cục bộ** | Zero-consumer cleanup theo owner; full unit/build, hai release matrix và performance absolute đều xanh trên final tree |
 | WP-14 — Release closeout | **PENDING** | Hai release run sạch, production smoke, CI artifact, release SHA và quyết định residual risk |
 
 Các trạng thái trên phân biệt rõ **code đã có** với **work package đã đủ bằng
@@ -752,7 +752,7 @@ logic trùng lặp.
 | `critical-commerce-flow` | có | chạy lại như release smoke end-to-end |
 | `operations-lifecycle` | **thiếu tại baseline** | đã hoàn thiện 11 UI test chia bốn spec; WP-09 PASS có residual |
 | `system-admin-health` | **thiếu tại baseline** | đã hoàn thiện 12 test qua sáu spec; WP-10 PASS |
-| `release-matrix` | **thiếu** | chưa tạo đầy đủ; thuộc WP-11/WP-14 |
+| `release-matrix` | có | `5/5` hai lượt liên tiếp ở WP-11 và lặp lại `5/5` hai lượt sau WP-13; final release gate thuộc WP-14 |
 
 Browser test dùng fixture/interception chứng minh giao diện, tương tác, loading,
 focus, scroll, role presentation và conflict presentation. API unit/service/E2E
@@ -845,6 +845,8 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R14 | tạo đơn chưa xác nhận đầy đủ checkout preview | Cao | metadata/phân bổ/điểm nhận thay đổi nhưng tổng tiền không đổi | backend/OpenAPI cấp fingerprint/version bất biến hoặc Product chấp nhận và sửa acceptance |
 | FE9-R15 | mutation FE-7 chưa replay an toàn sau lỗi mạng mơ hồ | Cao | pending lock chỉ chặn gửi lặp cùng thời điểm, không có idempotency key | bổ sung contract idempotency hoặc ghi quyết định residual risk trước release |
 | FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | shared accessible `DateTimeField` hoặc Product chấp nhận hành vi native trước release |
+| FE9-R17 | bằng chứng reflow dùng proxy viewport, chưa phải native zoom 200% | Thấp | `720×450` chứng minh geometry/hit-test nhưng không đổi browser zoom thật | chạy native zoom trên release build hoặc thu hẹp claim và chấp nhận limitation |
+| FE9-R18 | browser matrix hiện chỉ có Chromium/Windows | Trung bình | Firefox/WebKit chưa có binary/CI artifact được xác nhận | chạy critical smoke hai engine hoặc release owner chấp nhận phạm vi Chromium rõ ràng |
 
 Rollback policy:
 
@@ -896,18 +898,18 @@ surface tương ứng đã qua browser/visual gate.
 
 ## 17. Handoff và bước tiếp theo
 
-Con trỏ hiện tại là **WP-13**. Thứ tự tiếp tục:
+Con trỏ hiện tại là **WP-14**. WP-13 đã hoàn tất consumer proof, owner regression,
+hai lượt release matrix và performance absolute trên tree `a66c114`; chi tiết nằm
+tại [WP-13 evidence](../evidence/fe-09/wp-13-legacy-cleanup.md). Thứ tự tiếp tục:
 
-1. Xác minh consumer zero cho từng legacy candidate; không xóa theo tên hoặc cảm
-   giác.
-2. Xóa từng owner/concern trong commit riêng, chạy build và browser regression của
-   surface tương ứng sau mỗi cleanup.
-3. Lập ownership map cho selector shared; giữ compatibility selector tới consumer
-   cuối cùng và ghi rollback checkpoint.
-4. Sau WP-13, chạy lại foundation/storefront/commerce cùng performance absolute
-   gate để chắc cleanup không tạo regression.
-5. Trước WP-14, chốt `FE9-R13`–`FE9-R18`, lấy CI URL/artifact thật và chạy
-   production release gate hai lần từ test database sạch.
+1. Chốt `FE9-R13`–`FE9-R18` bằng remediation hoặc quyết định residual risk có owner,
+   severity và phạm vi rõ ràng.
+2. Chạy release gate từ test database sạch, production compiled smoke và exact-set
+   ownership trên release candidate cuối.
+3. Rehearse rollback shared shell/CSS/client-boundary trong worktree tạm và chứng
+   minh tree phục hồi sạch.
+4. Sau khi được phép push/mở PR, lấy CI URL, kiểm artifact thật trên release SHA và
+   chỉ khi đó cập nhật FE-09 sang `DONE`.
 
 Không push/merge chỉ để lấy trạng thái đẹp trong tài liệu. Việc push, mở PR hoặc
 merge chỉ thực hiện khi được yêu cầu; FE-09 chỉ chuyển `DONE` sau WP-14.
