@@ -109,9 +109,22 @@ describe('order operations presenter', () => {
       'Đã xác nhận thanh toán cọc',
       'Đã tạo vận đơn',
       'Đã bàn giao vận chuyển',
-      'Đã giao hàng',
+      'Đang giao hàng',
     ]);
     expect(orderTimeline(detail).at(-1)).toMatchObject({ at: null, state: 'current' });
+
+    const delivered: BackofficeOrderDetail = {
+      ...detail,
+      completedAt: '2026-08-28T06:00:00.000Z',
+      fulfillmentStatus: 'COMPLETED',
+      shipments: detail.shipments.map((shipment) => ({
+        ...shipment,
+        deliveredAt: '2026-08-28T05:00:00.000Z',
+        status: 'DELIVERED',
+      })),
+      status: 'COMPLETED',
+    };
+    expect(orderTimeline(delivered).map((item) => item.label)).toContain('Đã giao hàng');
   });
 });
 

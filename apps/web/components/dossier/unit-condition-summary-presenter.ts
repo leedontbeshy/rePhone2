@@ -60,7 +60,7 @@ export function buildUnitConditionSummary(
         ...(cosmeticNotes === undefined ? {} : { detail: cosmeticNotes }),
         key: 'appearance',
         label: 'Ngoại hình',
-        value: `Grade ${unit.conditionGrade}`,
+        value: `Loại ${unit.conditionGrade}`,
       },
       {
         ...(batteryMetrics.length === 0 ? {} : { detail: batteryReplacementLabel }),

@@ -7,8 +7,15 @@ import {
   OperationsActionRail,
   OperationsDetailLayout,
   OperationsPageHeader,
+  OperationsPagination,
   OperationsPanel,
 } from '../operations-primitives';
+import {
+  focusQueueReadError,
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import { Button, InlineAlert, Input, Select, Skeleton, StatusChip } from '@/components/ui';
 import {
@@ -58,10 +65,16 @@ export function WarrantyPolicyView() {
   });
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editorNotice, setEditorNotice] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
+  const listErrorRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const foregroundListLoading = useRef(false);
   const listRequest = useRef(0);
+  const selectedPolicyRef = useRef<BackofficeWarrantyPolicyDetail | null>(null);
+  const selectedKeyRef = useRef(selectedKey);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
   const isAdmin = user?.role === 'ADMIN';
 
@@ -73,31 +86,48 @@ export function WarrantyPolicyView() {
     if (error !== null) errorRef.current?.focus();
   }, [error]);
 
+  useEffect(() => {
+    selectedKeyRef.current = selectedKey;
+  }, [selectedKey]);
+
+  useEffect(() => {
+    if (listError !== null) focusQueueReadError(listErrorRef.current);
+  }, [listError]);
+
   const loadPolicies = useCallback(
     async (background = false) => {
       if (background && foregroundListLoading.current) return;
       const request = ++listRequest.current;
       if (!background) {
         foregroundListLoading.current = true;
-        setLoading(true);
-        setError(null);
       }
+      setLoading(true);
+      setListError(null);
       try {
         const result = await listWarrantyPolicies(client, query);
-        if (request !== listRequest.current) return;
+        if (!isCurrentQueueRequest(request, listRequest.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          const params = paramsFromFilters(filters, authoritativePage);
+          if (selectedKeyRef.current !== null) params.set('policy', selectedKeyRef.current);
+          const suffix = params.toString();
+          router.replace(suffix === '' ? pathname : `${pathname}?${suffix}`, { scroll: false });
+          return;
+        }
         setItems(result.data);
         setPagination(result.pagination);
+        setLoadedQueryKey(listQueryKey);
       } catch (caught) {
-        if (request !== listRequest.current) return;
-        setError(messageFrom(caught, 'Không thể tải chính sách bảo hành.'));
+        if (!isCurrentQueueRequest(request, listRequest.current)) return;
+        setListError(messageFrom(caught, 'Không thể tải chính sách bảo hành.'));
       } finally {
-        if (!background && request === listRequest.current) {
-          foregroundListLoading.current = false;
+        if (isCurrentQueueRequest(request, listRequest.current)) {
+          if (!background) foregroundListLoading.current = false;
           setLoading(false);
         }
       }
     },
-    [client, query],
+    [client, filters, listQueryKey, pathname, query, router],
   );
 
   useEffect(() => {
@@ -110,17 +140,26 @@ export function WarrantyPolicyView() {
 
   useEffect(() => {
     if (selectedKey === null || selectedKey === 'new') {
+      selectedPolicyRef.current = null;
       setSelected(null);
       setDetailLoading(false);
       return;
     }
     if (authStatus !== 'authenticated' || !isStaff) return;
+    if (selectedPolicyRef.current?.id === selectedKey) {
+      setDetailLoading(false);
+      return;
+    }
     let active = true;
+    selectedPolicyRef.current = null;
     setSelected(null);
     setDetailLoading(true);
     void getWarrantyPolicy(client, selectedKey)
       .then((result) => {
-        if (active) setSelected(result);
+        if (active) {
+          selectedPolicyRef.current = result;
+          setSelected(result);
+        }
       })
       .catch((caught: unknown) => {
         if (active) setError(messageFrom(caught, 'Không thể mở chính sách đã chọn.'));
@@ -146,11 +185,13 @@ export function WarrantyPolicyView() {
   }
 
   function selectPolicy(policy: string | null) {
+    setEditorNotice(null);
     navigate(filters, pagination.page, policy);
   }
 
   async function reloadPolicy(policyId: string): Promise<BackofficeWarrantyPolicyDetail> {
     const policy = await getWarrantyPolicy(client, policyId);
+    selectedPolicyRef.current = policy;
     setSelected(policy);
     setItems((current) => {
       const exists = current.some((item) => item.id === policy.id);
@@ -159,9 +200,11 @@ export function WarrantyPolicyView() {
         : [policy, ...current];
     });
     void loadPolicies(true);
-    selectPolicy(policy.id);
+    navigate(filters, pagination.page, policy.id);
     return policy;
   }
+
+  const readPresentation = queueReadPresentation(loading, listError, listQueryKey, loadedQueryKey);
 
   const rail = detailLoading ? (
     <OperationsPanel title="Đang mở chính sách">
@@ -170,7 +213,9 @@ export function WarrantyPolicyView() {
   ) : selectedKey === 'new' && isAdmin ? (
     <WarrantyPolicyEditor
       client={client}
+      notice={editorNotice}
       policy={null}
+      onNoticeChange={setEditorNotice}
       onReload={reloadPolicy}
       onClose={() => {
         selectPolicy(null);
@@ -179,7 +224,9 @@ export function WarrantyPolicyView() {
   ) : selected !== null ? (
     <WarrantyPolicyEditor
       client={client}
+      notice={editorNotice}
       policy={selected}
+      onNoticeChange={setEditorNotice}
       onReload={reloadPolicy}
       onClose={() => {
         selectPolicy(null);
@@ -227,7 +274,7 @@ export function WarrantyPolicyView() {
           description="Quản lý thời hạn và điều khoản dùng khi cấp bảo hành cho sản phẩm."
           eyebrow="Sau mua"
           meta={
-            loading && items.length > 0
+            readPresentation.updating
               ? 'Đang cập nhật danh sách…'
               : `${String(pagination.totalItems)} chính sách`
           }
@@ -294,8 +341,22 @@ export function WarrantyPolicyView() {
           </form>
         </OperationsPanel>
 
+        {listError === null ? null : (
+          <InlineAlert
+            ref={listErrorRef}
+            tabIndex={-1}
+            title="Chưa tải được danh sách chính sách"
+            tone="danger"
+          >
+            <p>{listError}</p>
+            {readPresentation.retainedSnapshotNotice === null ? null : (
+              <p>{readPresentation.retainedSnapshotNotice}</p>
+            )}
+          </InlineAlert>
+        )}
+
         {error === null ? null : (
-          <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được chính sách" tone="danger">
+          <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa mở được chính sách" tone="danger">
             {error}
           </InlineAlert>
         )}
@@ -307,9 +368,9 @@ export function WarrantyPolicyView() {
                 <p>
                   Trang {String(pagination.page)} / {String(Math.max(1, pagination.totalPages))}
                 </p>
-                {loading && items.length > 0 ? <span role="status">Đang làm mới…</span> : null}
+                {readPresentation.updating ? <span role="status">Đang làm mới…</span> : null}
               </div>
-              {loading && items.length === 0 ? (
+              {readPresentation.initialLoading ? (
                 <QueueSkeleton />
               ) : items.length === 0 ? (
                 <div className={styles.emptyState}>
@@ -320,34 +381,23 @@ export function WarrantyPolicyView() {
                 <WarrantyPolicyList
                   items={items}
                   selectedId={selectedKey}
+                  updating={readPresentation.updating}
                   onSelect={(id) => {
                     selectPolicy(id);
                   }}
                 />
               )}
-              <div className={styles.pagination}>
-                <Button
-                  disabled={loading || pagination.page <= 1}
-                  size="compact"
-                  variant="secondary"
-                  onClick={() => {
-                    navigate(filters, pagination.page - 1, null);
-                  }}
-                >
-                  Trang trước
-                </Button>
-                <span>{String(pagination.totalItems)} kết quả</span>
-                <Button
-                  disabled={loading || pagination.page >= pagination.totalPages}
-                  size="compact"
-                  variant="secondary"
-                  onClick={() => {
-                    navigate(filters, pagination.page + 1, null);
-                  }}
-                >
-                  Trang sau
-                </Button>
-              </div>
+              <OperationsPagination
+                className={styles.pagination}
+                disabled={loading}
+                label="Phân trang danh sách chính sách bảo hành"
+                page={pagination.page}
+                totalItems={pagination.totalItems}
+                totalPages={pagination.totalPages}
+                onPageChange={(nextPage) => {
+                  navigate(filters, nextPage, null);
+                }}
+              />
             </OperationsPanel>
           }
           rail={rail}
@@ -361,13 +411,19 @@ export function WarrantyPolicyList({
   items,
   onSelect,
   selectedId,
+  updating = false,
 }: Readonly<{
   items: readonly WarrantyPolicy[];
   onSelect: (id: string) => void;
   selectedId: string | null;
+  updating?: boolean;
 }>) {
   return (
-    <ul className={styles.policyList} aria-label="Danh sách chính sách bảo hành">
+    <ul
+      aria-busy={updating}
+      className={styles.policyList}
+      aria-label="Danh sách chính sách bảo hành"
+    >
       {items.map((policy) => {
         const presentation = warrantyPolicyStatusPresentation(policy);
         return (

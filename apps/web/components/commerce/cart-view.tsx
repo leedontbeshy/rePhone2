@@ -16,6 +16,7 @@ import { useCommerce, type CartItem } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, formatVnd, InlineAlert, Price, Skeleton } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
+import { createSynchronousActionLock } from '@/lib/synchronous-action-lock';
 import { cartItemHref, cartWarningLabel, isBlockingCartWarning } from './cart-wishlist-presenter';
 import styles from './cart-wishlist.module.css';
 
@@ -32,6 +33,7 @@ export function CartView() {
       mergeError !== null,
     [cart, mergeError],
   );
+  const initialLoading = cartLoading && cart === null;
 
   return (
     <div className={styles.page}>
@@ -59,7 +61,7 @@ export function CartView() {
           <AlertAction message={cartError} label="Tải lại" action={commerce.refreshCart} />
         </InlineAlert>
       )}
-      {cartLoading ? <CartLoading /> : null}
+      {initialLoading ? <CartLoading /> : null}
       {!cartLoading && cartError === null && (cart === null || cart.items.length === 0) ? (
         <EmptyState
           icon={<ShoppingBagOpenIcon aria-hidden="true" size={34} />}
@@ -68,7 +70,7 @@ export function CartView() {
         />
       ) : null}
 
-      {!cartLoading && cart !== null && cart.items.length > 0 ? (
+      {cart !== null && cart.items.length > 0 ? (
         <>
           {cart.warnings.length > 0 ? (
             <section className={styles.cartNotices} aria-labelledby="cart-notices-title">
@@ -83,7 +85,7 @@ export function CartView() {
               </ul>
             </section>
           ) : null}
-          <div className={styles.cartLayout}>
+          <div className={styles.cartLayout} aria-busy={cartLoading}>
             <section className={styles.cartItems} aria-label="Sản phẩm trong giỏ hàng">
               <div className={styles.sectionHeading}>
                 <h2 ref={cartHeadingRef} tabIndex={-1}>
@@ -123,7 +125,7 @@ export function CartView() {
                   </InlineAlert>
                 </>
               ) : (
-                <Link className={styles.primaryLink} href="/checkout">
+                <Link className={styles.primaryLink} href="/checkout" scroll={false}>
                   Tiếp tục đặt hàng <ArrowRightIcon aria-hidden="true" size={20} />
                 </Link>
               )}
@@ -153,21 +155,23 @@ function CartRow({
   const [quantity, setQuantity] = useState(item.quantity);
   const [pending, setPending] = useState<'update' | 'remove' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionLock] = useState(() => createSynchronousActionLock<'row'>());
   useEffect(() => {
     setQuantity(item.quantity);
   }, [item.quantity]);
 
-  const run = async (kind: 'update' | 'remove', operation: () => Promise<void>) => {
-    setPending(kind);
-    setError(null);
-    try {
-      await operation();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Chưa thể cập nhật giỏ hàng.');
-    } finally {
-      setPending(null);
-    }
-  };
+  const run = (kind: 'update' | 'remove', operation: () => Promise<void>) =>
+    actionLock.run('row', async () => {
+      setPending(kind);
+      setError(null);
+      try {
+        await operation();
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'Chưa thể cập nhật giỏ hàng.');
+      } finally {
+        setPending(null);
+      }
+    });
   const priceChanged = item.warnings.includes('PRICE_CHANGED');
   return (
     <article

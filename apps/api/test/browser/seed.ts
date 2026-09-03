@@ -4,7 +4,11 @@ import { createHash } from 'node:crypto';
 import { seedDatabase } from '../../prisma/seed-data.js';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import { setTestEnvironment } from '../support/test-environment.js';
-import { BROWSER_INVITATION_ACCOUNT, BROWSER_RESET_ACCOUNT } from './auth-fixtures.js';
+import {
+  BROWSER_COMMERCE_ACCOUNT,
+  BROWSER_INVITATION_ACCOUNT,
+  BROWSER_RESET_ACCOUNT,
+} from './auth-fixtures.js';
 
 setTestEnvironment();
 
@@ -23,6 +27,12 @@ try {
 
 async function seedBrowserAuthFixtures(client: PrismaClient): Promise<void> {
   const passwordHash = await hash(BROWSER_RESET_ACCOUNT.oldPassword, {
+    type: argon2id,
+    memoryCost: Number(process.env.ARGON2_MEMORY_KIB ?? '8192'),
+    timeCost: Number(process.env.ARGON2_TIME_COST ?? '1'),
+    parallelism: Number(process.env.ARGON2_PARALLELISM ?? '1'),
+  });
+  const commercePasswordHash = await hash(BROWSER_COMMERCE_ACCOUNT.password, {
     type: argon2id,
     memoryCost: Number(process.env.ARGON2_MEMORY_KIB ?? '8192'),
     timeCost: Number(process.env.ARGON2_TIME_COST ?? '1'),
@@ -67,9 +77,28 @@ async function seedBrowserAuthFixtures(client: PrismaClient): Promise<void> {
     },
   });
 
+  const commerceUser = await client.user.upsert({
+    where: { normalizedEmail: BROWSER_COMMERCE_ACCOUNT.email },
+    update: {
+      passwordHash: commercePasswordHash,
+      passwordChangedAt: null,
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+    },
+    create: {
+      email: BROWSER_COMMERCE_ACCOUNT.email,
+      normalizedEmail: BROWSER_COMMERCE_ACCOUNT.email,
+      passwordHash: commercePasswordHash,
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      fullName: 'Khách thương mại Browser',
+      phone: '0900000002',
+    },
+  });
+
   await client.$transaction([
     client.authToken.deleteMany({
-      where: { userId: { in: [resetUser.id, invitationUser.id] } },
+      where: { userId: { in: [resetUser.id, invitationUser.id, commerceUser.id] } },
     }),
     client.authToken.create({
       data: {

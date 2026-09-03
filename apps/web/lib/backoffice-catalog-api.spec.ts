@@ -317,6 +317,7 @@ describe('backoffice catalog adapter', () => {
     const image = new Blob(['data'], { type: 'image/webp' });
 
     expect(validateCatalogMediaFile(image)).toBeNull();
+    expect(validateCatalogMediaFile(new Blob([], { type: 'image/webp' }))).toContain('trống');
     expect(validateCatalogMediaFile(new Blob(['data'], { type: 'text/plain' }))).toContain('JPEG');
 
     await uploadCatalogProductMedia(client, PRODUCT_ID, {
@@ -406,6 +407,25 @@ describe('backoffice catalog adapter', () => {
         defaultDays: 90,
       },
     ]);
+  });
+
+  it('forwards cancellation when loading warranty selector options', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        data: [],
+        meta: { pagination: { page: 1, pageSize: 100, totalItems: 0, totalPages: 0 } },
+      },
+    });
+    const controller = new AbortController();
+
+    await listCatalogWarrantyOptions(mockClient({ GET: get }), undefined, {
+      signal: controller.signal,
+    });
+
+    expect(get).toHaveBeenCalledWith(
+      '/api/v1/backoffice/warranty-policies',
+      expect.objectContaining({ signal: controller.signal }),
+    );
   });
 
   it('returns natural messages and an explicit refetch signal for stale state', () => {

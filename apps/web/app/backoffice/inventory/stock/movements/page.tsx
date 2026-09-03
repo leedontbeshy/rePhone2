@@ -1,14 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import { InventoryStockMovementsView } from '@/components/backoffice/inventory/stock/inventory-stock-movements-view';
 import type { StockVariantOption } from '@/components/backoffice/inventory/stock/inventory-stock-view';
 import {
   buildStockMovementHref,
+  isCurrentStockRequest,
   mergeStockMovementQuery,
+  sortStockVariantOptions,
   stockMovementQueryFromSearch,
+  stockPageWithinTotal,
   type StockMovementQueryOverrides,
   type StockMovementQueryState,
 } from '@/components/backoffice/inventory/stock/stock-model';
@@ -35,7 +38,8 @@ export default function InventoryStockMovementsPage() {
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const queryKey = useMemo(() => JSON.stringify(query), [query]);
+  const movementRequestRef = useRef(0);
+  const optionRequestRef = useRef(0);
 
   useEffect(() => {
     const syncFromBrowser = () => {
@@ -52,16 +56,18 @@ export default function InventoryStockMovementsPage() {
   useEffect(() => {
     if (!canLoad) return;
     const controller = new AbortController();
+    const request = ++optionRequestRef.current;
     void Promise.all([
       listInventoryLocations(client, { signal: controller.signal }),
       listInventoryStockLevels(client, { page: 1, pageSize: 100 }, { signal: controller.signal }),
     ])
       .then(([nextLocations, levelPage]) => {
+        if (!isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) return;
         setLocations(nextLocations);
-        setVariants(variantOptions(levelPage.data));
+        setVariants((current) => mergeVariantOptions(current, variantOptions(levelPage.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted) {
+        if (isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lựa chọn lọc lịch sử.'));
         }
       });
@@ -73,6 +79,7 @@ export default function InventoryStockMovementsPage() {
   useEffect(() => {
     if (!canLoad) return;
     const controller = new AbortController();
+    const request = ++movementRequestRef.current;
     setLoading(true);
     setError(null);
     void listInventoryStockMovements(
@@ -91,22 +98,35 @@ export default function InventoryStockMovementsPage() {
       { signal: controller.signal },
     )
       .then((page) => {
+        if (!isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) return;
+
+        const authoritativePage = stockPageWithinTotal(query.page, page.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          const next = mergeStockMovementQuery(query, { page: authoritativePage });
+          queryRef.current = next;
+          setQuery(next);
+          window.history.replaceState(null, '', buildStockMovementHref(next));
+          return;
+        }
+
         setMovements(page.data);
         setPagination(page.pagination);
         setVariants((current) => mergeVariantOptions(current, movementVariantOptions(page.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted) {
+        if (isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lịch sử kho.'));
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (isCurrentStockRequest(request, movementRequestRef.current, controller.signal)) {
+          setLoading(false);
+        }
       });
     return () => {
       controller.abort();
     };
-  }, [canLoad, client, queryKey]);
+  }, [canLoad, client, query]);
 
   const updateQuery = useCallback(
     (overrides: StockMovementQueryOverrides, options: { history?: 'push' | 'replace' } = {}) => {
@@ -171,7 +191,7 @@ function mergeVariantOptions(
 ): StockVariantOption[] {
   const byId = new Map(current.map((item) => [item.id, item]));
   for (const item of incoming) byId.set(item.id, item);
-  return [...byId.values()];
+  return sortStockVariantOptions([...byId.values()]);
 }
 
 function messageOf(value: unknown, fallback: string): string {

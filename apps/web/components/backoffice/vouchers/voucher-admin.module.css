@@ -631,7 +631,7 @@
 }
 
 .usageTable th {
-  color: var(--color-muted);
+  color: var(--color-primary-hover);
   background: var(--color-surface-subtle);
   font-size: var(--font-size-label);
 }

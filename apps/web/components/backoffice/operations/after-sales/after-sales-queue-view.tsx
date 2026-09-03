@@ -4,7 +4,17 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { OperationsPageHeader, OperationsPanel } from '../operations-primitives';
+import {
+  OperationsPageHeader,
+  OperationsPagination,
+  OperationsPanel,
+} from '../operations-primitives';
+import {
+  focusQueueReadError,
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import {
   Button,
@@ -74,9 +84,11 @@ export function AfterSalesQueueView() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const [filterErrors, setFilterErrors] = useState<AfterSalesFilterErrors>({});
   const errorRef = useRef<HTMLDivElement>(null);
   const filterErrorRef = useRef<HTMLDivElement>(null);
+  const listRequestRef = useRef(0);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -85,7 +97,7 @@ export function AfterSalesQueueView() {
   }, [filters]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {
@@ -94,28 +106,36 @@ export function AfterSalesQueueView() {
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isStaff) return;
-    let active = true;
+    const request = ++listRequestRef.current;
     setLoading(true);
     setError(null);
     void listBackofficeAfterSales(client, query)
       .then((result) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          const params = paramsFromFilters(filters, authoritativePage);
+          const suffix = params.toString();
+          router.replace(suffix === '' ? pathname : `${pathname}?${suffix}`, { scroll: false });
+          return;
+        }
         setItems(result.data);
         setPagination(result.pagination);
+        setLoadedQueryKey(searchKey);
       })
       .catch((caught: unknown) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
         setError(
           caught instanceof Error ? caught.message : 'Không thể tải danh sách hỗ trợ sau mua.',
         );
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isCurrentQueueRequest(request, listRequestRef.current)) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [authStatus, client, isStaff, query]);
+  }, [authStatus, client, filters, isStaff, pathname, query, router, searchKey]);
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -134,6 +154,8 @@ export function AfterSalesQueueView() {
     router.replace(suffix === '' ? pathname : `${pathname}?${suffix}`, { scroll: false });
   }
 
+  const readPresentation = queueReadPresentation(loading, error, searchKey, loadedQueryKey);
+
   return (
     <OperationsShell breadcrumbs={[{ label: 'Hỗ trợ sau mua' }]}>
       <div className={styles.page}>
@@ -141,7 +163,7 @@ export function AfterSalesQueueView() {
           description="Tiếp nhận, kiểm tra và hoàn tất từng yêu cầu theo đúng điều kiện của đơn hàng."
           eyebrow="Sau mua"
           meta={
-            loading && items.length > 0
+            readPresentation.updating
               ? 'Đang cập nhật danh sách…'
               : `${String(pagination.totalItems)} yêu cầu`
           }
@@ -267,7 +289,10 @@ export function AfterSalesQueueView() {
 
         {error === null ? null : (
           <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được danh sách" tone="danger">
-            {error}
+            <p>{error}</p>
+            {readPresentation.retainedSnapshotNotice === null ? null : (
+              <p>{readPresentation.retainedSnapshotNotice}</p>
+            )}
           </InlineAlert>
         )}
 
@@ -276,9 +301,9 @@ export function AfterSalesQueueView() {
             <p>
               Trang {String(pagination.page)} / {String(Math.max(1, pagination.totalPages))}
             </p>
-            {loading && items.length > 0 ? <span role="status">Đang làm mới…</span> : null}
+            {readPresentation.updating ? <span role="status">Đang làm mới…</span> : null}
           </div>
-          {loading && items.length === 0 ? (
+          {readPresentation.initialLoading ? (
             <QueueSkeleton />
           ) : items.length === 0 ? (
             <div className={styles.emptyState}>
@@ -286,40 +311,35 @@ export function AfterSalesQueueView() {
               <p>Thử thay đổi từ khóa hoặc điều kiện lọc.</p>
             </div>
           ) : (
-            <AfterSalesQueueList items={items} />
+            <AfterSalesQueueList items={items} updating={readPresentation.updating} />
           )}
-          <div className={styles.pagination}>
-            <Button
-              disabled={loading || pagination.page <= 1}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page - 1);
-              }}
-            >
-              Trang trước
-            </Button>
-            <span>{String(pagination.totalItems)} kết quả</span>
-            <Button
-              disabled={loading || pagination.page >= pagination.totalPages}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page + 1);
-              }}
-            >
-              Trang sau
-            </Button>
-          </div>
+          <OperationsPagination
+            className={styles.pagination}
+            disabled={loading}
+            label="Phân trang hồ sơ hỗ trợ sau mua"
+            page={pagination.page}
+            totalItems={pagination.totalItems}
+            totalPages={pagination.totalPages}
+            onPageChange={(nextPage) => {
+              navigate(filters, nextPage);
+            }}
+          />
         </OperationsPanel>
       </div>
     </OperationsShell>
   );
 }
 
-export function AfterSalesQueueList({ items }: Readonly<{ items: readonly AfterSalesListItem[] }>) {
+export function AfterSalesQueueList({
+  items,
+  updating = false,
+}: Readonly<{ items: readonly AfterSalesListItem[]; updating?: boolean }>) {
   return (
-    <ul className={styles.queueList} aria-label="Danh sách hồ sơ hỗ trợ sau mua">
+    <ul
+      aria-busy={updating}
+      className={styles.queueList}
+      aria-label="Danh sách hồ sơ hỗ trợ sau mua"
+    >
       {items.map((item) => {
         const status = afterSalesStatusPresentation(item.status);
         return (

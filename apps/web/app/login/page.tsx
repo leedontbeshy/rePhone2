@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type SyntheticEvent } from 'react';
+import { useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '../auth-provider';
 import {
   AnonymousAuthGate,
@@ -16,6 +16,7 @@ import {
   emailError,
   issueFromFields,
   loginPasswordError,
+  PasswordInput,
   useAuthFormIssue,
   type AuthFieldErrors,
 } from '@/components/auth';
@@ -26,12 +27,13 @@ const description = 'Đăng nhập để quản lý tài khoản mua hàng hoặ
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
+  const { clearFieldIssue, clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
 
     const form = new FormData(event.currentTarget);
     const email = formString(form, 'email').trim();
@@ -47,6 +49,7 @@ export default function LoginPage() {
     }
 
     clearIssue();
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const user = await login({ email, password });
@@ -55,6 +58,7 @@ export default function LoginPage() {
     } catch (caught) {
       showIssue(authIssueFromError(caught, 'login'));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -68,22 +72,28 @@ export default function LoginPage() {
           name="email"
           type="email"
           autoComplete="email"
-          autoFocus
+          disabled={submitting}
           label="Email"
           required
           maxLength={320}
           error={issue.fields.email}
+          onChange={() => {
+            clearFieldIssue('email');
+          }}
         />
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="current-password"
+          disabled={submitting}
           label="Mật khẩu"
           required
           minLength={8}
           maxLength={128}
           error={issue.fields.password}
+          onChange={() => {
+            clearFieldIssue('password');
+          }}
         />
         <AuthFormActions>
           <Button

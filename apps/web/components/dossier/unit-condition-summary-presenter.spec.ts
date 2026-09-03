@@ -12,7 +12,7 @@ describe('unit condition summary presenter', () => {
           detail: 'Có dấu sử dụng rõ trên khung và mặt lưng.',
           key: 'appearance',
           label: 'Ngoại hình',
-          value: 'Grade C',
+          value: 'Loại C',
         },
         {
           detail: 'Pin nguyên bản',
@@ -41,7 +41,7 @@ describe('unit condition summary presenter', () => {
     expect(summary.rows[0]).toEqual({
       key: 'appearance',
       label: 'Ngoại hình',
-      value: 'Grade C',
+      value: 'Loại C',
     });
     expect(summary.rows[1]).toEqual({
       key: 'battery',

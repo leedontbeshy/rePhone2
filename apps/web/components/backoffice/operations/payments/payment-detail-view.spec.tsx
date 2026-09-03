@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { BackofficePaymentDetail } from '@/lib/payment-api';
-import { PaymentRecord } from './payment-detail-view';
+import { PaymentRecord, runExclusivePaymentOperation } from './payment-detail-view';
 
 describe('FE-07 payment detail view', () => {
   it('shows only actions granted by the server projection', () => {
@@ -37,7 +37,43 @@ describe('FE-07 payment detail view', () => {
     expect(markup).not.toContain('Xác nhận thanh toán');
     expect(markup).not.toContain('Từ chối minh chứng');
   });
+
+  it.each(['verify', 'evidence'] as const)(
+    'locks a deferred %s request against a same-frame duplicate',
+    async (operation) => {
+      const lock: { current: 'verify' | 'reject' | 'evidence' | null } = { current: null };
+      const response = deferred<undefined>();
+      const request = vi.fn(() => response.promise);
+
+      const first = runExclusivePaymentOperation(lock, operation, true, request);
+      const duplicate = runExclusivePaymentOperation(lock, operation, true, request);
+
+      expect(request).toHaveBeenCalledOnce();
+      await expect(duplicate).resolves.toBe(false);
+      response.resolve(undefined);
+      await expect(first).resolves.toBe(true);
+      expect(lock.current).toBeNull();
+    },
+  );
+
+  it('does not call a financial request when the authoritative action is unavailable', async () => {
+    const request = vi.fn(() => Promise.resolve());
+
+    await expect(
+      runExclusivePaymentOperation({ current: null }, 'verify', false, request),
+    ).resolves.toBe(false);
+
+    expect(request).not.toHaveBeenCalled();
+  });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 function paymentDetail(
   availableActions: BackofficePaymentDetail['availableActions'],

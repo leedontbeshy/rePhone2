@@ -14,6 +14,16 @@
   color: var(--color-primary-hover);
   font-weight: var(--font-weight-semibold);
 }
+.refreshStatus {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
 .breadcrumbs {
   display: flex;
   flex-wrap: wrap;

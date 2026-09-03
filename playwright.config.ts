@@ -1,6 +1,14 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 
 const webOrigin = 'http://localhost:3001';
+const apiBaseUrl = 'http://localhost:4001/api/v1';
+const useProductionWebServer = process.env.PLAYWRIGHT_WEB_SERVER === 'production';
+const writeSharedReport = process.env.PLAYWRIGHT_SHARED_REPORT === 'true';
+
+export const createPlaywrightReporters = (outputFolder: string): ReporterDescription[] =>
+  writeSharedReport
+    ? [['list'], ['./scripts/playwright-shared-artifact-reporter.mjs', { outputFolder }]]
+    : [['list'], ['html', { open: 'never', outputFolder }]];
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -10,11 +18,13 @@ export default defineConfig({
   workers: 1,
   timeout: 90_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { open: 'never', outputFolder: '.local/playwright-report' }]],
+  captureGitInfo: { commit: false, diff: false },
+  reporter: createPlaywrightReporters('.local/playwright-report'),
   outputDir: '.local/playwright-results',
   use: {
     baseURL: webOrigin,
     ...devices['Desktop Chrome'],
+    timezoneId: 'Asia/Ho_Chi_Minh',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -28,8 +38,18 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command:
-        'pnpm exec cross-env NEXT_PUBLIC_API_BASE_URL=http://localhost:4001/api/v1 pnpm --filter @rephone/web exec next dev -p 3001',
+      command: useProductionWebServer
+        ? 'pnpm --filter @rephone/web exec next start -p 3001'
+        : 'pnpm --filter @rephone/web exec next dev -p 3001',
+      env: {
+        NODE_ENV: useProductionWebServer ? 'production' : 'development',
+        NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
+        API_INTERNAL_BASE_URL: apiBaseUrl,
+        NEXT_PUBLIC_STORE_EMAIL: 'hello@rephone.vn',
+        NEXT_PUBLIC_SOCIAL_FACEBOOK_URL: 'https://www.facebook.com/rephone.vn',
+        NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL: 'https://www.instagram.com/rephone.vn',
+        NEXT_PUBLIC_SOCIAL_TIKTOK_URL: 'https://www.tiktok.com/@rephone.vn',
+      },
       url: `${webOrigin}/login`,
       timeout: 120_000,
       reuseExistingServer: false,

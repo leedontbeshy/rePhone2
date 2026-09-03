@@ -7,6 +7,7 @@ import { Button } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
 import { useAuth } from './auth-provider';
 import { useCommerce } from './commerce-provider';
+import { createSynchronousActionLock } from '@/lib/synchronous-action-lock';
 import styles from './commerce-actions.module.css';
 
 type CommerceActionProps =
@@ -24,49 +25,52 @@ export function CommerceActions(props: CommerceActionProps) {
   const [quantity, setQuantity] = useState(1);
   const [pending, setPending] = useState<'cart' | 'wishlist' | null>(null);
   const [notice, setNotice] = useState<CommerceNotice | null>(null);
+  const [actionLock] = useState(() => createSynchronousActionLock<'commerce'>());
   const storefrontActor =
     status === 'anonymous' || (status === 'authenticated' && user?.role === 'CUSTOMER');
   const available = props.available ?? true;
 
-  const addToCart = async () => {
-    setPending('cart');
-    setNotice(null);
-    try {
-      if (props.itemType === 'IPHONE') await addIphone(props.inventoryCode);
-      else await addAccessory(props.variantId, quantity);
-      setNotice({ text: 'Đã thêm vào giỏ hàng.', tone: 'success' });
-    } catch (error) {
-      setNotice({
-        text: error instanceof Error ? error.message : 'Không thể thêm vào giỏ hàng.',
-        tone: 'error',
-      });
-    } finally {
-      setPending(null);
-    }
-  };
+  const addToCart = () =>
+    actionLock.run('commerce', async () => {
+      setPending('cart');
+      setNotice(null);
+      try {
+        if (props.itemType === 'IPHONE') await addIphone(props.inventoryCode);
+        else await addAccessory(props.variantId, quantity);
+        setNotice({ text: 'Đã thêm vào giỏ hàng.', tone: 'success' });
+      } catch (error) {
+        setNotice({
+          text: error instanceof Error ? error.message : 'Không thể thêm vào giỏ hàng.',
+          tone: 'error',
+        });
+      } finally {
+        setPending(null);
+      }
+    });
 
-  const addToWishlist = async () => {
-    setPending('wishlist');
-    setNotice(null);
-    try {
-      if (props.itemType === 'IPHONE') await addWishlistIphone(props.inventoryCode);
-      else await addWishlistAccessory(props.variantId);
-      setNotice({
-        text:
-          props.itemType === 'IPHONE'
-            ? 'Đã lưu máy vào danh sách.'
-            : 'Đã lưu phụ kiện vào danh sách.',
-        tone: 'success',
-      });
-    } catch (error) {
-      setNotice({
-        text: error instanceof Error ? error.message : 'Không thể lưu sản phẩm.',
-        tone: 'error',
-      });
-    } finally {
-      setPending(null);
-    }
-  };
+  const addToWishlist = () =>
+    actionLock.run('commerce', async () => {
+      setPending('wishlist');
+      setNotice(null);
+      try {
+        if (props.itemType === 'IPHONE') await addWishlistIphone(props.inventoryCode);
+        else await addWishlistAccessory(props.variantId);
+        setNotice({
+          text:
+            props.itemType === 'IPHONE'
+              ? 'Đã lưu máy vào danh sách.'
+              : 'Đã lưu phụ kiện vào danh sách.',
+          tone: 'success',
+        });
+      } catch (error) {
+        setNotice({
+          text: error instanceof Error ? error.message : 'Không thể lưu sản phẩm.',
+          tone: 'error',
+        });
+      } finally {
+        setPending(null);
+      }
+    });
 
   return (
     <div
@@ -108,11 +112,11 @@ export function CommerceActions(props: CommerceActionProps) {
             disabled={pending !== null}
             iconLeading={<HeartIcon aria-hidden="true" size={19} />}
             loading={pending === 'wishlist'}
-            loadingLabel="Đang lưu máy"
+            loadingLabel={props.itemType === 'IPHONE' ? 'Đang lưu máy' : 'Đang lưu phụ kiện'}
             onClick={() => void addToWishlist()}
             variant="secondary"
           >
-            Lưu máy
+            {props.itemType === 'IPHONE' ? 'Lưu máy' : 'Lưu phụ kiện'}
           </Button>
         ) : !props.compact && status === 'anonymous' ? (
           <Link className={styles.secondaryLink} href="/login">

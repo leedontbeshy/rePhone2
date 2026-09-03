@@ -40,13 +40,13 @@ export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
       <section className={styles.hero} aria-labelledby="model-title">
         <ProductMediaGallery
           fallbackLabel={`Chưa có ảnh minh họa ${product.name}`}
-          label="Ảnh minh họa model"
+          label="Ảnh minh họa dòng máy"
           media={product.media}
           priority
         />
 
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Khám phá model iPhone</p>
+          <p className={styles.eyebrow}>Khám phá dòng iPhone</p>
           <h1 id="model-title">{product.name}</h1>
           <p className={styles.description}>
             Khám phá {product.name} cũ tại rePhone; giá và tình trạng được ghi rõ cho từng máy đang
@@ -97,9 +97,11 @@ export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
             </dl>
           )}
 
-          <ProductTrustCallout icon={<ShieldCheckIcon size={27} weight="regular" />}>
-            Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.
-          </ProductTrustCallout>
+          {offers.length === 0 ? null : (
+            <ProductTrustCallout icon={<ShieldCheckIcon size={27} weight="regular" />}>
+              Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.
+            </ProductTrustCallout>
+          )}
         </div>
       </section>
 
@@ -114,10 +116,10 @@ export function IphoneModelDetail({ product, sort }: IphoneModelDetailProps) {
 
         {offers.length === 0 ? (
           <div className={styles.emptyState}>
-            <h3>Model này đang tạm hết máy</h3>
+            <h3>Dòng máy này đang tạm hết máy</h3>
             <p>
-              Thông tin model vẫn được giữ lại để bạn tham khảo. Bạn có thể xem các model khác đang
-              bán tại rePhone.
+              Thông tin dòng máy vẫn được giữ lại để bạn tham khảo. Bạn có thể xem các dòng máy khác
+              đang bán tại rePhone.
             </p>
             <Link href="/products?productType=IPHONE&inStock=true">Xem máy đang bán</Link>
           </div>

@@ -123,6 +123,49 @@ describe('inventory stock views', () => {
     expect(text).not.toContain(STORE_ID);
     expect(text).not.toContain(WAREHOUSE_ID);
     expect(text).not.toContain(MOVEMENT.referenceId ?? 'missing');
+    expect(text).not.toContain('Giá vốn');
+    expect(text).not.toContain('Chi phí nhập');
+    expect(markup).not.toContain('acquisitionCost');
+    expect(markup).not.toContain('additionalCost');
+    expect(markup).not.toContain('>Sửa<');
+    expect(markup).not.toContain('>Xóa<');
+  });
+
+  it('keeps stock rows visible while only the requested result area refreshes', () => {
+    const markup = renderToStaticMarkup(
+      <InventoryStockView
+        levels={[LEVEL]}
+        loading
+        locations={[STORE, WAREHOUSE]}
+        pagination={{ page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }}
+        query={{ page: 1, pageSize: 20 }}
+        variants={[VARIANT]}
+        onCommand={vi.fn().mockResolvedValue({ ok: true })}
+        onQueryChange={vi.fn()}
+      />,
+    );
+
+    expect(visibleText(markup)).toContain('Đang đối chiếu số lượng mới nhất');
+    expect(visibleText(markup)).toContain('Ốp lưng MagSafe');
+    expect(visibleText(markup)).toContain('Cửa hàng TP.HCM');
+  });
+
+  it('keeps the immutable movement ledger visible during a local refresh', () => {
+    const markup = renderToStaticMarkup(
+      <InventoryStockMovementsView
+        loading
+        locations={[STORE, WAREHOUSE]}
+        movements={[MOVEMENT]}
+        pagination={{ page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }}
+        query={{ page: 1, pageSize: 20 }}
+        variants={[VARIANT]}
+        onQueryChange={vi.fn()}
+      />,
+    );
+
+    expect(visibleText(markup)).toContain('Đang cập nhật lịch sử');
+    expect(visibleText(markup)).toContain('Cửa hàng TP.HCM → Kho TP.HCM');
+    expect(markup).toContain('aria-busy="true"');
   });
 });
 

@@ -78,7 +78,7 @@ export function OrderDetailMain({
           <dl className={styles.compactSpecList}>
             <Spec label="Khách hàng" value={detail.contact.fullName} />
             <Spec label="Số điện thoại" value={detail.contact.phone} />
-            <Spec label="Email" value={detail.contact.email} />
+            <Spec label="Email" singleLine value={detail.contact.email} />
           </dl>
           <dl className={styles.compactSpecList}>
             {detail.fulfillmentType === 'PICKUP' ? (
@@ -337,11 +337,20 @@ function ReservationPanel({ detail }: Readonly<{ detail: BackofficeOrderDetail }
   );
 }
 
-export function Spec({ label, value }: Readonly<{ label: string; value: string }>) {
+export function Spec({
+  label,
+  singleLine = false,
+  value,
+}: Readonly<{ label: string; singleLine?: boolean; value: string }>) {
   return (
     <div className={styles.spec}>
       <dt>{label}</dt>
-      <dd>{value || '—'}</dd>
+      <dd
+        className={singleLine ? styles.singleLineValue : undefined}
+        title={singleLine ? value : undefined}
+      >
+        {value || '—'}
+      </dd>
     </div>
   );
 }

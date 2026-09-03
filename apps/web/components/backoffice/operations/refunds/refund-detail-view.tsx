@@ -23,6 +23,7 @@ import {
 } from '@/components/backoffice/operations/operations-primitives';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
 import { Button, ErrorSummary, IconButton, InlineAlert, Skeleton, Textarea } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import {
   cancelRefund,
   completeBankTransferRefund,
@@ -54,6 +55,24 @@ import {
 import styles from './refunds.module.css';
 
 export type RefundDecision = Exclude<RefundAction, 'VIEW_EVIDENCE'>;
+type RefundOperation = 'evidence' | RefundDecision;
+type RefundOperationLock = { current: RefundOperation | null };
+
+export async function runExclusiveRefundOperation(
+  lock: RefundOperationLock,
+  operation: RefundOperation,
+  allowed: boolean,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  if (!allowed || lock.current !== null) return false;
+  lock.current = operation;
+  try {
+    await task();
+    return true;
+  } finally {
+    if (lock.current === operation) lock.current = null;
+  }
+}
 
 export function RefundDetailView() {
   const params = useParams<{ id: string }>();
@@ -72,7 +91,7 @@ export function RefundDetailView() {
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const decisionTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const operationRef = useRef<RefundOperation>(null);
 
   const loadRefund = useCallback(async () => {
     const next = await getBackofficeRefund(client, refundId);
@@ -102,8 +121,7 @@ export function RefundDetailView() {
     };
   }, [isStaff, loadRefund, status]);
 
-  function openDecision(next: RefundDecision, trigger: HTMLButtonElement) {
-    decisionTriggerRef.current = trigger;
+  function openDecision(next: RefundDecision) {
     setFieldError(null);
     setDecision(next);
   }
@@ -111,7 +129,6 @@ export function RefundDetailView() {
   function closeDecision() {
     setDecision(null);
     setFieldError(null);
-    queueMicrotask(() => decisionTriggerRef.current?.focus());
   }
 
   function clearEvidenceFile() {
@@ -120,24 +137,30 @@ export function RefundDetailView() {
   }
 
   async function openEvidence() {
-    if (!detail?.availableActions.includes('VIEW_EVIDENCE')) return;
-    const evidenceWindow = window.open('about:blank', '_blank');
-    if (evidenceWindow === null) {
-      setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
-      return;
-    }
-    evidenceWindow.opener = null;
-    setBusy('evidence');
-    setError(null);
-    try {
-      const evidence = await getRefundEvidenceUrl(client, refundId);
-      evidenceWindow.location.replace(evidence.url);
-    } catch (caught) {
-      evidenceWindow.close();
-      setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
-    } finally {
-      setBusy(null);
-    }
+    await runExclusiveRefundOperation(
+      operationRef,
+      'evidence',
+      detail?.availableActions.includes('VIEW_EVIDENCE') === true,
+      async () => {
+        const evidenceWindow = window.open('about:blank', '_blank');
+        if (evidenceWindow === null) {
+          setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
+          return;
+        }
+        evidenceWindow.opener = null;
+        setBusy('evidence');
+        setError(null);
+        try {
+          const evidence = await getRefundEvidenceUrl(client, refundId);
+          evidenceWindow.location.replace(evidence.url);
+        } catch (caught) {
+          evidenceWindow.close();
+          setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
+        } finally {
+          setBusy(null);
+        }
+      },
+    );
   }
 
   async function submitDecision(event: SyntheticEvent<HTMLFormElement>) {
@@ -149,30 +172,39 @@ export function RefundDetailView() {
       return;
     }
 
-    setBusy(decision);
-    setFieldError(null);
-    setError(null);
-    setNotice(null);
-    try {
-      const next = await runRefundDecision(client, refundId, decision, note, reason, evidenceFile);
-      setDetail(next);
-      setNotice(refundDecisionNotice(decision));
-      if (decision === 'COMPLETE_BANK_TRANSFER') clearEvidenceFile();
-      setNote('');
-      setReason('');
-      closeDecision();
-    } catch (caught) {
-      setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật hoàn tiền.');
-      if (shouldRefetchRefund(caught)) {
-        try {
-          await loadRefund();
-        } catch {
-          // Giữ lỗi thao tác và dữ liệu biểu mẫu để nhân viên có thể thử tải lại toàn hồ sơ.
+    await runExclusiveRefundOperation(operationRef, decision, true, async () => {
+      setBusy(decision);
+      setFieldError(null);
+      setError(null);
+      setNotice(null);
+      try {
+        const next = await runRefundDecision(
+          client,
+          refundId,
+          decision,
+          note,
+          reason,
+          evidenceFile,
+        );
+        setDetail(next);
+        setNotice(refundDecisionNotice(decision));
+        if (decision === 'COMPLETE_BANK_TRANSFER') clearEvidenceFile();
+        setNote('');
+        setReason('');
+        closeDecision();
+      } catch (caught) {
+        setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật hoàn tiền.');
+        if (shouldRefetchRefund(caught)) {
+          try {
+            await loadRefund();
+          } catch {
+            // Giữ lỗi thao tác và dữ liệu biểu mẫu để nhân viên có thể thử tải lại toàn hồ sơ.
+          }
         }
+      } finally {
+        setBusy(null);
       }
-    } finally {
-      setBusy(null);
-    }
+    });
   }
 
   return (
@@ -262,7 +294,7 @@ export function RefundRecord({
   busy: 'evidence' | RefundDecision | null;
   detail: RefundDetail;
   onEvidence: () => void;
-  onOpenDecision: (decision: RefundDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: RefundDecision) => void;
 }>) {
   const refundState = refundStatusPresentation(detail.status);
   const primaryAction = refundPrimaryAction(detail.availableActions);
@@ -480,14 +512,14 @@ function RefundActionButton({
   action: RefundDecision;
   busy: 'evidence' | RefundDecision | null;
   supporting?: boolean;
-  onOpenDecision: (decision: RefundDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: RefundDecision) => void;
 }>) {
   return (
     <Button
       disabled={busy !== null}
       variant={action === 'REJECT' ? 'destructive' : supporting ? 'secondary' : 'primary'}
-      onClick={(event) => {
-        onOpenDecision(action, event.currentTarget);
+      onClick={() => {
+        onOpenDecision(action);
       }}
     >
       {refundActionLabel(action)}
@@ -528,8 +560,7 @@ export function RefundActionDialog({
   onRemoveEvidence: () => void;
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useModalDialog(dialogRef);
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const asksForReason = decision === 'REJECT' || decision === 'CANCEL';
   const asksForEvidence = decision === 'COMPLETE_BANK_TRANSFER';
   const asksForNote = !asksForReason;
@@ -539,6 +570,7 @@ export function RefundActionDialog({
       aria-labelledby="refund-action-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onClose();
@@ -739,19 +771,6 @@ function validRequiredText(value: string, label: string): string | null {
   if (length < 5) return `${label} cần ít nhất 5 ký tự.`;
   if (length > 500) return `${label} không được vượt quá 500 ký tự.`;
   return null;
-}
-
-function useModalDialog(dialogRef: RefObject<HTMLDialogElement | null>) {
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-    dialog.querySelector<HTMLElement>('input, textarea, button')?.focus();
-    return () => {
-      if (dialog.open && typeof dialog.close === 'function') dialog.close();
-    };
-  }, [dialogRef]);
 }
 
 function RefundDetailSkeleton() {

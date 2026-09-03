@@ -155,6 +155,10 @@ export function validateQrFile(file: File): string | undefined {
   return undefined;
 }
 
+export function qrFileReadyForUpload(file: File | undefined): file is File {
+  return file !== undefined && validateQrFile(file) === undefined;
+}
+
 export function formatSettingsMoney(value: string): string {
   if (!/^\d+$/.test(value)) return value;
   return `${new Intl.NumberFormat('vi-VN').format(BigInt(value))} đ`;

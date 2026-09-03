@@ -43,6 +43,7 @@ import type { CheckoutSettings } from '../settings/checkout-settings.reader.js';
 import type { CheckoutVoucherResult } from '../vouchers/checkout-voucher.gateway.js';
 import type { CheckoutInventoryAllocation } from '../inventory/checkout-inventory.gateway.js';
 import type { CheckoutIdentity, CheckoutCartRecord } from '../cart/checkout-cart.reader.js';
+import { checkoutPreviewFingerprint } from './checkout-preview-fingerprint.js';
 
 interface CheckoutCalculation {
   now: Date;
@@ -117,6 +118,7 @@ export class OrdersService {
         if (cart === null) throw new ApiError('CART_NOT_ACTIVE');
         const calculation = await this.calculate(identity, input, transaction, cart);
         if (
+          input.expectedPreviewFingerprint !== calculation.preview.previewFingerprint ||
           input.expectedCartUpdatedAt !== calculation.preview.cartUpdatedAt ||
           input.expectedGrandTotal !== calculation.pricing.grandTotal ||
           input.expectedDepositRequired !== calculation.pricing.depositRequired
@@ -462,7 +464,7 @@ export class OrdersService {
     voucher: CheckoutVoucherResult | null,
     now: Date,
   ): CheckoutPreviewDto {
-    return {
+    const preview: Omit<CheckoutPreviewDto, 'previewFingerprint'> = {
       cartUpdatedAt: cart.updatedAt.toISOString(),
       fulfillmentType: input.fulfillmentType,
       items: pricing.lines.map((line) => ({
@@ -508,6 +510,7 @@ export class OrdersService {
       warnings: [],
       calculatedAt: now.toISOString(),
     };
+    return { ...preview, previewFingerprint: checkoutPreviewFingerprint(preview) };
   }
 
   private validateFulfillmentInput(input: CreateCheckoutRequestDto): void {
@@ -544,7 +547,7 @@ function checkoutChanged(current: CheckoutPreviewDto): ApiError {
   return new ApiError('CHECKOUT_REVIEW_REQUIRED', undefined, [
     {
       code: 'CHECKOUT_CHANGED',
-      message: 'Giỏ hàng hoặc tổng tiền đã thay đổi.',
+      message: 'Thông tin đơn hàng đã thay đổi.',
       current,
     },
   ]);

@@ -217,7 +217,7 @@ export function HealthStatusPanel({
           <p className={styles.guidanceLabel}>Khuyến nghị vận hành</p>
           <h3 id="health-guidance-title">{guidance.title}</h3>
           <p>{guidance.description}</p>
-          <Link href="/backoffice/audit-logs" standalone>
+          <Link className={styles.guidanceLink} href="/backoffice/audit-logs" standalone>
             Mở Nhật ký hoạt động
           </Link>
         </aside>

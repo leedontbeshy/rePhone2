@@ -131,7 +131,9 @@
   display: block;
   overflow: hidden;
   border-radius: var(--radius-small);
+  color: inherit;
   background: var(--color-surface-subtle);
+  text-decoration: none;
 }
 .cartMedia {
   width: 100%;
@@ -457,6 +459,15 @@
   }
   .cartMedia {
     max-height: 14rem;
+  }
+  .wishlistMedia {
+    min-height: 10.5rem;
+    aspect-ratio: 16 / 9;
+    padding: var(--space-4);
+  }
+  .wishlistCardBody {
+    grid-template-rows: auto auto auto auto auto;
+    gap: var(--space-2);
   }
   .itemPrice {
     justify-items: start;

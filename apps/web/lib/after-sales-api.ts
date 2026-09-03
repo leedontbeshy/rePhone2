@@ -1,5 +1,5 @@
 import { type components, type createApiClient } from '@rephone/api-client';
-import { customerApiError, orderTokenStorageKey } from './order-access';
+import { customerApiError, readGuestOrderToken } from './order-access';
 
 export type AfterSalesApiClient = ReturnType<typeof createApiClient>;
 export type AfterSalesType = components['schemas']['AfterSalesDetailDto']['type'];
@@ -55,7 +55,6 @@ export class AfterSalesCustomerError extends Error {
 const ORDER_NUMBER_PATTERN = /^RPH-\d{8}-[A-Z0-9]{8}$/;
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
-const MAX_COMPLETED_ORDER_PAGES = 100;
 const ALLOWED_ATTACHMENT_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -131,38 +130,26 @@ export async function getAfterSalesOrderItem(
 
 export async function listCompletedAfterSalesOrders(
   client: AfterSalesApiClient,
-): Promise<AfterSalesOrderChoice[]> {
-  const orders: AfterSalesOrderChoice[] = [];
-  let page = 1;
-  let totalPages = 1;
-  while (page <= totalPages) {
-    if (page > MAX_COMPLETED_ORDER_PAGES) {
-      throw new AfterSalesCustomerError(
-        'Chưa thể tải đầy đủ danh sách đơn hàng. Vui lòng thử lại sau.',
-        'PAGINATION_LIMIT_EXCEEDED',
-      );
-    }
-    const result = await client.GET('/api/v1/orders', {
-      params: {
-        query: {
-          status: 'COMPLETED',
-          page,
-          pageSize: 100,
-          sortBy: 'placedAt',
-          sortOrder: 'desc',
-        },
+  query: { page: number; pageSize: number } = { page: 1, pageSize: 20 },
+): Promise<{ data: AfterSalesOrderChoice[]; pagination: AfterSalesPage['pagination'] }> {
+  const result = await client.GET('/api/v1/orders', {
+    params: {
+      query: {
+        status: 'COMPLETED',
+        page: query.page,
+        pageSize: query.pageSize,
+        sortBy: 'placedAt',
+        sortOrder: 'desc',
       },
-    });
-    if (result.data === undefined) {
-      throw customerError(result.error, 'Không thể tải đơn hàng.');
-    }
-    orders.push(...result.data.data.filter((order) => order.status === 'COMPLETED'));
-    const projectedTotalPages = result.data.meta.pagination.totalPages;
-    totalPages =
-      Number.isInteger(projectedTotalPages) && projectedTotalPages > 0 ? projectedTotalPages : page;
-    page += 1;
+    },
+  });
+  if (result.data === undefined) {
+    throw customerError(result.error, 'Không thể tải đơn hàng.');
   }
-  return orders;
+  return {
+    data: result.data.data.filter((order) => order.status === 'COMPLETED'),
+    pagination: result.data.meta.pagination,
+  };
 }
 
 export async function getCompletedAfterSalesOrder(
@@ -242,6 +229,13 @@ export async function getAfterSalesAttachmentUrl(
   if (!isSafeSignedUrl(result.data.data.url)) {
     throw new Error('Không thể mở liên kết tệp đính kèm.');
   }
+  const expiresAt = Date.parse(result.data.data.expiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() + 5_000) {
+    throw new AfterSalesCustomerError(
+      'Liên kết tệp vừa hết hạn. Hãy mở lại để tạo liên kết mới.',
+      'SIGNED_URL_EXPIRED',
+    );
+  }
   return result.data.data;
 }
 
@@ -271,7 +265,7 @@ export function resolveGuestOrderToken(
   if (orderNumber === null || orderNumber === undefined) return undefined;
   const normalized = orderNumber.trim().toUpperCase();
   if (!ORDER_NUMBER_PATTERN.test(normalized)) return undefined;
-  const token = storage.getItem(orderTokenStorageKey(normalized)) ?? undefined;
+  const token = readGuestOrderToken(normalized, storage);
   return token !== undefined && TOKEN_PATTERN.test(token) ? token : undefined;
 }
 
@@ -301,6 +295,7 @@ export function afterSalesError(value: unknown, fallback: string): string {
   if (code === 'EVIDENCE_REQUIRED' || code === 'EVIDENCE_INVALID') {
     return 'Tệp đính kèm không hợp lệ hoặc đã hỏng.';
   }
+  if (code === 'ATTACHMENT_LIMIT_REACHED') return 'Yêu cầu này đã có đủ 5 tệp đính kèm.';
   if (code === 'FILE_TOO_LARGE') return 'Tệp vượt quá giới hạn 10 MB.';
   if (code === 'UNSUPPORTED_FILE_TYPE') return 'Chỉ nhận JPEG, PNG, WebP hoặc PDF hợp lệ.';
   if (code === 'STORAGE_UNAVAILABLE') return 'Hiện chưa thể lưu tệp. Vui lòng thử lại sau.';

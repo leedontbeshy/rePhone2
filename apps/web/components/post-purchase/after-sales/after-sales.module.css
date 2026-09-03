@@ -102,6 +102,17 @@
   color: var(--color-muted);
 }
 
+.refreshStatus {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
 .rowAction,
 .secondaryLink {
   display: inline-flex;
@@ -155,6 +166,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .choice {
@@ -192,10 +207,33 @@
   font: inherit;
 }
 
+.field textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.fieldError {
+  color: var(--color-danger);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
 .selector,
 .itemChoices {
   display: grid;
   gap: var(--space-4);
+}
+
+.selectorPagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.selectorPagination > span {
+  color: var(--color-muted);
+  font-weight: var(--font-weight-semibold);
 }
 
 .itemChoice {

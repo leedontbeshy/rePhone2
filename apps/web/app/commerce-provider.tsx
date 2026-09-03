@@ -39,10 +39,11 @@ const CSRF_HEADER = { 'X-Rephone-CSRF': '1' } as const;
 
 export interface SerializedTaskQueue {
   enqueue: <T>(work: () => Promise<T>) => Promise<T>;
+  whenIdle: () => Promise<void>;
 }
 
-export function createSerializedTaskQueue(): SerializedTaskQueue {
-  let tail: Promise<void> = Promise.resolve();
+export function createSerializedTaskQueue(startAfter?: Promise<void>): SerializedTaskQueue {
+  let tail: Promise<void> = startAfter ?? Promise.resolve();
   return {
     enqueue<T>(work: () => Promise<T>): Promise<T> {
       const pending = tail.then(work, work);
@@ -52,7 +53,22 @@ export function createSerializedTaskQueue(): SerializedTaskQueue {
       );
       return pending;
     },
+    whenIdle() {
+      return tail;
+    },
   };
+}
+
+export function enqueueSessionTask(
+  queue: SerializedTaskQueue,
+  tracker: SessionRevisionTracker,
+  work: (revision: number) => Promise<void>,
+): Promise<void> {
+  const revision = tracker.capture();
+  return queue.enqueue(async () => {
+    if (!tracker.isCurrent(revision)) return;
+    await work(revision);
+  });
 }
 
 export interface SessionRevisionTracker {
@@ -117,6 +133,7 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
   const cartOwnerRevision = useRef(0);
   const mergedCustomer = useRef<string | null>(null);
   const sessionIdentity = `${status}:${user?.role ?? 'NONE'}:${user?.id ?? 'NONE'}`;
+  const previousSessionIdentity = useRef(sessionIdentity);
   const sessionTracker = useRef<SessionRevisionTracker | null>(null);
   const mutationQueue = useRef<SerializedTaskQueue | null>(null);
   const mergeSingleFlight = useRef<KeyedSingleFlight<number> | null>(null);
@@ -125,19 +142,30 @@ export function CommerceProvider({ children }: Readonly<{ children: ReactNode }>
     mutationQueue.current = createSerializedTaskQueue();
     mergeSingleFlight.current = createKeyedSingleFlight<number>();
   } else if (sessionTracker.current.sync(sessionIdentity)) {
-    mutationQueue.current = createSerializedTaskQueue();
+    const priorIdentity = previousSessionIdentity.current;
+    const priorQueue = mutationQueue.current;
+    const waitForGuestMutations =
+      priorIdentity.startsWith('anonymous:') &&
+      status === 'authenticated' &&
+      user?.role === 'CUSTOMER';
+    mutationQueue.current = createSerializedTaskQueue(
+      waitForGuestMutations && priorQueue !== null ? priorQueue.whenIdle() : Promise.resolve(),
+    );
     mergeSingleFlight.current?.clear();
     mergedCustomer.current = null;
   }
+  previousSessionIdentity.current = sessionIdentity;
 
-  const enqueueCartTask = useCallback(<T,>(work: (revision: number) => Promise<T>): Promise<T> => {
-    const tracker = sessionTracker.current;
-    const queue = mutationQueue.current;
-    if (tracker === null || queue === null)
-      return Promise.reject(new Error('Commerce unavailable'));
-    const revision = tracker.capture();
-    return queue.enqueue(() => work(revision));
-  }, []);
+  const enqueueCartTask = useCallback(
+    (work: (revision: number) => Promise<void>): Promise<void> => {
+      const tracker = sessionTracker.current;
+      const queue = mutationQueue.current;
+      if (tracker === null || queue === null)
+        return Promise.reject(new Error('Commerce unavailable'));
+      return enqueueSessionTask(queue, tracker, work);
+    },
+    [],
+  );
 
   const isCurrentSession = useCallback(
     (revision: number) => sessionTracker.current?.isCurrent(revision) === true,

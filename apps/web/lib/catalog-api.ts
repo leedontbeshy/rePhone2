@@ -4,8 +4,29 @@ import { createApiClient, type components } from '@rephone/api-client';
 import type { CatalogListQuery } from './catalog-query';
 import { serverApiBaseUrl } from './server-api';
 
-const noStoreFetch: typeof globalThis.fetch = (input, init) =>
-  fetch(input, { ...init, cache: 'no-store' });
+const RETRYABLE_CATALOG_STATUSES = new Set([500, 502, 503, 504]);
+const CATALOG_READ_TIMEOUT_MS = 8_000;
+
+const noStoreFetch: typeof globalThis.fetch = async (input, init) => {
+  const parentSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (isAborted(parentSignal)) throw parentSignal?.reason;
+    const timeoutSignal = AbortSignal.timeout(CATALOG_READ_TIMEOUT_MS);
+    const signal = parentSignal ? AbortSignal.any([parentSignal, timeoutSignal]) : timeoutSignal;
+    try {
+      const response = await fetch(input, { ...init, cache: 'no-store', signal });
+      if (attempt > 0 || !RETRYABLE_CATALOG_STATUSES.has(response.status)) return response;
+      await response.body?.cancel();
+    } catch (error) {
+      if (attempt > 0 || isAborted(parentSignal)) throw error;
+    }
+  }
+  throw new Error('Catalog request retry ended unexpectedly.');
+};
+
+function isAborted(signal: AbortSignal | undefined): boolean {
+  return signal?.aborted === true;
+}
 
 const catalogClient = createApiClient({ baseUrl: serverApiBaseUrl, fetch: noStoreFetch });
 

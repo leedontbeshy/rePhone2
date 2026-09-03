@@ -31,8 +31,8 @@ export const DEFAULT_MAIN_ID = 'main-content';
 
 export function SkipLink({ targetId }: Readonly<{ targetId: string }>) {
   return (
-    <a className={styles.skipLink} href={`#${targetId}`}>
-      Bỏ qua đến nội dung chính
+    <a className={styles.skipLink} href={`#${targetId}`} tabIndex={0}>
+      Chuyển đến nội dung chính
     </a>
   );
 }

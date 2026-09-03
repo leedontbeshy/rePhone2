@@ -4,7 +4,17 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { OperationsPageHeader, OperationsPanel } from '../operations-primitives';
+import {
+  OperationsPageHeader,
+  OperationsPagination,
+  OperationsPanel,
+} from '../operations-primitives';
+import {
+  focusQueueReadError,
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import { Button, InlineAlert, Input, Select, Skeleton, StatusChip } from '@/components/ui';
 import {
@@ -43,7 +53,9 @@ export function WarrantyQueueView() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const listRequestRef = useRef(0);
   const isStaff = user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -51,30 +63,40 @@ export function WarrantyQueueView() {
   }, [filters]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !isStaff) return;
-    let active = true;
+    const request = ++listRequestRef.current;
     setLoading(true);
     setError(null);
     void listBackofficeWarranties(client, query)
       .then((result) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          const params = paramsFromFilters(filters, authoritativePage);
+          const suffix = params.toString();
+          router.replace(suffix === '' ? pathname : `${pathname}?${suffix}`, { scroll: false });
+          return;
+        }
         setItems(result.data);
         setPagination(result.pagination);
+        setLoadedQueryKey(searchKey);
       })
       .catch((caught: unknown) => {
-        if (active) setError(messageFrom(caught, 'Không thể tải danh sách bảo hành.'));
+        if (isCurrentQueueRequest(request, listRequestRef.current)) {
+          setError(messageFrom(caught, 'Không thể tải danh sách bảo hành.'));
+        }
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isCurrentQueueRequest(request, listRequestRef.current)) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [authStatus, client, isStaff, query]);
+  }, [authStatus, client, filters, isStaff, pathname, query, router, searchKey]);
 
   function navigate(next: WarrantyFilters, page: number) {
     const params = paramsFromFilters(next, page);
@@ -87,6 +109,8 @@ export function WarrantyQueueView() {
     navigate(draft, 1);
   }
 
+  const readPresentation = queueReadPresentation(loading, error, searchKey, loadedQueryKey);
+
   return (
     <OperationsShell breadcrumbs={[{ label: 'Bảo hành' }]}>
       <div className={styles.page}>
@@ -94,7 +118,7 @@ export function WarrantyQueueView() {
           description="Tra cứu thời hạn và theo dõi trạng thái bảo hành đã cấp cho từng sản phẩm."
           eyebrow="Sau mua"
           meta={
-            loading && items.length > 0
+            readPresentation.updating
               ? 'Đang cập nhật danh sách…'
               : `${String(pagination.totalItems)} bảo hành`
           }
@@ -164,7 +188,10 @@ export function WarrantyQueueView() {
 
         {error === null ? null : (
           <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được bảo hành" tone="danger">
-            {error}
+            <p>{error}</p>
+            {readPresentation.retainedSnapshotNotice === null ? null : (
+              <p>{readPresentation.retainedSnapshotNotice}</p>
+            )}
           </InlineAlert>
         )}
 
@@ -173,9 +200,9 @@ export function WarrantyQueueView() {
             <p>
               Trang {String(pagination.page)} / {String(Math.max(1, pagination.totalPages))}
             </p>
-            {loading && items.length > 0 ? <span role="status">Đang làm mới…</span> : null}
+            {readPresentation.updating ? <span role="status">Đang làm mới…</span> : null}
           </div>
-          {loading && items.length === 0 ? (
+          {readPresentation.initialLoading ? (
             <QueueSkeleton />
           ) : items.length === 0 ? (
             <div className={styles.emptyState}>
@@ -183,31 +210,19 @@ export function WarrantyQueueView() {
               <p>Thử thay đổi từ khóa hoặc điều kiện lọc.</p>
             </div>
           ) : (
-            <WarrantyQueueList items={items} />
+            <WarrantyQueueList items={items} updating={readPresentation.updating} />
           )}
-          <div className={styles.pagination}>
-            <Button
-              disabled={loading || pagination.page <= 1}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page - 1);
-              }}
-            >
-              Trang trước
-            </Button>
-            <span>{String(pagination.totalItems)} kết quả</span>
-            <Button
-              disabled={loading || pagination.page >= pagination.totalPages}
-              size="compact"
-              variant="secondary"
-              onClick={() => {
-                navigate(filters, pagination.page + 1);
-              }}
-            >
-              Trang sau
-            </Button>
-          </div>
+          <OperationsPagination
+            className={styles.pagination}
+            disabled={loading}
+            label="Phân trang danh sách bảo hành"
+            page={pagination.page}
+            totalItems={pagination.totalItems}
+            totalPages={pagination.totalPages}
+            onPageChange={(nextPage) => {
+              navigate(filters, nextPage);
+            }}
+          />
         </OperationsPanel>
       </div>
     </OperationsShell>
@@ -216,9 +231,10 @@ export function WarrantyQueueView() {
 
 export function WarrantyQueueList({
   items,
-}: Readonly<{ items: readonly BackofficeWarrantyListItem[] }>) {
+  updating = false,
+}: Readonly<{ items: readonly BackofficeWarrantyListItem[]; updating?: boolean }>) {
   return (
-    <ul className={styles.queueList} aria-label="Danh sách bảo hành đã cấp">
+    <ul aria-busy={updating} className={styles.queueList} aria-label="Danh sách bảo hành đã cấp">
       {items.map((item) => {
         const validity = warrantyValidityPresentation(item);
         return (

@@ -7,13 +7,12 @@ import {
   type Route,
   type TestInfo,
 } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const PROTECTED_OVERVIEW_HEADING = 'Tổng quan vận hành';
 
 test.describe('Backoffice access boundary', () => {
-  test('never renders or requests a protected page while an anonymous session is unresolved', async ({
-    page,
-  }, testInfo) => {
+  test(bt('browser:backoffice-access', 'anonymous-fail-closed'), async ({ page }, testInfo) => {
     const refresh = deferred<undefined>();
     const refreshStarted = deferred<undefined>();
     const protectedRequests = collectProtectedRequests(page);
@@ -62,9 +61,7 @@ test.describe('Backoffice access boundary', () => {
     expect(runtimeErrors).toEqual([]);
   });
 
-  test('blocks a customer on mobile without mounting the inventory workspace', async ({
-    page,
-  }, testInfo) => {
+  test(bt('browser:backoffice-access', 'customer-mobile-denied'), async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 360, height: 800 });
     const refresh = deferred<undefined>();
     const refreshStarted = deferred<undefined>();
@@ -110,10 +107,10 @@ test.describe('Backoffice access boundary', () => {
     expect(runtimeErrors).toEqual([]);
   });
 
-  test('fails closed on a network error and opens the overview only after a successful retry', async ({
-    page,
-  }, testInfo) => {
+  test(bt('browser:backoffice-access', 'network-error-retry'), async ({ page }, testInfo) => {
     let refreshAttempts = 0;
+    const overview = deferred<undefined>();
+    const overviewStarted = deferred<undefined>();
     const protectedRequests = collectProtectedRequests(page);
     const runtimeErrors = collectRuntimeErrors(page);
 
@@ -125,6 +122,12 @@ test.describe('Backoffice access boundary', () => {
         return;
       }
       await fulfillJson(route, sessionResponse('EMPLOYEE'));
+    });
+    await page.route('**/api/v1/backoffice/overview', async (route) => {
+      if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
+      overviewStarted.resolve(undefined);
+      await overview.promise;
+      await fulfillJson(route, overviewResponse());
     });
 
     await page.goto('/backoffice', { waitUntil: 'domcontentloaded' });
@@ -144,15 +147,16 @@ test.describe('Backoffice access boundary', () => {
     await expect(page.getByRole('heading', { name: 'Tổng quan vận hành' })).toBeVisible();
     await expect(page.getByText('Đã xác nhận quyền truy cập.', { exact: true })).toBeAttached();
     await expect(page.locator('[data-shell="backoffice"]')).toHaveCount(1);
-    await expect(
-      page.getByRole('status', { name: 'Dữ liệu tổng quan đang được chuẩn bị' }),
-    ).toBeVisible();
+    await overviewStarted.promise;
+    await expect(page.getByRole('status', { name: 'Đang tải tổng quan vận hành' })).toBeVisible();
+    overview.resolve(undefined);
+    await expect(page.getByText('Đơn đang xử lý', { exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Tổng quan', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
     expect(refreshAttempts).toBe(2);
-    expect(protectedRequests).toEqual([]);
+    expect(protectedRequests).toEqual(['/api/v1/backoffice/overview']);
     await expectNoHorizontalOverflow(page);
     await expectNoSeriousAccessibilityViolations(page);
     await capture(page, testInfo, 'backoffice-overview-desktop.png');
@@ -164,7 +168,9 @@ function collectProtectedRequests(page: Page): string[] {
   const requests: string[] = [];
   page.on('request', (request) => {
     const pathname = new URL(request.url()).pathname;
-    if (pathname.startsWith('/api/v1/backoffice/')) requests.push(pathname);
+    if (pathname.startsWith('/api/v1/backoffice/') && request.method() !== 'OPTIONS') {
+      requests.push(pathname);
+    }
   });
   return requests;
 }
@@ -219,6 +225,22 @@ function emptyCartResponse() {
       items: [],
       status: 'ACTIVE',
       warnings: [],
+    },
+  } as const;
+}
+
+function overviewResponse() {
+  return {
+    data: {
+      generatedAt: '2026-09-01T10:00:00.000Z',
+      metrics: {
+        activeOrders: 3,
+        lowStockLevels: 1,
+        openAfterSales: 2,
+        paymentsUnderReview: 1,
+      },
+      priorities: [],
+      recentOrders: [],
     },
   } as const;
 }

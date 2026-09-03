@@ -64,6 +64,29 @@
 .loadingBlock {
   display: grid;
   gap: var(--space-3);
+  min-block-size: 22.9375rem;
+}
+
+.pendingForm {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.pendingField {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.terminalState {
+  display: grid;
+  gap: var(--space-3);
+  border-radius: var(--radius-control);
+}
+
+.terminalState:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
 }
 
 @media (max-width: 30rem) {

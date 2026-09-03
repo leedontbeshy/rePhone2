@@ -4,11 +4,14 @@ import {
   buildStockLevelHref,
   buildStockMovementHref,
   emptyStockCommandDraft,
+  isCurrentStockRequest,
   mergeStockLevelQuery,
+  sortStockVariantOptions,
   stockCommandErrorMessage,
   stockCommandErrorRequiresReconcile,
   stockLevelQueryFromSearch,
   stockMovementQueryFromSearch,
+  stockPageWithinTotal,
   validateStockCommand,
 } from './stock-model';
 
@@ -18,6 +21,28 @@ const WAREHOUSE_ID = '0199c9aa-a258-74c8-a35f-9cd11c562a05';
 const REFERENCE_ID = '0199c9aa-a258-74c8-a35f-9cd11c562a11';
 
 describe('inventory stock query model', () => {
+  it('clamps pages to the latest authoritative total', () => {
+    expect(stockPageWithinTotal(7, 2)).toBe(2);
+    expect(stockPageWithinTotal(1, 0)).toBe(1);
+    expect(stockPageWithinTotal(Number.NaN, 8)).toBe(1);
+  });
+
+  it('rejects aborted and stale list responses before they can replace visible rows', () => {
+    expect(isCurrentStockRequest(3, 3, { aborted: false })).toBe(true);
+    expect(isCurrentStockRequest(2, 3, { aborted: false })).toBe(false);
+    expect(isCurrentStockRequest(3, 3, { aborted: true })).toBe(false);
+  });
+
+  it('sorts product and variant choices naturally with a stable tie breaker', () => {
+    const options = sortStockVariantOptions([
+      { id: 'c', productName: 'Ốp lưng 10', displayName: 'Màu trắng', sku: 'SKU-10' },
+      { id: 'b', productName: 'Ốp lưng 2', displayName: 'Màu trắng', sku: 'SKU-2' },
+      { id: 'a', productName: 'Ốp lưng 2', displayName: 'Màu đen', sku: 'SKU-1' },
+    ]);
+
+    expect(options.map((option) => option.id)).toEqual(['a', 'b', 'c']);
+  });
+
   it('parses and builds compact stock URLs without navigation-only defaults', () => {
     expect(stockLevelQueryFromSearch(new URLSearchParams())).toEqual({ page: 1, pageSize: 20 });
     const query = stockLevelQueryFromSearch(

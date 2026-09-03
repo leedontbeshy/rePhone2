@@ -28,11 +28,23 @@ export default function InventoryInspectionPage() {
   const searchParams = useSearchParams();
   const inspectionId = params.id;
   const requestedFromIntake = searchParams.get('source') === 'intake';
-  const [intakeContext, setIntakeContext] = useState<{
-    inspectionId: string;
-    returnHref: string;
-  } | null>(null);
-  const fromIntake = requestedFromIntake && intakeContext?.inspectionId === inspectionId;
+  const [intakeContext, setIntakeContext] = useState<
+    | { status: 'pending' }
+    | { status: 'rejected' }
+    | { inspectionId: string; returnHref: string; status: 'verified' }
+  >({ status: 'pending' });
+  const fromIntake =
+    requestedFromIntake &&
+    intakeContext.status === 'verified' &&
+    intakeContext.inspectionId === inspectionId;
+  const showIntakeChrome =
+    requestedFromIntake &&
+    (intakeContext.status === 'pending' || intakeContext.status === 'verified');
+  const intakeReturnHref = intakeContext.status === 'verified' ? intakeContext.returnHref : null;
+
+  useEffect(() => {
+    setIntakeContext({ status: 'pending' });
+  }, [inspectionId, requestedFromIntake]);
 
   const resolveIntakeContext = useCallback(
     (resolvedInspection: InventoryInspectionDetail) => {
@@ -42,12 +54,13 @@ export default function InventoryInspectionPage() {
           resolvedInspection.inspectionType,
         )
       ) {
-        setIntakeContext(null);
+        setIntakeContext({ status: 'rejected' });
         return;
       }
       setIntakeContext({
         inspectionId: resolvedInspection.id,
         returnHref: intakeResumeHref(resolvedInspection.inventoryUnitId, resolvedInspection.id),
+        status: 'verified',
       });
     },
     [requestedFromIntake],
@@ -55,24 +68,27 @@ export default function InventoryInspectionPage() {
 
   return (
     <InventoryShell
-      {...(fromIntake ? { activeNavigationPath: '/backoffice/inventory/intake' } : {})}
-      {...(fromIntake
+      {...(showIntakeChrome ? { activeNavigationPath: '/backoffice/inventory/intake' } : {})}
+      {...(fromIntake && intakeReturnHref !== null
         ? {
             navigationHrefOverrides: {
-              '/backoffice/inventory/intake': intakeContext.returnHref,
+              '/backoffice/inventory/intake': intakeReturnHref,
             },
           }
         : {})}
       breadcrumbs={
-        fromIntake
-          ? [{ href: intakeContext.returnHref, label: 'Nhập máy' }, { label: 'Kiểm định' }]
-          : [{ href: INVENTORY_UNITS_ROOT, label: 'Máy vật lý' }, { label: 'Phiếu kiểm định' }]
+        fromIntake && intakeReturnHref !== null
+          ? [{ href: intakeReturnHref, label: 'Nhập máy' }, { label: 'Kiểm định' }]
+          : showIntakeChrome
+            ? [{ label: 'Nhập máy' }, { label: 'Kiểm định' }]
+            : [{ href: INVENTORY_UNITS_ROOT, label: 'Máy vật lý' }, { label: 'Phiếu kiểm định' }]
       }
     >
       <InventoryInspectionLoader
         fromIntake={fromIntake}
         inspectionId={inspectionId}
         onInspectionResolved={resolveIntakeContext}
+        showIntakeWorkflow={showIntakeChrome}
       />
     </InventoryShell>
   );
@@ -82,10 +98,12 @@ function InventoryInspectionLoader({
   fromIntake,
   inspectionId,
   onInspectionResolved,
+  showIntakeWorkflow,
 }: Readonly<{
   fromIntake: boolean;
   inspectionId: string;
   onInspectionResolved: (inspection: InventoryInspectionDetail) => void;
+  showIntakeWorkflow: boolean;
 }>) {
   const { client, user } = useAuth();
   const router = useRouter();
@@ -165,7 +183,7 @@ function InventoryInspectionLoader({
   }
 
   if (loading && inspection === null) {
-    return <InspectionLoadingState showIntakeWorkflow={fromIntake} />;
+    return <InspectionLoadingState showIntakeWorkflow={showIntakeWorkflow} />;
   }
 
   if (inspection === null) {
@@ -199,7 +217,7 @@ function InventoryInspectionLoader({
       inspection={inspection}
       editable={user?.role === 'ADMIN' || inspection.inspectorId === user?.id}
       notice={notice}
-      showIntakeWorkflow={fromIntake}
+      showIntakeWorkflow={showIntakeWorkflow}
       {...(fromIntake
         ? { returnToIntakeHref: intakeResumeHref(inspection.inventoryUnitId, inspection.id) }
         : {})}

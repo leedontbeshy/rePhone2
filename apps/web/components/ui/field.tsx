@@ -5,6 +5,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from 'react';
+import { forwardRef } from 'react';
 import { classNames } from './class-names';
 import styles from './primitives.module.css';
 
@@ -37,6 +38,7 @@ export interface FieldProps {
   className?: string | undefined;
   error?: ReactNode | undefined;
   errorId?: string | undefined;
+  errorRole?: 'alert' | 'status' | undefined;
   hint?: ReactNode | undefined;
   hintId?: string | undefined;
   id: string;
@@ -49,6 +51,7 @@ export function Field({
   className,
   error,
   errorId,
+  errorRole,
   hint,
   hintId,
   id,
@@ -75,7 +78,7 @@ export function Field({
         </p>
       ) : null}
       {error ? (
-        <p className={styles.error} id={errorId}>
+        <p className={styles.error} id={errorId} role={errorRole}>
           {error}
         </p>
       ) : null}
@@ -85,6 +88,7 @@ export function Field({
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   containerClassName?: string;
+  endAction?: ReactNode;
   error?: ReactNode;
   hint?: ReactNode;
   id: string;
@@ -94,6 +98,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export function Input({
   className,
   containerClassName,
+  endAction,
   error,
   hint,
   id,
@@ -103,6 +108,16 @@ export function Input({
 }: InputProps) {
   const messages = fieldMessages(id, hint, error);
   const callerDescribedBy = props['aria-describedby'];
+  const control = (
+    <input
+      {...props}
+      aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
+      aria-invalid={error ? true : undefined}
+      className={classNames(styles.control, className)}
+      id={id}
+      required={required}
+    />
+  );
 
   return (
     <Field
@@ -115,17 +130,100 @@ export function Input({
       label={label}
       required={required}
     >
-      <input
-        {...props}
-        aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
-        aria-invalid={error ? true : undefined}
-        className={classNames(styles.control, className)}
-        id={id}
-        required={required}
-      />
+      {endAction ? (
+        <div className={styles.controlFrame}>
+          {control}
+          <span className={styles.controlEndAction}>{endAction}</span>
+        </div>
+      ) : (
+        control
+      )}
     </Field>
   );
 }
+
+export interface FilePickerProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'value'
+> {
+  buttonLabel?: ReactNode;
+  containerClassName?: string;
+  emptyLabel?: ReactNode;
+  error?: ReactNode;
+  errorRole?: 'alert' | 'status';
+  hint?: ReactNode;
+  id: string;
+  label: ReactNode;
+  selectedFileName?: string | null;
+}
+
+export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function FilePicker(
+  {
+    buttonLabel = 'Chọn tệp',
+    className,
+    containerClassName,
+    disabled,
+    emptyLabel = 'Chưa chọn tệp',
+    error,
+    errorRole,
+    hint,
+    id,
+    label,
+    required,
+    selectedFileName,
+    ...props
+  },
+  ref,
+) {
+  const messages = fieldMessages(id, hint, error);
+  const callerDescribedBy = props['aria-describedby'];
+  const hasSelection = Boolean(selectedFileName?.trim());
+
+  return (
+    <Field
+      className={containerClassName}
+      error={error}
+      errorId={messages.errorId}
+      errorRole={errorRole}
+      hint={hint}
+      hintId={messages.hintId}
+      id={id}
+      label={label}
+      required={required}
+    >
+      <div
+        className={classNames(styles.filePicker, className)}
+        data-disabled={disabled ? 'true' : undefined}
+        data-invalid={error ? 'true' : undefined}
+      >
+        <input
+          {...props}
+          ref={ref}
+          aria-describedby={mergeDescribedBy(callerDescribedBy, messages.describedBy)}
+          aria-invalid={error ? true : undefined}
+          className={styles.fileInput}
+          data-rp-file-picker-control="true"
+          disabled={disabled}
+          id={id}
+          required={required}
+          type="file"
+        />
+        <span aria-hidden="true" className={styles.filePickerAction}>
+          {buttonLabel}
+        </span>
+        <span
+          aria-atomic="true"
+          aria-live="polite"
+          className={styles.filePickerName}
+          data-empty={hasSelection ? undefined : 'true'}
+          title={typeof selectedFileName === 'string' ? selectedFileName : undefined}
+        >
+          {hasSelection ? selectedFileName : emptyLabel}
+        </span>
+      </div>
+    </Field>
+  );
+});
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   containerClassName?: string;

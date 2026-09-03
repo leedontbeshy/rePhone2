@@ -65,6 +65,37 @@
   overflow: hidden;
 }
 
+.intakeLoadingPanel {
+  min-height: 38rem;
+}
+
+.intakeLoadingHeading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-5);
+  border-block-end: var(--border-default);
+}
+
+.intakeLoadingHeading > div,
+.intakeLoadingFields > div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.intakeLoadingFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-4);
+  padding: var(--space-5);
+}
+
+.intakeLoadingSummary {
+  min-height: 30rem;
+  align-content: start;
+}
+
 .panelHeading {
   display: flex;
   align-items: flex-start;
@@ -177,7 +208,7 @@
 
 .formActions p {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
 }
 
@@ -232,7 +263,7 @@
 }
 
 .summaryHero span {
-  color: var(--color-muted);
+  color: var(--color-body);
   font-size: var(--font-size-small);
 }
 
@@ -525,6 +556,16 @@
   box-shadow: var(--focus-ring);
 }
 
+.fileInput[aria-invalid='true'] + .filePicker {
+  border-color: var(--color-danger);
+}
+
+.uploadError {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--color-danger-hover);
+  font-size: var(--font-size-small);
+}
+
 .filePickerIcon {
   display: grid;
   inline-size: 3.25rem;
@@ -624,6 +665,7 @@
   }
 
   .sectionFields,
+  .intakeLoadingFields,
   .summaryFacts {
     grid-template-columns: 1fr;
   }

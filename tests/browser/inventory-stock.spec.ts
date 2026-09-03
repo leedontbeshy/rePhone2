@@ -1,4 +1,9 @@
+import AxeBuilder from '@axe-core/playwright';
+import { mkdir } from 'node:fs/promises';
+import path from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { stabilizeVisualPage } from './support/stabilize-visual-page';
 
 const UNIT_ID = '0199d006-0000-7000-8000-000000000001';
 const INSPECTION_ID = '0199d006-0000-7000-8000-000000000002';
@@ -20,8 +25,19 @@ type InspectionType = 'INTAKE' | 'PRE_SALE' | 'WARRANTY' | 'RETURN';
 
 interface Fe06ApiOptions {
   readonly inspectionType?: InspectionType;
+  readonly lookupOutcome?: 'success' | 'not-found' | 'provider-error';
   readonly mediaCount?: number;
-  readonly resumeDelayMs?: number;
+}
+
+interface ControlledResumeRequest {
+  state(): 'waiting' | 'started' | 'completed';
+  release(): void;
+}
+
+interface ResumeRequestGate extends ControlledResumeRequest {
+  readonly released: Promise<void>;
+  markCompleted(): void;
+  markStarted(): void;
 }
 
 interface MovementFixture {
@@ -34,12 +50,14 @@ interface MovementFixture {
 
 interface Fe06Probe {
   costRequests: number;
+  holdNextResumeInspection(): ControlledResumeRequest;
   inspectionCompleteRequests: number;
   inspectionPatchBodies: Array<Record<string, unknown>>;
   inspectionStatus: InspectionStatus;
   inspectionType: InspectionType;
   inspectionValues: Record<string, unknown>;
   lookupBody: Record<string, unknown> | null;
+  lookupRequests: Array<{ method: string; url: string }>;
   mediaCount: number;
   movements: MovementFixture[];
   stockCommandBodies: Array<{ body: Record<string, unknown>; path: string }>;
@@ -71,7 +89,7 @@ const CHECKS = [
 ] as const;
 
 test.describe('FE-06 inventory and stock workspace', () => {
-  test('keeps the employee unit profile free of cost requests and cost UI', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'employee-cost-privacy'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto(`/backoffice/inventory/units/${UNIT_ID}`, { waitUntil: 'domcontentloaded' });
@@ -80,10 +98,37 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(page.getByRole('heading', { name: 'Giá vốn nội bộ' })).toHaveCount(0);
     await page.waitForTimeout(150);
     expect(probe.costRequests).toBe(0);
+
+    const unitMediaInput = page.locator('#unit-media-file');
+    const unitMediaPicker = unitMediaInput.locator('..');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await unitMediaInput.focus();
+    await expect(unitMediaPicker).toHaveCSS('outline-style', 'solid');
+    await expect(unitMediaPicker).toHaveCSS('outline-width', '3px');
+    await expect(unitMediaPicker.locator('span').first()).toHaveCSS('outline-style', 'none');
+    await page.emulateMedia({ forcedColors: 'none' });
+
+    const transferButton = page.getByRole('button', { name: 'Chuyển địa điểm', exact: true });
+    await transferButton.click();
+    const transferDialog = page.getByRole('dialog', {
+      name: 'Chuyển máy sang địa điểm khác',
+    });
+    await expect(transferDialog).toBeVisible();
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await expect(transferDialog).toHaveCount(0);
+    await expect(transferButton).toBeFocused();
+
     await expectSingleMainAndNoOverflow(page);
+
+    await page.goto('/backoffice', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan vận hành' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Cấu hình cửa hàng' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Trạng thái hệ thống' })).toHaveCount(0);
+    await expectAccessible(page);
   });
 
-  test('looks up a raw identifier through an automatically audited POST body', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'identifier-lookup-post'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/lookup', { waitUntil: 'domcontentloaded' });
@@ -101,11 +146,31 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(page.getByLabel('IMEI đầy đủ')).toHaveValue('');
     expect(await page.locator('main').innerText()).not.toContain(RAW_IMEI);
     await expect(page.getByText('***********7518')).toBeVisible();
+    expect(probe.lookupRequests).toHaveLength(1);
+    expect(probe.lookupRequests[0]?.method).toBe('POST');
+    expect(probe.lookupRequests[0]?.url).not.toContain(RAW_IMEI);
+
+    for (const lookupOutcome of ['not-found', 'provider-error'] as const) {
+      const isolated = await page.context().newPage();
+      const isolatedProbe = await installFe06Api(isolated, 'EMPLOYEE', { lookupOutcome });
+      await isolated.goto('/backoffice/inventory/lookup', { waitUntil: 'domcontentloaded' });
+      const field = isolated.getByLabel('IMEI đầy đủ');
+      await field.fill(RAW_IMEI);
+      await isolated.getByRole('button', { name: 'Tra cứu', exact: true }).click();
+      await expect(isolated.locator('main [role="alert"]')).toContainText(
+        lookupOutcome === 'not-found' ? 'IMEI chưa khớp với máy nào' : 'Dịch vụ đang tạm gián đoạn',
+      );
+      await expectAccessible(isolated);
+      await expect(field).toHaveValue('');
+      expect(isolated.url()).not.toContain(RAW_IMEI);
+      expect(isolatedProbe.lookupRequests[0]?.method).toBe('POST');
+      expect(isolatedProbe.lookupRequests[0]?.url).not.toContain(RAW_IMEI);
+      expect(await isolated.locator('body').innerText()).not.toContain(RAW_IMEI);
+      await isolated.close();
+    }
   });
 
-  test('filters the unit queue without reloading and blocks raw identifiers from URLs and GETs', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'unit-filter-no-reload'), async ({ page }) => {
     const browserErrors: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') browserErrors.push(message.text());
@@ -151,9 +216,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(browserErrors).toEqual([]);
   });
 
-  test('reviews all 18 inspection items, confirms completion, then returns to intake', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'inspection-completion'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
 
     await page.goto(`/backoffice/inventory/inspections/${INSPECTION_ID}?source=intake`, {
@@ -233,21 +296,33 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.inspectionStatus).toBe('COMPLETED');
   });
 
-  test('restores an existing intake without flashing step one and uploads through the custom picker', async ({
-    page,
-  }) => {
-    const probe = await installFe06Api(page, 'EMPLOYEE', {
-      mediaCount: 0,
-      resumeDelayMs: 400,
-    });
+  test(bt('browser:inventory-stock', 'intake-resume-upload'), async ({ page }) => {
+    const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 0 });
+    const pendingResume = probe.holdNextResumeInspection();
 
-    await page.goto(
-      `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
-      { waitUntil: 'domcontentloaded' },
-    );
-    await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
-    await expect(page.getByLabel('Sản phẩm iPhone')).toHaveCount(0);
-    await expect(page.getByText('Đang mở lại tiến độ nhập máy…')).toBeAttached();
+    try {
+      const resumeRequest = page.waitForRequest((request) => {
+        return (
+          request.method() === 'GET' &&
+          new URL(request.url()).pathname === `/api/v1/backoffice/inspections/${INSPECTION_ID}`
+        );
+      });
+      await page.goto(
+        `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      await resumeRequest;
+      await expect.poll(() => pendingResume.state()).toBe('started');
+      await expect(page.getByRole('heading', { level: 2, name: 'Tiếp nhận máy' })).toHaveCount(0);
+      await expect(page.getByLabel('Sản phẩm iPhone')).toHaveCount(0);
+      await expect(page.getByText('Đang mở lại tiến độ nhập máy…')).toBeAttached();
+      await expect(
+        page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
+      ).toHaveCount(0);
+    } finally {
+      pendingResume.release();
+    }
+    await expect.poll(() => pendingResume.state()).toBe('completed');
     await expect(
       page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
     ).toBeVisible();
@@ -255,7 +330,34 @@ test.describe('FE-06 inventory and stock workspace', () => {
     const fileInput = page.locator('#inventory-media-file');
     await expect(fileInput).toHaveCSS('width', '1px');
     await expect(fileInput).toHaveCSS('height', '1px');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await fileInput.focus();
+    const filePicker = page.locator('label[for="inventory-media-file"]');
+    await expect(filePicker).toHaveCSS('outline-style', 'solid');
+    await expect(filePicker).toHaveCSS('outline-width', '3px');
+    await page.emulateMedia({ forcedColors: 'none' });
     const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
+    await expect(uploadButton).toBeDisabled();
+    await fileInput.setInputFiles({
+      buffer: Buffer.alloc(0),
+      mimeType: 'image/png',
+      name: 'rong.png',
+    });
+    await expect(page.locator('main [role="alert"]')).toContainText('Tệp ảnh đang trống');
+    await expect(uploadButton).toBeDisabled();
+    await fileInput.setInputFiles({
+      buffer: Buffer.from('khong-phai-anh'),
+      mimeType: 'text/plain',
+      name: 'khong-hop-le.txt',
+    });
+    await expect(page.locator('main [role="alert"]')).toContainText('JPEG, PNG hoặc WebP');
+    await expect(uploadButton).toBeDisabled();
+    await fileInput.setInputFiles({
+      buffer: Buffer.alloc(8 * 1024 * 1024 + 1),
+      mimeType: 'image/png',
+      name: 'qua-lon.png',
+    });
+    await expect(page.locator('main [role="alert"]')).toContainText('8 MB');
     await expect(uploadButton).toBeDisabled();
     await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
     await expect(page.getByText('intake-1440.png', { exact: true })).toBeVisible();
@@ -270,9 +372,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('keeps step four visible inside the mobile progress scroller after resume', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'mobile-step-four'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { mediaCount: 1 });
     probe.inspectionStatus = 'COMPLETED';
     probe.inspectionValues = passingInspectionValues();
@@ -302,7 +402,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('does not trust an intake source marker for another inspection type', async ({ page }) => {
+  test(bt('browser:inventory-stock', 'inspection-source-integrity'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE', { inspectionType: 'WARRANTY' });
     probe.inspectionValues = passingInspectionValues();
 
@@ -328,9 +428,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     expect(probe.inspectionCompleteRequests).toBe(1);
   });
 
-  test('records a stock command, reconciles levels and exposes the immutable ledger', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'stock-ledger'), async ({ page }) => {
     const probe = await installFe06Api(page, 'EMPLOYEE');
 
     await page.goto('/backoffice/inventory/stock', { waitUntil: 'domcontentloaded' });
@@ -343,6 +441,14 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(receiveButton).toHaveCSS('color', 'rgb(255, 255, 255)');
     await receiveButton.click();
     const dialog = page.getByRole('dialog', { name: 'Nhận hàng' });
+    await expect(dialog).toBeVisible();
+    await expectAccessible(page);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(receiveButton).toBeFocused();
+
+    await receiveButton.click();
+    await expect(dialog).toBeVisible();
     await dialog.getByLabel('Phụ kiện').selectOption(ACCESSORY_VARIANT_ID);
     await dialog.getByLabel('Nhận tại').selectOption(STORE_ID);
     await dialog.getByLabel('Số lượng').fill('3');
@@ -368,9 +474,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
   });
 
-  test('renders all eight inventory routes without document overflow at 1440px and 360px', async ({
-    page,
-  }) => {
+  test(bt('browser:inventory-stock', 'inventory-responsive'), async ({ page }) => {
     test.slow();
     const browserErrors: string[] = [];
     page.on('console', (message) => {
@@ -381,6 +485,12 @@ test.describe('FE-06 inventory and stock workspace', () => {
     });
     await installFe06Api(page, 'ADMIN');
     const screens = [
+      {
+        heading: 'Tổng quan vận hành',
+        path: '/backoffice',
+        ready: 'Tình hình vận hành',
+        slug: 'overview',
+      },
       {
         heading: 'Danh sách máy',
         path: '/backoffice/inventory/units',
@@ -420,11 +530,11 @@ test.describe('FE-06 inventory and stock workspace', () => {
         slug: 'movements',
       },
     ] as const;
-    const mobileCaptures = new Set(['units', 'unit-detail', 'inspection', 'stock']);
+    const mobileCaptures = new Set(['overview', 'units', 'unit-detail', 'inspection', 'stock']);
 
     for (const viewport of [
-      { width: 1440, height: 1000 },
-      { width: 360, height: 800 },
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
     ]) {
       await page.setViewportSize(viewport);
       for (const screen of screens) {
@@ -448,7 +558,8 @@ test.describe('FE-06 inventory and stock workspace', () => {
         }
         await expectNaturalVietnameseMain(page);
         await expectSingleMainAndNoOverflow(page);
-        if (viewport.width === 360) {
+        await expectAccessible(page);
+        if (viewport.width === 390) {
           const currentNavigationItem = page
             .getByRole('navigation', { name: 'Các khu vực vận hành' })
             .locator('a[aria-current="page"]');
@@ -467,14 +578,43 @@ test.describe('FE-06 inventory and stock workspace', () => {
             .toBe(true);
         }
         if (
-          process.env['FE06_CAPTURE_SCREENSHOTS'] === '1' &&
+          process.env['FE09_CAPTURE_SCREENSHOTS'] === '1' &&
           (viewport.width === 1440 || mobileCaptures.has(screen.slug))
         ) {
-          await page.screenshot({
-            animations: 'disabled',
-            path: `docs/assets/ui/fe-06/${screen.slug}-${String(viewport.width)}.png`,
-          });
+          await captureAuditScreenshot(page, `${screen.slug}-${String(viewport.width)}`);
         }
+      }
+    }
+
+    for (const viewport of [
+      { name: 'mobile-320', width: 320, height: 844 },
+      { name: 'mobile-390', width: 390, height: 844 },
+      { name: 'tablet-768', width: 768, height: 1024 },
+      { name: 'desktop-1024', width: 1024, height: 768 },
+      { name: 'desktop-1440', width: 1440, height: 900 },
+    ] as const) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(
+        `/backoffice/inventory/intake?unitId=${UNIT_ID}&inspectionId=${INSPECTION_ID}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      await expect(
+        page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
+      ).toBeVisible();
+      const fileInput = page.locator('#inventory-media-file');
+      await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
+      const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
+      await expect(uploadButton).toBeEnabled();
+      await expectSingleMainAndNoOverflow(page);
+      await expectStickyTopbarAndReachableAction(page, uploadButton);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await prepareWp11Visual(page);
+        await expect(page).toHaveScreenshot(`wp11-inventory-intake-resume-${viewport.name}.png`, {
+          animations: 'disabled',
+          caret: 'hide',
+          fullPage: true,
+        });
       }
     }
     expect(browserErrors).toEqual([]);
@@ -486,15 +626,21 @@ async function installFe06Api(
   role: StaffRole,
   options: Fe06ApiOptions = {},
 ): Promise<Fe06Probe> {
-  const resumeDelayMs = Math.max(0, options.resumeDelayMs ?? 0);
+  let nextResumeInspection: ResumeRequestGate | undefined;
   const probe: Fe06Probe = {
     costRequests: 0,
+    holdNextResumeInspection() {
+      const gate = createResumeRequestGate();
+      nextResumeInspection = gate;
+      return gate;
+    },
     inspectionCompleteRequests: 0,
     inspectionPatchBodies: [],
     inspectionStatus: 'DRAFT',
     inspectionType: options.inspectionType ?? 'INTAKE',
     inspectionValues: {},
     lookupBody: null,
+    lookupRequests: [],
     mediaCount: Math.max(0, options.mediaCount ?? 0),
     movements: [
       {
@@ -539,8 +685,43 @@ async function installFe06Api(
       await fulfillJson(route, { data: inventoryLocations() });
       return;
     }
+    if (pathname.endsWith('/backoffice/overview') && method === 'GET') {
+      await fulfillJson(route, { data: overviewSnapshot() });
+      return;
+    }
     if (pathname.endsWith('/backoffice/inventory-units/lookup-identifier') && method === 'POST') {
       probe.lookupBody = requestJson(route);
+      probe.lookupRequests.push({ method, url: route.request().url() });
+      if (options.lookupOutcome === 'not-found') {
+        await fulfillJson(
+          route,
+          {
+            error: {
+              code: 'RESOURCE_NOT_FOUND',
+              details: [],
+              message: 'Không tìm thấy máy.',
+              requestId: 'fe09-lookup-not-found',
+            },
+          },
+          404,
+        );
+        return;
+      }
+      if (options.lookupOutcome === 'provider-error') {
+        await fulfillJson(
+          route,
+          {
+            error: {
+              code: 'SERVICE_UNAVAILABLE',
+              details: [],
+              message: 'Chưa thể kết nối dịch vụ.',
+              requestId: 'fe09-lookup-provider',
+            },
+          },
+          503,
+        );
+        return;
+      }
       await fulfillJson(route, { data: inventoryUnit(probe) });
       return;
     }
@@ -555,7 +736,6 @@ async function installFe06Api(
       pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}/inspections`) &&
       method === 'GET'
     ) {
-      await delay(resumeDelayMs);
       await fulfillJson(route, paged([inspectionSummary(probe)], 50));
       return;
     }
@@ -565,7 +745,6 @@ async function installFe06Api(
       return;
     }
     if (pathname.endsWith(`/backoffice/inventory-units/${UNIT_ID}`) && method === 'GET') {
-      await delay(resumeDelayMs);
       await fulfillJson(route, { data: inventoryUnit(probe) });
       return;
     }
@@ -594,7 +773,18 @@ async function installFe06Api(
       return;
     }
     if (pathname.endsWith(`/backoffice/inspections/${INSPECTION_ID}`) && method === 'GET') {
-      await delay(resumeDelayMs);
+      const resumeGate = nextResumeInspection;
+      nextResumeInspection = undefined;
+      if (resumeGate !== undefined) {
+        resumeGate.markStarted();
+        await resumeGate.released;
+        try {
+          await fulfillJson(route, { data: inspectionDetail(probe) });
+        } finally {
+          resumeGate.markCompleted();
+        }
+        return;
+      }
       await fulfillJson(route, { data: inspectionDetail(probe) });
       return;
     }
@@ -890,6 +1080,27 @@ function stockMovement(movement: MovementFixture) {
   };
 }
 
+function overviewSnapshot() {
+  return {
+    generatedAt: '2026-09-02T03:00:00.000Z',
+    metrics: {
+      activeOrders: 4,
+      lowStockLevels: 1,
+      openAfterSales: 2,
+      paymentsUnderReview: 1,
+    },
+    priorities: [
+      {
+        count: 1,
+        href: '/backoffice/payments?status=UNDER_REVIEW',
+        key: 'PAYMENT_REVIEW_OVERDUE',
+        oldestAt: '2026-09-01T03:00:00.000Z',
+      },
+    ],
+    recentOrders: [],
+  } as const;
+}
+
 function paged(data: readonly unknown[], pageSize: number, totalItems: number = data.length) {
   return {
     data,
@@ -947,11 +1158,23 @@ function passingInspectionValues(): Record<string, unknown> {
   };
 }
 
-async function delay(milliseconds: number): Promise<void> {
-  if (milliseconds <= 0) return;
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, milliseconds);
+function createResumeRequestGate(): ResumeRequestGate {
+  let state: ReturnType<ControlledResumeRequest['state']> = 'waiting';
+  let release = () => undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
   });
+  return {
+    markCompleted() {
+      state = 'completed';
+    },
+    markStarted() {
+      state = 'started';
+    },
+    release,
+    released,
+    state: () => state,
+  };
 }
 
 async function fulfillPreflight(route: Route): Promise<void> {
@@ -1029,4 +1252,97 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
     dimensions.scrollWidth,
     `Shell: ${JSON.stringify(dimensions.shell)}; phần tử tràn: ${JSON.stringify(dimensions.overflowingElements)}`,
   ).toBeLessThanOrEqual(dimensions.clientWidth);
+}
+
+async function expectAccessible(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .exclude('nextjs-portal')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(
+    results.violations
+      .filter(({ impact }) => impact === 'serious' || impact === 'critical')
+      .map(({ id, impact, nodes }) => ({
+        id,
+        impact,
+        nodes: nodes.map(({ target, html, failureSummary }) => ({
+          target,
+          html,
+          failureSummary,
+        })),
+      })),
+  ).toEqual([]);
+}
+
+async function expectStickyTopbarAndReachableAction(
+  page: Page,
+  action: ReturnType<Page['getByRole']>,
+): Promise<void> {
+  await action.scrollIntoViewIfNeeded();
+  await expect(action).toBeInViewport();
+  const geometry = await action.evaluate((element) => {
+    const actionRect = element.getBoundingClientRect();
+    const topbar = document.querySelector<HTMLElement>('[data-shell="backoffice"] > header');
+    const topbarRect = topbar?.getBoundingClientRect();
+    const centerX = Math.min(
+      window.innerWidth - 1,
+      Math.max(0, actionRect.left + actionRect.width / 2),
+    );
+    const centerY = Math.min(
+      window.innerHeight - 1,
+      Math.max(0, actionRect.top + actionRect.height / 2),
+    );
+    const hit = document.elementFromPoint(centerX, centerY);
+    return {
+      actionBottom: actionRect.bottom,
+      actionTop: actionRect.top,
+      hit: hit === element || (hit !== null && element.contains(hit)),
+      topbarBottom: topbarRect?.bottom ?? 0,
+      topbarPosition: topbar === null ? null : getComputedStyle(topbar).position,
+      topbarTop: topbarRect?.top ?? null,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  expect(geometry.topbarPosition).toBe('sticky');
+  expect(geometry.topbarTop).not.toBeNull();
+  expect(Math.abs(geometry.topbarTop ?? 0)).toBeLessThanOrEqual(1);
+  expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.topbarBottom - 1);
+  expect(geometry.actionBottom).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+  expect(geometry.hit).toBe(true);
+}
+
+async function prepareWp11Visual(page: Page): Promise<void> {
+  await stabilizeVisualPage(page);
+  await page.evaluate(async () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.scrollTo(0, 0);
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
+  });
+}
+
+let auditScreenshotSequence = 0;
+
+async function captureAuditScreenshot(page: Page, name: string): Promise<void> {
+  auditScreenshotSequence += 1;
+  const directory = path.resolve('.local/fe09/wp08-audit');
+  await mkdir(directory, { recursive: true });
+  const sequence = String(auditScreenshotSequence).padStart(2, '0');
+  await page.locator('nextjs-portal').evaluateAll((portals) => {
+    for (const portal of portals) {
+      portal.setAttribute('aria-hidden', 'true');
+      portal.setAttribute('hidden', '');
+      (portal as HTMLElement).style.setProperty('display', 'none', 'important');
+    }
+  });
+  await page.screenshot({
+    animations: 'disabled',
+    path: path.join(directory, `${sequence}-${name}.png`),
+  });
 }

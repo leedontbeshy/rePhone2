@@ -27,7 +27,7 @@ export function IphoneGenerationSection({
           </Link>
         )}
       </div>
-      <ul className={styles.shelf} aria-label={`Các model thuộc ${group.label}`}>
+      <ul className={styles.shelf} aria-label={`Các dòng máy thuộc ${group.label}`}>
         {group.products.map((product) => (
           <li key={product.id}>
             <IphoneModelCard priority={product.id === priorityProductId} product={product} />

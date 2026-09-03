@@ -70,7 +70,6 @@
 .heading > p:last-child,
 .panelHeading p,
 .checklistHeading p,
-.checkGroup > header p,
 .checkCopy p,
 .actionBar span,
 .reviewHeading > div:first-child > p:last-child,
@@ -78,6 +77,10 @@
 .reviewResult small,
 .reviewActions span {
   color: var(--color-muted);
+}
+
+.checkGroup > header p {
+  color: var(--color-body);
 }
 
 .heading a {
@@ -238,7 +241,7 @@
   height: 2rem;
   place-items: center;
   border-radius: 50%;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   background: var(--color-brand-soft);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);

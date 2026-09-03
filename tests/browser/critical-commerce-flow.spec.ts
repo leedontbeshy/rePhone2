@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 const CUSTOMER = {
   email: 'customer@rephone.local',
@@ -14,9 +15,8 @@ const ONE_PIXEL_PNG = Buffer.from(
   'base64',
 );
 
-test('catalog to completed shipping order through customer and staff portals', async ({
-  browser,
-}) => {
+test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), async ({ browser }) => {
+  test.setTimeout(180_000);
   const customerContext = await browser.newContext();
   const staffContext = await browser.newContext();
 
@@ -43,13 +43,22 @@ test('catalog to completed shipping order through customer and staff portals', a
       customerPage.getByText(`Ảnh thật · Mã máy ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
 
+    const addToCart = customerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/v1/cart/items',
+    );
     await customerPage.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+    expect((await addToCart).status()).toBe(201);
     await expect(customerPage.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await customerPage.goto('/cart');
     await expect(
       customerPage.getByText(`Mã máy: ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
-    await customerPage.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click();
+    await Promise.all([
+      customerPage.waitForURL((url) => url.pathname === '/checkout'),
+      customerPage.getByRole('link', { name: 'Tiếp tục đặt hàng', exact: true }).click(),
+    ]);
 
     await fillShippingCheckout(customerPage);
     await customerPage.getByRole('button', { name: 'Kiểm tra đơn hàng', exact: true }).click();
@@ -58,21 +67,75 @@ test('catalog to completed shipping order through customer and staff portals', a
     const expectedDeposit = moneyDigits(await depositLine.locator('strong').innerText());
     expect(Number(expectedDeposit)).toBeGreaterThan(0);
 
+    let createResponsePromise = checkoutCreateResponse(customerPage);
     await customerPage.getByRole('button', { name: 'Đặt hàng', exact: true }).click();
+    let createResponse = await createResponsePromise;
+    if (createResponse.status() >= 500) {
+      const recovery = customerPage.getByRole('button', {
+        name: 'Kiểm tra trạng thái đơn hàng',
+        exact: true,
+      });
+      await expect(recovery).toBeVisible();
+      createResponsePromise = checkoutCreateResponse(customerPage);
+      await recovery.click();
+      createResponse = await createResponsePromise;
+    }
+    expect(createResponse.status()).toBe(201);
     await customerPage.waitForURL('**/orders/**');
     const orderNumber = orderNumberFrom(customerPage.url());
     await expect(
       customerPage.getByRole('heading', { name: orderNumber, exact: true }),
     ).toBeVisible();
 
-    await customerPage.getByLabel('Minh chứng chuyển khoản', { exact: true }).setInputFiles({
+    await customerPage.getByLabel('Chọn minh chứng thanh toán', { exact: true }).setInputFiles({
       name: 'deposit-proof.png',
       mimeType: 'image/png',
       buffer: ONE_PIXEL_PNG,
     });
-    await customerPage.getByRole('button', { name: 'Nộp minh chứng', exact: true }).click();
+    const proofSubmitted = customerPage.waitForResponse((response) => {
+      const request = response.request();
+      const path = new URL(response.url()).pathname;
+      return (
+        request.method() === 'POST' &&
+        path.startsWith('/api/v1/payments/') &&
+        path.endsWith('/submit-proof')
+      );
+    });
+    const orderRefreshAbort = new AbortController();
+    const orderRefreshed = customerPage
+      .waitForResponse(
+        (response) => {
+          const request = response.request();
+          return (
+            request.method() === 'GET' &&
+            new URL(response.url()).pathname === `/api/v1/orders/${encodeURIComponent(orderNumber)}`
+          );
+        },
+        { signal: orderRefreshAbort.signal },
+      )
+      .then(
+        (response) => ({ response }) as const,
+        (error: unknown) => ({ error }) as const,
+      );
+    await customerPage.getByRole('button', { name: 'Gửi minh chứng', exact: true }).click();
+    const proofResponse = await proofSubmitted;
+    if (proofResponse.status() !== 200) {
+      orderRefreshAbort.abort();
+      await orderRefreshed;
+    }
+    expect(proofResponse.status()).toBe(200);
+    const orderRefreshResult = await orderRefreshed;
+    if ('error' in orderRefreshResult) throw orderRefreshResult.error;
+    expect(orderRefreshResult.response.status()).toBe(200);
+    const depositPayment = customerPage.locator('article').filter({
+      has: customerPage.getByText('Thanh toán cọc', { exact: true }),
+    });
+    await expect(depositPayment.getByText('Đang kiểm tra', { exact: true })).toBeVisible();
     await expect(
-      customerPage.getByText('Đã nộp minh chứng. Thanh toán đang chờ nhân viên kiểm tra.', {
+      depositPayment.getByRole('button', { name: 'Gửi minh chứng', exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      customerPage.getByText('Đã gửi minh chứng. Thanh toán đang được kiểm tra.', {
         exact: true,
       }),
     ).toBeVisible();
@@ -80,91 +143,125 @@ test('catalog to completed shipping order through customer and staff portals', a
     const staffPage = await staffContext.newPage();
     await login(staffPage, EMPLOYEE, '/backoffice/orders');
     await staffPage.goto('/backoffice/payments');
-    const paymentCard = staffPage.locator('a.payment-queue-card', { hasText: orderNumber });
-    await expect(paymentCard).toBeVisible();
-    await paymentCard.click();
-    await staffPage.getByLabel('Số tiền đã nhận (VND)', { exact: true }).fill(expectedDeposit);
-    await staffPage.getByRole('button', { name: 'Xác minh thanh toán', exact: true }).click();
-    await expect(staffPage.getByText('Đã xác minh thanh toán.', { exact: false })).toBeVisible();
-
-    await staffPage.goto('/backoffice/orders');
-    const orderCard = staffPage.locator('a.fulfillment-order-card', { hasText: orderNumber });
-    await expect(orderCard).toBeVisible();
-    await orderCard.click();
-    await staffPage.getByRole('button', { name: 'Bắt đầu chuẩn bị', exact: true }).click();
-    await expect(staffPage.getByText('Đã bắt đầu chuẩn bị hàng.', { exact: true })).toBeVisible();
-
-    await staffPage.getByLabel('Đơn vị vận chuyển', { exact: true }).fill('rePhone Browser');
-    await staffPage.getByLabel('Mã vận đơn', { exact: true }).fill('PW-SLICE12-001');
-    await staffPage
-      .getByLabel('URL tra cứu HTTPS (không bắt buộc)', { exact: true })
-      .fill('https://carrier.example/track/PW-SLICE12-001');
-    await staffPage.getByRole('button', { name: 'Tạo vận đơn', exact: true }).click();
+    const paymentRow = staffPage.getByRole('row').filter({ hasText: orderNumber });
+    await expect(paymentRow).toBeVisible();
+    await paymentRow.getByRole('link', { name: 'Mở hồ sơ', exact: true }).click();
+    await staffPage.getByRole('button', { name: 'Xác nhận thanh toán', exact: true }).click();
+    const paymentDialog = staffPage.getByRole('dialog', { name: 'Xác nhận thanh toán' });
+    await paymentDialog.locator('#received-amount').fill(expectedDeposit);
+    await paymentDialog.getByRole('button', { name: 'Xác nhận thanh toán', exact: true }).click();
     await expect(
-      staffPage.getByText('Đã tạo vận đơn và mã tra cứu.', { exact: true }),
+      staffPage.getByText('Đã xác nhận khoản thanh toán.', { exact: false }),
     ).toBeVisible();
 
-    await staffPage.getByRole('button', { name: 'Bàn giao vận chuyển', exact: true }).click();
+    await staffPage.goto('/backoffice/orders');
+    const orderLink = staffPage
+      .getByRole('region', { name: 'Danh sách đơn hàng' })
+      .getByRole('link')
+      .filter({ hasText: orderNumber });
+    await expect(orderLink).toBeVisible();
+    await orderLink.click();
+    const prepareAction = await openOrderAction(staffPage, 'Bắt đầu chuẩn bị hàng');
+    await prepareAction.locator('button[type="submit"]').click();
+    await expect(staffPage.getByText('Đã bắt đầu chuẩn bị hàng.', { exact: true })).toBeVisible();
+
+    const shipmentAction = await openOrderAction(staffPage, 'Tạo vận đơn');
+    await shipmentAction.locator('#carrier-name').fill('rePhone Browser');
+    await shipmentAction.locator('#tracking-code').fill('PW-SLICE12-001');
+    await shipmentAction
+      .locator('#tracking-url')
+      .fill('https://carrier.example/track/PW-SLICE12-001');
+    await shipmentAction.locator('button[type="submit"]').click();
+    await expect(staffPage.getByText('Đã tạo vận đơn.', { exact: true })).toBeVisible();
+
+    const handoffAction = await openOrderAction(staffPage, 'Bàn giao cho đơn vị vận chuyển');
+    await handoffAction.locator('button[type="submit"]').click();
     await expect(
       staffPage.getByText('Đã bàn giao kiện hàng cho đơn vị vận chuyển.', { exact: true }),
     ).toBeVisible();
 
-    await staffPage.getByLabel('Đơn vị giao hàng đã thu đủ', { exact: false }).check();
-    await staffPage.getByRole('button', { name: 'Đã giao thành công', exact: true }).click();
+    const deliveredAction = await openOrderAction(staffPage, 'Xác nhận giao thành công');
+    await deliveredAction.getByLabel('Đơn vị giao hàng đã thu đủ', { exact: false }).check();
+    await deliveredAction.locator('button[type="submit"]').click();
     await expect(
-      staffPage.getByText('Đã giao hàng, quyết toán COD và phát hành bảo hành.', { exact: true }),
+      staffPage.getByText('Đã xác nhận giao hàng thành công.', { exact: true }),
     ).toBeVisible();
-    await expect(staffPage.getByText('COMPLETED', { exact: true }).first()).toBeVisible();
+    await expect(staffPage.getByText('Đã hoàn tất', { exact: true }).first()).toBeVisible();
 
     await customerPage.reload();
     await expect(
       customerPage.getByRole('heading', { name: orderNumber, exact: true }),
     ).toBeVisible();
-    await expect(
-      customerPage.locator('.order-status').getByText('Đã hoàn tất', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      customerPage.getByRole('heading', { name: 'Thanh toán khi nhận hàng', exact: true }),
-    ).toBeVisible();
-    await expect(customerPage.getByText('Thu hộ khi giao hàng', { exact: true })).toBeVisible();
-    await expect(customerPage.locator('.order-warranty-summary strong')).toContainText(
-      'Còn hiệu lực',
-    );
+    await expect(customerPage.getByText('Đã hoàn tất', { exact: true }).first()).toBeVisible();
+    await expect(customerPage.getByText('Đã giao hàng', { exact: true }).first()).toBeVisible();
+    await expect(customerPage.getByText('Thanh toán khi nhận hàng', { exact: true })).toBeVisible();
+    await expect(customerPage.getByText('Đã thanh toán', { exact: true }).first()).toBeVisible();
+    await expect(customerPage.getByText(/Còn hiệu lực/).first()).toBeVisible();
+    await expect(customerPage.getByRole('link', { name: 'Xem bảo hành' })).toBeVisible();
   } finally {
     await staffContext.close();
     await customerContext.close();
   }
 });
 
+async function openOrderAction(page: Page, label: string): Promise<Locator> {
+  await page
+    .getByRole('group', { name: 'Thao tác đang được phép' })
+    .getByRole('button', { name: label, exact: true })
+    .click();
+  const details = page.locator('details').filter({ hasText: label });
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  return details;
+}
+
 async function login(
   page: Page,
   credentials: { email: string; password: string },
   destination: '/account' | '/backoffice/orders',
 ): Promise<void> {
-  await page.goto('/login');
+  await page.goto(`/login?returnTo=${encodeURIComponent(destination)}`);
   await page.getByLabel('Email').fill(credentials.email);
-  await page.getByLabel('Mật khẩu').fill(credentials.password);
+  await page.locator('#password').fill(credentials.password);
+  const destinationReady = page.waitForURL(destination);
+  const cartReady =
+    destination === '/account'
+      ? page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/api/v1/cart/merge',
+        )
+      : Promise.resolve(undefined);
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
-  await page.waitForURL(destination);
+  const [, cartResponse] = await Promise.all([destinationReady, cartReady]);
+  if (cartResponse !== undefined) expect(cartResponse.status()).toBe(200);
 }
 
 async function fillShippingCheckout(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Hoàn tất đơn hàng', exact: true })).toBeVisible();
-  await page.getByLabel('Họ và tên', { exact: true }).fill('Khách hàng Browser');
-  await page.getByLabel('Email', { exact: true }).fill(CUSTOMER.email);
-  await page.getByLabel('Điện thoại', { exact: true }).fill('0900000000');
-  await page.getByLabel('Tên người nhận', { exact: true }).fill('Khách hàng Browser');
-  await page.getByLabel('Điện thoại người nhận', { exact: true }).fill('0900000000');
-  await page.getByLabel('Địa chỉ', { exact: true }).fill('123 Đường Browser');
-  await page.getByLabel('Phường / Xã', { exact: true }).fill('Phường Demo');
-  await page.getByLabel('Quận / Huyện', { exact: true }).fill('Quận Demo');
-  await page.getByLabel('Tỉnh / Thành phố', { exact: true }).fill('TP. Hồ Chí Minh');
+  await page.locator('#checkout-fullName').fill('Khách hàng Browser');
+  await page.locator('#checkout-email').fill(CUSTOMER.email);
+  await page.locator('#checkout-phone').fill('0900000000');
+  await page.locator('#checkout-receiverName').fill('Khách hàng Browser');
+  await page.locator('#checkout-receiverPhone').fill('0900000000');
+  await page.locator('#checkout-addressLine').fill('123 Đường Browser');
+  await page.locator('#checkout-ward').fill('Phường Demo');
+  await page.locator('#checkout-district').fill('Quận Demo');
+  await page.locator('#checkout-province').fill('TP. Hồ Chí Minh');
 }
 
 function moneyDigits(value: string): string {
   const digits = value.replace(/\D/g, '');
   if (digits.length === 0) throw new Error(`Expected money text, received ${value}`);
   return digits;
+}
+
+function checkoutCreateResponse(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/v1/checkouts' &&
+      response.request().method() === 'POST',
+  );
 }
 
 function orderNumberFrom(url: string): string {

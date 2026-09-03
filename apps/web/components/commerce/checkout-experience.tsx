@@ -10,22 +10,25 @@ import {
   TruckIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce, type Cart, type CartItem } from '@/app/commerce-provider';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import {
   checkoutWarningMessage,
-  parseChangedCheckoutPreview,
+  classifyCheckoutCreateFailure,
+  createCheckoutRequestEpoch,
   type CheckoutPreview,
+  type CheckoutRequestEpoch,
 } from '@/lib/checkout-api';
 import { customerApiError } from '@/lib/order-access';
 import styles from './checkout-experience.module.css';
 
 type Address = components['schemas']['AddressDto'];
+type CheckoutCreateRequest = components['schemas']['CreateCheckoutRequestDto'];
 type Fulfillment = 'PICKUP' | 'SHIPPING';
-type PendingAction = 'preview' | 'create' | null;
+type PendingAction = 'preview' | 'create' | 'recover' | null;
 
 export interface CheckoutFormData {
   fullName: string;
@@ -115,16 +118,45 @@ function CheckoutSession() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<CheckoutFormErrors>({});
   const [reviewRequired, setReviewRequired] = useState(false);
-  const [createUncertain, setCreateUncertain] = useState(false);
+  const [uncertainRequest, setUncertainRequest] = useState<CheckoutCreateRequest | null>(null);
   const [form, setForm] = useState<CheckoutFormData>(EMPTY_FORM);
   const reviewRef = useRef<HTMLDivElement>(null);
-  const previewRequestId = useRef(0);
+  const pageErrorRef = useRef<HTMLParagraphElement>(null);
+  const previewRequests = useRef<CheckoutRequestEpoch | null>(null);
+  const createRequests = useRef<CheckoutRequestEpoch | null>(null);
   const actionLock = useRef<PendingAction>(null);
   const previousCartFingerprint = useRef<string | null>(null);
   const populatedSession = useRef<string | null>(null);
+  if (previewRequests.current === null) previewRequests.current = createCheckoutRequestEpoch();
+  if (createRequests.current === null) createRequests.current = createCheckoutRequestEpoch();
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    root.style.scrollBehavior = previousScrollBehavior;
+  }, []);
+
+  useEffect(() => {
+    if (pageError !== null) pageErrorRef.current?.focus();
+  }, [pageError]);
+
+  useEffect(() => {
+    if (reviewRequired) reviewRef.current?.focus();
+  }, [reviewRequired]);
+
+  useEffect(
+    () => () => {
+      previewRequests.current?.invalidate();
+      createRequests.current?.invalidate();
+      actionLock.current = null;
+    },
+    [],
+  );
 
   const invalidatePreview = useCallback(() => {
-    previewRequestId.current += 1;
+    previewRequests.current?.invalidate();
     if (actionLock.current === 'preview') actionLock.current = null;
     setPendingAction((current) => (current === 'preview' ? null : current));
     setPreview(null);
@@ -219,14 +251,16 @@ function CheckoutSession() {
 
   const requestPreview = async () => {
     if (
-      createUncertain ||
+      uncertainRequest !== null ||
       !validate() ||
       cart === null ||
       cart.items.length === 0 ||
       actionLock.current !== null
     )
       return;
-    const requestId = ++previewRequestId.current;
+    const requestEpoch = previewRequests.current;
+    if (requestEpoch === null) return;
+    const requestId = requestEpoch.begin();
     actionLock.current = 'preview';
     setPendingAction('preview');
     setPageError(null);
@@ -238,18 +272,95 @@ function CheckoutSession() {
           ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
         },
       });
-      if (requestId !== previewRequestId.current) return;
+      if (!requestEpoch.isCurrent(requestId)) return;
       if (result.data === undefined) {
         throw new Error(customerApiError(result.error, 'Chưa thể kiểm tra đơn hàng.'));
       }
       setPreview(result.data.data);
       setReviewRequired(false);
     } catch (caught) {
-      if (requestId === previewRequestId.current) {
+      if (requestEpoch.isCurrent(requestId)) {
         setPageError(caught instanceof Error ? caught.message : 'Chưa thể kiểm tra đơn hàng.');
       }
     } finally {
-      if (requestId === previewRequestId.current) {
+      if (requestEpoch.isCurrent(requestId)) {
+        actionLock.current = null;
+        setPendingAction(null);
+      }
+    }
+  };
+
+  const submitCheckoutRequest = async (
+    request: CheckoutCreateRequest,
+    action: 'create' | 'recover',
+  ) => {
+    if (actionLock.current !== null) return;
+    const requestEpoch = createRequests.current;
+    if (requestEpoch === null) return;
+    actionLock.current = action;
+    setPendingAction(action);
+    setPageError(null);
+    const requestId = requestEpoch.begin();
+    try {
+      let result;
+      try {
+        result = await client.POST('/api/v1/checkouts', {
+          params: { header: CSRF_HEADER },
+          body: request,
+        });
+      } catch {
+        if (!requestEpoch.isCurrent(requestId)) return;
+        setUncertainRequest(request);
+        if (action === 'recover') {
+          setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+        }
+        return;
+      }
+      if (!requestEpoch.isCurrent(requestId)) return;
+      if (result.data === undefined) {
+        const failure = classifyCheckoutCreateFailure(
+          result.response.status,
+          result.error,
+          action === 'recover',
+        );
+        if (failure.kind === 'review') {
+          setUncertainRequest(null);
+          setPreview(failure.preview);
+          setReviewRequired(true);
+        } else if (failure.kind === 'conflict') {
+          setUncertainRequest(null);
+          setPreview(null);
+          setReviewRequired(false);
+          setPageError(failure.message);
+        } else if (failure.kind === 'uncertain') {
+          setUncertainRequest(request);
+          if (action === 'recover') {
+            setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+          }
+        } else {
+          setUncertainRequest(null);
+          setPageError(failure.message);
+        }
+        return;
+      }
+      setUncertainRequest(null);
+      const order = result.data.data.order;
+      const token = result.data.data.guestAccessToken;
+      if (!requestEpoch.isCurrent(requestId)) return;
+      window.location.assign(
+        token === undefined
+          ? `/orders/${order.orderNumber}`
+          : `/orders/${order.orderNumber}#token=${encodeURIComponent(token)}`,
+      );
+    } catch {
+      if (requestEpoch.isCurrent(requestId)) {
+        setUncertainRequest(request);
+        if (action === 'recover') {
+          setPageError('Chưa thể kiểm tra trạng thái đơn hàng. Vui lòng thử lại.');
+        }
+      }
+    } finally {
+      if (requestEpoch.isCurrent(requestId)) {
         actionLock.current = null;
         setPendingAction(null);
       }
@@ -260,79 +371,46 @@ function CheckoutSession() {
     if (
       preview === null ||
       reviewRequired ||
-      createUncertain ||
+      uncertainRequest !== null ||
       actionLock.current !== null ||
       !validate()
     )
       return;
-    actionLock.current = 'create';
-    setPendingAction('create');
-    setPageError(null);
-    try {
-      const shippingAddress =
-        fulfillmentType === 'SHIPPING'
-          ? {
-              receiverName: form.receiverName.trim(),
-              phone: form.receiverPhone.trim(),
-              addressLine: form.addressLine.trim(),
-              ward: form.ward.trim(),
-              district: form.district.trim(),
-              province: form.province.trim(),
-              ...(form.postalCode.trim() === '' ? {} : { postalCode: form.postalCode.trim() }),
-            }
-          : undefined;
-      let result;
-      try {
-        result = await client.POST('/api/v1/checkouts', {
-          params: { header: CSRF_HEADER },
-          body: {
-            fulfillmentType,
-            contact: {
-              fullName: form.fullName.trim(),
-              email: form.email.trim(),
-              phone: form.phone.trim(),
-            },
-            ...(shippingAddress === undefined ? {} : { shippingAddress }),
-            ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
-            ...(form.customerNote.trim() === '' ? {} : { customerNote: form.customerNote.trim() }),
-            expectedCartUpdatedAt: preview.cartUpdatedAt,
-            expectedGrandTotal: preview.pricing.grandTotal,
-            expectedDepositRequired: preview.pricing.depositRequired,
-          },
-        });
-      } catch {
-        setCreateUncertain(true);
-        setPageError(null);
-        return;
-      }
-      if (result.data === undefined) {
-        const current = parseChangedCheckoutPreview(result.error);
-        if (current !== undefined) {
-          setPreview(current);
-          setReviewRequired(true);
-          requestAnimationFrame(() => reviewRef.current?.focus());
-          return;
-        }
-        if (result.response.status >= 500 || result.response.status < 400) {
-          setCreateUncertain(true);
-          setPageError(null);
-          return;
-        }
-        throw new Error(customerApiError(result.error, 'Chưa thể tạo đơn hàng.'));
-      }
-      const order = result.data.data.order;
-      const token = result.data.data.guestAccessToken;
-      window.location.assign(
-        token === undefined
-          ? `/orders/${order.orderNumber}`
-          : `/orders/${order.orderNumber}#token=${encodeURIComponent(token)}`,
-      );
-    } catch (caught) {
-      setPageError(caught instanceof Error ? caught.message : 'Chưa thể tạo đơn hàng.');
-    } finally {
-      actionLock.current = null;
-      setPendingAction(null);
-    }
+    const shippingAddress =
+      fulfillmentType === 'SHIPPING'
+        ? {
+            receiverName: form.receiverName.trim(),
+            phone: form.receiverPhone.trim(),
+            addressLine: form.addressLine.trim(),
+            ward: form.ward.trim(),
+            district: form.district.trim(),
+            province: form.province.trim(),
+            ...(form.postalCode.trim() === '' ? {} : { postalCode: form.postalCode.trim() }),
+          }
+        : undefined;
+    await submitCheckoutRequest(
+      {
+        fulfillmentType,
+        contact: {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+        },
+        ...(shippingAddress === undefined ? {} : { shippingAddress }),
+        ...(appliedVoucher === '' ? {} : { voucherCode: appliedVoucher }),
+        ...(form.customerNote.trim() === '' ? {} : { customerNote: form.customerNote.trim() }),
+        expectedPreviewFingerprint: preview.previewFingerprint,
+        expectedCartUpdatedAt: preview.cartUpdatedAt,
+        expectedGrandTotal: preview.pricing.grandTotal,
+        expectedDepositRequired: preview.pricing.depositRequired,
+      },
+      'create',
+    );
+  };
+
+  const recoverOrder = async () => {
+    if (uncertainRequest === null) return;
+    await submitCheckoutRequest(uncertainRequest, 'recover');
   };
 
   const setField = (field: FormField, value: string) => {
@@ -375,7 +453,8 @@ function CheckoutSession() {
     }
   };
 
-  const formLocked = pendingAction === 'create' || createUncertain;
+  const formLocked =
+    pendingAction === 'create' || pendingAction === 'recover' || uncertainRequest !== null;
 
   if (cartLoading) return <CheckoutLoading />;
   if (cartError !== null) {
@@ -700,14 +779,16 @@ function CheckoutSession() {
           error={pageError}
           pendingAction={pendingAction}
           preview={preview}
+          pageErrorRef={pageErrorRef}
           reviewRef={reviewRef}
           reviewRequired={reviewRequired}
-          createUncertain={createUncertain}
+          uncertain={uncertainRequest !== null}
           onAcknowledgeReview={() => {
             setReviewRequired(false);
           }}
           onCreate={() => void createOrder()}
           onPreview={() => void requestPreview()}
+          onRecover={() => void recoverOrder()}
         />
       </div>
     </div>
@@ -762,25 +843,29 @@ function FormSection({ children, title }: Readonly<{ children: React.ReactNode; 
 function OrderSummary({
   cart,
   error,
+  pageErrorRef,
   pendingAction,
   preview,
   reviewRef,
   reviewRequired,
-  createUncertain,
+  uncertain,
   onAcknowledgeReview,
   onCreate,
   onPreview,
+  onRecover,
 }: Readonly<{
   cart: Cart;
   error: string | null;
+  pageErrorRef: React.RefObject<HTMLParagraphElement | null>;
   pendingAction: PendingAction;
   preview: CheckoutPreview | null;
   reviewRef: React.RefObject<HTMLDivElement | null>;
   reviewRequired: boolean;
-  createUncertain: boolean;
+  uncertain: boolean;
   onAcknowledgeReview: () => void;
   onCreate: () => void;
   onPreview: () => void;
+  onRecover: () => void;
 }>) {
   return (
     <aside className={styles.summary} aria-label="Đơn hàng của bạn">
@@ -808,7 +893,7 @@ function OrderSummary({
         </div>
       ) : null}
       {error !== null ? (
-        <p className={styles.pageError} role="alert">
+        <p ref={pageErrorRef} className={styles.pageError} role="alert" tabIndex={-1}>
           {error}
         </p>
       ) : null}
@@ -824,10 +909,21 @@ function OrderSummary({
         </span>
       </div>
 
-      {createUncertain ? (
+      {uncertain ? (
         <div className={styles.uncertainNotice} role="alert">
-          <strong>Đang chờ xác nhận đơn hàng</strong>
-          <span>Vui lòng kiểm tra email trước khi thao tác lại để tránh tạo trùng đơn.</span>
+          <strong>Chưa nhận được xác nhận đơn hàng</strong>
+          <span>
+            Yêu cầu có thể đã được ghi nhận. Hãy chủ động kiểm tra trạng thái để tiếp tục mà không
+            tạo trùng đơn.
+          </span>
+          <Button
+            className={styles.summaryButton}
+            loading={pendingAction === 'recover'}
+            loadingLabel="Đang kiểm tra trạng thái đơn hàng"
+            onClick={onRecover}
+          >
+            Kiểm tra trạng thái đơn hàng
+          </Button>
         </div>
       ) : reviewRequired ? (
         <Button className={styles.summaryButton} onClick={onAcknowledgeReview}>

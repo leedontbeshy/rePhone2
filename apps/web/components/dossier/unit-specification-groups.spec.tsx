@@ -19,7 +19,7 @@ describe('unit specification groups', () => {
     ]);
     expect(groups[1]?.items).toEqual([
       { key: 'inventoryCode', label: 'Mã máy', value: 'RPH-IP15PM-256-NAT-U01' },
-      { key: 'modelNumber', label: 'Mã model', value: 'MU663VN/A' },
+      { key: 'modelNumber', label: 'Mã kiểu máy', value: 'MU663VN/A' },
       { key: 'region', label: 'Thị trường', value: 'VN/A' },
       { key: 'simConfiguration', label: 'Cấu hình SIM', value: 'SIM vật lý và eSIM' },
       {
@@ -30,7 +30,7 @@ describe('unit specification groups', () => {
       },
       { detail: '207 chu kỳ sạc', key: 'battery', label: 'Pin', value: '96%' },
       { key: 'batteryReplacement', label: 'Linh kiện pin', value: 'Pin nguyên bản' },
-      { key: 'grade', label: 'Ngoại hình', value: 'Grade A' },
+      { key: 'grade', label: 'Ngoại hình', value: 'Loại A' },
       {
         key: 'repairHistory',
         label: 'Lịch sử sửa chữa',

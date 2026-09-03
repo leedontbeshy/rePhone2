@@ -11,6 +11,11 @@
   list-style: none;
 }
 
+.progress:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .progress li {
   position: relative;
   display: grid;

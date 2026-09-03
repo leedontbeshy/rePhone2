@@ -337,6 +337,111 @@ describe('SettingsService', () => {
     expect(fixture.storage.delete).not.toHaveBeenCalled();
   });
 
+  it('deletes the previous QR object after its replacement commits', async () => {
+    const fixture = createFixture();
+    const before = settingsRecord({
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/previous.png',
+    });
+    const after = settingsRecord({
+      version: 2,
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/new.png',
+    });
+    fixture.repository.find
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockResolvedValue({
+      bucket: 'rephone-store-assets',
+      objectPath: 'bank-qr/new.png',
+      mimeType: 'image/png',
+      fileSize: 1,
+    });
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 1 });
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).resolves.toMatchObject({
+      version: 2,
+      bankQrUrl:
+        'https://project.supabase.co/storage/v1/object/public/rephone-store-assets/bank-qr/new.png',
+    });
+    expect(fixture.storage.delete).toHaveBeenCalledTimes(1);
+    expect(fixture.storage.delete).toHaveBeenCalledWith(
+      'rephone-store-assets',
+      'bank-qr/previous.png',
+    );
+  });
+
+  it('keeps committed QR settings when deleting the previous object fails', async () => {
+    const fixture = createFixture();
+    const logger = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const before = settingsRecord({
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/previous.png',
+    });
+    const after = settingsRecord({
+      version: 2,
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/new.png',
+    });
+    fixture.repository.find
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockResolvedValue({
+      bucket: 'rephone-store-assets',
+      objectPath: 'bank-qr/new.png',
+      mimeType: 'image/png',
+      fileSize: 1,
+    });
+    fixture.storage.delete.mockRejectedValue(new Error('cleanup unavailable'));
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 1 });
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).resolves.toMatchObject({
+      version: 2,
+      bankQrUrl:
+        'https://project.supabase.co/storage/v1/object/public/rephone-store-assets/bank-qr/new.png',
+    });
+    expect(logger).toHaveBeenCalledWith({
+      event: 'storage_orphan_candidate',
+      requestId: actor.requestId,
+      scope: 'store-bank-qr',
+    });
+    expect(JSON.stringify(logger.mock.calls)).not.toContain('bank-qr/previous.png');
+  });
+
+  it('never deletes the active QR object when the previous and uploaded paths match', async () => {
+    const fixture = createFixture();
+    const before = settingsRecord({
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/current.png',
+    });
+    const after = settingsRecord({
+      version: 2,
+      bankQrBucket: 'rephone-store-assets',
+      bankQrObjectPath: 'bank-qr/current.png',
+    });
+    fixture.repository.find
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+    fixture.qrValidator.validate.mockResolvedValue(validatedImage());
+    fixture.storage.upload.mockResolvedValue({
+      bucket: 'rephone-store-assets',
+      objectPath: 'bank-qr/current.png',
+      mimeType: 'image/png',
+      fileSize: 1,
+    });
+    fixture.repository.updateIfVersion.mockResolvedValue({ count: 1 });
+
+    await expect(fixture.service.uploadBankQr(1, file(), actor)).resolves.toMatchObject({
+      version: 2,
+    });
+    expect(fixture.storage.delete).not.toHaveBeenCalled();
+  });
+
   it('cleans the uploaded QR object when the database attach loses', async () => {
     const fixture = createFixture();
     fixture.repository.find

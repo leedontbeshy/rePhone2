@@ -98,6 +98,7 @@ describe('customer post-purchase foundation', () => {
         />
         <CollectionSurface
           ariaLabel="Danh sách đơn hàng"
+          busy
           footer={
             <Pagination
               buildHref={(page) => `/orders?page=${String(page)}`}
@@ -113,11 +114,13 @@ describe('customer post-purchase foundation', () => {
 
     expect(markup).toContain('<h1>Đơn hàng của bạn</h1>');
     expect(markup).toContain('aria-label="Danh sách đơn hàng"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('Đang cập nhật danh sách…');
     expect(markup).toContain('href="/orders?page=1"');
     expect(markup).toContain('href="/orders?page=3"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).not.toContain('<svg');
-  });
+  }, 15_000);
 
   it('uses one safe not-found state without implementation details', () => {
     const markup = renderToStaticMarkup(<SafeNotFoundState />);

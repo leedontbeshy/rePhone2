@@ -30,7 +30,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
 
         <section className={styles.hero}>
           <div className={styles.modelMedia}>
-            <span>Ảnh minh họa model</span>
+            <span>Ảnh minh họa sản phẩm</span>
             <PublicMediaImage
               className={styles.heroImage}
               fallbackLabel={`Chưa có ảnh minh họa ${product.name}`}
@@ -51,7 +51,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           <header className={styles.sectionHeader}>
             <div>
               <p className={styles.eyebrow}>Lựa chọn hiện có</p>
-              <h2 id="available-options-title">Chọn biến thể phụ kiện</h2>
+              <h2 id="available-options-title">Các lựa chọn phụ kiện</h2>
             </div>
           </header>
 
@@ -76,7 +76,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
                       <div className={styles.variantHeader}>
                         <div>
                           <h3>{variant.displayName}</h3>
-                          <p>{variant.sku}</p>
+                          <p>Mã sản phẩm: {variant.sku}</p>
                         </div>
                         <StatusChip
                           label={

@@ -46,7 +46,7 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
       <section className={styles.hero} aria-label="Thông tin máy đang bán">
         <header className={styles.productContext}>
           <div className={styles.statusRow}>
-            <Badge>Grade {unit.conditionGrade}</Badge>
+            <Badge>Ngoại hình loại {unit.conditionGrade}</Badge>
             {unit.batteryHealthPercent === null ||
             unit.batteryHealthPercent === undefined ? null : (
               <strong>Pin {String(unit.batteryHealthPercent)}%</strong>

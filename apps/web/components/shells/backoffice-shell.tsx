@@ -106,8 +106,8 @@ export function BackofficeShell({
       </div>
       <header className={styles.backofficeTopbar}>
         <div className={styles.topbarContext}>
-          <Link className={styles.contextLink} href={contextHref}>
-            <StorefrontIcon aria-hidden="true" size={22} />
+          <Link aria-label={contextLabel} className={styles.contextLink} href={contextHref}>
+            <StorefrontIcon aria-hidden="true" size={22} weight="regular" />
             <span>{contextLabel}</span>
           </Link>
           {actorSummary === undefined ? null : (

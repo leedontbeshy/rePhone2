@@ -10,13 +10,20 @@ import { presentWarranty, warrantyPageHref } from './warranty-presenters';
 import styles from './warranties.module.css';
 
 export function WarrantyList({
+  busy = false,
   items,
   page,
   totalPages,
-}: Readonly<{ items: readonly WarrantyListItem[]; page: number; totalPages: number }>) {
+}: Readonly<{
+  busy?: boolean | undefined;
+  items: readonly WarrantyListItem[];
+  page: number;
+  totalPages: number;
+}>) {
   return (
     <CollectionSurface
       ariaLabel="Danh sách bảo hành"
+      busy={busy}
       footer={<Pagination buildHref={warrantyPageHref} page={page} totalPages={totalPages} />}
     >
       {items.map((item) => {

@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { checkoutWarningMessage, parseChangedCheckoutPreview } from './checkout-api';
+import {
+  checkoutWarningMessage,
+  classifyCheckoutCreateFailure,
+  createCheckoutRequestEpoch,
+  parseChangedCheckoutPreview,
+} from './checkout-api';
 
 const preview = {
   calculatedAt: '2026-08-27T00:00:00.000Z',
   cartUpdatedAt: '2026-08-27T00:00:00.000Z',
+  previewFingerprint: `v1:${'a'.repeat(64)}`,
   fulfillmentType: 'SHIPPING',
   fulfillmentSummary: { type: 'SHIPPING' },
   items: [
@@ -82,6 +88,7 @@ describe('parseChangedCheckoutPreview', () => {
     const cases = [
       { ...preview, items: [{ ...preview.items[0], quantity: 0 }] },
       { ...preview, pricing: { ...preview.pricing, grandTotal: '10.5' } },
+      { ...preview, previewFingerprint: 'v1:wrong' },
       {
         ...preview,
         fulfillmentType: 'PICKUP',
@@ -107,5 +114,59 @@ describe('checkoutWarningMessage', () => {
   it('uses natural Vietnamese for known and unknown warnings', () => {
     expect(checkoutWarningMessage('PRICE_CHANGED')).toContain('Giá của một sản phẩm');
     expect(checkoutWarningMessage('INTERNAL_WARNING')).not.toContain('INTERNAL_WARNING');
+  });
+});
+
+describe('createCheckoutRequestEpoch', () => {
+  it('rejects responses from a replaced or invalidated checkout request', () => {
+    const epoch = createCheckoutRequestEpoch();
+    const first = epoch.begin();
+    expect(epoch.isCurrent(first)).toBe(true);
+
+    const second = epoch.begin();
+    expect(epoch.isCurrent(first)).toBe(false);
+    expect(epoch.isCurrent(second)).toBe(true);
+
+    epoch.invalidate();
+    expect(epoch.isCurrent(second)).toBe(false);
+  });
+});
+
+describe('classifyCheckoutCreateFailure', () => {
+  it('returns the authoritative preview for review-required conflicts', () => {
+    expect(
+      classifyCheckoutCreateFailure(409, {
+        error: {
+          code: 'CHECKOUT_REVIEW_REQUIRED',
+          details: [{ code: 'CHECKOUT_CHANGED', current: preview }],
+        },
+      }),
+    ).toEqual({ kind: 'review', preview });
+  });
+
+  it('separates definitive conflicts from uncertain and ordinary failures', () => {
+    expect(
+      classifyCheckoutCreateFailure(409, {
+        error: { code: 'INVENTORY_NOT_AVAILABLE' },
+      }),
+    ).toEqual({ kind: 'conflict', message: 'Sản phẩm này hiện không còn sẵn hàng.' });
+    expect(classifyCheckoutCreateFailure(503, undefined)).toEqual({ kind: 'uncertain' });
+    expect(
+      classifyCheckoutCreateFailure(422, {
+        error: { code: 'VOUCHER_NOT_APPLICABLE' },
+      }),
+    ).toEqual({ kind: 'error', message: 'Mã ưu đãi chưa áp dụng được cho giỏ hàng này.' });
+  });
+
+  it('keeps recovery uncertain when a gate rejects the replay before checkout is resolved', () => {
+    expect(classifyCheckoutCreateFailure(429, { error: { code: 'RATE_LIMITED' } }, true)).toEqual({
+      kind: 'uncertain',
+    });
+    expect(
+      classifyCheckoutCreateFailure(401, { error: { code: 'SESSION_REVOKED' } }, true),
+    ).toEqual({ kind: 'uncertain' });
+    expect(
+      classifyCheckoutCreateFailure(422, { error: { code: 'VOUCHER_NOT_APPLICABLE' } }, true),
+    ).toEqual({ kind: 'error', message: 'Mã ưu đãi chưa áp dụng được cho giỏ hàng này.' });
   });
 });

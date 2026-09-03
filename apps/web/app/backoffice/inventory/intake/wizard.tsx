@@ -32,8 +32,12 @@ import { intakeInspectionHref } from '../../../../lib/inventory-workflow-routes'
 import {
   INTAKE_FIELD_ORDER,
   firstInventoryIntakeErrorField,
+  inventoryIntakeProductForSelection,
+  inventoryIntakeProductSelection,
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
+  inventoryIntakeVariantIsSelectable,
+  normalizedInventoryIdentifiers,
   validateInventoryIntakeDraft,
   type IntakeField,
   type IntakeFieldErrors,
@@ -82,8 +86,12 @@ export function InventoryIntakeWizard() {
   const [unit, setUnit] = useState<Unit | null>(null);
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [intakeOptionsStatus, setIntakeOptionsStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'failed'
+  >('idle');
+  const [productLoading, setProductLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [intakeErrors, setIntakeErrors] = useState<IntakeFieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -97,7 +105,7 @@ export function InventoryIntakeWizard() {
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff || unitId !== null) return;
     let active = true;
-    setLoading(true);
+    setIntakeOptionsStatus('loading');
     setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/products', {
@@ -127,12 +135,12 @@ export function InventoryIntakeWizard() {
           productId: current.productId || nextProducts[0]?.id || '',
           locationId: current.locationId || nextLocations[0]?.id || '',
         }));
+        if (nextProducts.length === 0) setIntakeOptionsStatus('ready');
       })
       .catch((cause: unknown) => {
-        if (active) setError(messageOf(cause));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setIntakeOptionsStatus('failed');
+        setError(messageOf(cause));
       });
     return () => {
       active = false;
@@ -142,6 +150,8 @@ export function InventoryIntakeWizard() {
   useEffect(() => {
     if (!isStaff || unitId !== null || intake.productId === '') return;
     let active = true;
+    setProductLoading(true);
+    setProduct((current) => inventoryIntakeProductForSelection(current, intake.productId));
     void client
       .GET('/api/v1/backoffice/products/{id}', {
         params: { path: { id: intake.productId } },
@@ -158,10 +168,16 @@ export function InventoryIntakeWizard() {
             ? current.variantId
             : variants[0]?.id || '',
         }));
+        setIntakeOptionsStatus('ready');
         clearIntakeErrors('variantId');
       })
       .catch((cause: unknown) => {
-        if (active) setError(messageOf(cause));
+        if (!active) return;
+        setIntakeOptionsStatus((current) => (current === 'ready' ? current : 'failed'));
+        setError(messageOf(cause));
+      })
+      .finally(() => {
+        if (active) setProductLoading(false);
       });
     return () => {
       active = false;
@@ -175,7 +191,6 @@ export function InventoryIntakeWizard() {
       return;
     }
     let active = true;
-    setLoading(true);
     setError(null);
     void Promise.all([
       client.GET('/api/v1/backoffice/inventory-units/{id}', {
@@ -214,9 +229,6 @@ export function InventoryIntakeWizard() {
       })
       .catch((cause: unknown) => {
         if (active) setError(messageOf(cause));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -237,11 +249,20 @@ export function InventoryIntakeWizard() {
   function submitIntake(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationErrors = validateInventoryIntakeDraft(intake);
+    const intakeProduct = inventoryIntakeProductForSelection(product, intake.productId);
+    const selectableVariants = intakeProduct === null ? [] : sellableVariants(intakeProduct);
+    if (
+      intake.variantId !== '' &&
+      !inventoryIntakeVariantIsSelectable(selectableVariants, intake.variantId)
+    ) {
+      validationErrors.variantId = 'Cấu hình không thuộc dòng iPhone đang chọn. Hãy chọn lại.';
+    }
     if (firstInventoryIntakeErrorField(validationErrors) !== undefined) {
       applyIntakeErrors(validationErrors);
       return;
     }
     setIntakeErrors({});
+    const identifiers = normalizedInventoryIdentifiers(intake);
     void runAction('intake', async () => {
       const result = await client.POST('/api/v1/backoffice/inventory-units', {
         body: {
@@ -249,10 +270,10 @@ export function InventoryIntakeWizard() {
           locationId: intake.locationId,
           simLockStatus: intake.simLockStatus,
           simConfiguration: intake.simConfiguration,
-          ...(intake.imei1.trim() === '' ? {} : { imei1: intake.imei1 }),
-          ...(intake.imei2.trim() === '' ? {} : { imei2: intake.imei2 }),
-          ...(intake.eid.trim() === '' ? {} : { eid: intake.eid }),
-          ...(intake.serial.trim() === '' ? {} : { serial: intake.serial }),
+          ...(identifiers.imei1 === '' ? {} : { imei1: identifiers.imei1 }),
+          ...(identifiers.imei2 === '' ? {} : { imei2: identifiers.imei2 }),
+          ...(identifiers.eid === '' ? {} : { eid: identifiers.eid }),
+          ...(identifiers.serial === '' ? {} : { serial: identifiers.serial }),
           ...(intake.modelNumber.trim() === '' ? {} : { modelNumber: intake.modelNumber }),
           ...(intake.regionCode.trim() === '' ? {} : { regionCode: intake.regionCode }),
           ...(intake.salePrice.trim() === '' ? {} : { salePrice: intake.salePrice }),
@@ -317,16 +338,29 @@ export function InventoryIntakeWizard() {
     window.requestAnimationFrame(() => {
       const control = document.getElementById(`intake-${firstField}`);
       control?.focus({ preventScroll: true });
-      control?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      control?.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
     });
   }
 
   function submitUpload(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (unit === null || file === null) {
+      setMediaError('Hãy chọn một ảnh JPEG, PNG hoặc WebP.');
+      fileInputRef.current?.focus();
+      return;
+    }
+    const fileError = validateInventoryMediaFile(file);
+    if (fileError !== null) {
+      setMediaError(fileError);
+      fileInputRef.current?.focus();
+      return;
+    }
+    setMediaError(null);
     void runAction('upload', async () => {
-      if (unit === null || file === null) throw new Error('Hãy chọn một ảnh JPEG, PNG hoặc WebP.');
-      const fileError = validateInventoryMediaFile(file);
-      if (fileError !== null) throw new Error(fileError);
       const formData = new FormData();
       formData.set('file', file);
       formData.set('altText', `Ảnh thực tế ${unit.inventoryCode}`);
@@ -339,6 +373,7 @@ export function InventoryIntakeWizard() {
       if (result.data === undefined) throw apiRequestError(result.error);
       await refreshUnit(unit.id);
       setFile(null);
+      setMediaError(null);
       if (fileInputRef.current !== null) fileInputRef.current.value = '';
       setNotice('Đã tải ảnh thực tế của máy lên thành công.');
     });
@@ -429,7 +464,8 @@ export function InventoryIntakeWizard() {
 
   if (status !== 'authenticated' || !isStaff) return null;
 
-  const variants = product === null ? [] : sellableVariants(product);
+  const selectedProduct = inventoryIntakeProductForSelection(product, intake.productId);
+  const variants = selectedProduct === null ? [] : sellableVariants(selectedProduct);
   const completedPassed =
     inspection?.status === 'COMPLETED' && inspection.overallResult === 'PASSED';
   const inspectionNeedsAttention =
@@ -451,6 +487,11 @@ export function InventoryIntakeWizard() {
     unitId !== null &&
     (unit?.id !== unitId || (inspectionId !== null && inspection?.id !== inspectionId));
   const isRestoringExistingUnit = hasRequestedExistingUnit && error === null;
+  const isPreparingNewIntake =
+    unitId === null &&
+    unit === null &&
+    (intakeOptionsStatus === 'idle' || intakeOptionsStatus === 'loading') &&
+    error === null;
   const completedWorkflowSteps: InventoryWorkflowStep[] = [];
   if (unit !== null) completedWorkflowSteps.push(1);
   if ((unit?.mediaCount ?? 0) > 0) completedWorkflowSteps.push(2);
@@ -491,12 +532,10 @@ export function InventoryIntakeWizard() {
           {notice}
         </div>
       ) : null}
-      {loading && !isRestoringExistingUnit ? (
-        <div className="status">Đang tải dữ liệu tiếp nhận máy…</div>
-      ) : null}
-
       {hasRequestedExistingUnit ? (
         <ExistingUnitLoadingState failed={error !== null} />
+      ) : isPreparingNewIntake ? (
+        <InitialIntakeLoadingState />
       ) : unit === null ? (
         <div className={styles.intakeWorkbench}>
           <section className={styles.intakePanel} aria-labelledby="intake-title">
@@ -524,8 +563,7 @@ export function InventoryIntakeWizard() {
                   onChange={(event) => {
                     setIntake((current) => ({
                       ...current,
-                      productId: event.target.value,
-                      variantId: '',
+                      ...inventoryIntakeProductSelection(event.target.value),
                     }));
                     clearIntakeErrors('productId', 'variantId');
                   }}
@@ -541,6 +579,8 @@ export function InventoryIntakeWizard() {
                   ))}
                 </Select>
                 <Select
+                  aria-busy={productLoading}
+                  disabled={productLoading}
                   error={intakeErrors.variantId}
                   id="intake-variantId"
                   label="Biến thể đang bán"
@@ -550,14 +590,17 @@ export function InventoryIntakeWizard() {
                   }}
                   required
                 >
-                  {variants.length === 0 ? (
+                  {productLoading ? <option value="">Đang cập nhật cấu hình…</option> : null}
+                  {!productLoading && variants.length === 0 ? (
                     <option value="">Chưa có cấu hình đang bán</option>
                   ) : null}
-                  {variants.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.displayName} · {item.sku}
-                    </option>
-                  ))}
+                  {productLoading
+                    ? null
+                    : variants.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.displayName} · {item.sku}
+                        </option>
+                      ))}
                 </Select>
                 <Select
                   containerClassName={styles.fieldWide ?? ''}
@@ -786,7 +829,12 @@ export function InventoryIntakeWizard() {
             >
               <form className={styles.uploadForm} onSubmit={submitUpload}>
                 <input
-                  aria-describedby="inventory-media-file-help"
+                  aria-describedby={
+                    mediaError === null
+                      ? 'inventory-media-file-help'
+                      : 'inventory-media-file-help inventory-media-file-error'
+                  }
+                  aria-invalid={mediaError === null ? undefined : true}
                   className={styles.fileInput}
                   disabled={busy === 'upload'}
                   id="inventory-media-file"
@@ -794,7 +842,14 @@ export function InventoryIntakeWizard() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => {
-                    setFile(event.target.files?.[0] ?? null);
+                    const nextFile = event.target.files?.[0] ?? null;
+                    const nextError =
+                      nextFile === null
+                        ? 'Hãy chọn một ảnh JPEG, PNG hoặc WebP.'
+                        : validateInventoryMediaFile(nextFile);
+                    setFile(nextError === null ? nextFile : null);
+                    setMediaError(nextError);
+                    if (nextError !== null) event.target.value = '';
                   }}
                   required
                 />
@@ -818,6 +873,11 @@ export function InventoryIntakeWizard() {
                     {file === null ? 'Chọn ảnh' : 'Đổi ảnh'}
                   </span>
                 </label>
+                {mediaError === null ? null : (
+                  <p className={styles.uploadError} id="inventory-media-file-error" role="alert">
+                    {mediaError}
+                  </p>
+                )}
                 <div className={styles.uploadActions}>
                   <span>{unit.mediaCount} ảnh đã gắn với máy này</span>
                   <button
@@ -1146,6 +1206,48 @@ function ExistingUnitLoadingState({ failed }: { failed: boolean }) {
         </>
       )}
     </section>
+  );
+}
+
+function InitialIntakeLoadingState() {
+  return (
+    <div
+      className={styles.intakeWorkbench}
+      aria-label="Đang chuẩn bị biểu mẫu tiếp nhận máy"
+      role="status"
+    >
+      <section
+        aria-hidden="true"
+        className={classNames(styles.intakePanel, styles.intakeLoadingPanel)}
+      >
+        <div className={styles.intakeLoadingHeading}>
+          <Skeleton height="2.625rem" width="2.625rem" />
+          <div>
+            <Skeleton height="1.5rem" width="12rem" />
+            <Skeleton height="1rem" width="min(100%, 28rem)" />
+          </div>
+        </div>
+        <div className={styles.intakeLoadingFields}>
+          {Array.from({ length: 8 }, (_, index) => (
+            <div key={index}>
+              <Skeleton height="0.875rem" width="7.5rem" />
+              <Skeleton height="3rem" width="100%" />
+            </div>
+          ))}
+        </div>
+      </section>
+      <aside
+        aria-hidden="true"
+        className={classNames(styles.intakeSummary, styles.intakeLoadingSummary)}
+      >
+        <Skeleton height="2rem" width="10rem" />
+        <Skeleton height="9rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+        <Skeleton height="3.5rem" width="100%" />
+      </aside>
+      <span className="rp-visually-hidden">Đang chuẩn bị biểu mẫu tiếp nhận máy…</span>
+    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import type { BrowserContext, Page, Route } from '@playwright/test';
 
-const PUBLIC_MEDIA_GLOB = 'https://example.supabase.co/storage/v1/object/public/public-test/**';
+const PUBLIC_MEDIA_GLOB = 'https://example.supabase.co/storage/v1/object/public/**';
 
 const demoAssets = {
   'cap-usb-c-to-lightning.png': new URL(

@@ -124,7 +124,9 @@ export function maskedWarrantyIdentifier(value: string | null | undefined): stri
 }
 
 export function parseWarrantyPage(value: string | null | undefined): number {
-  return value !== undefined && value !== null && /^[1-9]\d*$/.test(value) ? Number(value) : 1;
+  if (value === undefined || value === null || !/^[1-9]\d*$/.test(value)) return 1;
+  const page = Number(value);
+  return Number.isSafeInteger(page) ? page : 1;
 }
 
 export function warrantyPageHref(page: number): string {

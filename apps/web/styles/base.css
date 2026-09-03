@@ -7,7 +7,6 @@
 }
 
 html {
-  min-width: 20rem;
   scroll-behavior: smooth;
   scroll-padding-block: calc(var(--header-height) + var(--space-4));
   text-size-adjust: 100%;
@@ -197,5 +196,12 @@ body {
   :focus-visible {
     outline: 3px solid CanvasText;
     box-shadow: none;
+  }
+
+  input[type='file']:not([data-rp-file-picker-control]):focus-visible + *,
+  label:has(+ input[type='file']:focus-visible),
+  label:has(> input[type='file']:focus-visible) {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
   }
 }

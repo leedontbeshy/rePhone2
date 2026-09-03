@@ -16,7 +16,7 @@ const ITEMS: readonly { icon: ReactNode; title: string; description: string }[] 
   {
     icon: <TagIcon aria-hidden="true" size={28} weight="regular" />,
     title: 'Giá theo máy đang bán',
-    description: 'Giá model lấy từ chiếc máy khả dụng thấp nhất.',
+    description: 'Giá dòng máy lấy từ chiếc máy khả dụng thấp nhất.',
   },
 ];
 

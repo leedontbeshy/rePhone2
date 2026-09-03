@@ -4,6 +4,7 @@ import { ErrorSummary } from '@/components/ui';
 import { AuthActionError } from '@/app/auth-provider';
 import {
   AuthForm,
+  AuthPending,
   AuthPage,
   PasswordFields,
   authDestination,
@@ -11,6 +12,7 @@ import {
   confirmationError,
   passwordPolicyError,
   safeAuthReturnTo,
+  withoutAuthFieldIssue,
 } from './index';
 
 describe('auth UI foundation', () => {
@@ -29,8 +31,41 @@ describe('auth UI foundation', () => {
     expect(html).toContain('id="password"');
     expect(html).toContain('id="confirmation"');
     expect(html).toContain('aria-invalid="true"');
+    expect(html).toContain('aria-label="Hiện mật khẩu"');
+    expect(html).toContain('aria-controls="password"');
     expect(html).toContain('role="alert"');
     expect(html).toContain('noValidate=""');
+  });
+
+  it('keeps the pending auth form stable without exposing placeholder content', () => {
+    const html = renderToStaticMarkup(<AuthPending>Đang chuẩn bị biểu mẫu…</AuthPending>);
+
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain('role="status"');
+    expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('Đang chuẩn bị biểu mẫu…');
+    expect(html.match(/aria-hidden="true"/g)?.length).toBeGreaterThanOrEqual(6);
+    expect(html).not.toContain('<input');
+    expect(html).not.toContain('<button');
+  });
+
+  it('clears only the edited field issue while preserving unrelated and global errors', () => {
+    expect(
+      withoutAuthFieldIssue(
+        {
+          errors: [
+            { href: '#email', message: 'Email chưa đúng' },
+            { href: '#password', message: 'Mật khẩu chưa đúng' },
+            { message: 'Lỗi chung' },
+          ],
+          fields: { email: 'Email chưa đúng', password: 'Mật khẩu chưa đúng' },
+        },
+        'email',
+      ),
+    ).toEqual({
+      errors: [{ href: '#password', message: 'Mật khẩu chưa đúng' }, { message: 'Lỗi chung' }],
+      fields: { password: 'Mật khẩu chưa đúng' },
+    });
   });
 
   it('enforces the accepted password policy and confirmation', () => {
@@ -51,9 +86,12 @@ describe('auth UI foundation', () => {
       authIssueFromError(new AuthActionError('ACCOUNT_UNAVAILABLE', 'raw'), 'login').errors[0]
         ?.message,
     ).toContain('tạm khóa');
-    expect(
-      authIssueFromError(new AuthActionError('DUPLICATE_RESOURCE', 'raw'), 'register').fields.email,
-    ).toContain('đã được dùng');
+    const duplicateRegistration = authIssueFromError(
+      new AuthActionError('DUPLICATE_RESOURCE', 'raw'),
+      'register',
+    );
+    expect(duplicateRegistration.fields).toEqual({});
+    expect(duplicateRegistration.errors[0]?.message).not.toContain('đã được dùng');
     expect(
       authIssueFromError(new AuthActionError('RATE_LIMITED', 'raw'), 'forgot').errors[0]?.message,
     ).toContain('quá nhiều');
@@ -63,6 +101,7 @@ describe('auth UI foundation', () => {
     expect(safeAuthReturnTo('/account/addresses?edit=1', 'CUSTOMER')).toBe(
       '/account/addresses?edit=1',
     );
+    expect(safeAuthReturnTo('/cart', 'CUSTOMER')).toBe('/cart');
     expect(safeAuthReturnTo('/backoffice/orders?page=2', 'EMPLOYEE')).toBe(
       '/backoffice/orders?page=2',
     );

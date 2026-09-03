@@ -17,6 +17,12 @@ import {
   type PaymentQueueItem,
 } from '@/lib/payment-api';
 import { OperationsPageHeader } from '../operations-primitives';
+import {
+  focusQueueReadError,
+  isCurrentQueueRequest,
+  queuePageWithinTotal,
+  queueReadPresentation,
+} from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import {
   PAYMENT_DEFAULT_QUERY,
@@ -58,39 +64,47 @@ export function PaymentQueueView() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedQueryKey, setLoadedQueryKey] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const errorRef = useRef<HTMLDivElement>(null);
+  const listRequestRef = useRef(0);
 
   useEffect(() => {
     setDraft(draftFromQuery(query));
   }, [query]);
 
   useEffect(() => {
-    if (error !== null) errorRef.current?.focus();
+    if (error !== null) focusQueueReadError(errorRef.current);
   }, [error]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !isStaff) return;
-    let active = true;
+    const request = ++listRequestRef.current;
     setLoading(true);
     setError(null);
     void listBackofficePayments(client, query)
       .then((result) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
+        const authoritativePage = queuePageWithinTotal(query.page, result.pagination.totalPages);
+        if (authoritativePage !== query.page) {
+          router.replace(paymentQueryHref(query, authoritativePage), { scroll: false });
+          return;
+        }
         setPayments(result.data);
         setPagination(result.pagination);
+        setLoadedQueryKey(searchKey);
       })
       .catch((caught: unknown) => {
-        if (!active) return;
+        if (!isCurrentQueueRequest(request, listRequestRef.current)) return;
         setError(caught instanceof Error ? caught.message : 'Không thể tải danh sách thanh toán.');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (isCurrentQueueRequest(request, listRequestRef.current)) setLoading(false);
       });
     return () => {
-      active = false;
+      if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [client, isStaff, query, refreshKey, status]);
+  }, [client, isStaff, query, refreshKey, router, searchKey, status]);
 
   function applyFilters(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,6 +114,8 @@ export function PaymentQueueView() {
   function resetFilters() {
     router.replace(paymentQueryHref(PAYMENT_DEFAULT_QUERY), { scroll: false });
   }
+
+  const readPresentation = queueReadPresentation(loading, error, searchKey, loadedQueryKey);
 
   return (
     <OperationsShell
@@ -239,6 +255,9 @@ export function PaymentQueueView() {
       {error === null ? null : (
         <InlineAlert ref={errorRef} tabIndex={-1} title="Chưa tải được danh sách" tone="danger">
           <p>{error}</p>
+          {readPresentation.retainedSnapshotNotice === null ? null : (
+            <p>{readPresentation.retainedSnapshotNotice}</p>
+          )}
           <Button
             size="compact"
             variant="secondary"
@@ -251,18 +270,10 @@ export function PaymentQueueView() {
         </InlineAlert>
       )}
 
-      {loading && payments.length === 0 ? (
+      {readPresentation.initialLoading ? (
         <PaymentQueueSkeleton />
       ) : (
-        <BackofficeDataBoard
-          ariaLabel="Danh sách thanh toán"
-          columns={paymentColumns}
-          emptyDescription="Hãy thay đổi bộ lọc hoặc kiểm tra lại sau."
-          emptyTitle="Không có khoản thanh toán phù hợp"
-          getRowKey={(payment) => payment.id}
-          loading={loading}
-          rows={payments}
-        />
+        <PaymentQueueTable loading={loading} payments={payments} />
       )}
 
       <BackofficePagination
@@ -273,6 +284,23 @@ export function PaymentQueueView() {
         totalPages={pagination.totalPages}
       />
     </OperationsShell>
+  );
+}
+
+export function PaymentQueueTable({
+  loading = false,
+  payments,
+}: Readonly<{ loading?: boolean; payments: readonly PaymentQueueItem[] }>) {
+  return (
+    <BackofficeDataBoard
+      ariaLabel="Danh sách thanh toán"
+      columns={paymentColumns}
+      emptyDescription="Hãy thay đổi bộ lọc hoặc kiểm tra lại sau."
+      emptyTitle="Không có khoản thanh toán phù hợp"
+      getRowKey={(payment) => payment.id}
+      loading={loading}
+      rows={payments}
+    />
   );
 }
 

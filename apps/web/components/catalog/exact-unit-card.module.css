@@ -1,5 +1,8 @@
 .unitCard {
+  display: grid;
+  height: 100%;
   min-width: 0;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: var(--border-default);
   border-radius: calc(var(--radius-card) + 0.125rem);
@@ -23,6 +26,7 @@
   overflow: hidden;
   color: inherit;
   background: var(--color-surface);
+  text-decoration: none;
 }
 
 .actualUnitLabel {
@@ -56,6 +60,15 @@
 
 .unitCardBody {
   display: grid;
+  grid-template-rows:
+    auto
+    minmax(var(--line-height-small), auto)
+    auto
+    minmax(var(--control-height), auto)
+    auto
+    minmax(0, 1fr)
+    auto;
+  align-content: start;
   gap: var(--space-3);
   padding: var(--space-3);
   border-top: var(--border-default);
@@ -71,6 +84,7 @@
 }
 
 .cardMeta {
+  grid-row: 1;
   justify-content: space-between;
   gap: var(--space-2);
 }
@@ -88,6 +102,7 @@
 }
 
 .colorLine {
+  grid-row: 2;
   gap: var(--space-2);
   color: var(--color-body);
   font-size: var(--font-size-small);
@@ -103,6 +118,7 @@
 }
 
 .variantName {
+  grid-row: 3;
   color: var(--color-muted);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
@@ -110,6 +126,7 @@
 
 .configuration {
   display: grid;
+  grid-row: 4;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   margin: 0;
@@ -148,6 +165,7 @@
 }
 
 .unitPrice {
+  grid-row: 5;
   flex-wrap: wrap;
   gap: var(--space-3);
 }
@@ -164,6 +182,7 @@
 
 .serviceFacts {
   display: grid;
+  grid-row: 6;
   gap: var(--space-1);
   margin: 0;
   padding-top: var(--space-2);
@@ -188,7 +207,9 @@
 }
 
 .cardAction {
+  grid-row: 7;
   min-height: var(--control-height);
+  align-self: end;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);

@@ -399,6 +399,10 @@ export function looksLikeProtectedIdentifier(value: string): boolean {
   );
 }
 
+export function clampInventoryUnitPage(page: number, totalPages: number): number {
+  return Math.min(page, Math.max(1, totalPages));
+}
+
 function InventoryLifecycleChip({ status }: Readonly<{ status: InventoryLifecycleStatus }>) {
   const presentation = inventoryLifecyclePresentation(status);
   return <StatusChip label={presentation.label} tone={presentation.tone} />;

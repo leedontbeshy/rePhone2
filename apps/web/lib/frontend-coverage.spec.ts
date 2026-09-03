@@ -43,7 +43,7 @@ describe('FE-0 frontend coverage contract', () => {
       targetRoute,
       actionState,
       phase,
-      automatedTest,
+      browserOwner,
       status,
     ] of FRONTEND_OPERATION_COVERAGE) {
       expect(operationId.length).toBeGreaterThan(0);
@@ -53,7 +53,7 @@ describe('FE-0 frontend coverage contract', () => {
       expect(targetRoute.length).toBeGreaterThan(0);
       expect(actionState.length).toBeGreaterThan(0);
       expect(phase).toMatch(/^FE-[1-8]$/);
-      expect(automatedTest.startsWith('browser:')).toBe(true);
+      expect(browserOwner.startsWith('browser:')).toBe(true);
       const owningPhaseStatus = FRONTEND_PHASE_STATUS[phase];
       expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
     }
@@ -78,7 +78,7 @@ describe('FE-0 frontend coverage contract', () => {
           targetRoute,
           actionState,
           phase,
-          automatedTest,
+          browserOwner,
           status,
         ]) => ({
           operationId,
@@ -88,7 +88,7 @@ describe('FE-0 frontend coverage contract', () => {
           targetRoute,
           actionState,
           phase,
-          automatedTest,
+          browserOwner,
           status,
         }),
       ),
@@ -174,7 +174,7 @@ function readPlanOperationCoverage(): Array<{
   targetRoute: string;
   actionState: string;
   phase: string;
-  automatedTest: string;
+  browserOwner: string;
   status: string;
 }> {
   return readFileSync(join(repositoryRoot, 'plan-fe.md'), 'utf8')
@@ -194,7 +194,7 @@ function readPlanOperationCoverage(): Array<{
         targetRoute: stripCode(cells[5] ?? ''),
         actionState: stripCode(cells[6] ?? ''),
         phase: cells[7] ?? '',
-        automatedTest: stripCode(cells[8] ?? ''),
+        browserOwner: stripCode(cells[8] ?? ''),
         status: cells[9] ?? '',
       };
     });

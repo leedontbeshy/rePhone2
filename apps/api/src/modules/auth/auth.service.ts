@@ -7,8 +7,9 @@ import { PrismaService } from '../../database/prisma.service.js';
 import type { User } from '../../generated/prisma/client.js';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service.js';
 import type { RegisterDto } from './auth.dto.js';
-import type { RegisteredAccountDto } from './auth-response.dto.js';
+import type { RegistrationResultDto } from './auth-response.dto.js';
 import { AuthRateLimiter } from './auth-rate-limiter.service.js';
+import { GENERIC_REGISTRATION_MESSAGE } from './auth.constants.js';
 import { buildOneTimeAuthLink } from './auth-one-time-link.js';
 import type {
   RequestMetadata,
@@ -46,31 +47,24 @@ export class AuthService {
   public async register(
     input: RegisterDto,
     metadata: RequestMetadata,
-  ): Promise<RegisteredAccountDto> {
+  ): Promise<RegistrationResultDto> {
     this.rateLimiter.register(metadata.ipAddress);
     const normalizedEmail = normalizeEmail(input.email);
     const passwordHash = await this.passwordService.hash(input.password);
 
     try {
-      const user = await this.usersRepository.createCustomer({
+      await this.usersRepository.createCustomer({
         email: input.email.trim(),
         normalizedEmail,
         passwordHash,
         fullName: input.fullName.trim(),
         ...(input.phone === undefined ? {} : { phone: input.phone.trim() }),
       });
-      return {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        status: user.status,
-      };
     } catch (error) {
-      if (isPrismaUniqueViolation(error)) {
-        throw new ApiError('DUPLICATE_RESOURCE');
-      }
-      throw error;
+      if (!isPrismaUniqueViolation(error)) throw error;
     }
+
+    return { message: GENERIC_REGISTRATION_MESSAGE };
   }
 
   public async login(

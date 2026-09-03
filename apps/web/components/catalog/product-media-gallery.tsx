@@ -1,9 +1,10 @@
 'use client';
 
 import { CaretLeftIcon, CaretRightIcon, XIcon } from '@phosphor-icons/react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { PublicMedia } from '@/lib/catalog-api';
 import { classNames } from '@/components/ui/class-names';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import { PublicMediaImage } from './public-media';
 import styles from './product-media-gallery.module.css';
 
@@ -22,7 +23,7 @@ export function ProductMediaGallery({
 }: ProductMediaGalleryProps) {
   const mediaIdentity = media.map(({ url }) => url).join('\u0000');
   const [selection, setSelection] = useState({ identity: mediaIdentity, index: 0 });
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const { closeDialog, dialogRef, onDialogClose, openDialog } = useModalDialogLifecycle();
   const selectedIndex = selection.identity === mediaIdentity ? selection.index : 0;
   const activeIndex = Math.min(selectedIndex, Math.max(0, media.length - 1));
   const selected = media[activeIndex];
@@ -69,7 +70,7 @@ export function ProductMediaGallery({
             type="button"
             disabled={selected === undefined}
             aria-label={selected === undefined ? fallbackLabel : 'Mở ảnh ở kích thước lớn'}
-            onClick={() => dialogRef.current?.showModal()}
+            onClick={openDialog}
           >
             <PublicMediaImage
               className={styles.mainMedia}
@@ -114,7 +115,12 @@ export function ProductMediaGallery({
         </div>
       </div>
 
-      <dialog className={styles.galleryDialog} ref={dialogRef} aria-label={label}>
+      <dialog
+        className={styles.galleryDialog}
+        ref={dialogRef}
+        aria-label={label}
+        onClose={onDialogClose}
+      >
         <div className={styles.dialogToolbar}>
           <span>
             Ảnh {String(media.length === 0 ? 0 : activeIndex + 1)}/{String(media.length)}
@@ -123,7 +129,7 @@ export function ProductMediaGallery({
             aria-label="Đóng ảnh phóng lớn"
             className={styles.dialogClose}
             type="button"
-            onClick={() => dialogRef.current?.close()}
+            onClick={closeDialog}
           >
             <XIcon aria-hidden="true" size={20} />
           </button>

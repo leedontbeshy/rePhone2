@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   completeBankTransferRefund,
+  createRefund,
+  createRefundIntentKeyStore,
   getBackofficeRefund,
   getRefundEvidenceUrl,
   listBackofficeRefunds,
@@ -135,6 +137,32 @@ describe('refund api adapter', () => {
       body: { note: 'Đã đối chiếu thông tin nhận tiền' },
     });
     expect(result.availableActions).toEqual(['START_PROCESSING', 'REJECT', 'CANCEL']);
+  });
+
+  it('sends a stable idempotency key for manual refund creation', async () => {
+    const client = { POST: vi.fn().mockResolvedValue({ data: { data: DETAIL } }) };
+    const input = {
+      amount: '1000000',
+      method: 'BANK_TRANSFER' as const,
+      reason: 'Hoàn cọc cho đơn hàng đã hủy',
+    };
+    const keys = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'];
+    const store = createRefundIntentKeyStore(() => keys.shift() ?? 'unexpected');
+    const firstKey = store.keyFor(DETAIL.order.id, input);
+
+    await createRefund(client, DETAIL.order.id, input, firstKey);
+
+    expect(client.POST).toHaveBeenCalledWith('/api/v1/backoffice/orders/{id}/refunds', {
+      params: {
+        path: { id: DETAIL.order.id },
+        header: { 'Idempotency-Key': firstKey },
+      },
+      body: input,
+    });
+    expect(store.keyFor(DETAIL.order.id, input)).toBe(firstKey);
+    expect(store.keyFor(DETAIL.order.id, { ...input, amount: '500000' })).not.toBe(firstKey);
+    store.clear();
+    expect(store.keyFor(DETAIL.order.id, input)).not.toBe(firstKey);
   });
 
   it('serializes bank evidence as multipart without putting bytes into JSON', async () => {

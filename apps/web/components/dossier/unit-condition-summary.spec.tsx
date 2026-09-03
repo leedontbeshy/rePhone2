@@ -21,7 +21,7 @@ describe('unit condition summary', () => {
     const markup = renderToStaticMarkup(<UnitConditionSummary unit={unitWithUnrelatedFields} />);
 
     expect(markup).toContain('Tình trạng của máy');
-    expect(markup).toContain('Grade C');
+    expect(markup).toContain('Loại C');
     expect(markup).toContain('75% · 428 chu kỳ');
     expect(markup).toContain('Pin nguyên bản');
     expect(markup).toContain('Có ghi nhận sửa chữa');

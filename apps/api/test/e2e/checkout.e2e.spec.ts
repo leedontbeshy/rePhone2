@@ -5,6 +5,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
+import { AuthRateLimiter } from '../../src/modules/auth/auth-rate-limiter.service.js';
 import { OrderRateLimiter } from '../../src/modules/orders/order-rate-limiter.service.js';
 import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
@@ -30,6 +31,7 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
   });
 
   beforeEach(async () => {
+    app.get(AuthRateLimiter).clear();
     app.get(OrderRateLimiter).clear();
     await resetTestDatabase(prisma);
     await seedDatabase(prisma);
@@ -38,6 +40,38 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
   afterAll(async () => {
     await prisma.$disconnect();
     await app.close();
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['null', null],
+  ])('rejects checkout when contact is %s', async (_case, contact) => {
+    const response = await request(server)
+      .post('/api/v1/checkouts')
+      .set(MUTATION_HEADERS)
+      .send({
+        fulfillmentType: 'PICKUP',
+        expectedPreviewFingerprint: `v1:${'a'.repeat(64)}`,
+        expectedCartUpdatedAt: '2026-09-02T00:00:00.000Z',
+        expectedGrandTotal: '1000000',
+        expectedDepositRequired: '0',
+        ...(contact === undefined ? {} : { contact }),
+      })
+      .expect(400);
+
+    const error = record(record(response.body)['error']);
+    const details = Array.isArray(error['details']) ? error['details'] : [];
+    expect(error['code']).toBe('VALIDATION_FAILED');
+    expect(
+      details.some(
+        (detail) =>
+          typeof detail === 'object' &&
+          detail !== null &&
+          !Array.isArray(detail) &&
+          record(detail)['field'] === 'contact' &&
+          record(detail)['code'] === 'IS_DEFINED',
+      ),
+    ).toBe(true);
   });
 
   it('creates, replays, reads and cancels a guest shipping order without leaking token storage', async () => {
@@ -177,6 +211,55 @@ describe('Slice 06 checkout and customer order HTTP contract', () => {
       .get(`/api/v1/orders/${orderNumber}`)
       .set('Authorization', `Bearer ${other}`)
       .expect(404);
+  });
+
+  it('requires reconfirmation when preview metadata changes without changing totals', async () => {
+    const variant = await accessoryVariant(prisma);
+    const token = await login(server, 'customer@rephone.local', 'CustomerDemo123');
+    await request(server)
+      .post('/api/v1/cart/items')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ itemType: 'ACCESSORY', variantId: variant.id, quantity: 1 })
+      .expect(201);
+    const preview = data(
+      (
+        await request(server)
+          .post('/api/v1/checkouts/preview')
+          .set('Authorization', `Bearer ${token}`)
+          .send({ fulfillmentType: 'PICKUP' })
+          .expect(200)
+      ).body,
+    );
+    const previewItem = record(arrayProperty(preview, 'items')[0]);
+    const productId = stringProperty(objectProperty(previewItem, 'target'), 'productId');
+    await prisma.product.update({
+      where: { id: productId },
+      data: { name: 'Tên sản phẩm đã cập nhật' },
+    });
+
+    const stale = await request(server)
+      .post('/api/v1/checkouts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(checkoutBody(preview, 'PICKUP'))
+      .expect(409);
+    const error = objectProperty(stale.body, 'error');
+    expect(error).toMatchObject({ code: 'CHECKOUT_REVIEW_REQUIRED' });
+    const detail = record(arrayProperty(error, 'details')[0]);
+    const current = objectProperty(detail, 'current');
+    expect(stringProperty(current, 'previewFingerprint')).not.toBe(
+      stringProperty(preview, 'previewFingerprint'),
+    );
+    expect(objectProperty(current, 'pricing')).toEqual(objectProperty(preview, 'pricing'));
+    expect(objectProperty(record(arrayProperty(current, 'items')[0]), 'target')).toMatchObject({
+      productName: 'Tên sản phẩm đã cập nhật',
+    });
+    expect(await prisma.order.count()).toBe(0);
+
+    await request(server)
+      .post('/api/v1/checkouts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(checkoutBody(current, 'PICKUP'))
+      .expect(201);
   });
 
   it('serializes two creates from one source cart into one 201 and one 200 replay', async () => {
@@ -411,6 +494,7 @@ function checkoutBody(preview: Record<string, unknown>, fulfillmentType: 'PICKUP
           },
         }
       : {}),
+    expectedPreviewFingerprint: stringProperty(preview, 'previewFingerprint'),
     expectedCartUpdatedAt: stringProperty(preview, 'cartUpdatedAt'),
     expectedGrandTotal: stringProperty(pricing, 'grandTotal'),
     expectedDepositRequired: stringProperty(pricing, 'depositRequired'),

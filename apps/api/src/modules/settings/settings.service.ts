@@ -128,8 +128,9 @@ export class SettingsService {
       throw error;
     }
 
+    let committed: { before: SettingsRecord; after: SettingsRecord };
     try {
-      const updated = await this.prisma.$transaction(async (transaction) => {
+      committed = await this.prisma.$transaction(async (transaction) => {
         const before = await this.requireSettings(transaction);
         const result = await this.repository.updateIfVersion(
           expectedVersion,
@@ -149,13 +150,14 @@ export class SettingsService {
           },
           metadata: { mimeType: image.mimeType, fileSize: image.fileSize },
         });
-        return after;
+        return { before, after };
       });
-      return projectSettings(updated, this.config);
     } catch (error) {
       await this.deleteBestEffort(stored.bucket, stored.objectPath, actor.requestId);
       throw error;
     }
+    await this.deleteReplacedQrBestEffort(committed.before, stored, actor.requestId);
+    return projectSettings(committed.after, this.config);
   }
 
   private async requireSettings(client?: Prisma.TransactionClient): Promise<SettingsRecord> {
@@ -170,6 +172,21 @@ export class SettingsService {
     } catch {
       this.logger.warn({ event: 'storage_orphan_candidate', requestId, scope: 'store-bank-qr' });
     }
+  }
+
+  private async deleteReplacedQrBestEffort(
+    previous: SettingsRecord,
+    current: { bucket: string; objectPath: string },
+    requestId: string,
+  ): Promise<void> {
+    if (previous.bankQrBucket === null || previous.bankQrObjectPath === null) return;
+    if (
+      previous.bankQrBucket === current.bucket &&
+      previous.bankQrObjectPath === current.objectPath
+    ) {
+      return;
+    }
+    await this.deleteBestEffort(previous.bankQrBucket, previous.bankQrObjectPath, requestId);
   }
 }
 

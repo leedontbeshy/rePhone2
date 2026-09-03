@@ -20,7 +20,7 @@ export function RelatedUnitOffers({ offers, productName, productSlug }: RelatedU
       <header className={styles.relatedHeader}>
         <div>
           <p className={styles.eyebrow}>Lựa chọn khác</p>
-          <h2 id="related-units-title">Máy cùng model đang bán</h2>
+          <h2 id="related-units-title">Máy cùng dòng đang bán</h2>
         </div>
         <Link href={`/products/${productSlug}`}>
           Xem tất cả
@@ -38,7 +38,7 @@ export function RelatedUnitOffers({ offers, productName, productSlug }: RelatedU
               key={unit.inventoryCode}
             >
               <Link className={styles.relatedMediaLink} href={href}>
-                <span className={styles.relatedGrade}>Grade {unit.conditionGrade}</span>
+                <span className={styles.relatedGrade}>Ngoại hình loại {unit.conditionGrade}</span>
                 <PublicMediaImage
                   className={styles.relatedMedia}
                   fallbackLabel={`Chưa có ảnh thật của ${productName}, mã máy ${unit.inventoryCode}`}

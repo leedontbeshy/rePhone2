@@ -211,6 +211,15 @@
   display: block;
   overflow: hidden;
   color: inherit;
+  text-decoration: none;
+}
+
+.productMedia {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  padding: var(--space-4);
+  background: var(--color-surface-subtle);
 }
 
 .mediaLabel,

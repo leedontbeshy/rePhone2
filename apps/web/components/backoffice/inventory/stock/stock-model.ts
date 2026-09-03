@@ -40,6 +40,13 @@ export type StockMovementQueryOverrides = {
 
 export type StockCommandKind = 'receive' | 'transfer' | 'adjust' | 'return';
 
+export interface SortableStockVariantOption {
+  readonly displayName: string;
+  readonly id: string;
+  readonly productName: string;
+  readonly sku?: string;
+}
+
 export interface StockCommandDraft {
   readonly direction: 'IN' | 'OUT';
   readonly fromLocationId: string;
@@ -82,6 +89,38 @@ const MOVEMENT_TYPES: readonly InventoryStockMovementType[] = [
   'ADJUSTMENT_OUT',
   'WRITE_OFF',
 ];
+
+const STOCK_VARIANT_COLLATOR = new Intl.Collator('vi', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+export function stockPageWithinTotal(page: number, totalPages: number): number {
+  const normalizedTotal = Number.isSafeInteger(totalPages) && totalPages > 0 ? totalPages : 1;
+  if (!Number.isSafeInteger(page) || page < 1) return 1;
+  return Math.min(page, normalizedTotal);
+}
+
+export function isCurrentStockRequest(
+  request: number,
+  latestRequest: number,
+  signal?: Pick<AbortSignal, 'aborted'>,
+): boolean {
+  return request === latestRequest && signal?.aborted !== true;
+}
+
+export function sortStockVariantOptions<Option extends SortableStockVariantOption>(
+  options: readonly Option[],
+): Option[] {
+  return [...options].sort((left, right) => {
+    const productOrder = STOCK_VARIANT_COLLATOR.compare(left.productName, right.productName);
+    if (productOrder !== 0) return productOrder;
+    const variantOrder = STOCK_VARIANT_COLLATOR.compare(left.displayName, right.displayName);
+    if (variantOrder !== 0) return variantOrder;
+    const skuOrder = STOCK_VARIANT_COLLATOR.compare(left.sku ?? '', right.sku ?? '');
+    return skuOrder !== 0 ? skuOrder : left.id.localeCompare(right.id);
+  });
+}
 
 export function stockLevelQueryFromSearch(search: URLSearchParams): StockLevelQueryState {
   const lowStockValue = search.get('lowStock');

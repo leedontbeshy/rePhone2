@@ -1,10 +1,21 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
+import { orderTokenStorageKey } from '../../apps/web/lib/order-access';
+import {
+  freezeWp11Clock,
+  stabilizeWp11VisualPage,
+  WP11_RESPONSIVE_VIEWPORTS,
+} from './support/wp11-visual';
 
 const ORDER_NUMBER = 'RPH-20260828-POST0001';
+const CANCELLED_ORDER_NUMBER = 'RPH-20260827-POST0002';
+const CONFIRMED_ORDER_NUMBER = 'RPH-20260826-POST0003';
 const ORDER_ITEM_ID = '0199b354-d818-7f7c-b966-3932599978d0';
 const WARRANTY_CODE = 'RPH-W-20260828-POST0001';
 const REQUEST_NUMBER = 'RPH-AS-20260828-POST01';
+const ATTACHMENT_ID = '0199b354-d818-7f7c-b966-3932599978ef';
+const ACTIVE_PAYMENT_EXPIRES_AT = '2026-09-03T06:30:00.000Z';
 
 const customer = {
   id: '0199b354-d818-7f7c-b966-3932599978aa',
@@ -33,7 +44,7 @@ const orderItem = {
     warrantyCode: WARRANTY_CODE,
     status: 'ACTIVE',
     startAt: '2026-08-01T00:00:00.000Z',
-    endAt: '2026-10-30T00:00:00.000Z',
+    endAt: '2099-10-30T00:00:00.000Z',
     isValid: true,
     isExpired: false,
   },
@@ -55,7 +66,7 @@ const paymentAttempt = {
     qrUrl: null,
     transferContent: 'RPH20260828POST0001',
   },
-  expiresAt: '2026-08-30T00:00:00.000Z',
+  expiresAt: ACTIVE_PAYMENT_EXPIRES_AT,
   submittedAt: null,
   reviewSlaDueAt: null,
   reviewOverdue: false,
@@ -102,6 +113,14 @@ const completedOrderDetail = {
   availableActions: [],
 };
 
+const cancelledOrderDetail = {
+  ...orderDetail,
+  status: 'CANCELLED',
+  availableActions: [],
+  cancelReason: 'Tôi không còn nhu cầu mua sản phẩm này',
+  cancelledAt: '2026-08-28T01:05:00.000Z',
+} as const;
+
 const warranty = {
   warrantyCode: WARRANTY_CODE,
   orderNumber: ORDER_NUMBER,
@@ -112,7 +131,7 @@ const warranty = {
   daysSnapshot: 90,
   status: 'ACTIVE',
   startAt: '2026-08-01T00:00:00.000Z',
-  endAt: '2026-10-30T00:00:00.000Z',
+  endAt: '2099-10-30T00:00:00.000Z',
   isValid: true,
   isExpired: false,
 };
@@ -134,23 +153,71 @@ const afterSales = {
     quantity: 1,
   },
   warranty: { ...warranty, maskedIdentifierSuffix: '1234' },
-  attachments: [],
+  attachments: [
+    {
+      id: ATTACHMENT_ID,
+      mimeType: 'image/jpeg',
+      fileSize: 3456,
+      uploadedAt: '2026-08-28T02:05:00.000Z',
+    },
+  ],
   timeline: { requestedAt: '2026-08-28T02:00:00.000Z' },
   availableActions: ['UPLOAD_ATTACHMENT', 'CANCEL'],
 };
 
 test.describe('FE-04 customer post-purchase', () => {
   test.beforeEach(async ({ page }) => {
+    await freezeWp11Clock(page);
     await installCustomerApi(page);
   });
 
-  test('covers the customer order list, detail journey, cancellation and URL allowlist', async ({
-    page,
-  }) => {
+  test(bt('browser:customer-post-purchase', 'customer-order-lifecycle'), async ({ page }) => {
     await page.goto('/orders?status=PROCESSING&page=2&token=must-not-survive');
     await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng của bạn' })).toBeVisible();
-    await page.getByRole('combobox', { name: /^Trạng thái/ }).selectOption('');
+    const orderList = page.getByRole('region', { name: 'Danh sách đơn hàng' });
+    await expect(orderList.getByText('iPhone 15', { exact: true })).toBeVisible();
+
+    let releaseList: (() => void) | undefined;
+    let markListStarted: (() => void) | undefined;
+    const listStarted = new Promise<void>((resolve) => {
+      markListStarted = resolve;
+    });
+    const listRelease = new Promise<void>((resolve) => {
+      releaseList = resolve;
+    });
+    await page.route('**/api/v1/orders**', async (route) => {
+      const url = new URL(route.request().url());
+      if (
+        route.request().method() !== 'GET' ||
+        url.pathname !== '/api/v1/orders' ||
+        url.searchParams.has('status')
+      ) {
+        await route.fallback();
+        return;
+      }
+      markListStarted?.();
+      await listRelease;
+      await fulfillJson(route, {
+        data: [
+          {
+            ...orderDetail,
+            firstItemName: 'iPhone 15',
+            totalItemQuantity: 1,
+            grandTotal: orderDetail.pricing.grandTotal,
+          },
+        ],
+        meta: { pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 } },
+      });
+    });
+    const orderFilter = page.getByRole('combobox', { name: /^Trạng thái/ });
+    await orderFilter.selectOption('');
+    await listStarted;
+    await expect(orderFilter).toBeVisible();
+    await expect(orderList.getByText('iPhone 15', { exact: true })).toBeVisible();
+    await expect(orderList).toHaveAttribute('aria-busy', 'true');
+    releaseList?.();
     await expect(page).toHaveURL('/orders');
+    await expect(orderList).not.toHaveAttribute('aria-busy', 'true');
 
     await page.goto(`/orders/${ORDER_NUMBER}`);
     await expect(page.getByRole('heading', { level: 1, name: ORDER_NUMBER })).toBeVisible();
@@ -160,16 +227,20 @@ test.describe('FE-04 customer post-purchase', () => {
     const dialog = page.getByRole('dialog', { name: 'Hủy đơn hàng?' });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel('Lý do hủy').fill('Tôi không còn nhu cầu mua sản phẩm này');
-    await dialog.getByRole('button', { name: 'Quay lại' }).click();
+    await dialog.getByRole('button', { name: 'Xác nhận hủy đơn' }).click();
     await expect(dialog).toHaveCount(0);
+    await expect(page.getByText('Đơn hàng đã được hủy.')).toBeVisible();
+    await expect(page.getByText('Đã hủy', { exact: true }).first()).toBeVisible();
 
     await expectSingleMainAndNoOverflow(page);
     await expectAccessible(page);
   });
 
-  test('tries cookie-backed guest access and keeps a rejected detail private', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'guest-order-privacy'), async ({ page }) => {
     let detailRequests = 0;
     let guestHeader: string | undefined;
+    let warrantyRequests = 0;
+    let afterSalesRequests = 0;
     await page.route(`**/api/v1/orders/${ORDER_NUMBER}`, async (route) => {
       detailRequests += 1;
       guestHeader = route.request().headers()['x-guest-order-token'];
@@ -177,6 +248,22 @@ test.describe('FE-04 customer post-purchase', () => {
     });
     await page.route('**/api/v1/auth/refresh', async (route) => {
       await fulfillJson(route, { error: { code: 'AUTH_REQUIRED', message: 'anonymous' } }, 401);
+    });
+    await page.route(`**/api/v1/warranties/${WARRANTY_CODE}`, async (route) => {
+      warrantyRequests += 1;
+      await fulfillJson(
+        route,
+        { error: { code: 'RESOURCE_NOT_FOUND', message: 'not found' } },
+        404,
+      );
+    });
+    await page.route(`**/api/v1/after-sales/${REQUEST_NUMBER}`, async (route) => {
+      afterSalesRequests += 1;
+      await fulfillJson(
+        route,
+        { error: { code: 'RESOURCE_NOT_FOUND', message: 'not found' } },
+        404,
+      );
     });
 
     await page.goto(`/orders/${ORDER_NUMBER}`);
@@ -186,20 +273,51 @@ test.describe('FE-04 customer post-purchase', () => {
     ).toBeVisible();
     expect(detailRequests).toBe(1);
     expect(guestHeader).toBeUndefined();
+
+    const guestToken = 'G'.repeat(43);
+    await page.evaluate(
+      ({ key, token }) => {
+        sessionStorage.setItem(key, token);
+      },
+      { key: orderTokenStorageKey(ORDER_NUMBER), token: guestToken },
+    );
+    await page.goto(`/warranties/${WARRANTY_CODE}?orderNumber=${ORDER_NUMBER}`);
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Không mở được thông tin này' }),
+    ).toBeVisible();
+    expect(warrantyRequests).toBe(1);
+    await expect
+      .poll(() =>
+        page.evaluate((key) => sessionStorage.getItem(key), orderTokenStorageKey(ORDER_NUMBER)),
+      )
+      .toBe(guestToken);
+
+    await page.goto(`/after-sales/${REQUEST_NUMBER}?orderNumber=${ORDER_NUMBER}`);
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Không mở được thông tin này' }),
+    ).toBeVisible();
+    expect(afterSalesRequests).toBe(1);
+    await expect(page.locator('body')).not.toContainText('Màn hình xuất hiện sọc');
+    expect(page.url()).not.toContain('token=');
+    expect(new URL(page.url()).hash).toBe('');
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 
-  test('covers warranty list and detail without nested landmarks', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'warranty-list-detail'), async ({ page }) => {
     await page.goto('/warranties');
     await expect(page.getByRole('heading', { level: 1, name: 'Bảo hành của bạn' })).toBeVisible();
-    await expect(page.getByText('iPhone 15', { exact: true })).toBeVisible();
+    const warrantyList = page.getByRole('region', { name: 'Danh sách bảo hành' });
+    await expect(warrantyList.getByText('iPhone 15', { exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Xem chi tiết' }).click();
     await expect(page).toHaveURL(new RegExp(`/warranties/${WARRANTY_CODE}`));
     await expect(page.getByRole('heading', { level: 1, name: 'iPhone 15' })).toBeVisible();
     await expect(page.getByText('Bảo hành phần cứng trong 90 ngày.')).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 
-  test('covers after-sales list, creation context and detail actions', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'after-sales-journey'), async ({ page }) => {
     await page.goto('/after-sales?type=WARRANTY&unknown=drop-me');
     await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ sau mua' })).toBeVisible();
     await expect(page.getByText(REQUEST_NUMBER, { exact: true })).toBeVisible();
@@ -214,22 +332,142 @@ test.describe('FE-04 customer post-purchase', () => {
       page.getByText('Màn hình xuất hiện sọc khi sử dụng trong thời gian dài.'),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Hủy yêu cầu' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Danh sách hỗ trợ' })).toBeVisible();
+
+    await page.route(
+      `**/api/v1/after-sales/${REQUEST_NUMBER}/attachments/${ATTACHMENT_ID}/url`,
+      async (route) => {
+        await fulfillJson(
+          route,
+          { error: { code: 'STORAGE_UNAVAILABLE', message: 'private provider detail' } },
+          503,
+        );
+      },
+    );
+    page.once('popup', (popup) => {
+      void popup.close();
+    });
+    await page.getByRole('button', { name: 'Mở tệp' }).click();
+    await expect(page.getByRole('button', { name: 'Thử lại' })).toBeVisible();
+
+    await page.route(`**/api/v1/after-sales/${REQUEST_NUMBER}/attachments`, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+      await fulfillJson(
+        route,
+        { error: { code: 'STORAGE_UNAVAILABLE', message: 'private provider detail' } },
+        503,
+      );
+    });
+    await page.locator('#after-sales-attachment').setInputFiles({
+      name: 'man-hinh-loi.jpg',
+      mimeType: 'image/jpeg',
+      buffer: Buffer.from('safe-image-bytes'),
+    });
+    await page.getByRole('button', { name: 'Thêm tệp' }).click();
+    await expect(page.getByText('Hiện chưa thể lưu tệp. Vui lòng thử lại sau.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Thử lại' })).toHaveCount(0);
+
+    await page.goto(
+      `/after-sales/new?orderNumber=${CANCELLED_ORDER_NUMBER}&orderItemId=${ORDER_ITEM_ID}`,
+    );
+    await expect(
+      page.getByText('Chỉ có thể gửi yêu cầu hỗ trợ cho đơn hàng đã hoàn tất.'),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Gửi yêu cầu hỗ trợ' })).toHaveCount(0);
 
     await page.goto('/after-sales');
     await page.getByRole('link', { name: 'Chọn sản phẩm từ đơn hàng' }).click();
     await expect(page).toHaveURL('/after-sales/new');
-    await page.getByLabel('Đơn hàng đã hoàn tất').selectOption(ORDER_NUMBER);
+    const completedOrderSelect = page.getByLabel('Đơn hàng đã hoàn tất');
+    await expect(
+      completedOrderSelect.locator('option').filter({ hasText: ORDER_NUMBER }),
+    ).toHaveCount(1);
+    const orderOptions = await completedOrderSelect.locator('option').allTextContents();
+    expect(orderOptions.join(' ')).toContain(ORDER_NUMBER);
+    expect(orderOptions.join(' ')).not.toContain(CANCELLED_ORDER_NUMBER);
+    expect(orderOptions.join(' ')).not.toContain(CONFIRMED_ORDER_NUMBER);
+    await completedOrderSelect.selectOption(ORDER_NUMBER);
     await page.getByText('Chọn sản phẩm', { exact: true }).click();
     await expect(page).toHaveURL(
       `/after-sales/new?orderNumber=${ORDER_NUMBER}&orderItemId=${ORDER_ITEM_ID}`,
     );
     await expect(page.getByRole('heading', { level: 1, name: 'Tạo yêu cầu hỗ trợ' })).toBeVisible();
     await expect(page.getByText(`Đơn hàng ${ORDER_NUMBER}`, { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Gửi yêu cầu hỗ trợ' })).toBeVisible();
+    const issue = page.getByLabel('Sản phẩm đang gặp vấn đề gì?');
+    await page
+      .locator('form')
+      .filter({ has: issue })
+      .evaluate((form: HTMLFormElement) => {
+        form.requestSubmit();
+      });
+    await expect(issue).toBeFocused();
+    await expect(issue).toHaveAttribute('aria-invalid', 'true');
+    await issue.fill('Màn hình chớp tắt liên tục khi sử dụng.');
+
+    let createRequests = 0;
+    let markStarted: (() => void) | undefined;
+    let releaseCreate: (() => void) | undefined;
+    const createStarted = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const createRelease = new Promise<void>((resolve) => {
+      releaseCreate = resolve;
+    });
+    await page.route('**/api/v1/after-sales', async (route) => {
+      const url = new URL(route.request().url());
+      if (route.request().method() !== 'POST' || url.pathname !== '/api/v1/after-sales') {
+        await route.fallback();
+        return;
+      }
+      createRequests += 1;
+      markStarted?.();
+      await createRelease;
+      await fulfillJson(route, { data: afterSales }, 201);
+    });
+    const createForm = page.locator('form').filter({ has: issue });
+    await createForm.evaluate((form: HTMLFormElement) => {
+      form.requestSubmit();
+      form.requestSubmit();
+    });
+    await createStarted;
+    await expect(page.getByRole('button', { name: 'Đang gửi yêu cầu' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    expect(createRequests).toBe(1);
+    releaseCreate?.();
+    await expect(page).toHaveURL(`/after-sales/${REQUEST_NUMBER}?orderNumber=${ORDER_NUMBER}`);
+    await expect(page.getByText(REQUEST_NUMBER, { exact: true })).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 
-  test('keeps post-purchase collections inside a 390px mobile viewport', async ({ page }) => {
+  test(bt('browser:customer-post-purchase', 'post-purchase-mobile'), async ({ page }) => {
+    test.setTimeout(180_000);
+
+    for (const viewport of WP11_RESPONSIVE_VIEWPORTS) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(`/orders/${ORDER_NUMBER}`);
+      await expect(page.getByRole('heading', { level: 1, name: ORDER_NUMBER })).toBeVisible();
+      await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
+      await expectSingleMainAndNoOverflow(page);
+
+      if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
+        await expectAccessible(page);
+        await stabilizeWp11VisualPage(page);
+        await expect(page).toHaveScreenshot(
+          `wp11-post-purchase-order-detail-unpaid-${viewport.name}.png`,
+          {
+            animations: 'disabled',
+            caret: 'hide',
+          },
+        );
+      }
+    }
+
     await page.setViewportSize({ width: 390, height: 844 });
 
     await page.goto('/orders');
@@ -237,19 +475,34 @@ test.describe('FE-04 customer post-purchase', () => {
     await expect(page.getByRole('link', { name: 'Xem chi tiết' }).first()).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
 
-    await page.goto(`/orders/${ORDER_NUMBER}`);
-    await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
-    await expect(page.getByText('Chưa chọn tệp', { exact: true })).toBeVisible();
+    await page.goto('/warranties');
+    await expect(page.getByRole('heading', { level: 1, name: 'Bảo hành của bạn' })).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
+
+    await page.goto(`/warranties/${WARRANTY_CODE}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'iPhone 15' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
 
     await page.goto('/after-sales');
     await expect(page.getByRole('heading', { level: 1, name: 'Hỗ trợ sau mua' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Chọn sản phẩm từ đơn hàng' })).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
+
+    await page.goto(`/after-sales/new?orderNumber=${ORDER_NUMBER}&orderItemId=${ORDER_ITEM_ID}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Tạo yêu cầu hỗ trợ' })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
+
+    await page.goto(`/after-sales/${REQUEST_NUMBER}?orderNumber=${ORDER_NUMBER}`);
+    await expect(page.getByText(REQUEST_NUMBER, { exact: true })).toBeVisible();
+    await expectSingleMainAndNoOverflow(page);
+    await expectAccessible(page);
   });
 });
 
 async function installCustomerApi(page: Page): Promise<void> {
+  let currentOrderDetail: typeof orderDetail | typeof cancelledOrderDetail = orderDetail;
   await page.route('**/api/v1/auth/refresh', async (route) => {
     await fulfillJson(route, { data: { accessToken: 'browser-access-token', user: customer } });
   });
@@ -266,19 +519,44 @@ async function installCustomerApi(page: Page): Promise<void> {
   await page.route('**/api/v1/orders**', async (route) => {
     const url = new URL(route.request().url());
     if (route.request().method() === 'POST') {
+      currentOrderDetail = cancelledOrderDetail;
       await fulfillJson(route, {
-        data: { ...orderDetail, status: 'CANCELLED', availableActions: [] },
+        data: currentOrderDetail,
+      });
+      return;
+    }
+    if (url.pathname.endsWith(`/${CANCELLED_ORDER_NUMBER}`)) {
+      await fulfillJson(route, {
+        data: {
+          ...orderDetail,
+          orderNumber: CANCELLED_ORDER_NUMBER,
+          status: 'CANCELLED',
+          completedAt: null,
+          availableActions: [],
+        },
+      });
+      return;
+    }
+    if (url.pathname.endsWith(`/${CONFIRMED_ORDER_NUMBER}`)) {
+      await fulfillJson(route, {
+        data: {
+          ...orderDetail,
+          orderNumber: CONFIRMED_ORDER_NUMBER,
+          status: 'CONFIRMED',
+          completedAt: null,
+          availableActions: [],
+        },
       });
       return;
     }
     if (url.pathname.endsWith(`/${ORDER_NUMBER}`)) {
       await fulfillJson(route, {
-        data: page.url().includes('/after-sales/new') ? completedOrderDetail : orderDetail,
+        data: page.url().includes('/after-sales/new') ? completedOrderDetail : currentOrderDetail,
       });
       return;
     }
     const listedOrder =
-      url.searchParams.get('status') === 'COMPLETED' ? completedOrderDetail : orderDetail;
+      url.searchParams.get('status') === 'COMPLETED' ? completedOrderDetail : currentOrderDetail;
     await fulfillJson(route, {
       data: [
         {
@@ -287,8 +565,28 @@ async function installCustomerApi(page: Page): Promise<void> {
           totalItemQuantity: 1,
           grandTotal: listedOrder.pricing.grandTotal,
         },
+        ...(url.searchParams.get('status') === 'COMPLETED'
+          ? [
+              {
+                ...listedOrder,
+                orderNumber: CANCELLED_ORDER_NUMBER,
+                status: 'CANCELLED',
+                firstItemName: 'iPhone 14',
+                totalItemQuantity: 1,
+                grandTotal: listedOrder.pricing.grandTotal,
+              },
+              {
+                ...listedOrder,
+                orderNumber: CONFIRMED_ORDER_NUMBER,
+                status: 'CONFIRMED',
+                firstItemName: 'iPhone 13',
+                totalItemQuantity: 1,
+                grandTotal: listedOrder.pricing.grandTotal,
+              },
+            ]
+          : []),
       ],
-      meta: { pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 } },
+      meta: { pagination: { page: 1, pageSize: 20, totalItems: 3, totalPages: 1 } },
     });
   });
   await page.route('**/api/v1/warranties**', async (route) => {

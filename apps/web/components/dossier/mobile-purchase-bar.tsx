@@ -32,7 +32,9 @@ export function MobilePurchaseBar({
       for (const entry of entries) {
         if (entry.target === target) {
           targetVisible.current = entry.isIntersecting;
-          if (entry.isIntersecting) hasSeenTarget.current = true;
+          if (entry.isIntersecting || entry.boundingClientRect.bottom <= 0) {
+            hasSeenTarget.current = true;
+          }
         } else if (entry.target === footer) {
           footerVisible.current = entry.isIntersecting;
         }

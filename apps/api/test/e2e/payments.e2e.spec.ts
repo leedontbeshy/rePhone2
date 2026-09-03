@@ -652,6 +652,7 @@ async function createShippingOrder(
         province: 'TP.HCM',
       },
       ...(voucherCode === undefined ? {} : { voucherCode }),
+      expectedPreviewFingerprint: stringProperty(preview, 'previewFingerprint'),
       expectedCartUpdatedAt: stringProperty(preview, 'cartUpdatedAt'),
       expectedGrandTotal: stringProperty(pricing, 'grandTotal'),
       expectedDepositRequired: stringProperty(pricing, 'depositRequired'),

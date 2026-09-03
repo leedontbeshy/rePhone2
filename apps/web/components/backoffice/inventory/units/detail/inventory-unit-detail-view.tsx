@@ -9,7 +9,7 @@ import {
   ShieldCheckIcon,
 } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ChangeEvent, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type SyntheticEvent } from 'react';
 import {
   BackofficeActionDialog,
   inspectionResultPresentation,
@@ -19,6 +19,7 @@ import {
 } from '@/components/backoffice';
 import {
   Button,
+  FilePicker,
   InlineAlert,
   Input,
   Select,
@@ -26,15 +27,17 @@ import {
   Textarea,
   formatVnd,
 } from '@/components/ui';
-import type {
-  EphemeralInventoryIdentifiers,
-  InventoryInspectionSummary,
-  InventoryInspectionType,
-  InventoryLocation,
-  InventoryMediaUploadInput,
-  InventoryUnitAction,
-  InventoryUnitDetail,
-  UpdateInventoryUnitInput,
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
+import {
+  validateInventoryMediaFile,
+  type EphemeralInventoryIdentifiers,
+  type InventoryInspectionSummary,
+  type InventoryInspectionType,
+  type InventoryLocation,
+  type InventoryMediaUploadInput,
+  type InventoryUnitAction,
+  type InventoryUnitDetail,
+  type UpdateInventoryUnitInput,
 } from '@/lib/backoffice-inventory-api';
 import {
   buildIdentifierCorrection,
@@ -370,6 +373,7 @@ function MediaSection({
 }>) {
   const [selectedId, setSelectedId] = useState<string | null>(unit.media[0]?.id ?? null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [altText, setAltText] = useState('');
   const [sortOrder, setSortOrder] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -386,8 +390,9 @@ function MediaSection({
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setFileError(null);
     if (file === null) {
-      setFormError('Chọn một ảnh trước khi tải lên.');
+      setFileError('Chọn một ảnh trước khi tải lên.');
       return;
     }
     const normalizedOrder = sortOrder.trim();
@@ -403,6 +408,7 @@ function MediaSection({
     });
     if (succeeded) {
       setFile(null);
+      setFileError(null);
       setAltText('');
       setSortOrder('');
       setFileInputKey((current) => current + 1);
@@ -452,17 +458,25 @@ function MediaSection({
       </div>
 
       {canUpload ? (
-        <form className={styles.uploadForm} onSubmit={(event) => void submit(event)}>
-          <Input
+        <form className={styles.uploadForm} noValidate onSubmit={(event) => void submit(event)}>
+          <FilePicker
             accept="image/jpeg,image/png,image/webp"
+            buttonLabel="Chọn ảnh"
             disabled={busy}
+            emptyLabel="Chưa chọn ảnh"
+            error={fileError}
+            hint="Dùng ảnh JPG, PNG hoặc WebP; tối đa 8 MB."
             id="unit-media-file"
             key={fileInputKey}
-            label="Chọn ảnh"
+            label="Ảnh tải lên"
             required
-            type="file"
+            selectedFileName={file?.name ?? null}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
-              setFile(event.target.files?.[0] ?? null);
+              const selectedFile = event.target.files?.[0] ?? null;
+              const validationMessage =
+                selectedFile === null ? null : validateInventoryMediaFile(selectedFile);
+              setFile(validationMessage === null ? selectedFile : null);
+              setFileError(validationMessage);
               setFormError(null);
             }}
           />
@@ -976,29 +990,25 @@ function TransferDialog({
   open: boolean;
   pending: boolean;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const candidates = locations.filter(
-    (location) => location.status === 'ACTIVE' && location.id !== currentLocationId,
+  const candidates = useMemo(
+    () =>
+      locations.filter(
+        (location) => location.status === 'ACTIVE' && location.id !== currentLocationId,
+      ),
+    [currentLocationId, locations],
   );
   const [toLocationId, setToLocationId] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (open && !dialog.open) {
-      setToLocationId(candidates[0]?.id ?? '');
-      setReason('');
-      setError(null);
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    if (!open && dialog.open) {
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    }
+    if (!open) return;
+    setToLocationId(candidates[0]?.id ?? '');
+    setReason('');
+    setError(null);
   }, [candidates, open]);
+
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(open);
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1020,6 +1030,7 @@ function TransferDialog({
       aria-labelledby="transfer-unit-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!pending) onCancel();

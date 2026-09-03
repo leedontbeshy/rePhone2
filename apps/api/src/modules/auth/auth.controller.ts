@@ -25,7 +25,7 @@ import {
 import {
   AuthSessionResponse,
   GenericAcceptedResponse,
-  RegisteredAccountResponse,
+  RegistrationResultResponse,
 } from './auth-response.dto.js';
 import {
   CSRF_HEADER_NAME,
@@ -48,10 +48,13 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ operationId: 'registerAccount', summary: 'Register an active customer account' })
   @ApiBody({ type: RegisterDto })
-  @ApiCreatedResponse({ type: RegisteredAccountResponse })
+  @ApiCreatedResponse({
+    description:
+      'Returns the same generic response whether the account is newly created or already exists.',
+    type: RegistrationResultResponse,
+  })
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
-    { status: 409, description: 'DUPLICATE_RESOURCE' },
     { status: 429, description: 'RATE_LIMITED' },
   )
   public register(@Body() input: RegisterDto, @Req() request: Request) {

@@ -48,7 +48,7 @@
 
 .statusPill[data-tone='success'] {
   border-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-strong);
   background: var(--color-success-soft);
 }
 
@@ -75,6 +75,16 @@
 
 .collection {
   overflow: clip;
+}
+
+.collectionStatus {
+  margin: 0;
+  padding: var(--space-2) var(--space-6);
+  border-block-end: var(--border-default);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
 }
 
 .collectionFooter {
@@ -229,6 +239,10 @@
 
   .collectionFooter {
     justify-content: center;
+    padding-inline: var(--space-4);
+  }
+
+  .collectionStatus {
     padding-inline: var(--space-4);
   }
 

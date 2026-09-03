@@ -83,7 +83,10 @@
 }
 
 .details a {
+  display: inline-flex;
   width: fit-content;
+  min-height: 44px;
+  align-items: center;
 }
 
 .actions {

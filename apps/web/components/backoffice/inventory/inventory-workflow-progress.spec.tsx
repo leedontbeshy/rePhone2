@@ -9,6 +9,7 @@ describe('inventory workflow progress', () => {
     );
 
     expect(markup).toContain('aria-current="step"');
+    expect(markup).toContain('tabindex="0"');
     expect(markup).toContain('Tiếp nhận');
     expect(markup).toContain('Ảnh thực tế');
     expect(markup).toContain('Kiểm định');

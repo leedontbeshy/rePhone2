@@ -20,6 +20,16 @@ describe('warranty policy components', () => {
     expect(markup).not.toContain('ACTIVE');
   });
 
+  it('keeps the loaded policy row visible during a local refresh', () => {
+    const policy = fixture();
+    const markup = renderToStaticMarkup(
+      <WarrantyPolicyList items={[policy]} selectedId={null} updating onSelect={() => undefined} />,
+    );
+
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('BH-365');
+  });
+
   it('keeps detail selection out of the policy list request key', () => {
     const first = warrantyPolicyListQueryKey(
       new URLSearchParams('status=ACTIVE&page=2&policy=policy-1'),
@@ -47,16 +57,20 @@ describe('warranty policy components', () => {
     const readonlyMarkup = renderToStaticMarkup(
       <WarrantyPolicyEditor
         client={client}
+        notice={null}
         policy={detail([])}
         onClose={() => undefined}
+        onNoticeChange={() => undefined}
         onReload={reload}
       />,
     );
     const editableMarkup = renderToStaticMarkup(
       <WarrantyPolicyEditor
         client={client}
+        notice={null}
         policy={detail(['EDIT', 'DEACTIVATE'])}
         onClose={() => undefined}
+        onNoticeChange={() => undefined}
         onReload={reload}
       />,
     );

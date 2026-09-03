@@ -139,29 +139,42 @@ describe('after-sales typed-client adapter', () => {
   });
 
   it('accepts HTTPS signed URLs and rejects credential-bearing URLs', async () => {
+    const futureExpiry = new Date(Date.now() + 60_000).toISOString();
     const safeGet = vi.fn().mockResolvedValue({
       data: {
         data: {
           url: 'https://storage.example.test/signed/object?signature=opaque',
-          expiresAt: '2026-08-25T00:05:00.000Z',
+          expiresAt: futureExpiry,
         },
       },
     });
     await expect(
       getAfterSalesAttachmentUrl(mockClient({ GET: safeGet }), REQUEST_NUMBER, ITEM_ID, TOKEN),
-    ).resolves.toMatchObject({ expiresAt: '2026-08-25T00:05:00.000Z' });
+    ).resolves.toMatchObject({ expiresAt: futureExpiry });
 
     const unsafeGet = vi.fn().mockResolvedValue({
       data: {
         data: {
           url: 'https://user:secret@storage.example.test/object',
-          expiresAt: '2026-08-25T00:05:00.000Z',
+          expiresAt: futureExpiry,
         },
       },
     });
     await expect(
       getAfterSalesAttachmentUrl(mockClient({ GET: unsafeGet }), REQUEST_NUMBER, ITEM_ID),
     ).rejects.toThrow('Không thể mở liên kết tệp đính kèm.');
+
+    const expiredGet = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          url: 'https://storage.example.test/signed/object?signature=expired',
+          expiresAt: new Date(Date.now() - 1_000).toISOString(),
+        },
+      },
+    });
+    await expect(
+      getAfterSalesAttachmentUrl(mockClient({ GET: expiredGet }), REQUEST_NUMBER, ITEM_ID),
+    ).rejects.toThrow('Liên kết tệp vừa hết hạn');
   });
 
   it('uploads one multipart file while keeping the guest credential in headers', async () => {
@@ -211,6 +224,9 @@ describe('after-sales typed-client adapter', () => {
     ).toBe('Hiện chưa thể lưu tệp. Vui lòng thử lại sau.');
     expect(afterSalesError({ error: { code: 'WARRANTY_NOT_ACTIVE' } }, 'fallback')).toBe(
       'Bảo hành hiện chưa đủ điều kiện để gửi yêu cầu.',
+    );
+    expect(afterSalesError({ error: { code: 'ATTACHMENT_LIMIT_REACHED' } }, 'fallback')).toBe(
+      'Yêu cầu này đã có đủ 5 tệp đính kèm.',
     );
   });
 
@@ -270,16 +286,17 @@ describe('after-sales typed-client adapter', () => {
             { orderNumber: ORDER_NUMBER, status: 'COMPLETED' },
             { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' },
           ],
-          meta: { pagination: { page: 1, pageSize: 100, totalItems: 2, totalPages: 1 } },
+          meta: { pagination: { page: 1, pageSize: 20, totalItems: 2, totalPages: 1 } },
         },
       })
       .mockResolvedValueOnce({ data: { data: completedOrder } })
       .mockResolvedValueOnce({ data: { data: { ...completedOrder, status: 'PROCESSING' } } });
     const client = mockClient({ GET: get });
 
-    await expect(listCompletedAfterSalesOrders(client)).resolves.toEqual([
-      expect.objectContaining({ orderNumber: ORDER_NUMBER }),
-    ]);
+    await expect(listCompletedAfterSalesOrders(client)).resolves.toMatchObject({
+      data: [expect.objectContaining({ orderNumber: ORDER_NUMBER })],
+      pagination: { page: 1, totalPages: 1 },
+    });
     await expect(getCompletedAfterSalesOrder(client, ORDER_NUMBER)).resolves.toMatchObject({
       status: 'COMPLETED',
     });
@@ -290,45 +307,25 @@ describe('after-sales typed-client adapter', () => {
     expect(get.mock.calls[0]?.[1]).toMatchObject({ params: { query: { status: 'COMPLETED' } } });
   });
 
-  it('loads every completed-order page and filters each page authoritatively', async () => {
-    const first = { orderNumber: ORDER_NUMBER, status: 'COMPLETED' };
+  it('loads only the requested completed-order page', async () => {
     const second = { orderNumber: 'RPH-20260826-DEF23456', status: 'COMPLETED' };
-    const get = vi
-      .fn()
-      .mockResolvedValueOnce({
-        data: {
-          data: [first, { orderNumber: 'RPH-20260825-BAD23456', status: 'PROCESSING' }],
-          meta: { pagination: { page: 1, pageSize: 100, totalItems: 3, totalPages: 2 } },
-        },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          data: [second],
-          meta: { pagination: { page: 2, pageSize: 100, totalItems: 3, totalPages: 2 } },
-        },
-      });
-
-    await expect(listCompletedAfterSalesOrders(mockClient({ GET: get }))).resolves.toEqual([
-      first,
-      second,
-    ]);
-    expect(get).toHaveBeenNthCalledWith(1, '/api/v1/orders', {
-      params: {
-        query: {
-          status: 'COMPLETED',
-          page: 1,
-          pageSize: 100,
-          sortBy: 'placedAt',
-          sortOrder: 'desc',
-        },
+    const get = vi.fn().mockResolvedValue({
+      data: {
+        data: [second],
+        meta: { pagination: { page: 2, pageSize: 20, totalItems: 21, totalPages: 2 } },
       },
     });
-    expect(get).toHaveBeenNthCalledWith(2, '/api/v1/orders', {
+
+    await expect(
+      listCompletedAfterSalesOrders(mockClient({ GET: get }), { page: 2, pageSize: 20 }),
+    ).resolves.toMatchObject({ data: [second], pagination: { page: 2, totalPages: 2 } });
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith('/api/v1/orders', {
       params: {
         query: {
           status: 'COMPLETED',
           page: 2,
-          pageSize: 100,
+          pageSize: 20,
           sortBy: 'placedAt',
           sortOrder: 'desc',
         },

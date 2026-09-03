@@ -1,26 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { UserRole, UserStatus } from '../../generated/prisma/enums.js';
+import { GENERIC_REGISTRATION_MESSAGE } from './auth.constants.js';
 
 const USER_ROLES = ['ADMIN', 'EMPLOYEE', 'CUSTOMER'] as const;
 const USER_STATUSES = ['PENDING_VERIFICATION', 'ACTIVE', 'SUSPENDED', 'DISABLED'] as const;
 
-export class RegisteredAccountDto {
-  @ApiProperty({ type: String, format: 'uuid' })
-  public id!: string;
-
-  @ApiProperty({ type: String, format: 'email' })
-  public email!: string;
-
-  @ApiProperty({ type: String })
-  public fullName!: string;
-
-  @ApiProperty({ type: String, enum: USER_STATUSES })
-  public status!: UserStatus;
+export class RegistrationResultDto {
+  @ApiProperty({ type: String, example: GENERIC_REGISTRATION_MESSAGE })
+  public message!: string;
 }
 
-export class RegisteredAccountResponse {
-  @ApiProperty({ type: () => RegisteredAccountDto })
-  public data!: RegisteredAccountDto;
+export class RegistrationResultResponse {
+  @ApiProperty({ type: () => RegistrationResultDto })
+  public data!: RegistrationResultDto;
 }
 
 export class AuthUserDto {

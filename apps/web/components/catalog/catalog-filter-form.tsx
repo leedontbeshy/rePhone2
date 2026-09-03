@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Form from 'next/form';
 import type { ReactNode } from 'react';
 import { searchParamValue, type CatalogSearchParams } from '@/lib/catalog-query';
 import styles from './catalog.module.css';
@@ -11,7 +12,7 @@ interface CatalogFilterFormProps {
 
 export function CatalogFilterForm({ current, idPrefix, pageSize }: CatalogFilterFormProps) {
   return (
-    <form className={styles.filterForm} action="/products" method="get">
+    <Form className={styles.filterForm} action="/products" scroll={false}>
       <FilterField id={`${idPrefix}-q`} label="Tìm kiếm" wide>
         <input
           id={`${idPrefix}-q`}
@@ -19,7 +20,7 @@ export function CatalogFilterForm({ current, idPrefix, pageSize }: CatalogFilter
           type="search"
           maxLength={100}
           defaultValue={searchParamValue(current, 'q')}
-          placeholder="Tên model hoặc cấu hình"
+          placeholder="Tên dòng máy hoặc cấu hình"
         />
       </FilterField>
       <FilterField id={`${idPrefix}-type`} label="Loại sản phẩm">
@@ -103,7 +104,7 @@ export function CatalogFilterForm({ current, idPrefix, pageSize }: CatalogFilter
           name="sortBy"
           defaultValue={searchParamValue(current, 'sortBy') ?? 'createdAt'}
         >
-          <option value="createdAt">Mới cập nhật</option>
+          <option value="createdAt">Mới thêm</option>
           <option value="name">Tên</option>
           <option value="fromPrice">Giá</option>
           <option value="releaseYear">Năm ra mắt</option>
@@ -128,7 +129,7 @@ export function CatalogFilterForm({ current, idPrefix, pageSize }: CatalogFilter
           Xóa lọc
         </Link>
       </div>
-    </form>
+    </Form>
   );
 }
 

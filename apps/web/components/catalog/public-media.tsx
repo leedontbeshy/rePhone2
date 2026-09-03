@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageSquareIcon } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PublicMedia } from '@/lib/catalog-api';
 import { classNames } from '@/components/ui/class-names';
 import styles from './public-media.module.css';
@@ -13,6 +13,8 @@ interface PublicMediaProps {
   readonly priority?: boolean;
 }
 
+const MEDIA_LOAD_TIMEOUT_MS = 4_000;
+
 export function PublicMediaImage({
   className,
   fallbackLabel,
@@ -20,7 +22,18 @@ export function PublicMediaImage({
   priority = false,
 }: PublicMediaProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const mediaClassName = classNames(styles.media, className);
+
+  useEffect(() => {
+    if (media === undefined || loadedUrl === media.url || failedUrl === media.url) return;
+    const timeout = window.setTimeout(() => {
+      setFailedUrl(media.url);
+    }, MEDIA_LOAD_TIMEOUT_MS);
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [failedUrl, loadedUrl, media]);
 
   if (media === undefined || failedUrl === media.url) {
     return (
@@ -44,6 +57,9 @@ export function PublicMediaImage({
       loading={priority ? 'eager' : 'lazy'}
       src={media.url}
       width={media.width ?? 800}
+      onLoad={() => {
+        setLoadedUrl(media.url);
+      }}
       onError={() => {
         setFailedUrl(media.url);
       }}

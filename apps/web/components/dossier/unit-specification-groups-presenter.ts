@@ -51,7 +51,7 @@ export function buildUnitSpecificationGroups(
     unit.simLockStatus === 'CARRIER_LOCKED' ? cleanText(unit.carrierName) : undefined;
   const unitFacts = compactItems([
     specification('inventoryCode', 'Mã máy', cleanText(unit.inventoryCode)),
-    specification('modelNumber', 'Mã model', cleanText(unit.modelNumber)),
+    specification('modelNumber', 'Mã kiểu máy', cleanText(unit.modelNumber)),
     specification('region', 'Thị trường', cleanText(unit.regionCode)),
     specification('simConfiguration', 'Cấu hình SIM', catalogLabel(unit.simConfiguration)),
     specification(
@@ -66,7 +66,7 @@ export function buildUnitSpecificationGroups(
       'Linh kiện pin',
       catalogLabel(unit.batteryReplacementStatus),
     ),
-    specification('grade', 'Ngoại hình', `Grade ${unit.conditionGrade}`),
+    specification('grade', 'Ngoại hình', `Loại ${unit.conditionGrade}`),
     specification('repairHistory', 'Lịch sử sửa chữa', catalogLabel(unit.repairHistoryStatus)),
     specification('warranty', 'Bảo hành', `${String(unit.warrantyDays)} ngày`),
   ]);

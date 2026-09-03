@@ -37,7 +37,7 @@ describe('warranty presentation', () => {
 
   it('allowlists positive page numbers and keeps page one canonical', () => {
     expect(parseWarrantyPage('2')).toBe(2);
-    for (const value of [null, '', '0', '-1', '2.5', 'all'])
+    for (const value of [null, '', '0', '-1', '2.5', 'all', '999999999999999999999'])
       expect(parseWarrantyPage(value)).toBe(1);
     expect(warrantyPageHref(1)).toBe('/warranties');
     expect(warrantyPageHref(3)).toBe('/warranties?page=3');

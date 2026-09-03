@@ -40,7 +40,7 @@ export function InventoryWorkflowProgress({
   }, [currentStep]);
 
   return (
-    <ol className={styles.progress} aria-label="Tiến độ nhập máy">
+    <ol className={styles.progress} aria-label="Tiến độ nhập máy" tabIndex={0}>
       {STEPS.map((step) => {
         const done = completed.has(step.number);
         const current = currentStep === step.number;

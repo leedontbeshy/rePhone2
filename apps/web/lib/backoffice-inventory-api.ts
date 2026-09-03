@@ -470,9 +470,11 @@ export async function intakeInventoryUnit(
 export async function getInventoryUnit(
   client: InventoryApiClient,
   unitId: string,
+  options: InventoryRequestOptions = {},
 ): Promise<InventoryUnitDetail> {
   const result = await client.GET('/api/v1/backoffice/inventory-units/{id}', {
     params: { path: { id: unitId } },
+    ...signalOptions(options),
   });
   if (result.data === undefined) {
     throw inventoryAdminError(result.error, 'Không thể mở hồ sơ máy.');

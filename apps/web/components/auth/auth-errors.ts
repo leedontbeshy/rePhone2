@@ -11,6 +11,17 @@ export interface AuthFormIssue {
 
 export const EMPTY_AUTH_ISSUE: AuthFormIssue = { errors: [], fields: {} };
 
+export function withoutAuthFieldIssue(issue: AuthFormIssue, field: AuthFieldName): AuthFormIssue {
+  if (issue.fields[field] === undefined) return issue;
+  const fields = Object.fromEntries(
+    Object.entries(issue.fields).filter(([candidate]) => candidate !== field),
+  ) as AuthFieldErrors;
+  return {
+    fields,
+    errors: issue.errors.filter(({ href }) => href !== `#${field}`),
+  };
+}
+
 export function authIssueFromError(caught: unknown, flow: AuthFlow): AuthFormIssue {
   if (!(caught instanceof AuthActionError)) {
     return messageIssue(fallbackFor(flow));
@@ -24,7 +35,11 @@ export function authIssueFromError(caught: unknown, flow: AuthFlow): AuthFormIss
         'Tài khoản đang bị tạm khóa hoặc vô hiệu hóa. Hãy liên hệ rePhone để được hỗ trợ.',
       );
     case 'DUPLICATE_RESOURCE':
-      return fieldIssue('email', 'Email này đã được dùng. Hãy đăng nhập hoặc chọn email khác.');
+      return flow === 'register'
+        ? messageIssue(
+            'Không thể hoàn tất đăng ký. Hãy kiểm tra lại thông tin hoặc đăng nhập nếu bạn đã có tài khoản.',
+          )
+        : messageIssue(fallbackFor(flow));
     case 'ONE_TIME_TOKEN_INVALID':
       return messageIssue(
         flow === 'invitation'

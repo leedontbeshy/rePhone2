@@ -3,14 +3,7 @@
 import { FileArrowUpIcon, XIcon } from '@phosphor-icons/react/ssr';
 import NextLink from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-  type SyntheticEvent,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   OperationsActionRail,
@@ -31,6 +24,7 @@ import {
   Skeleton,
   Textarea,
 } from '@/components/ui';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
 import {
   getBackofficePayment,
   getPaymentEvidenceUrl,
@@ -51,6 +45,24 @@ import {
 import styles from './payments.module.css';
 
 type PaymentDecision = 'verify' | 'reject';
+type PaymentOperation = 'evidence' | PaymentDecision;
+type PaymentOperationLock = { current: PaymentOperation | null };
+
+export async function runExclusivePaymentOperation(
+  lock: PaymentOperationLock,
+  operation: PaymentOperation,
+  allowed: boolean,
+  task: () => Promise<void>,
+): Promise<boolean> {
+  if (!allowed || lock.current !== null) return false;
+  lock.current = operation;
+  try {
+    await task();
+    return true;
+  } finally {
+    if (lock.current === operation) lock.current = null;
+  }
+}
 
 export function PaymentDetailView() {
   const params = useParams<{ id: string }>();
@@ -68,7 +80,7 @@ export function PaymentDetailView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
-  const decisionTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const operationRef = useRef<PaymentOperation>(null);
 
   const loadPayment = useCallback(async () => {
     const next = await getBackofficePayment(client, paymentId);
@@ -99,8 +111,7 @@ export function PaymentDetailView() {
     };
   }, [isStaff, loadPayment, status]);
 
-  function openDecision(next: PaymentDecision, trigger: HTMLButtonElement) {
-    decisionTriggerRef.current = trigger;
+  function openDecision(next: PaymentDecision) {
     setFieldError(null);
     setDecision(next);
   }
@@ -108,32 +119,40 @@ export function PaymentDetailView() {
   function closeDecision() {
     setDecision(null);
     setFieldError(null);
-    queueMicrotask(() => decisionTriggerRef.current?.focus());
   }
 
   async function openEvidence() {
-    const evidenceWindow = window.open('about:blank', '_blank');
-    if (evidenceWindow === null) {
-      setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
-      return;
-    }
-    evidenceWindow.opener = null;
-    setBusy('evidence');
-    setError(null);
-    try {
-      const evidence = await getPaymentEvidenceUrl(client, paymentId);
-      evidenceWindow.location.replace(evidence.url);
-    } catch (caught) {
-      evidenceWindow.close();
-      setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
-    } finally {
-      setBusy(null);
-    }
+    await runExclusivePaymentOperation(
+      operationRef,
+      'evidence',
+      detail?.availableActions.includes('VIEW_EVIDENCE') === true,
+      async () => {
+        const evidenceWindow = window.open('about:blank', '_blank');
+        if (evidenceWindow === null) {
+          setError('Trình duyệt đang chặn cửa sổ minh chứng. Hãy cho phép rồi thử lại.');
+          return;
+        }
+        evidenceWindow.opener = null;
+        setBusy('evidence');
+        setError(null);
+        try {
+          const evidence = await getPaymentEvidenceUrl(client, paymentId);
+          evidenceWindow.location.replace(evidence.url);
+        } catch (caught) {
+          evidenceWindow.close();
+          setError(caught instanceof Error ? caught.message : 'Không thể mở minh chứng lúc này.');
+        } finally {
+          setBusy(null);
+        }
+      },
+    );
   }
 
   async function submitDecision(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (decision === null || detail === null) return;
+    const requiredAction = decision === 'verify' ? 'VERIFY' : 'REJECT';
+    if (!detail.availableActions.includes(requiredAction)) return;
     const validation = validateDecision(
       decision,
       receivedAmount,
@@ -146,33 +165,34 @@ export function PaymentDetailView() {
       return;
     }
 
-    setBusy(decision);
-    setFieldError(null);
-    setError(null);
-    setNotice(null);
-    try {
-      const result =
-        decision === 'verify'
-          ? await verifyPayment(client, paymentId, {
-              receivedAmount: receivedAmount.trim(),
-              ...(verifyNote.trim().length === 0 ? {} : { note: verifyNote.trim() }),
-            })
-          : await rejectPayment(client, paymentId, { reason: rejectReason.trim() });
-      await loadPayment();
-      setNotice(reviewNotice(decision, result.notificationDelivery));
-      closeDecision();
-    } catch (caught) {
-      setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật thanh toán.');
+    await runExclusivePaymentOperation(operationRef, decision, true, async () => {
+      setBusy(decision);
+      setFieldError(null);
+      setError(null);
+      setNotice(null);
       try {
-        const refreshed = await loadPayment();
-        const requiredAction = decision === 'verify' ? 'VERIFY' : 'REJECT';
-        if (!refreshed.availableActions.includes(requiredAction)) closeDecision();
-      } catch {
-        // Giữ lỗi thao tác đang hiển thị; nút tải lại toàn hồ sơ nằm ngoài hộp thoại.
+        const result =
+          decision === 'verify'
+            ? await verifyPayment(client, paymentId, {
+                receivedAmount: receivedAmount.trim(),
+                ...(verifyNote.trim().length === 0 ? {} : { note: verifyNote.trim() }),
+              })
+            : await rejectPayment(client, paymentId, { reason: rejectReason.trim() });
+        await loadPayment();
+        setNotice(reviewNotice(decision, result.notificationDelivery));
+        closeDecision();
+      } catch (caught) {
+        setFieldError(caught instanceof Error ? caught.message : 'Không thể cập nhật thanh toán.');
+        try {
+          const refreshed = await loadPayment();
+          if (!refreshed.availableActions.includes(requiredAction)) closeDecision();
+        } catch {
+          // Giữ lỗi thao tác đang hiển thị; nút tải lại toàn hồ sơ nằm ngoài hộp thoại.
+        }
+      } finally {
+        setBusy(null);
       }
-    } finally {
-      setBusy(null);
-    }
+    });
   }
 
   return (
@@ -254,7 +274,7 @@ export function PaymentRecord({
   busy: 'evidence' | PaymentDecision | null;
   detail: BackofficePaymentDetail;
   onEvidence: () => void;
-  onOpenDecision: (decision: PaymentDecision, trigger: HTMLButtonElement) => void;
+  onOpenDecision: (decision: PaymentDecision) => void;
 }>) {
   const paymentState = paymentStatusPresentation(detail.payment.status);
   const canVerify = detail.availableActions.includes('VERIFY');
@@ -406,8 +426,8 @@ export function PaymentRecord({
                 canVerify ? (
                   <Button
                     disabled={busy !== null}
-                    onClick={(event) => {
-                      onOpenDecision('verify', event.currentTarget);
+                    onClick={() => {
+                      onOpenDecision('verify');
                     }}
                   >
                     Xác nhận thanh toán
@@ -416,8 +436,8 @@ export function PaymentRecord({
                   <Button
                     disabled={busy !== null}
                     variant="destructive"
-                    onClick={(event) => {
-                      onOpenDecision('reject', event.currentTarget);
+                    onClick={() => {
+                      onOpenDecision('reject');
                     }}
                   >
                     Từ chối minh chứng
@@ -430,8 +450,8 @@ export function PaymentRecord({
                     <Button
                       disabled={busy !== null}
                       variant="secondary"
-                      onClick={(event) => {
-                        onOpenDecision('reject', event.currentTarget);
+                      onClick={() => {
+                        onOpenDecision('reject');
                       }}
                     >
                       Từ chối minh chứng
@@ -499,8 +519,7 @@ function PaymentDecisionDialog({
   onSubmit: (event: SyntheticEvent<HTMLFormElement>) => Promise<void>;
   onVerifyNote: (value: string) => void;
 }>) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useModalDialog(dialogRef);
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const verify = decision === 'verify';
   return (
     <dialog
@@ -508,6 +527,7 @@ function PaymentDecisionDialog({
       aria-labelledby="payment-decision-title"
       className={styles.dialog}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onClose();
@@ -596,19 +616,6 @@ function PaymentDecisionDialog({
       </form>
     </dialog>
   );
-}
-
-function useModalDialog(dialogRef: RefObject<HTMLDialogElement | null>) {
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-    dialog.querySelector<HTMLElement>('input, textarea, button')?.focus();
-    return () => {
-      if (dialog.open && typeof dialog.close === 'function') dialog.close();
-    };
-  }, [dialogRef]);
 }
 
 function PaymentDetailSkeleton() {

@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { classNames } from './class-names';
 import { formatVnd } from './money';
@@ -34,8 +35,79 @@ describe('frontend design foundation', () => {
     expect(primitives).toContain('min-height: var(--control-height);');
     expect(primitives).not.toContain('min-height: 2.5rem;');
     expect(contrastRatio('#006780', '#e2f5f9')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#273548', '#f1f5f8')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#1769aa', '#edf4ff')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#0b6b45', '#e8f7f0')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#9b5b00', '#fff4dd')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#931d25', '#fff0f1')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('does not reference undefined global color tokens without a fallback', () => {
+    const webRoot = fileURLToPath(new URL('../..', import.meta.url));
+    const tokensPath = join(webRoot, 'styles', 'tokens.css');
+    const tokenDefinitions = new Set(
+      [...readFileSync(tokensPath, 'utf8').matchAll(/(--color-[a-z0-9-]+)\s*:/g)].map(
+        ([, token]) => token,
+      ),
+    );
+    const unresolved: string[] = [];
+
+    for (const path of listCssFiles(webRoot)) {
+      const source = readFileSync(path, 'utf8');
+      for (const match of source.matchAll(/var\((--color-[a-z0-9-]+)(\s*,)?/g)) {
+        const [, token, fallbackMarker] = match;
+        if (token !== undefined && fallbackMarker === undefined && !tokenDefinitions.has(token)) {
+          unresolved.push(`${path.replaceAll('\\', '/')}: ${token}`);
+        }
+      }
+    }
+
+    expect(unresolved).toEqual([]);
+  });
+
+  it('keeps transparent file controls and legacy cards visibly focused', () => {
+    const webRoot = fileURLToPath(new URL('../..', import.meta.url));
+    const base = readFileSync(join(webRoot, 'styles', 'base.css'), 'utf8');
+    const primitives = readFileSync(
+      join(webRoot, 'components', 'ui', 'primitives.module.css'),
+      'utf8',
+    );
+    const globals = readFileSync(join(webRoot, 'app', 'globals.css'), 'utf8');
+    const catalog = readFileSync(
+      join(webRoot, 'components', 'backoffice', 'catalog', 'catalog.module.css'),
+      'utf8',
+    );
+
+    expect(base).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*input\[type='file'\]:not\(\[data-rp-file-picker-control\]\):focus-visible \+ \*[\s\S]*outline:\s*3px solid Highlight;/,
+    );
+    expect(base).toMatch(/label:has\(\+ input\[type='file'\]:focus-visible\)/);
+    expect(base).toMatch(/label:has\(> input\[type='file'\]:focus-visible\)/);
+    expect(primitives).toMatch(
+      /@media \(forced-colors: active\)[\s\S]*\.filePicker:has\(\.fileInput:focus-visible\)[\s\S]*outline:\s*3px solid Highlight;/,
+    );
+    expect(focusVisibleBlocksWithoutReplacement(globals)).toEqual([]);
+    expect(focusVisibleBlocksWithoutReplacement(catalog)).toEqual([]);
   });
 });
+
+function focusVisibleBlocksWithoutReplacement(source: string): string[] {
+  return [...source.matchAll(/([^{}]*:focus-visible[^{}]*)\{([^{}]*)\}/g)]
+    .filter(([, , body]) => /outline:\s*(?:0|none)\s*;/.test(body ?? ''))
+    .filter(([, , body]) => !/box-shadow:\s*[^;]+;/.test(body ?? ''))
+    .map(([, selector]) => selector?.trim() ?? '');
+}
+
+function listCssFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') return [];
+      return listCssFiles(path);
+    }
+    return entry.name.endsWith('.css') ? [path] : [];
+  });
+}
 
 function contrastRatio(foreground: string, background: string) {
   const foregroundLuminance = relativeLuminance(foreground);

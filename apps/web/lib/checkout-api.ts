@@ -1,11 +1,53 @@
 import type { components } from '@rephone/api-client';
-import { checkoutChangedPreview } from './order-access';
+import { checkoutChangedPreview, customerApiError } from './order-access';
 
 export type CheckoutPreview = components['schemas']['CheckoutPreviewDto'];
+
+export interface CheckoutRequestEpoch {
+  begin: () => number;
+  invalidate: () => void;
+  isCurrent: (requestId: number) => boolean;
+}
+
+export type CheckoutCreateFailure =
+  | { kind: 'review'; preview: CheckoutPreview }
+  | { kind: 'conflict'; message: string }
+  | { kind: 'uncertain' }
+  | { kind: 'error'; message: string };
+
+export function createCheckoutRequestEpoch(): CheckoutRequestEpoch {
+  let currentRequestId = 0;
+  return {
+    begin() {
+      currentRequestId += 1;
+      return currentRequestId;
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    isCurrent(requestId) {
+      return requestId === currentRequestId;
+    },
+  };
+}
 
 export function parseChangedCheckoutPreview(value: unknown): CheckoutPreview | undefined {
   const candidate = checkoutChangedPreview(value);
   return isCheckoutPreview(candidate) ? candidate : undefined;
+}
+
+export function classifyCheckoutCreateFailure(
+  status: number,
+  error: unknown,
+  recovering = false,
+): CheckoutCreateFailure {
+  const current = parseChangedCheckoutPreview(error);
+  if (current !== undefined) return { kind: 'review', preview: current };
+  if (status >= 500 || status < 400 || (recovering && status !== 409 && status !== 422)) {
+    return { kind: 'uncertain' };
+  }
+  const message = customerApiError(error, 'Chưa thể tạo đơn hàng.');
+  return status === 409 ? { kind: 'conflict', message } : { kind: 'error', message };
 }
 
 export function checkoutWarningMessage(code: string): string {
@@ -27,6 +69,8 @@ function isCheckoutPreview(value: unknown): value is CheckoutPreview {
   if (
     typeof value['calculatedAt'] !== 'string' ||
     typeof value['cartUpdatedAt'] !== 'string' ||
+    typeof value['previewFingerprint'] !== 'string' ||
+    !/^v1:[a-f0-9]{64}$/.test(value['previewFingerprint']) ||
     (value['fulfillmentType'] !== 'PICKUP' && value['fulfillmentType'] !== 'SHIPPING') ||
     !Array.isArray(value['items']) ||
     !value['items'].every(isPreviewItem) ||

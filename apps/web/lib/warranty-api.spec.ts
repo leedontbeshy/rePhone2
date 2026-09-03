@@ -112,6 +112,15 @@ describe('warranty typed-client adapter', () => {
       resolveWarrantyGuestCredential('authenticated', CUSTOMER_WARRANTY.orderNumber, storage),
     ).toBeUndefined();
     expect(resolveWarrantyGuestCredential('anonymous', 'invalid-order', storage)).toBeUndefined();
+
+    const blockedStorage = {
+      getItem: () => {
+        throw new DOMException('blocked', 'SecurityError');
+      },
+    };
+    expect(
+      resolveWarrantyGuestCredential('anonymous', CUSTOMER_WARRANTY.orderNumber, blockedStorage),
+    ).toBeUndefined();
   });
 
   it('keys warranty access by account identity and removes only the owning guest token', () => {
@@ -136,6 +145,14 @@ describe('warranty typed-client adapter', () => {
     clearWarrantyGuestCredential('invalid-order', { removeItem });
     expect(removeItem).toHaveBeenCalledTimes(1);
     expect(removeItem).toHaveBeenCalledWith(`rephone_order_token:${CUSTOMER_WARRANTY.orderNumber}`);
+
+    expect(() => {
+      clearWarrantyGuestCredential(CUSTOMER_WARRANTY.orderNumber, {
+        removeItem: () => {
+          throw new DOMException('blocked', 'SecurityError');
+        },
+      });
+    }).not.toThrow();
   });
 
   it('classifies missing or non-owned customer warranty as one safe not-found state', async () => {

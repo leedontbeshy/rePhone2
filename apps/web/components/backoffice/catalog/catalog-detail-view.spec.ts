@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   variantDraftFrom,
   variantInputFromDraft,
+  nextCatalogMediaSortOrder,
   type CatalogVariantRecord,
   type VariantDraft,
 } from './catalog-detail-view';
 
 describe('biểu mẫu biến thể sản phẩm', () => {
+  it('thêm ảnh mới sau thứ tự lớn nhất thay vì dựa vào số lượng ảnh', () => {
+    expect(nextCatalogMediaSortOrder([])).toBe(0);
+    expect(nextCatalogMediaSortOrder([{ sortOrder: 0 }, { sortOrder: 10 }])).toBe(11);
+  });
   it('chuẩn hóa giá, màu và các thông số của phụ kiện', () => {
     const input = variantInputFromDraft(
       draft({

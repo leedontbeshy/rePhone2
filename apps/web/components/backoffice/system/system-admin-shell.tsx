@@ -48,11 +48,6 @@ export function SystemAdminShell({
       navigation.dataset.canScrollEnd = String(overflow.canScrollEnd);
     };
     const frame = window.requestAnimationFrame(() => {
-      if (window.matchMedia('(max-width: 59.99rem)').matches) {
-        navigation
-          .querySelector<HTMLElement>('[aria-current="page"]')
-          ?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
-      }
       updateOverflow();
     });
     navigation.addEventListener('scroll', updateOverflow, { passive: true });

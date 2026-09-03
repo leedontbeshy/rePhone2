@@ -200,7 +200,7 @@ export class BackofficeCatalogError extends Error {
 export const CATALOG_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 export const CATALOG_MEDIA_MAX_BYTES = 8 * 1024 * 1024;
 
-export function validateCatalogMediaFile(file: Blob): string | null {
+export function validateCatalogMediaFile(file: Pick<Blob, 'size' | 'type'>): string | null {
   if (file.size === 0) return 'Tệp ảnh đang trống.';
   if (file.size > CATALOG_MEDIA_MAX_BYTES) return 'Ảnh vượt quá giới hạn 8 MB.';
   if (!(CATALOG_MEDIA_TYPES as readonly string[]).includes(file.type)) {
@@ -431,6 +431,7 @@ export function deleteCatalogVariantMedia(
 export async function listCatalogWarrantyOptions(
   client: CatalogApiClient,
   search?: string,
+  options: Readonly<{ signal?: AbortSignal }> = {},
 ): Promise<CatalogWarrantyOption[]> {
   const result = await client.GET('/api/v1/backoffice/warranty-policies', {
     params: {
@@ -442,6 +443,7 @@ export async function listCatalogWarrantyOptions(
         ...(search === undefined || search.trim() === '' ? {} : { q: search.trim() }),
       },
     },
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
   });
   if (result.data === undefined) {
     throw catalogError(result.error, 'Không thể tải lựa chọn bảo hành.');

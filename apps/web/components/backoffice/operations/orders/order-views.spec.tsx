@@ -44,6 +44,14 @@ describe('order operations views', () => {
     expect(markup).not.toContain('IN_TRANSIT');
   });
 
+  it('keeps existing queue rows visible while a URL-driven refresh is loading', () => {
+    const markup = renderToStaticMarkup(<OrderQueue orders={[order()]} updating />);
+
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('RPH-20260828-ABC12345');
+    expect(markup).toContain('Khách Demo');
+  });
+
   it('marks an overdue pickup without inventing product imagery', () => {
     const markup = renderToStaticMarkup(
       <OrderQueue

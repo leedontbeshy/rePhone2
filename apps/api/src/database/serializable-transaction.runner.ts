@@ -4,6 +4,13 @@ import { ApiError } from '../common/errors/api-error.js';
 import { PrismaService } from './prisma.service.js';
 
 const RETRY_DELAYS_MS = [25, 75] as const;
+const DEFAULT_MAX_WAIT_MS = 2_000;
+const DEFAULT_TIMEOUT_MS = 5_000;
+
+export interface SerializableTransactionOptions {
+  maxWaitMs?: number;
+  timeoutMs?: number;
+}
 
 @Injectable()
 export class SerializableTransactionRunner {
@@ -15,13 +22,14 @@ export class SerializableTransactionRunner {
     operation: string,
     work: (transaction: Prisma.TransactionClient) => Promise<T>,
     retryableDomainError?: (error: unknown) => boolean,
+    options: SerializableTransactionOptions = {},
   ): Promise<T> {
     for (let attempt = 1; attempt <= RETRY_DELAYS_MS.length + 1; attempt += 1) {
       try {
         return await this.prisma.$transaction(work, {
           isolationLevel: 'Serializable',
-          maxWait: 2_000,
-          timeout: 5_000,
+          maxWait: options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS,
+          timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         });
       } catch (error) {
         if (!isRetryableTransactionError(error) && !(retryableDomainError?.(error) ?? false)) {

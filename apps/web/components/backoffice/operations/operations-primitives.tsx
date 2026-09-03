@@ -7,7 +7,7 @@ import {
   TruckIcon,
 } from '@phosphor-icons/react/ssr';
 import type { ReactNode } from 'react';
-import { StatusChip } from '@/components/ui';
+import { Button, StatusChip } from '@/components/ui';
 import styles from './operations.module.css';
 
 export type OperationsTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -101,6 +101,54 @@ export function OperationsPanel({
       ) : null}
       {children}
     </section>
+  );
+}
+
+export interface OperationsPaginationProps {
+  readonly className?: string | undefined;
+  readonly disabled?: boolean;
+  readonly label: string;
+  readonly onPageChange: (page: number) => void;
+  readonly page: number;
+  readonly totalItems: number;
+  readonly totalPages: number;
+}
+
+export function OperationsPagination({
+  className,
+  disabled = false,
+  label,
+  onPageChange,
+  page,
+  totalItems,
+  totalPages,
+}: OperationsPaginationProps) {
+  return (
+    <nav className={className} aria-label={label}>
+      <Button
+        disabled={disabled || page <= 1}
+        size="compact"
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          onPageChange(page - 1);
+        }}
+      >
+        Trang trước
+      </Button>
+      <span aria-live="polite">{String(totalItems)} kết quả</span>
+      <Button
+        disabled={disabled || page >= totalPages}
+        size="compact"
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          onPageChange(page + 1);
+        }}
+      >
+        Trang sau
+      </Button>
+    </nav>
   );
 }
 

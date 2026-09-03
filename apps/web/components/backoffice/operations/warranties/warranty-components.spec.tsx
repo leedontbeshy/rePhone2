@@ -14,6 +14,13 @@ describe('WarrantyQueueList', () => {
     expect(markup).not.toContain('VALID');
   });
 
+  it('keeps the loaded warranty queue visible during a local refresh', () => {
+    const markup = renderToStaticMarkup(<WarrantyQueueList items={[item()]} updating />);
+
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('RPH-W-0001');
+  });
+
   it('renders the irreversible action only when the detail DTO allows it', () => {
     const hidden = renderToStaticMarkup(
       <WarrantyDetailContent

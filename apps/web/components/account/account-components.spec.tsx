@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { AccountSummary, commitProfileUpdate, validateProfile } from './account-profile';
+import {
+  AccountSummary,
+  acceptAccountForOwner,
+  accountForOwner,
+  commitProfileUpdate,
+  validateProfile,
+} from './account-profile';
 import { AccountLogoutAction } from './account-shell';
 import {
   AccountAnonymousState,
@@ -9,7 +15,9 @@ import {
 } from './account-states';
 import {
   AddressArchiveConfirmation,
+  acceptAddressesForOwner,
   addressInteractionLocked,
+  addressesForOwner,
   focusFirstAvailable,
   validateAddressDraft,
 } from './address-book';
@@ -146,6 +154,7 @@ describe('account self-service components', () => {
 
     commitProfileUpdate(
       account,
+      account.id,
       () => {
         events.push('account');
       },
@@ -157,6 +166,53 @@ describe('account self-service components', () => {
 
     expect(events).toEqual(['account', 'auth']);
     expect(syncedProfiles).toEqual([{ id: account.id, fullName: account.fullName, phone: null }]);
+  });
+
+  it('rejects a profile update response owned by another account', () => {
+    const account = {
+      id: 'account-a',
+      email: 'an@example.com',
+      role: 'CUSTOMER' as const,
+      status: 'ACTIVE' as const,
+      fullName: 'Nguyễn Văn An',
+      phone: null,
+      emailVerifiedAt: null,
+    };
+    const onUpdated = vi.fn();
+    const syncAccountProfile = vi.fn();
+
+    expect(commitProfileUpdate(account, 'account-b', onUpdated, syncAccountProfile)).toBe(false);
+    expect(onUpdated).not.toHaveBeenCalled();
+    expect(syncAccountProfile).not.toHaveBeenCalled();
+  });
+
+  it('never exposes or accepts profile data for another signed-in owner', () => {
+    const accountA = {
+      id: 'account-a',
+      email: 'a@example.com',
+      role: 'CUSTOMER' as const,
+      status: 'ACTIVE' as const,
+      fullName: 'Khách A',
+      phone: null,
+      emailVerifiedAt: null,
+    };
+    const accountB = { ...accountA, id: 'account-b', email: 'b@example.com', fullName: 'Khách B' };
+    const stateB = { ownerId: accountB.id, account: accountB };
+
+    expect(accountForOwner({ ownerId: accountA.id, account: accountA }, accountB.id)).toBeNull();
+    expect(acceptAccountForOwner(stateB, accountA.id, accountB.id, accountA)).toBe(stateB);
+    expect(acceptAccountForOwner(stateB, accountB.id, accountB.id, accountB)).toEqual(stateB);
+  });
+
+  it('never exposes or accepts an address response for another signed-in owner', () => {
+    const addressB = { ...ADDRESS, id: 'address-b', receiverName: 'Khách B' };
+    const stateB = { ownerId: 'account-b', addresses: [addressB] };
+
+    expect(addressesForOwner({ ownerId: 'account-a', addresses: [ADDRESS] }, 'account-b')).toEqual(
+      [],
+    );
+    expect(acceptAddressesForOwner(stateB, 'account-a', 'account-b', [ADDRESS])).toBe(stateB);
+    expect(acceptAddressesForOwner(stateB, 'account-b', 'account-b', [addressB])).toEqual(stateB);
   });
 
   it('waits for logout to settle before exposing the login-again state', async () => {

@@ -245,19 +245,19 @@ export function UserDetailSummary({
   items: readonly Readonly<{ icon: ReactNode; label: string; value: ReactNode }>[];
 }>) {
   return (
-    <dl className={styles.detailSummary} aria-label="Tóm tắt hồ sơ">
+    <div className={styles.detailSummary} role="group" aria-label="Tóm tắt hồ sơ">
       {items.map((item) => (
         <div className={styles.detailSummaryItem} key={item.label}>
           <span aria-hidden="true" className={styles.detailSummaryIcon}>
             {item.icon}
           </span>
-          <div className={styles.detailSummaryCopy}>
+          <dl className={styles.detailSummaryCopy}>
             <dt>{item.label}</dt>
             <dd>{item.value}</dd>
-          </div>
+          </dl>
         </div>
       ))}
-    </dl>
+    </div>
   );
 }
 

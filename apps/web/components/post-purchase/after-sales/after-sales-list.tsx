@@ -38,19 +38,22 @@ export function AfterSalesList() {
   const page = positiveInt(searchParams.get('page'));
   const type = allowedType(searchParams.get('type'));
   const requestStatus = allowedStatus(searchParams.get('status'));
-  const [result, setResult] = useState<AfterSalesPage | null>(null);
-  const [resultKey, setResultKey] = useState('');
+  const [snapshot, setSnapshot] = useState<{
+    key: string;
+    ownerKey: string;
+    result: AfterSalesPage;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ key: string; message: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const listKey = `${status}\u0000${user?.id ?? ''}\u0000${String(page)}\u0000${type}\u0000${requestStatus}\u0000${String(reloadKey)}`;
   const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+  const ownerKey = isCustomer ? user.id : '';
 
   useEffect(() => {
-    setResult(null);
-    setResultKey('');
     setError(null);
     if (!isCustomer) {
+      setSnapshot(null);
       setLoading(false);
       return;
     }
@@ -64,14 +67,23 @@ export function AfterSalesList() {
     })
       .then((next) => {
         if (active) {
-          setResult(next);
-          setResultKey(listKey);
+          const finalPage = Math.max(1, next.pagination.totalPages);
+          if (page > finalPage) {
+            router.replace(
+              buildAfterSalesListHref({ type, status: requestStatus, page: finalPage }, pathname),
+              { scroll: false },
+            );
+            return;
+          }
+          setSnapshot({ key: listKey, ownerKey, result: next });
         }
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(caught instanceof Error ? caught.message : 'Không thể tải yêu cầu hỗ trợ.');
-          setResultKey(listKey);
+          setError({
+            key: listKey,
+            message: caught instanceof Error ? caught.message : 'Không thể tải yêu cầu hỗ trợ.',
+          });
         }
       })
       .finally(() => {
@@ -80,17 +92,32 @@ export function AfterSalesList() {
     return () => {
       active = false;
     };
-  }, [client, isCustomer, listKey, page, reloadKey, requestStatus, type, user?.id]);
+  }, [
+    client,
+    isCustomer,
+    listKey,
+    ownerKey,
+    page,
+    pathname,
+    reloadKey,
+    requestStatus,
+    router,
+    type,
+  ]);
 
-  const visibleResult = resultKey === listKey ? result : null;
-  const visibleError = resultKey === listKey ? error : null;
-  const contextLoading = isCustomer && (resultKey !== listKey || loading);
+  const ownedSnapshot = snapshot?.ownerKey === ownerKey ? snapshot : null;
+  const contextReady = ownedSnapshot?.key === listKey;
+  const visibleResult = ownedSnapshot?.result ?? null;
+  const visibleError = error?.key === listKey ? error.message : null;
+  const initialLoading = isCustomer && loading && ownedSnapshot === null;
+  const updating = isCustomer && ownedSnapshot !== null && (loading || !contextReady);
 
   const updateQuery = (key: 'status' | 'type', value: string) => {
     const nextType = key === 'type' ? allowedType(value) : type;
     const nextStatus = key === 'status' ? allowedStatus(value) : requestStatus;
     router.replace(
       buildAfterSalesListHref({ type: nextType, status: nextStatus, page: 1 }, pathname),
+      { scroll: false },
     );
   };
 
@@ -122,7 +149,6 @@ export function AfterSalesList() {
               Loại yêu cầu
               <select
                 value={type}
-                disabled={loading}
                 onChange={(event) => {
                   updateQuery('type', event.target.value);
                 }}
@@ -137,7 +163,6 @@ export function AfterSalesList() {
               Trạng thái
               <select
                 value={requestStatus}
-                disabled={loading}
                 onChange={(event) => {
                   updateQuery('status', event.target.value);
                 }}
@@ -161,8 +186,8 @@ export function AfterSalesList() {
               }}
             />
           ) : null}
-          {contextLoading ? <CollectionLoading label="Đang tải yêu cầu hỗ trợ…" /> : null}
-          {!contextLoading && !visibleError && visibleResult?.data.length === 0 ? (
+          {initialLoading ? <CollectionLoading label="Đang tải yêu cầu hỗ trợ…" /> : null}
+          {!initialLoading && !visibleError && visibleResult?.data.length === 0 ? (
             <EmptyState
               title="Chưa có yêu cầu hỗ trợ"
               description="Hãy chọn một sản phẩm từ đơn hàng đã hoàn tất để bắt đầu."
@@ -170,9 +195,10 @@ export function AfterSalesList() {
               actionLabel="Chọn sản phẩm"
             />
           ) : null}
-          {!contextLoading && visibleResult && visibleResult.data.length > 0 ? (
+          {visibleResult && visibleResult.data.length > 0 ? (
             <CollectionSurface
               ariaLabel="Danh sách yêu cầu hỗ trợ"
+              busy={updating}
               footer={
                 <Pagination
                   page={visibleResult.pagination.page}

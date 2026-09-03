@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { InventoryShell } from '@/components/backoffice';
 import {
@@ -10,10 +10,13 @@ import {
 } from '@/components/backoffice/inventory/stock/inventory-stock-view';
 import {
   buildStockLevelHref,
+  isCurrentStockRequest,
   mergeStockLevelQuery,
+  sortStockVariantOptions,
   stockCommandErrorMessage,
   stockCommandErrorRequiresReconcile,
   stockLevelQueryFromSearch,
+  stockPageWithinTotal,
   type StockCommandRequest,
   type StockLevelQueryOverrides,
   type StockLevelQueryState,
@@ -44,7 +47,8 @@ export default function InventoryStockPage() {
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const queryKey = useMemo(() => JSON.stringify(query), [query]);
+  const levelRequestRef = useRef(0);
+  const optionRequestRef = useRef(0);
 
   useEffect(() => {
     const syncFromBrowser = () => {
@@ -61,16 +65,18 @@ export default function InventoryStockPage() {
   useEffect(() => {
     if (!canLoad) return;
     const controller = new AbortController();
+    const request = ++optionRequestRef.current;
     void Promise.all([
       listInventoryLocations(client, { signal: controller.signal }),
       listInventoryStockLevels(client, { page: 1, pageSize: 100 }, { signal: controller.signal }),
     ])
       .then(([nextLocations, optionPage]) => {
+        if (!isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) return;
         setLocations(nextLocations);
-        setVariants(variantOptions(optionPage.data));
+        setVariants((current) => mergeVariantOptions(current, variantOptions(optionPage.data)));
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted) {
+        if (isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lựa chọn tồn kho.'));
         }
       });
@@ -80,43 +86,62 @@ export default function InventoryStockPage() {
   }, [canLoad, client]);
 
   const loadLevels = useCallback(
-    async (signal?: AbortSignal) => {
+    async (querySnapshot: StockLevelQueryState, request: number, signal?: AbortSignal) => {
       const page = await listInventoryStockLevels(
         client,
         {
-          page: query.page,
-          pageSize: query.pageSize,
-          ...(query.variantId === undefined ? {} : { variantId: query.variantId }),
-          ...(query.locationId === undefined ? {} : { locationId: query.locationId }),
-          ...(query.lowStock === undefined ? {} : { lowStock: query.lowStock }),
+          page: querySnapshot.page,
+          pageSize: querySnapshot.pageSize,
+          ...(querySnapshot.variantId === undefined ? {} : { variantId: querySnapshot.variantId }),
+          ...(querySnapshot.locationId === undefined
+            ? {}
+            : { locationId: querySnapshot.locationId }),
+          ...(querySnapshot.lowStock === undefined ? {} : { lowStock: querySnapshot.lowStock }),
         },
         signal === undefined ? {} : { signal },
       );
+      if (!isCurrentStockRequest(request, levelRequestRef.current, signal)) return;
+
+      const authoritativePage = stockPageWithinTotal(
+        querySnapshot.page,
+        page.pagination.totalPages,
+      );
+      if (authoritativePage !== querySnapshot.page) {
+        const next = mergeStockLevelQuery(querySnapshot, { page: authoritativePage });
+        queryRef.current = next;
+        setQuery(next);
+        window.history.replaceState(null, '', buildStockLevelHref(next));
+        return;
+      }
+
       setLevels(page.data);
       setPagination(page.pagination);
       setVariants((current) => mergeVariantOptions(current, variantOptions(page.data)));
     },
-    [client, query],
+    [client],
   );
 
   useEffect(() => {
     if (!canLoad) return;
     const controller = new AbortController();
+    const request = ++levelRequestRef.current;
     setLoading(true);
     setError(null);
-    void loadLevels(controller.signal)
+    void loadLevels(query, request, controller.signal)
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted) {
+        if (isCurrentStockRequest(request, levelRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải tồn phụ kiện.'));
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (isCurrentStockRequest(request, levelRequestRef.current, controller.signal)) {
+          setLoading(false);
+        }
       });
     return () => {
       controller.abort();
     };
-  }, [canLoad, loadLevels, queryKey]);
+  }, [canLoad, loadLevels, query]);
 
   const updateQuery = useCallback((overrides: StockLevelQueryOverrides) => {
     const next = mergeStockLevelQuery(queryRef.current, overrides);
@@ -126,10 +151,17 @@ export default function InventoryStockPage() {
   }, []);
 
   const reconcile = useCallback(async () => {
-    await Promise.all([
-      loadLevels(),
-      listInventoryStockMovements(client, { page: 1, pageSize: 1 }),
-    ]);
+    const querySnapshot = queryRef.current;
+    const request = ++levelRequestRef.current;
+    setLoading(true);
+    try {
+      await Promise.all([
+        loadLevels(querySnapshot, request),
+        listInventoryStockMovements(client, { page: 1, pageSize: 1 }),
+      ]);
+    } finally {
+      if (request === levelRequestRef.current) setLoading(false);
+    }
   }, [client, loadLevels]);
 
   const executeCommand = useCallback(
@@ -208,12 +240,7 @@ function mergeVariantOptions(
 ): StockVariantOption[] {
   const byId = new Map(current.map((item) => [item.id, item]));
   for (const item of incoming) byId.set(item.id, item);
-  return [...byId.values()].sort((left, right) =>
-    `${left.productName} ${left.displayName}`.localeCompare(
-      `${right.productName} ${right.displayName}`,
-      'vi',
-    ),
-  );
+  return sortStockVariantOptions([...byId.values()]);
 }
 
 function messageOf(value: unknown, fallback: string): string {

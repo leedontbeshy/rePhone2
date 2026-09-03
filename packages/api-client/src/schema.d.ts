@@ -3433,6 +3433,7 @@ export interface components {
             /** @enum {string} */
             fulfillmentType: "PICKUP" | "SHIPPING";
             items: components["schemas"]["CheckoutPreviewItemDto"][];
+            previewFingerprint: string;
             pricing: components["schemas"]["CheckoutPricingDto"];
             voucher?: components["schemas"]["CheckoutVoucherDto"];
             warnings: string[];
@@ -3530,6 +3531,7 @@ export interface components {
             expectedCartUpdatedAt: string;
             expectedDepositRequired: string;
             expectedGrandTotal: string;
+            expectedPreviewFingerprint: string;
             /** @enum {string} */
             fulfillmentType: "PICKUP" | "SHIPPING";
             shippingAddress?: components["schemas"]["CheckoutShippingAddressDto"];
@@ -4620,17 +4622,12 @@ export interface components {
             /** @example 0900000000 */
             phone?: string;
         };
-        RegisteredAccountDto: {
-            /** Format: email */
-            email: string;
-            fullName: string;
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status: "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "DISABLED";
+        RegistrationResultDto: {
+            /** @example Yêu cầu tạo tài khoản đã được tiếp nhận. Bạn có thể đăng nhập để tiếp tục. */
+            message: string;
         };
-        RegisteredAccountResponse: {
-            data: components["schemas"]["RegisteredAccountDto"];
+        RegistrationResultResponse: {
+            data: components["schemas"]["RegistrationResultDto"];
         };
         RejectAfterSalesRequestDto: {
             reason: string;
@@ -6375,25 +6372,17 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Returns the same generic response whether the account is newly created or already exists. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegisteredAccountResponse"];
+                    "application/json": components["schemas"]["RegistrationResultResponse"];
                 };
             };
             /** @description VALIDATION_FAILED or MALFORMED_JSON */
             400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorResponseDto"];
-                };
-            };
-            /** @description DUPLICATE_RESOURCE */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11681,7 +11670,9 @@ export interface operations {
     createRefund: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
             path: {
                 id: string;
             };
@@ -11737,7 +11728,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13673,7 +13664,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13776,7 +13767,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -13902,7 +13893,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14096,7 +14087,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -14195,7 +14186,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
-            /** @description INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
+            /** @description DUPLICATE_RESOURCE, INVALID_STATE_TRANSITION or CONCURRENT_MODIFICATION */
             409: {
                 headers: {
                     [name: string]: unknown;

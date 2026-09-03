@@ -285,7 +285,12 @@ export function orderTimeline(detail: BackofficeOrderDetail): OperationsTimeline
           { at: shipment?.shippedAt ?? null, label: 'Đã bàn giao vận chuyển' },
           ...(shipment?.status === 'FAILED' || shipment?.status === 'RETURNED'
             ? [{ at: shipment.failedAt, label: 'Giao hàng thất bại', danger: true }]
-            : [{ at: shipment?.deliveredAt ?? null, label: 'Đã giao hàng' }]),
+            : [
+                {
+                  at: shipment?.deliveredAt ?? null,
+                  label: shipment?.deliveredAt == null ? 'Đang giao hàng' : 'Đã giao hàng',
+                },
+              ]),
           ...(shipment?.status === 'RETURNED'
             ? [{ at: shipment.returnedAt, label: 'Đã nhận hàng hoàn' }]
             : []),

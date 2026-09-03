@@ -17,8 +17,8 @@ import {
 } from '@/components/post-purchase';
 import {
   listCustomerOrders,
-  type CustomerOrderListItem,
   type CustomerOrderListQuery,
+  type CustomerOrderListResult,
 } from '@/lib/customer-orders-api';
 import {
   formatCustomerDateTime,
@@ -37,71 +37,72 @@ export function CustomerOrdersView() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = parseCustomerOrderQuery(searchParams);
-  const [orders, setOrders] = useState<CustomerOrderListItem[]>([]);
-  const [pagination, setPagination] = useState({
-    page: query.page,
-    pageSize: PAGE_SIZE,
-    totalItems: 0,
-    totalPages: 0,
-  });
+  const isCustomer = status === 'authenticated' && user?.role === 'CUSTOMER';
+  const ownerKey = isCustomer ? user.id : '';
+  const [snapshot, setSnapshot] = useState<{
+    listKey: string;
+    ownerKey: string;
+    result: CustomerOrderListResult;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ key: string; message: string } | null>(null);
   const listKey = `${status}\u0000${user?.id ?? ''}\u0000${query.status ?? ''}\u0000${query.fulfillmentType ?? ''}\u0000${String(query.page)}\u0000${query.sortBy}\u0000${query.sortOrder}`;
-  const [stateKey, setStateKey] = useState('');
   const requestGeneration = useRef(0);
 
   const load = useCallback(async () => {
     const generation = ++requestGeneration.current;
-    if (status !== 'authenticated' || user?.role !== 'CUSTOMER') {
-      setOrders([]);
-      setPagination({ page: query.page, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 0 });
+    if (!isCustomer) {
+      setSnapshot(null);
       setLoading(false);
       setError(null);
-      setStateKey(listKey);
       return;
     }
     setLoading(true);
     setError(null);
-    setStateKey('');
     try {
       const result = await listCustomerOrders(client, query);
       if (requestGeneration.current !== generation) return;
-      setOrders(result.data);
-      setPagination(result.pagination);
-      setStateKey(listKey);
+      const finalPage = Math.max(1, result.pagination.totalPages);
+      if (query.page > finalPage) {
+        router.replace(customerOrdersHref({ ...query, page: finalPage }), { scroll: false });
+        return;
+      }
+      setSnapshot({ listKey, ownerKey, result });
     } catch (caught) {
       if (requestGeneration.current !== generation) return;
-      setOrders([]);
-      setError(caught instanceof Error ? caught.message : 'Không thể tải danh sách đơn hàng.');
-      setStateKey(listKey);
+      setError({
+        key: listKey,
+        message: caught instanceof Error ? caught.message : 'Không thể tải danh sách đơn hàng.',
+      });
     } finally {
       if (requestGeneration.current === generation) setLoading(false);
     }
   }, [
     client,
+    isCustomer,
     listKey,
+    ownerKey,
     query.fulfillmentType,
     query.page,
     query.sortBy,
     query.sortOrder,
     query.status,
-    status,
-    user?.id,
-    user?.role,
+    router,
   ]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const contextReady = stateKey === listKey;
-  const visibleError = contextReady ? error : null;
-  const visibleOrders = contextReady ? orders : [];
-  const visiblePagination = contextReady
-    ? pagination
+  const ownedSnapshot = snapshot?.ownerKey === ownerKey ? snapshot : null;
+  const contextReady = ownedSnapshot?.listKey === listKey;
+  const visibleError = error?.key === listKey ? error.message : null;
+  const visibleOrders = ownedSnapshot?.result.data ?? [];
+  const visiblePagination = ownedSnapshot
+    ? ownedSnapshot.result.pagination
     : { page: query.page, pageSize: PAGE_SIZE, totalItems: 0, totalPages: 0 };
-  const contextLoading =
-    status === 'authenticated' && user?.role === 'CUSTOMER' && (!contextReady || loading);
+  const initialLoading = isCustomer && loading && ownedSnapshot === null;
+  const updating = isCustomer && ownedSnapshot !== null && (loading || !contextReady);
 
   const update = (
     values: Partial<Omit<CustomerOrderListQuery, 'status' | 'fulfillmentType'>> & {
@@ -122,7 +123,7 @@ export function CustomerOrdersView() {
       if (values.fulfillmentType === undefined) delete next.fulfillmentType;
       else next.fulfillmentType = values.fulfillmentType;
     }
-    router.push(customerOrdersHref(next));
+    router.push(customerOrdersHref(next), { scroll: false });
   };
 
   return (
@@ -131,9 +132,7 @@ export function CustomerOrdersView() {
         title="Đơn hàng của bạn"
         description="Theo dõi thanh toán, nhận hàng và các hỗ trợ liên quan đến từng đơn."
       />
-      {status === 'loading' || contextLoading ? (
-        <CollectionLoading label="Đang tải đơn hàng…" />
-      ) : null}
+      {status === 'loading' ? <CollectionLoading label="Đang tải đơn hàng…" /> : null}
       {status === 'anonymous' ? (
         <EmptyState
           title="Đăng nhập để xem đơn hàng"
@@ -150,11 +149,7 @@ export function CustomerOrdersView() {
           actionLabel="Về trang chủ"
         />
       ) : null}
-      {visibleError ? <ErrorState message={visibleError} onRetry={() => void load()} /> : null}
-      {!contextLoading &&
-      status === 'authenticated' &&
-      user?.role === 'CUSTOMER' &&
-      !visibleError ? (
+      {isCustomer ? (
         <>
           <div className={styles.filters} aria-label="Lọc và sắp xếp đơn hàng">
             <label>
@@ -222,16 +217,19 @@ export function CustomerOrdersView() {
               </select>
             </label>
           </div>
-          {visibleOrders.length === 0 ? (
+          {initialLoading ? <CollectionLoading label="Đang tải đơn hàng…" /> : null}
+          {visibleError ? <ErrorState message={visibleError} onRetry={() => void load()} /> : null}
+          {visibleOrders.length === 0 && !visibleError && !updating ? (
             <EmptyState
               title="Chưa có đơn hàng phù hợp"
               description="Bạn có thể đổi bộ lọc hoặc xem các sản phẩm đang có sẵn."
               actionHref="/products"
               actionLabel="Xem sản phẩm"
             />
-          ) : (
+          ) : visibleOrders.length > 0 ? (
             <CollectionSurface
               ariaLabel="Danh sách đơn hàng"
+              busy={updating}
               footer={
                 <Pagination
                   page={visiblePagination.page}
@@ -270,14 +268,17 @@ export function CustomerOrdersView() {
                       {orderStatusLabel(order.status)}
                     </StatusPill>
                     <small>{paymentSummaryLabel(order.paymentStatus)}</small>
-                    <Link href={`/orders/${encodeURIComponent(order.orderNumber)}`}>
+                    <Link
+                      aria-label={`Xem chi tiết đơn ${order.orderNumber}`}
+                      href={`/orders/${encodeURIComponent(order.orderNumber)}`}
+                    >
                       Xem chi tiết
                     </Link>
                   </div>
                 </article>
               ))}
             </CollectionSurface>
-          )}
+          ) : null}
         </>
       ) : null}
     </section>

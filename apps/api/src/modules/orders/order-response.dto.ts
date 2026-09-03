@@ -48,6 +48,8 @@ export class CheckoutFulfillmentSummaryDto {
 }
 
 export class CheckoutPreviewDto {
+  @ApiProperty({ type: String, pattern: '^v1:[a-f0-9]{64}$' })
+  public previewFingerprint!: string;
   @ApiProperty({ type: String, format: 'date-time' }) public cartUpdatedAt!: string;
   @ApiProperty({ enum: ['PICKUP', 'SHIPPING'] }) public fulfillmentType!: CheckoutFulfillmentType;
   @ApiProperty({ type: () => [CheckoutPreviewItemDto] }) public items!: CheckoutPreviewItemDto[];

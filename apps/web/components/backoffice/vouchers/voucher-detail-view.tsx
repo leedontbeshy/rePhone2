@@ -3,7 +3,7 @@
 import { ArchiveIcon, InfoIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
   BackofficeActionDialog,
@@ -65,6 +65,8 @@ export function VoucherDetailView() {
   const [usagePagination, setUsagePagination] = useState<Pagination>(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [usageReloadVersion, setUsageReloadVersion] = useState(0);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
@@ -74,6 +76,9 @@ export function VoucherDetailView() {
     searchParams.get('created') === '1' ? 'Đã tạo bản nháp mã ưu đãi.' : null,
   );
   const isAdmin = user?.role === 'ADMIN';
+  const voucherLoadedId = voucher?.id ?? null;
+  const mutationInFlightRef = useRef(false);
+  const usageRequestRef = useRef(0);
 
   const usageQuery = useMemo<UsageQuery>(
     () => ({
@@ -89,12 +94,6 @@ export function VoucherDetailView() {
     setVoucher(result);
     return result;
   }, [client, voucherId]);
-
-  const loadUsages = useCallback(async () => {
-    const result = await listVoucherUsages(client, voucherId, usageQuery);
-    setUsages(result.data);
-    setUsagePagination(result.pagination);
-  }, [client, usageQuery, voucherId]);
 
   useEffect(() => {
     if (status !== 'authenticated' || !isAdmin) return;
@@ -117,27 +116,33 @@ export function VoucherDetailView() {
   }, [client, isAdmin, status, voucherId]);
 
   useEffect(() => {
-    if (status !== 'authenticated' || !isAdmin || voucher === null) return;
-    let active = true;
+    if (status !== 'authenticated' || !isAdmin || voucherLoadedId === null) return;
+    const request = usageRequestRef.current + 1;
+    usageRequestRef.current = request;
     setUsageLoading(true);
-    void listVoucherUsages(client, voucherId, usageQuery)
+    setUsageError(null);
+    void listVoucherUsages(client, voucherLoadedId, usageQuery)
       .then((result) => {
-        if (!active) return;
+        if (usageRequestRef.current !== request) return;
         setUsages(result.data);
         setUsagePagination(result.pagination);
       })
       .catch((caught: unknown) => {
-        if (active) setError(errorMessage(caught, 'Không thể tải lịch sử sử dụng.'));
+        if (usageRequestRef.current === request) {
+          setUsageError(errorMessage(caught, 'Không thể tải lịch sử sử dụng.'));
+        }
       })
       .finally(() => {
-        if (active) setUsageLoading(false);
+        if (usageRequestRef.current === request) setUsageLoading(false);
       });
     return () => {
-      active = false;
+      if (usageRequestRef.current === request) usageRequestRef.current += 1;
     };
-  }, [client, isAdmin, status, usageQuery, voucher, voucherId]);
+  }, [client, isAdmin, status, usageQuery, usageReloadVersion, voucherLoadedId]);
 
   async function runMutation(operation: () => Promise<Voucher>, success: string) {
+    if (busy || mutationInFlightRef.current) return;
+    mutationInFlightRef.current = true;
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -148,7 +153,7 @@ export function VoucherDetailView() {
       setPendingAction(null);
       setReason('');
       setEditing(false);
-      await loadUsages();
+      setUsageReloadVersion((current) => current + 1);
     } catch (caught) {
       if (voucherErrorRequiresRefetch(caught)) {
         try {
@@ -156,11 +161,35 @@ export function VoucherDetailView() {
         } catch {
           // Keep the command error visible if the authoritative refresh also fails.
         }
+        setPendingAction(null);
+        setReason('');
+        setEditing(false);
+        setUsageReloadVersion((current) => current + 1);
       }
       setError(errorMessage(caught, 'Không thể cập nhật mã ưu đãi.'));
     } finally {
+      mutationInFlightRef.current = false;
       setBusy(false);
     }
+  }
+
+  function retryVoucher() {
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+    void loadVoucher()
+      .then(() => {
+        setEditing(false);
+        setPendingAction(null);
+        setReason('');
+        setUsageReloadVersion((current) => current + 1);
+      })
+      .catch((caught: unknown) => {
+        setError(errorMessage(caught, 'Không thể tải mã ưu đãi.'));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }
 
   function save(input: CreateVoucherInput) {
@@ -203,12 +232,11 @@ export function VoucherDetailView() {
           <InlineAlert title="Chưa thể hoàn tất" tone="danger">
             {error}{' '}
             <Button
+              loading={loading}
+              loadingLabel="Đang tải lại"
               size="compact"
               variant="secondary"
-              onClick={() => {
-                void loadVoucher();
-                void loadUsages();
-              }}
+              onClick={retryVoucher}
             >
               Tải lại
             </Button>
@@ -259,7 +287,7 @@ export function VoucherDetailView() {
                   </>
                 ) : (
                   <>
-                    {voucher.status === 'DRAFT' || voucher.status === 'PAUSED' ? (
+                    {voucher.status !== 'ARCHIVED' ? (
                       <Button
                         variant="secondary"
                         onClick={() => {
@@ -304,6 +332,7 @@ export function VoucherDetailView() {
               />
             ) : (
               <VoucherSummary
+                usageError={usageError}
                 usageLoading={usageLoading}
                 usagePage={usagePage}
                 usagePagination={usagePagination}
@@ -314,6 +343,9 @@ export function VoucherDetailView() {
                   openAction('archive');
                 }}
                 onUsagePageChange={setUsagePage}
+                onUsageRetry={() => {
+                  setUsageReloadVersion((current) => current + 1);
+                }}
                 onUsageStatusChange={(next) => {
                   setUsageStatus(next);
                   setUsagePage(1);
@@ -360,10 +392,12 @@ export function VoucherDetailView() {
   );
 }
 
-function VoucherSummary({
+export function VoucherSummary({
   onArchive,
   onUsagePageChange,
+  onUsageRetry,
   onUsageStatusChange,
+  usageError,
   usageLoading,
   usagePage,
   usagePagination,
@@ -373,7 +407,9 @@ function VoucherSummary({
 }: Readonly<{
   onArchive: () => void;
   onUsagePageChange: (page: number) => void;
+  onUsageRetry: () => void;
   onUsageStatusChange: (status: '' | VoucherUsageStatus) => void;
+  usageError: string | null;
   usageLoading: boolean;
   usagePage: number;
   usagePagination: Pagination;
@@ -488,6 +524,20 @@ function VoucherSummary({
               <option value="RELEASED">Đã hoàn lại</option>
             </Select>
           </div>
+          {usageError === null ? null : (
+            <InlineAlert title="Chưa tải được lịch sử sử dụng" tone="warning">
+              {usageError}{' '}
+              <Button
+                loading={usageLoading}
+                loadingLabel="Đang tải lại"
+                size="compact"
+                variant="secondary"
+                onClick={onUsageRetry}
+              >
+                Thử lại
+              </Button>
+            </InlineAlert>
+          )}
           <div className={styles.usageTableWrap} aria-busy={usageLoading || undefined}>
             <table className={styles.usageTable}>
               <caption className="rp-visually-hidden">Lịch sử sử dụng mã ưu đãi</caption>

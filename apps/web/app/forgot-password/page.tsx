@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { authErrorFromResponse, toAuthActionError, useAuth } from '../auth-provider';
 import {
   AnonymousAuthGate,
@@ -22,13 +22,19 @@ const description = 'Nhập email tài khoản để yêu cầu một liên kế
 
 export default function ForgotPasswordPage() {
   const { client } = useAuth();
-  const { clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
+  const { clearFieldIssue, clearIssue, issue, showIssue, summaryRef } = useAuthFormIssue();
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const submittingRef = useRef(false);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (accepted) window.requestAnimationFrame(() => successRef.current?.focus());
+  }, [accepted]);
 
   async function submit(event: SyntheticEvent<HTMLFormElement, SubmitEvent>) {
     event.preventDefault();
-    if (submitting) return;
+    if (submittingRef.current) return;
     const form = new FormData(event.currentTarget);
     const email = formString(form, 'email').trim();
     const fields: AuthFieldErrors = {};
@@ -40,6 +46,7 @@ export default function ForgotPasswordPage() {
     }
 
     clearIssue();
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const result = await client.POST('/api/v1/auth/forgot-password', { body: { email } });
@@ -55,6 +62,7 @@ export default function ForgotPasswordPage() {
         ),
       );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -62,10 +70,9 @@ export default function ForgotPasswordPage() {
   const content = (
     <AuthPage title="Quên mật khẩu" description={description}>
       {accepted ? (
-        <div aria-live="polite">
+        <div ref={successRef} className={authStyles.terminalState} tabIndex={-1}>
           <InlineAlert tone="success" title="Yêu cầu đã được tiếp nhận">
-            Nếu tài khoản phù hợp với email đã nhập, rePhone sẽ gửi hướng dẫn. Vì lý do riêng tư,
-            chúng tôi không xác nhận tài khoản có tồn tại hay không.
+            Nếu thông tin phù hợp, hướng dẫn sẽ được gửi tới email đã nhập.
           </InlineAlert>
           <AuthFormActions>
             <Link href="/login" standalone>
@@ -84,11 +91,14 @@ export default function ForgotPasswordPage() {
             name="email"
             type="email"
             autoComplete="email"
-            autoFocus
+            disabled={submitting}
             label="Email"
             required
             maxLength={320}
             error={issue.fields.email}
+            onChange={() => {
+              clearFieldIssue('email');
+            }}
           />
           <AuthFormActions>
             <Button

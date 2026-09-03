@@ -10,3 +10,8 @@ export const BROWSER_INVITATION_ACCOUNT = {
   password: 'BrowserInvite123',
   token: 'browser-invitation-token-with-at-least-256-bits-0001',
 } as const;
+
+export const BROWSER_COMMERCE_ACCOUNT = {
+  email: 'browser-commerce@rephone.local',
+  password: 'BrowserCommerce123',
+} as const;

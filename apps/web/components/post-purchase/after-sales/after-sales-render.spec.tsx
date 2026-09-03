@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { components } from '@rephone/api-client';
@@ -78,5 +80,30 @@ describe('after-sales presentation', () => {
     expect(html).toContain('href="/after-sales/new"');
     expect(html).toContain('Chọn sản phẩm từ đơn hàng');
     expect(html).toMatch(/class="[^"]*primaryLink[^"]*"/);
+  });
+
+  it('announces dynamic attachment validation beside the file control', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./after-sales-detail.tsx', import.meta.url)),
+      'utf8',
+    );
+
+    expect(source).toMatch(/<FilePicker[\s\S]*error=\{fileError\}[\s\S]*errorRole="alert"/);
+    expect(source).toContain("setFileError('Hãy chọn một ảnh hoặc tài liệu PDF.');");
+    expect(source).toContain('setFileError(validation);');
+  });
+
+  it('links create-form validation to fields and locks duplicate submission synchronously', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('./after-sales-create.tsx', import.meta.url)),
+      'utf8',
+    );
+
+    expect(source).toContain('aria-invalid={issueError !== null || undefined}');
+    expect(source).toContain('id="after-sales-issue-error" role="alert"');
+    expect(source).toContain('issueRef.current?.focus();');
+    expect(source).toContain('outcomeRef.current?.focus();');
+    expect(source).toContain('if (submitOperationRef.current !== null) return;');
+    expect(source).toContain('setSelectionReloadKey((value) => value + 1);');
   });
 });

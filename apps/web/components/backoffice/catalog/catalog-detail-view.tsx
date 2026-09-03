@@ -19,6 +19,8 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { BackofficeActionDialog, CatalogVoucherStatusChip } from '@/components/backoffice';
+import { useModalDialogLifecycle } from '@/components/ui/modal-dialog-lifecycle';
+import { validateCatalogMediaFile } from '@/lib/backoffice-catalog-api';
 import { CatalogMediaImage, type CatalogMediaSource } from './catalog-media';
 import type { CatalogWarrantyChoice } from './catalog-product-form';
 import {
@@ -31,6 +33,9 @@ import {
   type CatalogRecordStatus,
 } from './catalog-presenter';
 import styles from './catalog.module.css';
+import { catalogFormChanged, useUnsavedCatalogChanges } from './use-unsaved-catalog-changes';
+
+export { validateCatalogMediaFile } from '@/lib/backoffice-catalog-api';
 
 export interface CatalogMediaRecord extends CatalogMediaSource {
   readonly id: string;
@@ -117,6 +122,7 @@ interface CatalogDetailViewProps {
   readonly busy?: string | null;
   readonly error?: string | null;
   readonly notice?: string | null;
+  readonly resetDialogsVersion?: number;
   readonly product: CatalogProductDetailRecord;
   readonly warranties: readonly CatalogWarrantyChoice[];
   readonly onActivateVariant: (variantId: string) => Promise<void> | void;
@@ -155,6 +161,7 @@ export function CatalogDetailView({
   busy = null,
   error = null,
   notice = null,
+  resetDialogsVersion = 0,
   product,
   warranties,
   onActivateVariant,
@@ -175,6 +182,12 @@ export function CatalogDetailView({
   const ready = catalogPublishReadiness(product);
   const currentError = localError ?? error;
 
+  useEffect(() => {
+    setDialog(null);
+    setReason('');
+    setLocalError(null);
+  }, [resetDialogsVersion]);
+
   async function upload(
     owner: 'product' | 'variant',
     ownerId: string,
@@ -184,15 +197,16 @@ export function CatalogDetailView({
     event.target.value = '';
     if (file === undefined) return;
     const message = validateCatalogMediaFile(file);
-    if (message !== undefined) {
+    if (message !== null) {
       setLocalError(message);
       return;
     }
     setLocalError(null);
-    const sortOrder =
+    const ownerMedia =
       owner === 'product'
-        ? product.media.length
-        : (product.variants.find((variant) => variant.id === ownerId)?.media.length ?? 0);
+        ? product.media
+        : (product.variants.find((variant) => variant.id === ownerId)?.media ?? []);
+    const sortOrder = nextCatalogMediaSortOrder(ownerMedia);
     try {
       await onUploadMedia(owner, ownerId, file, {
         sortOrder,
@@ -387,6 +401,12 @@ export function CatalogDetailView({
                     }}
                     onEdit={() => {
                       setDialog({ kind: 'edit-variant', variant });
+                    }}
+                    onDeleteMedia={(media) => {
+                      setDialog({ kind: 'delete-media', media });
+                    }}
+                    onEditMedia={(media) => {
+                      setDialog({ kind: 'edit-media', media });
                     }}
                     onUpload={(event) => upload('variant', variant.id, event)}
                   />
@@ -668,7 +688,9 @@ export function CatalogDetailView({
             setDialog(null);
           }}
           onSubmit={(input) => {
-            closeDialogAfter(onUpdateProduct(input));
+            return Promise.resolve(onUpdateProduct(input)).then(() => {
+              setDialog(null);
+            });
           }}
         />
       ) : null}
@@ -708,6 +730,8 @@ function CatalogVariantRow({
   onActivate,
   onArchive,
   onEdit,
+  onDeleteMedia,
+  onEditMedia,
   onUpload,
 }: Readonly<{
   busy: string | null;
@@ -716,6 +740,8 @@ function CatalogVariantRow({
   onActivate: () => void;
   onArchive: () => void;
   onEdit: () => void;
+  onDeleteMedia: (media: CatalogMediaRecord) => void;
+  onEditMedia: (media: CatalogMediaRecord) => void;
   onUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void> | void;
 }>) {
   const fileId = `variant-media-${variant.id}`;
@@ -790,6 +816,44 @@ function CatalogVariantRow({
           </>
         )}
       </div>
+      {variant.media.length === 0 ? null : (
+        <div className={styles.variantMediaGrid} aria-label={`Hình ảnh ${variant.displayName}`}>
+          {variant.media.map((media, index) => (
+            <article className={styles.variantMediaCard} key={media.id}>
+              <CatalogMediaImage
+                className={styles.variantMediaThumbnail}
+                fallbackLabel={`Không tải được ảnh ${String(index + 1)} của ${variant.displayName}`}
+                media={media}
+              />
+              <div className={styles.variantMediaCopy}>
+                <strong>{media.altText?.trim() || `Ảnh ${String(index + 1)}`}</strong>
+                <span>Thứ tự {String(media.sortOrder + 1)}</span>
+              </div>
+              <div className={styles.mediaActions}>
+                <button
+                  className={styles.textButton}
+                  type="button"
+                  onClick={() => {
+                    onEditMedia(media);
+                  }}
+                >
+                  Sửa
+                </button>
+                <button
+                  className={styles.textButton}
+                  disabled={busy !== null}
+                  type="button"
+                  onClick={() => {
+                    onDeleteMedia(media);
+                  }}
+                >
+                  Xóa
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -811,7 +875,7 @@ function CatalogVariantDialog({
   onCancel: () => void;
   onSubmit: (input: CatalogVariantInput) => void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const [draft, setDraft] = useState(() => variantDraftFrom(variant));
   const [error, setError] = useState<string | null>(null);
   function submit(event: SyntheticEvent<HTMLFormElement>) {
@@ -853,6 +917,7 @@ function CatalogVariantDialog({
       aria-labelledby="variant-dialog-title"
       className={styles.dialogPanel}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
@@ -1185,29 +1250,33 @@ function CatalogProductEditDialog({
   product: CatalogProductDetailRecord;
   warranties: readonly CatalogWarrantyChoice[];
   onCancel: () => void;
-  onSubmit: (input: CatalogProductUpdateInput) => void;
+  onSubmit: (input: CatalogProductUpdateInput) => Promise<void> | void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
-  const [draft, setDraft] = useState(() => ({
-    brand: product.brand,
-    chipset: product.chipset ?? '',
-    description: product.description ?? '',
-    name: product.name,
-    ramGb: product.ramGb === null || product.ramGb === undefined ? '' : String(product.ramGb),
-    releaseYear:
-      product.releaseYear === null || product.releaseYear === undefined
-        ? ''
-        : String(product.releaseYear),
-    screenSizeInches: product.screenSizeInches ?? '',
-    seoDescription: product.seoDescription ?? '',
-    seoTitle: product.seoTitle ?? '',
-    slug: product.slug,
-    warrantyPolicyId: product.warrantyPolicyId ?? '',
-  }));
-  function submit(event: SyntheticEvent<HTMLFormElement>) {
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
+  const initialDraft = catalogProductEditDraftFrom(product);
+  const [draft, setDraft] = useState(initialDraft);
+  const [baseline, setBaseline] = useState(initialDraft);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const dirty = catalogFormChanged(baseline, draft);
+
+  useUnsavedCatalogChanges(dirty);
+
+  useEffect(() => {
+    const authoritative = catalogProductEditDraftFrom(product);
+    setDraft(authoritative);
+    setBaseline(authoritative);
+    setConfirmDiscard(false);
+  }, [product]);
+
+  function requestCancel() {
+    if (dirty) setConfirmDiscard(true);
+    else onCancel();
+  }
+
+  async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     if (draft.name.trim() === '' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) return;
-    onSubmit({
+    const input: CatalogProductUpdateInput = {
       brand: draft.brand.trim(),
       description: draft.description.trim(),
       name: draft.name.trim(),
@@ -1223,183 +1292,217 @@ function CatalogProductEditDialog({
             releaseYear: Number(draft.releaseYear),
             screenSizeInches: draft.screenSizeInches,
           }),
-    });
+    };
+    try {
+      await onSubmit(input);
+      setBaseline(draft);
+    } catch {
+      // Keep the edited baseline dirty while the route reports or recovers the conflict.
+    }
   }
   return (
-    <dialog
-      aria-labelledby="product-edit-title"
-      className={styles.dialogPanel}
-      ref={dialogRef}
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!busy) onCancel();
-      }}
-    >
-      <form onSubmit={submit}>
-        <div className={styles.dialogHeading}>
-          <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
-          <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
-        </div>
-        {operationError === null || operationError === undefined ? null : (
-          <div className={styles.errorBanner} role="alert">
-            {operationError}
+    <>
+      <dialog
+        aria-labelledby="product-edit-title"
+        className={styles.dialogPanel}
+        ref={dialogRef}
+        onClose={onDialogClose}
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!busy) requestCancel();
+        }}
+      >
+        <form
+          onSubmit={(event) => {
+            void submit(event);
+          }}
+        >
+          <div className={styles.dialogHeading}>
+            <h2 id="product-edit-title">Chỉnh sửa thông tin</h2>
+            <p>Cập nhật thông tin chung và nội dung hiển thị của sản phẩm.</p>
           </div>
-        )}
-        <div className={styles.fieldGrid}>
-          <DialogField id="edit-product-name" label="Tên sản phẩm">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-name"
-              maxLength={255}
-              required
-              value={draft.name}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, name: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-slug" label="Đường dẫn">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-slug"
-              maxLength={180}
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              required
-              value={draft.slug}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, slug: event.target.value.toLowerCase() }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-brand" label="Thương hiệu">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-brand"
-              maxLength={255}
-              required
-              value={draft.brand}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, brand: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-warranty" label="Chính sách bảo hành">
-            <select
-              className={styles.nativeSelect}
-              id="edit-product-warranty"
-              required
-              value={draft.warrantyPolicyId}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
-              }}
+          {operationError === null || operationError === undefined ? null : (
+            <div className={styles.errorBanner} role="alert">
+              {operationError}
+            </div>
+          )}
+          <div className={styles.fieldGrid}>
+            <DialogField id="edit-product-name" label="Tên sản phẩm">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-name"
+                maxLength={255}
+                required
+                value={draft.name}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, name: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-slug" label="Đường dẫn">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-slug"
+                maxLength={180}
+                pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                required
+                value={draft.slug}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, slug: event.target.value.toLowerCase() }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-brand" label="Thương hiệu">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-brand"
+                maxLength={255}
+                required
+                value={draft.brand}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, brand: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-warranty" label="Chính sách bảo hành">
+              <select
+                className={styles.nativeSelect}
+                id="edit-product-warranty"
+                required
+                value={draft.warrantyPolicyId}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, warrantyPolicyId: event.target.value }));
+                }}
+              >
+                <option value="">Chọn chính sách</option>
+                {warranties.map((warranty) => (
+                  <option key={warranty.id} value={warranty.id}>
+                    {warranty.name}
+                  </option>
+                ))}
+              </select>
+            </DialogField>
+            {product.type === 'IPHONE' ? (
+              <>
+                <DialogField id="edit-product-year" label="Năm ra mắt">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-year"
+                    max={2100}
+                    min={2007}
+                    required
+                    type="number"
+                    value={draft.releaseYear}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, releaseYear: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-ram" label="Dung lượng RAM">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-ram"
+                    max={64}
+                    min={1}
+                    required
+                    type="number"
+                    value={draft.ramGb}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, ramGb: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-screen" label="Kích thước màn hình">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-screen"
+                    required
+                    value={draft.screenSizeInches}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, screenSizeInches: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+                <DialogField id="edit-product-chipset" label="Bộ xử lý">
+                  <input
+                    className={styles.nativeInput}
+                    id="edit-product-chipset"
+                    maxLength={255}
+                    required
+                    value={draft.chipset}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, chipset: event.target.value }));
+                    }}
+                  />
+                </DialogField>
+              </>
+            ) : null}
+            <DialogField className={styles.wideField} id="edit-product-description" label="Mô tả">
+              <textarea
+                className={styles.nativeTextarea}
+                id="edit-product-description"
+                rows={4}
+                value={draft.description}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, description: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-seo-title" label="Tiêu đề tìm kiếm">
+              <input
+                className={styles.nativeInput}
+                id="edit-product-seo-title"
+                maxLength={255}
+                value={draft.seoTitle}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, seoTitle: event.target.value }));
+                }}
+              />
+            </DialogField>
+            <DialogField id="edit-product-seo-description" label="Mô tả tìm kiếm">
+              <textarea
+                className={styles.nativeTextarea}
+                id="edit-product-seo-description"
+                rows={3}
+                value={draft.seoDescription}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, seoDescription: event.target.value }));
+                }}
+              />
+            </DialogField>
+          </div>
+          <div className={styles.dialogActions}>
+            <button
+              className={styles.secondaryLink}
+              disabled={busy}
+              type="button"
+              onClick={requestCancel}
             >
-              <option value="">Chọn chính sách</option>
-              {warranties.map((warranty) => (
-                <option key={warranty.id} value={warranty.id}>
-                  {warranty.name}
-                </option>
-              ))}
-            </select>
-          </DialogField>
-          {product.type === 'IPHONE' ? (
-            <>
-              <DialogField id="edit-product-year" label="Năm ra mắt">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-year"
-                  max={2100}
-                  min={2007}
-                  required
-                  type="number"
-                  value={draft.releaseYear}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, releaseYear: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-ram" label="Dung lượng RAM">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-ram"
-                  max={64}
-                  min={1}
-                  required
-                  type="number"
-                  value={draft.ramGb}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, ramGb: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-screen" label="Kích thước màn hình">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-screen"
-                  required
-                  value={draft.screenSizeInches}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, screenSizeInches: event.target.value }));
-                  }}
-                />
-              </DialogField>
-              <DialogField id="edit-product-chipset" label="Bộ xử lý">
-                <input
-                  className={styles.nativeInput}
-                  id="edit-product-chipset"
-                  maxLength={255}
-                  required
-                  value={draft.chipset}
-                  onChange={(event) => {
-                    setDraft((current) => ({ ...current, chipset: event.target.value }));
-                  }}
-                />
-              </DialogField>
-            </>
-          ) : null}
-          <DialogField className={styles.wideField} id="edit-product-description" label="Mô tả">
-            <textarea
-              className={styles.nativeTextarea}
-              id="edit-product-description"
-              rows={4}
-              value={draft.description}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, description: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-seo-title" label="Tiêu đề tìm kiếm">
-            <input
-              className={styles.nativeInput}
-              id="edit-product-seo-title"
-              maxLength={255}
-              value={draft.seoTitle}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, seoTitle: event.target.value }));
-              }}
-            />
-          </DialogField>
-          <DialogField id="edit-product-seo-description" label="Mô tả tìm kiếm">
-            <textarea
-              className={styles.nativeTextarea}
-              id="edit-product-seo-description"
-              rows={3}
-              value={draft.seoDescription}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, seoDescription: event.target.value }));
-              }}
-            />
-          </DialogField>
-        </div>
-        <div className={styles.dialogActions}>
-          <button className={styles.secondaryLink} disabled={busy} type="button" onClick={onCancel}>
-            Hủy
-          </button>
-          <button className={styles.primaryLink} disabled={busy} type="submit">
-            {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
-          </button>
-        </div>
-      </form>
-    </dialog>
+              Hủy
+            </button>
+            <button className={styles.primaryLink} disabled={busy} type="submit">
+              {busy ? 'Đang lưu…' : 'Lưu thay đổi'}
+            </button>
+          </div>
+        </form>
+      </dialog>
+      <BackofficeActionDialog
+        cancelLabel="Tiếp tục chỉnh sửa"
+        confirmLabel="Bỏ thay đổi"
+        description="Thông tin sản phẩm vừa chỉnh sửa chưa được lưu và sẽ bị mất."
+        destructive
+        open={confirmDiscard}
+        title="Bỏ các thay đổi chưa lưu?"
+        onCancel={() => {
+          setConfirmDiscard(false);
+        }}
+        onConfirm={() => {
+          setBaseline(draft);
+          setConfirmDiscard(false);
+          onCancel();
+        }}
+      />
+    </>
   );
 }
 
@@ -1416,7 +1519,7 @@ function CatalogMediaEditDialog({
   onCancel: () => void;
   onSubmit: (input: CatalogMediaMetadataInput) => void;
 }>) {
-  const dialogRef = useOpenCatalogDialog();
+  const { dialogRef, onDialogClose } = useModalDialogLifecycle(true);
   const [altText, setAltText] = useState(media.altText ?? '');
   const [sortOrder, setSortOrder] = useState(String(media.sortOrder));
   return (
@@ -1424,6 +1527,7 @@ function CatalogMediaEditDialog({
       aria-labelledby="media-edit-title"
       className={styles.dialogPanel}
       ref={dialogRef}
+      onClose={onDialogClose}
       onCancel={(event) => {
         event.preventDefault();
         if (!busy) onCancel();
@@ -1481,22 +1585,23 @@ function CatalogMediaEditDialog({
   );
 }
 
-function useOpenCatalogDialog() {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (!dialog.open) {
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    }
-    return () => {
-      if (!dialog.open) return;
-      if (typeof dialog.close === 'function') dialog.close();
-      else dialog.removeAttribute('open');
-    };
-  }, []);
-  return dialogRef;
+function catalogProductEditDraftFrom(product: CatalogProductDetailRecord) {
+  return {
+    brand: product.brand,
+    chipset: product.chipset ?? '',
+    description: product.description ?? '',
+    name: product.name,
+    ramGb: product.ramGb === null || product.ramGb === undefined ? '' : String(product.ramGb),
+    releaseYear:
+      product.releaseYear === null || product.releaseYear === undefined
+        ? ''
+        : String(product.releaseYear),
+    screenSizeInches: product.screenSizeInches ?? '',
+    seoDescription: product.seoDescription ?? '',
+    seoTitle: product.seoTitle ?? '',
+    slug: product.slug,
+    warrantyPolicyId: product.warrantyPolicyId ?? '',
+  };
 }
 
 function CatalogDescription({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -1562,12 +1667,10 @@ export function catalogPublishReadiness(product: CatalogProductDetailRecord) {
   };
 }
 
-export function validateCatalogMediaFile(file: Pick<File, 'size' | 'type'>): string | undefined {
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    return 'Chỉ nhận ảnh JPEG, PNG hoặc WebP.';
-  }
-  if (file.size > 8 * 1024 * 1024) return 'Ảnh không được lớn hơn 8 MB.';
-  return undefined;
+export function nextCatalogMediaSortOrder(
+  media: readonly Pick<CatalogMediaRecord, 'sortOrder'>[],
+): number {
+  return media.reduce((maximum, item) => Math.max(maximum, item.sortOrder), -1) + 1;
 }
 
 export function variantDraftFrom(variant?: CatalogVariantRecord): VariantDraft {

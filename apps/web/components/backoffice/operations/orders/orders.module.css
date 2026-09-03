@@ -438,10 +438,6 @@
   grid-area: rail;
 }
 
-.orderDetailRail :global(.rp-button) {
-  width: 100%;
-}
-
 .detailSections,
 .railStack {
   gap: var(--space-4);
@@ -574,7 +570,7 @@
 }
 
 .customerDeliveryGrid {
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(16rem, 0.95fr) minmax(0, 1.45fr);
   gap: var(--space-6);
 }
 
@@ -589,9 +585,15 @@
 }
 
 .compactSpecList .spec {
-  grid-template-columns: minmax(7rem, 0.75fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(6.5rem, 0.7fr) minmax(0, 1.3fr);
   padding-block: var(--space-1);
   border: 0;
+}
+
+.singleLineValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timelinePanel {
@@ -678,7 +680,7 @@
 
 .actionTabs button[aria-pressed='true'] {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   background: var(--color-brand-soft);
 }
 
@@ -1076,6 +1078,11 @@
 
   .spec dd {
     text-align: start;
+  }
+
+  .singleLineValue {
+    overflow: visible;
+    white-space: normal;
   }
 }
 

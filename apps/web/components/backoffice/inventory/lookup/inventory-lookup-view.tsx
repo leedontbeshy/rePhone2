@@ -2,7 +2,7 @@
 
 import { ArrowRightIcon, IdentificationCardIcon, ShieldCheckIcon } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
-import { useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { Button, InlineAlert, Input, Select, StatusChip } from '@/components/ui';
 import styles from './inventory-lookup.module.css';
 
@@ -39,7 +39,15 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InventoryLookupResult | null>(null);
+  const requestGate = useRef(createInventoryLookupRequestGate());
   const validation = validateInventoryLookupInput({ identifier, identifierType });
+
+  useEffect(
+    () => () => {
+      requestGate.current.invalidate();
+    },
+    [],
+  );
 
   async function submit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,21 +56,24 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
     setResult(null);
     if (validation.identifier !== undefined) return;
 
+    const requestId = requestGate.current.begin();
     setPending(true);
     try {
       const found = await onLookup({
         identifier: identifier.trim(),
         identifierType,
       });
+      if (!requestGate.current.isCurrent(requestId)) return;
       setResult(found);
       setIdentifier('');
       setAttempted(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Chưa thể tra cứu mã máy.');
+      if (!requestGate.current.isCurrent(requestId)) return;
+      setError(lookupErrorMessage(identifierType, cause));
       setIdentifier('');
       setAttempted(false);
     } finally {
-      setPending(false);
+      if (requestGate.current.isCurrent(requestId)) setPending(false);
     }
   }
 
@@ -96,8 +107,11 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               label="Loại mã"
               value={identifierType}
               onChange={(event) => {
+                requestGate.current.invalidate();
                 setIdentifierType(event.target.value as InventoryLookupIdentifierType);
                 setIdentifier('');
+                setPending(false);
+                setError(null);
                 setResult(null);
               }}
             >
@@ -116,7 +130,10 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               required
               value={identifier}
               onChange={(event) => {
+                requestGate.current.invalidate();
                 setIdentifier(event.target.value);
+                setPending(false);
+                setError(null);
                 setResult(null);
               }}
             />
@@ -154,6 +171,44 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
       {result === null ? null : <LookupResultCard result={result} />}
     </div>
   );
+}
+
+export interface InventoryLookupRequestGate {
+  begin(): number;
+  invalidate(): void;
+  isCurrent(requestId: number): boolean;
+}
+
+export function createInventoryLookupRequestGate(): InventoryLookupRequestGate {
+  let currentRequestId = 0;
+  return {
+    begin() {
+      currentRequestId += 1;
+      return currentRequestId;
+    },
+    invalidate() {
+      currentRequestId += 1;
+    },
+    isCurrent(requestId) {
+      return requestId === currentRequestId;
+    },
+  };
+}
+
+export function lookupErrorMessage(
+  identifierType: InventoryLookupIdentifierType,
+  cause: unknown,
+): string {
+  const label = identifierTypeLabel(identifierType);
+  const detail = cause instanceof Error ? cause.message : 'Chưa thể tra cứu mã máy.';
+  return inventoryLookupErrorCode(cause) === 'RESOURCE_NOT_FOUND'
+    ? `${label} chưa khớp với máy nào. Hãy kiểm tra lại mã đã nhập.`
+    : detail;
+}
+
+function inventoryLookupErrorCode(value: unknown): string | null {
+  if (typeof value !== 'object' || value === null || !('code' in value)) return null;
+  return typeof value.code === 'string' ? value.code : null;
 }
 
 function LookupResultCard({ result }: Readonly<{ result: InventoryLookupResult }>) {

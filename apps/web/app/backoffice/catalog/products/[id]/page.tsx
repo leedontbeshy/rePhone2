@@ -26,6 +26,7 @@ import {
   updateCatalogVariant,
   uploadCatalogProductMedia,
   uploadCatalogVariantMedia,
+  BackofficeCatalogError,
   type CatalogProductDetail,
   type CatalogVariantInput as AdapterVariantInput,
   type UpdateCatalogProductInput,
@@ -43,6 +44,7 @@ export default function CatalogProductDetailPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [resetDialogsVersion, setResetDialogsVersion] = useState(0);
 
   const load = useCallback(async () => {
     const [detail, warrantyOptions] = await Promise.all([
@@ -91,7 +93,21 @@ export default function CatalogProductDetailPage() {
         setError('Thao tác đã hoàn tất nhưng chưa tải được thông tin mới. Hãy tải lại trang.');
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Chưa thể hoàn tất thao tác.');
+      if (caught instanceof BackofficeCatalogError && caught.requiresRefetch) {
+        try {
+          await load();
+          setResetDialogsVersion((value) => value + 1);
+          setError(
+            'Dữ liệu sản phẩm vừa thay đổi. Đã tải lại thông tin mới nhất; hãy kiểm tra rồi thao tác lại.',
+          );
+        } catch {
+          setError(
+            'Dữ liệu sản phẩm vừa thay đổi nhưng chưa tải lại được. Hãy tải lại trang trước khi tiếp tục.',
+          );
+        }
+      } else {
+        setError(caught instanceof Error ? caught.message : 'Chưa thể hoàn tất thao tác.');
+      }
       throw caught;
     } finally {
       setBusy(null);
@@ -127,6 +143,7 @@ export default function CatalogProductDetailPage() {
           error={error}
           notice={notice}
           product={product}
+          resetDialogsVersion={resetDialogsVersion}
           warranties={warranties}
           onActivateVariant={(variantId) =>
             run(

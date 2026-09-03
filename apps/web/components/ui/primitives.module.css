@@ -138,6 +138,23 @@
   height: var(--control-height);
 }
 
+.controlFrame {
+  position: relative;
+  min-width: 0;
+}
+
+.controlFrame .control {
+  padding-inline-end: calc(var(--control-height) + var(--space-2));
+}
+
+.controlEndAction {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: flex;
+  align-items: center;
+}
+
 select.control {
   padding-block: var(--space-2);
 }
@@ -156,6 +173,96 @@ select.control {
 
 .control[aria-invalid='true'] {
   border-color: var(--color-danger);
+}
+
+.filePicker {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.filePicker:hover:not([data-disabled='true']) {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+.filePicker:has(.fileInput:focus-visible) {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+  outline: 2px solid transparent;
+}
+
+.filePicker[data-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.filePicker[data-disabled='true'] {
+  border-color: var(--color-border);
+  background: var(--color-disabled-surface);
+  color: var(--color-disabled-text);
+  cursor: not-allowed;
+}
+
+.fileInput {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileInput:disabled {
+  cursor: not-allowed;
+}
+
+.filePickerAction {
+  display: inline-flex;
+  min-height: calc(var(--control-height) - 2px);
+  align-items: center;
+  padding-inline: var(--space-4);
+  border-inline-end: var(--border-default);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
+  white-space: nowrap;
+}
+
+.filePickerName {
+  min-width: 0;
+  overflow: hidden;
+  padding-inline: var(--space-3);
+  color: var(--color-body);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filePickerName[data-empty='true'] {
+  color: var(--color-muted);
+}
+
+.filePicker[data-disabled='true'] .filePickerAction,
+.filePicker[data-disabled='true'] .filePickerName {
+  color: var(--color-disabled-text);
+  background: transparent;
 }
 
 .textarea {
@@ -221,6 +328,10 @@ select.control {
 .radioCard:has(.radio:checked) {
   border-color: var(--color-primary);
   background: var(--color-brand-soft);
+}
+
+.radioCard:has(.radio:checked) .hint {
+  color: var(--color-primary-hover);
 }
 
 .fieldGroup {
@@ -298,9 +409,25 @@ select.control {
   background: var(--color-warning-soft);
 }
 
+.warning .link {
+  color: var(--color-warning);
+}
+
+.warning .link:hover {
+  color: var(--color-ink);
+}
+
 .danger {
   border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
   background: var(--color-danger-soft);
+}
+
+.danger .link {
+  color: var(--color-danger-hover);
+}
+
+.danger .link:hover {
+  color: var(--color-ink);
 }
 
 .errorSummary {
@@ -360,6 +487,26 @@ select.control {
   padding: var(--space-1) var(--space-3);
 }
 
+.statusChip.neutral > span:last-child {
+  color: var(--color-body);
+}
+
+.statusChip.info > span:last-child {
+  color: var(--color-info);
+}
+
+.statusChip.success > span:last-child {
+  color: var(--color-success-strong);
+}
+
+.statusChip.warning > span:last-child {
+  color: var(--color-warning);
+}
+
+.statusChip.danger > span:last-child {
+  color: var(--color-danger-hover);
+}
+
 .price {
   color: var(--color-ink);
   font-size: var(--font-size-price);
@@ -416,7 +563,8 @@ select.control {
 
 @media (prefers-reduced-motion: reduce) {
   .button,
-  .control {
+  .control,
+  .filePicker {
     transition: none;
   }
 
@@ -433,6 +581,7 @@ select.control {
 @media (forced-colors: active) {
   .button,
   .control,
+  .filePicker,
   .radioCard,
   .alert,
   .badge,
@@ -442,5 +591,11 @@ select.control {
 
   .spinner {
     border-inline-end-color: transparent;
+  }
+
+  .filePicker:has(.fileInput:focus-visible) {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+    box-shadow: none;
   }
 }

@@ -93,6 +93,7 @@ describe('frontend surface shell accessibility contracts', () => {
     expect(markup).toContain('<aside');
     expect(markup).toContain('aria-label="Điều hướng backoffice"');
     expect(markup).toContain('aria-label="Các khu vực vận hành"');
+    expect(markup).toContain('aria-label="Về cửa hàng"');
     expect(markup).toContain('aria-label="Đường dẫn"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('aria-disabled="true"');

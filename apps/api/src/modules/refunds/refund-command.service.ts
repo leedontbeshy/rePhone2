@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiError } from '../../common/errors/api-error.js';
@@ -55,57 +55,73 @@ export class RefundCommandService {
 
   public async create(
     orderId: string,
+    idempotencyKey: string,
     input: CreateRefundDto,
     auth: AuthContext,
     request: Request,
   ): Promise<RefundDetailDto> {
-    const refundId = await this.transactions.run('refunds.create', async (transaction) => {
-      const order = await this.orders.lockById(orderId, transaction);
-      if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
-      if (!['CANCELLED', 'COMPLETED'].includes(order.status)) {
-        throw new ApiError('INVALID_STATE_TRANSITION');
-      }
-      const lockedFinance = await this.finance.lockFinance(order.id, transaction);
-      const amount = BigInt(input.amount);
-      const available = this.finance.availableTotal(lockedFinance);
-      if (amount > available) throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
-      if (
-        input.paymentId !== undefined &&
-        amount > this.finance.availableForPayment(lockedFinance, input.paymentId)
-      ) {
-        throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
-      }
-      const refund = await transaction.refund.create({
-        data: {
-          orderId: order.id,
-          paymentId: input.paymentId ?? null,
-          amount: input.amount,
-          method: input.method,
-          status: 'REQUESTED',
-          reason: input.reason,
-          requestedByType: 'STAFF',
-          requestedById: auth.userId,
-        },
-      });
-      await this.audit.write(
-        transaction,
-        { actorUserId: auth.userId, ...requestContext(request) },
-        {
-          action: 'refund.created',
-          resourceType: 'Refund',
-          resourceId: refund.id,
-          changes: { after: { status: 'REQUESTED' } },
-          metadata: {
-            orderNumber: order.orderNumber,
+    const requestFingerprint = refundCreateFingerprint(orderId, auth.userId, input);
+    const refundId = await this.transactions.run(
+      'refunds.create',
+      async (transaction) => {
+        const replay = await transaction.refund.findUnique({ where: { idempotencyKey } });
+        if (replay !== null) {
+          if (replay.requestFingerprint !== requestFingerprint) {
+            throw new ApiError('DUPLICATE_RESOURCE');
+          }
+          return replay.id;
+        }
+
+        const order = await this.orders.lockById(orderId, transaction);
+        if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
+        if (!['CANCELLED', 'COMPLETED'].includes(order.status)) {
+          throw new ApiError('INVALID_STATE_TRANSITION');
+        }
+        const lockedFinance = await this.finance.lockFinance(order.id, transaction);
+        const amount = BigInt(input.amount);
+        const available = this.finance.availableTotal(lockedFinance);
+        if (amount > available) throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
+        if (
+          input.paymentId !== undefined &&
+          amount > this.finance.availableForPayment(lockedFinance, input.paymentId)
+        ) {
+          throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
+        }
+        const refund = await transaction.refund.create({
+          data: {
+            idempotencyKey,
+            requestFingerprint,
+            orderId: order.id,
+            paymentId: input.paymentId ?? null,
             amount: input.amount,
             method: input.method,
+            status: 'REQUESTED',
             reason: input.reason,
-            ...(input.paymentId === undefined ? {} : { paymentId: input.paymentId }),
+            requestedByType: 'STAFF',
+            requestedById: auth.userId,
           },
-        },
-      );
-      return refund.id;
-    });
+        });
+        await this.audit.write(
+          transaction,
+          { actorUserId: auth.userId, ...requestContext(request) },
+          {
+            action: 'refund.created',
+            resourceType: 'Refund',
+            resourceId: refund.id,
+            changes: { after: { status: 'REQUESTED' } },
+            metadata: {
+              orderNumber: order.orderNumber,
+              amount: input.amount,
+              method: input.method,
+              reason: input.reason,
+              ...(input.paymentId === undefined ? {} : { paymentId: input.paymentId }),
+            },
+          },
+        );
+        return refund.id;
+      },
+      isIdempotencyKeyUniqueConflict,
+    );
     return this.detail(refundId, auth);
   }
 
@@ -464,6 +480,36 @@ export class RefundCommandService {
       });
     }
   }
+}
+
+function refundCreateFingerprint(
+  orderId: string,
+  actorUserId: string,
+  input: CreateRefundDto,
+): string {
+  const canonical = JSON.stringify([
+    orderId,
+    actorUserId,
+    input.paymentId ?? null,
+    input.amount,
+    input.method,
+    input.reason.trim(),
+  ]);
+  return createHash('sha256').update(canonical, 'utf8').digest('hex');
+}
+
+function isIdempotencyKeyUniqueConflict(error: unknown): boolean {
+  if (
+    typeof error !== 'object' ||
+    error === null ||
+    (error as { code?: unknown }).code !== 'P2002'
+  ) {
+    return false;
+  }
+  const target = (error as { meta?: { target?: unknown } }).meta?.target;
+  return Array.isArray(target)
+    ? target.some((value) => value === 'idempotency_key' || value === 'idempotencyKey')
+    : typeof target === 'string' && /idempotency(_key|Key)/.test(target);
 }
 
 function isExactBankReplay(

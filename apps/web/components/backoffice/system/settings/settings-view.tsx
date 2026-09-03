@@ -32,6 +32,7 @@ import {
   formatSettingsDuration,
   formatSettingsMoney,
   hasSettingsChanges,
+  qrFileReadyForUpload,
   settingsToDraft,
   validateQrFile,
   validateSettingsDraft,
@@ -39,6 +40,10 @@ import {
   type SettingsErrors,
   type SettingsField,
 } from './settings-model';
+import {
+  createSystemAdminMutationLock,
+  runSystemAdminMutation,
+} from '../system-admin-mutation-lock';
 import styles from './settings.module.css';
 
 export function SettingsView() {
@@ -56,7 +61,10 @@ export function SettingsView() {
   const [conflict, setConflict] = useState(false);
   const [confirmReload, setConfirmReload] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [mutationLock] = useState(createSystemAdminMutationLock);
   const errorRef = useRef<HTMLDivElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  const focusErrorSummary = useRef(false);
 
   const load = useCallback(
     async (replaceDraft: boolean) => {
@@ -90,6 +98,12 @@ export function SettingsView() {
     if (error !== undefined) errorRef.current?.focus();
   }, [error]);
 
+  useEffect(() => {
+    if (!focusErrorSummary.current || Object.keys(fieldErrors).length === 0) return;
+    focusErrorSummary.current = false;
+    errorSummaryRef.current?.focus();
+  }, [fieldErrors]);
+
   const dirty = useMemo(
     () =>
       draftBaseline !== undefined &&
@@ -118,89 +132,93 @@ export function SettingsView() {
 
   async function save(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (settings === undefined || draft === undefined || busy !== undefined) return;
-    setError(undefined);
-    setNotice(undefined);
-    const validation = validateSettingsDraft(settings, draft);
-    setFieldErrors(validation.errors);
-    if (validation.input === undefined) {
-      setError('Một số thông tin chưa hợp lệ. Hãy kiểm tra các trường được đánh dấu.');
-      return;
-    }
-    if (Object.keys(validation.input).length === 1) {
-      setDraft(settingsToDraft(settings));
-      setDraftBaseline(settings);
-      setFieldErrors({});
+    await runSystemAdminMutation(mutationLock, async () => {
+      if (settings === undefined || draft === undefined || busy !== undefined) return;
       setError(undefined);
-      setNotice('Chưa có thay đổi nào cần lưu.');
-      return;
-    }
-
-    setBusy('save');
-    setError(undefined);
-    setNotice(undefined);
-    try {
-      const updated = await updateSettings(client, validation.input);
-      setSettings(updated);
-      setDraft(settingsToDraft(updated));
-      setDraftBaseline(updated);
-      setFieldErrors({});
-      setConflict(false);
-      setNotice('Đã lưu cấu hình cửa hàng.');
-    } catch (caught) {
-      if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
-        try {
-          await load(false);
-          setConflict(true);
-          setError(undefined);
-        } catch {
-          setError(
-            'Cấu hình đã được thay đổi ở nơi khác nhưng chưa thể tải bản mới nhất. Nội dung bạn nhập vẫn được giữ lại.',
-          );
-        }
-      } else {
-        setError(messageFrom(caught, 'Không thể lưu cấu hình cửa hàng.'));
+      setNotice(undefined);
+      const validation = validateSettingsDraft(settings, draft);
+      focusErrorSummary.current = validation.input === undefined;
+      setFieldErrors(validation.errors);
+      if (validation.input === undefined) {
+        return;
       }
-    } finally {
-      setBusy(undefined);
-    }
+      if (Object.keys(validation.input).length === 1) {
+        setDraft(settingsToDraft(settings));
+        setDraftBaseline(settings);
+        setFieldErrors({});
+        setError(undefined);
+        setNotice('Chưa có thay đổi nào cần lưu.');
+        return;
+      }
+
+      setBusy('save');
+      setError(undefined);
+      setNotice(undefined);
+      try {
+        const updated = await updateSettings(client, validation.input);
+        setSettings(updated);
+        setDraft(settingsToDraft(updated));
+        setDraftBaseline(updated);
+        setFieldErrors({});
+        setConflict(false);
+        setNotice('Đã lưu cấu hình cửa hàng.');
+      } catch (caught) {
+        if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
+          try {
+            await load(false);
+            setConflict(true);
+            setError(undefined);
+          } catch {
+            setError(
+              'Cấu hình đã được thay đổi ở nơi khác nhưng chưa thể tải bản mới nhất. Nội dung bạn nhập vẫn được giữ lại.',
+            );
+          }
+        } else {
+          setError(messageFrom(caught, 'Không thể lưu cấu hình cửa hàng.'));
+        }
+      } finally {
+        setBusy(undefined);
+      }
+    });
   }
 
   async function upload(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (settings === undefined || qrFile === undefined || busy !== undefined) return;
-    const fileIssue = validateQrFile(qrFile);
-    if (fileIssue !== undefined) {
-      setQrError(fileIssue);
-      return;
-    }
-    setBusy('qr');
-    setQrError(undefined);
-    setError(undefined);
-    setNotice(undefined);
-    try {
-      const updated = await uploadBankQr(client, settings.version, qrFile);
-      setSettings(updated);
-      setQrFile(undefined);
-      setFileInputKey((value) => value + 1);
-      setConflict(false);
-      setNotice('Đã cập nhật ảnh QR chuyển khoản.');
-    } catch (caught) {
-      if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
-        try {
-          await load(false);
-          setConflict(true);
-        } catch {
-          setError(
-            'Cấu hình đã được thay đổi ở nơi khác nhưng chưa thể tải bản mới nhất. Ảnh bạn chọn vẫn được giữ lại.',
-          );
-        }
-      } else {
-        setQrError(messageFrom(caught, 'Không thể cập nhật ảnh QR.'));
+    await runSystemAdminMutation(mutationLock, async () => {
+      if (settings === undefined || qrFile === undefined || busy !== undefined) return;
+      const fileIssue = validateQrFile(qrFile);
+      if (fileIssue !== undefined) {
+        setQrError(fileIssue);
+        return;
       }
-    } finally {
-      setBusy(undefined);
-    }
+      setBusy('qr');
+      setQrError(undefined);
+      setError(undefined);
+      setNotice(undefined);
+      try {
+        const updated = await uploadBankQr(client, settings.version, qrFile);
+        setSettings(updated);
+        setQrFile(undefined);
+        setFileInputKey((value) => value + 1);
+        setConflict(false);
+        setNotice('Đã cập nhật ảnh QR chuyển khoản.');
+      } catch (caught) {
+        if (caught instanceof SystemAdminError && caught.code === 'SETTINGS_VERSION_CONFLICT') {
+          try {
+            await load(false);
+            setConflict(true);
+          } catch {
+            setError(
+              'Cấu hình đã được thay đổi ở nơi khác nhưng chưa thể tải bản mới nhất. Ảnh bạn chọn vẫn được giữ lại.',
+            );
+          }
+        } else {
+          setQrError(messageFrom(caught, 'Không thể cập nhật ảnh QR.'));
+        }
+      } finally {
+        setBusy(undefined);
+      }
+    });
   }
 
   if (loading) return <SettingsLoadingState />;
@@ -305,7 +323,7 @@ export function SettingsView() {
 
       <div className={styles.layout}>
         <form className={styles.form} noValidate onSubmit={(event) => void save(event)}>
-          <ErrorSummary errors={summaryErrors} />
+          <ErrorSummary errors={summaryErrors} ref={errorSummaryRef} />
           <SettingsSection
             description="Thông tin khách hàng nhìn thấy khi cần liên hệ hoặc đến nhận máy."
             icon={<StorefrontIcon size={22} />}
@@ -607,7 +625,7 @@ export function SettingsView() {
                 </p>
               )}
               <Button
-                disabled={qrFile === undefined || qrError !== undefined || busy !== undefined}
+                disabled={!qrFileReadyForUpload(qrFile) || busy !== undefined}
                 loading={busy === 'qr'}
                 loadingLabel="Đang cập nhật ảnh QR"
                 type="submit"

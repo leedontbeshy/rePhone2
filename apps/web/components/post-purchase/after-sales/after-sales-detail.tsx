@@ -9,13 +9,14 @@ import {
   ConfirmationDialog,
   DetailGrid,
   DetailPanel,
+  EmptyState,
   ErrorState,
   LifecycleJourney,
   PostPurchasePageHeader,
   SafeNotFoundState,
   StatusPill,
 } from '@/components/post-purchase';
-import { Button, InlineAlert } from '@/components/ui';
+import { Button, FilePicker, InlineAlert } from '@/components/ui';
 import {
   AfterSalesCustomerError,
   cancelAfterSalesRequest,
@@ -27,7 +28,6 @@ import {
   type AfterSalesAttachment,
   type AfterSalesDetail as AfterSalesDetailDto,
 } from '@/lib/after-sales-api';
-import { removeGuestOrderToken } from '@/lib/order-access';
 import {
   afterSalesJourney,
   afterSalesNextStep,
@@ -52,6 +52,7 @@ export function AfterSalesDetail() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -62,7 +63,9 @@ export function AfterSalesDetail() {
   const generationRef = useRef(0);
   const operationRef = useRef<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [retryAttachment, setRetryAttachment] = useState<AfterSalesAttachment | null>(null);
+  const [retryAction, setRetryAction] = useState<
+    { kind: 'detail' } | { attachment: AfterSalesAttachment; kind: 'attachment' } | null
+  >(null);
   const isStaff =
     status === 'authenticated' && (user?.role === 'EMPLOYEE' || user?.role === 'ADMIN');
 
@@ -86,12 +89,9 @@ export function AfterSalesDetail() {
     setDetailAccessKey('');
     setError(null);
     setNotice(null);
+    setRetryAction(null);
     setNotFound(true);
     setCancelOpen(false);
-    if (status === 'anonymous' && orderNumber) {
-      removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-      guestTokenRef.current = undefined;
-    }
     return true;
   }
 
@@ -104,8 +104,9 @@ export function AfterSalesDetail() {
     setNotFound(false);
     setBusy(null);
     operationRef.current = null;
-    setRetryAttachment(null);
+    setRetryAction(null);
     setFile(null);
+    setFileError(null);
     setCancelOpen(false);
     setCancelReason('');
     setCancelError(null);
@@ -132,12 +133,11 @@ export function AfterSalesDetail() {
         if (generationRef.current === generation) {
           if (caught instanceof AfterSalesCustomerError && caught.notFound) {
             setNotFound(true);
-            if (status === 'anonymous' && orderNumber) {
-              removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-              guestTokenRef.current = undefined;
-            }
           } else
             setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
+          if (!(caught instanceof AfterSalesCustomerError) || !caught.notFound) {
+            setRetryAction({ kind: 'detail' });
+          }
         }
       })
       .finally(() => {
@@ -152,18 +152,16 @@ export function AfterSalesDetail() {
     const generation = generationRef.current;
     setLoading(true);
     setError(null);
+    setRetryAction(null);
     try {
       await loadDetail();
     } catch (caught) {
       if (generationRef.current !== generation) return;
       if (caught instanceof AfterSalesCustomerError && caught.notFound) {
         setNotFound(true);
-        if (status === 'anonymous' && orderNumber) {
-          removeGuestOrderToken(orderNumber.trim().toUpperCase(), sessionStorage);
-          guestTokenRef.current = undefined;
-        }
       } else {
         setError(caught instanceof Error ? caught.message : 'Không thể mở yêu cầu hỗ trợ.');
+        setRetryAction({ kind: 'detail' });
       }
     } finally {
       if (generationRef.current === generation) setLoading(false);
@@ -174,7 +172,7 @@ export function AfterSalesDetail() {
     event.preventDefault();
     if (operationRef.current !== null) return;
     if (file === null) {
-      setError('Hãy chọn một ảnh hoặc tài liệu PDF.');
+      setFileError('Hãy chọn một ảnh hoặc tài liệu PDF.');
       return;
     }
     if ((visibleDetail?.attachments.length ?? 0) >= 5) {
@@ -183,7 +181,7 @@ export function AfterSalesDetail() {
     }
     const validation = validateAfterSalesAttachment(file);
     if (validation) {
-      setError(validation);
+      setFileError(validation);
       return;
     }
     const generation = generationRef.current;
@@ -192,11 +190,14 @@ export function AfterSalesDetail() {
     operationRef.current = operation;
     setBusy('upload');
     setError(null);
+    setFileError(null);
     setNotice(null);
+    setRetryAction(null);
     try {
       await uploadAfterSalesAttachment(client, requestNumber, file, token);
       if (generationRef.current !== generation) return;
       setFile(null);
+      setFileError(null);
       if (fileRef.current) fileRef.current.value = '';
       await loadDetail();
       if (generationRef.current !== generation) return;
@@ -234,7 +235,7 @@ export function AfterSalesDetail() {
     operationRef.current = operation;
     setBusy(operation);
     setError(null);
-    setRetryAttachment(null);
+    setRetryAction(null);
     try {
       const result = await getAfterSalesAttachmentUrl(
         client,
@@ -252,7 +253,7 @@ export function AfterSalesDetail() {
       if (generationRef.current !== generation) return;
       if (applySafeNotFound(caught)) return;
       if (generationRef.current === generation) {
-        setRetryAttachment(attachment);
+        setRetryAction({ attachment, kind: 'attachment' });
         setError(caught instanceof Error ? caught.message : 'Không thể mở tệp. Hãy thử lại.');
       }
     } finally {
@@ -278,6 +279,7 @@ export function AfterSalesDetail() {
     setBusy('cancel');
     setError(null);
     setNotice(null);
+    setRetryAction(null);
     try {
       await cancelAfterSalesRequest(client, requestNumber, reason, token);
       if (generationRef.current !== generation) return;
@@ -307,7 +309,7 @@ export function AfterSalesDetail() {
     }
   }
 
-  if (status === 'loading' || loading)
+  if (status === 'loading' || (loading && visibleDetail === null))
     return (
       <div className={styles.page}>
         <PostPurchasePageHeader title="Chi tiết yêu cầu hỗ trợ" />
@@ -318,7 +320,12 @@ export function AfterSalesDetail() {
     return (
       <div className={styles.page}>
         <PostPurchasePageHeader title="Chi tiết yêu cầu hỗ trợ" />
-        <ErrorState message="Tài khoản này không sử dụng khu vực hỗ trợ dành cho khách hàng." />
+        <EmptyState
+          title="Khu vực dành cho khách hàng"
+          description="Tài khoản nhân viên sử dụng khu vực quản lý hỗ trợ riêng."
+          actionHref="/backoffice/after-sales"
+          actionLabel="Mở khu vực quản lý"
+        />
       </div>
     );
   if (notFound)
@@ -359,8 +366,12 @@ export function AfterSalesDetail() {
       {error ? (
         <ErrorState
           message={error}
-          onRetry={() =>
-            retryAttachment ? void openAttachment(retryAttachment) : void retryDetail()
+          onRetry={
+            retryAction?.kind === 'attachment'
+              ? () => void openAttachment(retryAction.attachment)
+              : retryAction?.kind === 'detail'
+                ? () => void retryDetail()
+                : undefined
           }
         />
       ) : null}
@@ -368,6 +379,11 @@ export function AfterSalesDetail() {
       {!detail && !error ? <SafeNotFoundState /> : null}
       {detail ? (
         <>
+          {loading ? (
+            <p className={styles.refreshStatus} role="status">
+              Đang cập nhật yêu cầu hỗ trợ…
+            </p>
+          ) : null}
           <LifecycleJourney
             title="Tiến trình xử lý"
             ariaLabel="Các chặng xử lý yêu cầu hỗ trợ"
@@ -444,23 +460,25 @@ export function AfterSalesDetail() {
                 </div>
                 {detail.availableActions.includes('UPLOAD_ATTACHMENT') &&
                 detail.attachments.length < 5 ? (
-                  <form className={styles.form} onSubmit={(event) => void upload(event)}>
-                    <label className={styles.field}>
-                      Thêm ảnh hoặc tài liệu
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        required
-                        accept="image/jpeg,image/png,image/webp,application/pdf"
-                        disabled={busy !== null}
-                        onChange={(event) => {
-                          setFile(event.target.files?.[0] ?? null);
-                        }}
-                      />
-                    </label>
-                    <p className={styles.attachmentHint}>
-                      Mỗi lần một tệp, tối đa 10 MB; tối đa 5 tệp.
-                    </p>
+                  <form className={styles.form} noValidate onSubmit={(event) => void upload(event)}>
+                    <FilePicker
+                      ref={fileRef}
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      buttonLabel="Chọn tệp"
+                      disabled={busy !== null}
+                      emptyLabel="Chưa chọn ảnh hoặc tài liệu"
+                      error={fileError}
+                      errorRole="alert"
+                      hint="Mỗi lần một tệp, tối đa 10 MB; tối đa 5 tệp."
+                      id="after-sales-attachment"
+                      label="Thêm ảnh hoặc tài liệu"
+                      required
+                      selectedFileName={file?.name ?? null}
+                      onChange={(event) => {
+                        setFile(event.target.files?.[0] ?? null);
+                        setFileError(null);
+                      }}
+                    />
                     <Button type="submit" loading={busy === 'upload'} loadingLabel="Đang tải tệp">
                       Thêm tệp
                     </Button>
@@ -472,6 +490,9 @@ export function AfterSalesDetail() {
               <DetailPanel title="Bước tiếp theo">
                 <p>{afterSalesNextStep(detail.status)}</p>
                 <div className={styles.actions}>
+                  <Link className={styles.secondaryLink} href="/after-sales">
+                    Danh sách hỗ trợ
+                  </Link>
                   <Link className={styles.secondaryLink} href={orderHref}>
                     Xem đơn hàng
                   </Link>

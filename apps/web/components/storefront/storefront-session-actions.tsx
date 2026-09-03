@@ -25,7 +25,7 @@ export function StorefrontSessionActions() {
   return (
     <>
       {status === 'loading' ? (
-        <span className={styles.sessionLoading} aria-label="Đang tải tài khoản" />
+        <span className={styles.sessionLoading} role="status" aria-label="Đang tải tài khoản" />
       ) : user?.role === 'CUSTOMER' ? (
         <CustomerAccountMenu />
       ) : (

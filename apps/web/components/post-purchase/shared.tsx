@@ -45,11 +45,24 @@ export function StatusPill({
 
 export function CollectionSurface({
   ariaLabel,
+  busy = false,
   children,
   footer,
-}: Readonly<{ ariaLabel: string; children: ReactNode; footer?: ReactNode | undefined }>) {
+  updateLabel = 'Đang cập nhật danh sách…',
+}: Readonly<{
+  ariaLabel: string;
+  busy?: boolean | undefined;
+  children: ReactNode;
+  footer?: ReactNode | undefined;
+  updateLabel?: string | undefined;
+}>) {
   return (
-    <section className={styles.collection} aria-label={ariaLabel}>
+    <section className={styles.collection} aria-busy={busy || undefined} aria-label={ariaLabel}>
+      {busy ? (
+        <p className={styles.collectionStatus} role="status">
+          {updateLabel}
+        </p>
+      ) : null}
       <div>{children}</div>
       {footer ? <footer className={styles.collectionFooter}>{footer}</footer> : null}
     </section>
@@ -161,7 +174,9 @@ export function Pagination({
   return (
     <nav className={styles.pagination} aria-label="Phân trang">
       {page > 1 ? (
-        <Link href={buildHref(page - 1)}>Trước</Link>
+        <Link href={buildHref(page - 1)} scroll={false}>
+          Trước
+        </Link>
       ) : (
         <span aria-disabled="true">Trước</span>
       )}
@@ -169,7 +184,9 @@ export function Pagination({
         Trang {page} / {totalPages}
       </span>
       {page < totalPages ? (
-        <Link href={buildHref(page + 1)}>Sau</Link>
+        <Link href={buildHref(page + 1)} scroll={false}>
+          Sau
+        </Link>
       ) : (
         <span aria-disabled="true">Sau</span>
       )}

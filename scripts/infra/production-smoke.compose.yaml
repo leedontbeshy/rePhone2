@@ -1,0 +1,275 @@
+# Isolated production-image smoke topology. The PowerShell runner supplies every
+# interpolation value in-process; do not invoke this file with an env file.
+name: ${SMOKE_PROJECT:?SMOKE_PROJECT is required}
+
+x-smoke-labels: &smoke-labels
+  com.rephone.production-smoke: ${SMOKE_NONCE:?SMOKE_NONCE is required}
+
+x-operations: &operations
+  image: ${SMOKE_OPS_IMAGE:?SMOKE_OPS_IMAGE is required}
+  build:
+    context: ../..
+    dockerfile: infra/docker/api.Dockerfile
+    target: api-operations
+    labels: *smoke-labels
+  pull_policy: never
+  environment: &database-operations-environment
+    NODE_ENV: production
+    DIRECT_URL: ${SMOKE_DIRECT_URL:?SMOKE_DIRECT_URL is required}
+  volumes:
+    - smoke-db-certs:/certs:ro
+  networks: [smoke]
+  labels: *smoke-labels
+  init: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  restart: 'no'
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  API_PORT: '4000'
+  API_PUBLIC_URL: https://api.example.invalid
+  WEB_PUBLIC_URL: https://web.example.invalid
+  WEB_ORIGIN: https://web.example.invalid
+  DATABASE_URL: ${SMOKE_RUNTIME_URL:?SMOKE_RUNTIME_URL is required}
+  DB_POOL_MAX: '5'
+  DB_CONNECTION_TIMEOUT_MS: '5000'
+  DB_IDLE_TIMEOUT_MS: '10000'
+  JWT_ACCESS_SECRET: ${SMOKE_JWT_SECRET:?SMOKE_JWT_SECRET is required}
+  JWT_ACCESS_TTL_SECONDS: '900'
+  JWT_ISSUER: rephone-production-smoke
+  JWT_AUDIENCE: rephone-production-smoke-web
+  AUTH_REFRESH_TTL_DAYS: '1'
+  ARGON2_MEMORY_KIB: '8192'
+  ARGON2_TIME_COST: '1'
+  ARGON2_PARALLELISM: '1'
+  PASSWORD_RESET_TTL_MINUTES: '5'
+  EMPLOYEE_INVITE_TTL_HOURS: '1'
+  GUEST_CART_TTL_DAYS: '1'
+  IDENTIFIER_ENCRYPTION_KEY: ${SMOKE_IDENTIFIER_ENCRYPTION_KEY:?SMOKE_IDENTIFIER_ENCRYPTION_KEY is required}
+  IDENTIFIER_HMAC_KEY: ${SMOKE_IDENTIFIER_HMAC_KEY:?SMOKE_IDENTIFIER_HMAC_KEY is required}
+  SUPABASE_URL: https://storage.example.invalid
+  SUPABASE_SERVICE_ROLE_KEY: ${SMOKE_STORAGE_KEY:?SMOKE_STORAGE_KEY is required}
+  SUPABASE_PUBLIC_BUCKET: smoke-public
+  SUPABASE_PRIVATE_BUCKET: smoke-private
+  SUPABASE_STORE_BUCKET: smoke-store
+  SIGNED_URL_TTL_SECONDS: '60'
+  SMTP_HOST: smtp.example.invalid
+  SMTP_PORT: '587'
+  SMTP_SECURE: 'false'
+  SMTP_REQUIRE_TLS: 'false'
+  MAIL_FROM: rePhone Smoke <no-reply@example.invalid>
+  LOG_LEVEL: warn
+  SCHEDULER_ENABLED: 'false'
+  SCHEDULER_BATCH_SIZE: '1'
+  SCHEDULER_GUEST_CART_BATCH_SIZE: '1'
+  SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: '1'
+  REQUEST_BODY_LIMIT: 1mb
+  TRUST_PROXY: 'false'
+  APP_VERSION: ${SMOKE_RELEASE_SHA:?SMOKE_RELEASE_SHA is required}
+
+services:
+  cert-init:
+    image: ${SMOKE_OPS_IMAGE:?SMOKE_OPS_IMAGE is required}
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-operations
+      labels: *smoke-labels
+    pull_policy: never
+    user: root
+    volumes:
+      - smoke-db-certs:/certs
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        umask 077
+        openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+          -subj '/CN=database' \
+          -addext 'subjectAltName=DNS:database' \
+          -keyout /certs/server.key -out /certs/server.crt >/dev/null 2>&1
+        cp /certs/server.crt /certs/ca.crt
+        chmod 600 /certs/server.key
+        chmod 644 /certs/server.crt /certs/ca.crt
+    networks: [smoke]
+    labels: *smoke-labels
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    restart: 'no'
+
+  database:
+    image: postgres:17.6-alpine
+    pull_policy: missing
+    environment:
+      POSTGRES_DB: rephone_smoke_test
+      POSTGRES_USER: smoke_owner
+      POSTGRES_PASSWORD: ${SMOKE_DB_PASSWORD:?SMOKE_DB_PASSWORD is required}
+      TZ: UTC
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        chown -R postgres:postgres /certs
+        exec docker-entrypoint.sh postgres \
+          -c ssl=on \
+          -c ssl_cert_file=/certs/server.crt \
+          -c ssl_key_file=/certs/server.key
+    depends_on:
+      cert-init: { condition: service_completed_successfully }
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - smoke-db-certs:/certs
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U smoke_owner -d rephone_smoke_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks: [smoke]
+    labels: *smoke-labels
+    security_opt: [no-new-privileges:true]
+    restart: 'no'
+
+  migrate:
+    <<: *operations
+    depends_on:
+      database: { condition: service_healthy }
+    command: [pnpm, --filter, '@rephone/api', db:deploy]
+
+  seed:
+    <<: *operations
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    environment:
+      <<: *database-operations-environment
+      DATABASE_URL: ${SMOKE_DIRECT_URL:?SMOKE_DIRECT_URL is required}
+      SEED_ADMIN_EMAIL: ${SMOKE_ADMIN_EMAIL:?SMOKE_ADMIN_EMAIL is required}
+      SEED_ADMIN_PASSWORD: ${SMOKE_ADMIN_PASSWORD:?SMOKE_ADMIN_PASSWORD is required}
+      SEED_DEMO_PHONE: '0900000000'
+    command: [pnpm, --filter, '@rephone/api', db:seed]
+
+  provision-runtime:
+    <<: *operations
+    depends_on:
+      seed: { condition: service_completed_successfully }
+    environment:
+      <<: *database-operations-environment
+      DATABASE_URL: ${SMOKE_RUNTIME_URL:?SMOKE_RUNTIME_URL is required}
+      REPHONE_RUNTIME_DB_PASSWORD: ${SMOKE_RUNTIME_DB_PASSWORD:?SMOKE_RUNTIME_DB_PASSWORD is required}
+    command: [pnpm, --filter, '@rephone/api', db:provision-runtime]
+
+  schema-check:
+    <<: *operations
+    depends_on:
+      provision-runtime: { condition: service_completed_successfully }
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${SMOKE_RUNTIME_URL:?SMOKE_RUNTIME_URL is required}
+    command: [pnpm, --filter, '@rephone/api', db:check]
+
+  api:
+    image: ${SMOKE_API_IMAGE:?SMOKE_API_IMAGE is required}
+    build:
+      context: ../..
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-runtime
+      labels: *smoke-labels
+    pull_policy: never
+    environment: *api-environment
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      schema-check: { condition: service_completed_successfully }
+    expose: ['4000']
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    networks: [smoke]
+    labels: *smoke-labels
+    init: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: 'no'
+
+  web:
+    image: ${SMOKE_WEB_IMAGE:?SMOKE_WEB_IMAGE is required}
+    build:
+      context: ../..
+      dockerfile: infra/docker/web.Dockerfile
+      target: web-runtime
+      labels: *smoke-labels
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+        NEXT_PUBLIC_STORE_EMAIL: hello@example.invalid
+        NEXT_PUBLIC_SOCIAL_FACEBOOK_URL: https://social.example.invalid/facebook
+        NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL: https://social.example.invalid/instagram
+        NEXT_PUBLIC_SOCIAL_TIKTOK_URL: https://social.example.invalid/tiktok
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_BASE_URL: http://api:4000/api/v1
+    depends_on:
+      api: { condition: service_healthy }
+    expose: ['3000']
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(r.status!==204)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks: [smoke]
+    labels: *smoke-labels
+    init: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: 'no'
+
+  probe:
+    image: ${SMOKE_OPS_IMAGE:?SMOKE_OPS_IMAGE is required}
+    pull_policy: never
+    profiles: [probe]
+    environment:
+      SMOKE_ADMIN_EMAIL: ${SMOKE_ADMIN_EMAIL:?SMOKE_ADMIN_EMAIL is required}
+      SMOKE_ADMIN_PASSWORD: ${SMOKE_ADMIN_PASSWORD:?SMOKE_ADMIN_PASSWORD is required}
+      SMOKE_CUSTOMER_EMAIL: ${SMOKE_CUSTOMER_EMAIL:?SMOKE_CUSTOMER_EMAIL is required}
+      SMOKE_CUSTOMER_PASSWORD: ${SMOKE_CUSTOMER_PASSWORD:?SMOKE_CUSTOMER_PASSWORD is required}
+      SMOKE_RELEASE_SHA: ${SMOKE_RELEASE_SHA:?SMOKE_RELEASE_SHA is required}
+    command: [node, scripts/infra/production-smoke-probe.mjs]
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_healthy }
+    networks: [smoke]
+    labels: *smoke-labels
+    init: true
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: 'no'
+
+networks:
+  smoke:
+    internal: true
+    labels: *smoke-labels
+
+volumes:
+  smoke-db-certs:
+    labels: *smoke-labels

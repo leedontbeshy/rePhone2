@@ -43,7 +43,10 @@ describe('StockService shipment return', () => {
       write: vi.fn(),
     });
 
-    await expect(service.listLevels({ page: 1, pageSize: 20 })).resolves.toMatchObject({
+    const levels = await service.listLevels({ page: 1, pageSize: 20 });
+    const movements = await service.listMovements({ page: 1, pageSize: 20 });
+
+    expect(levels).toMatchObject({
       items: [
         {
           product: { name: 'Ốp lưng MagSafe' },
@@ -52,7 +55,7 @@ describe('StockService shipment return', () => {
         },
       ],
     });
-    await expect(service.listMovements({ page: 1, pageSize: 20 })).resolves.toMatchObject({
+    expect(movements).toMatchObject({
       items: [
         {
           product: { name: 'Ốp lưng MagSafe' },
@@ -63,6 +66,9 @@ describe('StockService shipment return', () => {
         },
       ],
     });
+    expect(JSON.stringify({ levels, movements })).not.toMatch(
+      /acquisitionCost|additionalCost|salePrice|compareAtPrice/,
+    );
   });
 
   it('returns an exact replay without incrementing stock or duplicating audit', async () => {

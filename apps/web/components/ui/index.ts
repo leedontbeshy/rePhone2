@@ -2,10 +2,20 @@ export { Button, IconButton } from './button';
 export type { ButtonProps, ButtonSize, ButtonVariant, IconButtonProps } from './button';
 export { Badge, Divider, Price, StatusChip } from './display';
 export type { BadgeProps, DividerProps, PriceProps, StatusChipProps } from './display';
-export { Checkbox, Field, Input, RadioCard, RadioGroup, Select, Textarea } from './field';
+export {
+  Checkbox,
+  Field,
+  FilePicker,
+  Input,
+  RadioCard,
+  RadioGroup,
+  Select,
+  Textarea,
+} from './field';
 export type {
   CheckboxProps,
   FieldProps,
+  FilePickerProps,
   InputProps,
   RadioCardProps,
   RadioGroupProps,

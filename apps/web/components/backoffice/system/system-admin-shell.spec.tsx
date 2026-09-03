@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -83,6 +85,15 @@ describe('FE-08 SystemAdminShell', () => {
 
     expect(markup).toContain('Tài khoản hiện tại không có quyền mở đường dẫn quản trị này.');
     expect(markup).not.toContain('Nội dung ngoài allowlist');
+  });
+
+  it('leaves active-item positioning to BackofficeShell without scrolling the document', () => {
+    const shellPath = fileURLToPath(new URL('./system-admin-shell.tsx', import.meta.url));
+    const source = readFileSync(shellPath, 'utf8');
+
+    expect(source).not.toContain('scrollIntoView');
+    expect(source).toContain("navigation.dataset.systemNavigation = 'true'");
+    expect(source).toContain('systemNavigationOverflowState(navigation)');
   });
 });
 

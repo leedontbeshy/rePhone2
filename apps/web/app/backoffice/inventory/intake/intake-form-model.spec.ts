@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   firstInventoryIntakeErrorField,
+  inventoryIntakeProductForSelection,
+  inventoryIntakeProductSelection,
   inventoryIntakeErrorItems,
   inventoryIntakeServerFieldErrors,
+  inventoryIntakeVariantIsSelectable,
+  normalizedInventoryIdentifiers,
   validateInventoryIntakeDraft,
   type InventoryIntakeDraft,
 } from './intake-form-model';
@@ -31,6 +35,28 @@ describe('inventory intake validation', () => {
 
     expect(validateInventoryIntakeDraft(draft)).toEqual({});
     expect(draft).toEqual(VALID_DRAFT);
+  });
+
+  it('blocks an old product variant when loading the newly selected product fails', () => {
+    const productA = {
+      id: 'product-a',
+      variants: [{ id: 'variant-a' }],
+    };
+    const switchedDraft = {
+      ...VALID_DRAFT,
+      ...inventoryIntakeProductSelection('product-b'),
+    };
+
+    const productAfterProductBFailure = inventoryIntakeProductForSelection(
+      productA,
+      switchedDraft.productId,
+    );
+    const selectableVariants = productAfterProductBFailure?.variants ?? [];
+
+    expect(switchedDraft).toMatchObject({ productId: 'product-b', variantId: '' });
+    expect(selectableVariants).toEqual([]);
+    expect(inventoryIntakeVariantIsSelectable(selectableVariants, 'variant-a')).toBe(false);
+    expect(validateInventoryIntakeDraft(switchedDraft).variantId).toBe('Hãy chọn cấu hình máy.');
   });
 
   it('returns a precise message for every invalid field', () => {
@@ -85,6 +111,22 @@ describe('inventory intake validation', () => {
     expect(missingIdentifier.imei1).toBe('Nhập IMEI chính hoặc số sê-ri để nhận diện máy.');
     expect(duplicateImei.imei2).toBe('IMEI phụ phải khác IMEI chính.');
     expect(lowComparePrice.compareAtPrice).toBe('Giá niêm yết phải lớn hơn hoặc bằng giá bán.');
+  });
+
+  it('submits identifiers in the same normalized form that passed validation', () => {
+    expect(
+      normalizedInventoryIdentifiers({
+        eid: '8904 9003 2000 0000 0000 0000 0000 0001',
+        imei1: '49015-420-3237-518',
+        imei2: '35 2099 0017 6132 9',
+        serial: ' f2 lx 9a0 abc12 ',
+      }),
+    ).toEqual({
+      eid: '89049003200000000000000000000001',
+      imei1: '490154203237518',
+      imei2: '352099001761329',
+      serial: 'F2LX9A0ABC12',
+    });
   });
 
   it('maps server validation details back to supported form fields', () => {

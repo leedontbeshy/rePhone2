@@ -22,6 +22,16 @@ interface CartIdentity {
   guestTokenHash?: string;
 }
 
+const CART_MERGE_TRANSACTION_OPTIONS = {
+  maxWaitMs: 5_000,
+  timeoutMs: 15_000,
+} as const;
+
+const CART_REMOVE_TRANSACTION_OPTIONS = {
+  maxWaitMs: 5_000,
+  timeoutMs: 15_000,
+} as const;
+
 export interface CartMutationResult {
   cart: CartDto;
   issuedGuestToken?: string;
@@ -62,11 +72,11 @@ export class CartService {
             guestToken: issuedGuestToken,
             guestTokenHash: this.guestIdentity.digestToken(issuedGuestToken),
           };
+    const offer = await this.resolveOfferForAdd(input);
     const result = await this.transactions.run('cart.add-item', async (transaction) => {
       await this.carts.lockIdentity(identityKey(identity), transaction);
       const cart = await this.findOrCreateActive(identity, transaction);
       await this.carts.lockCart(cart.id, transaction);
-      const offer = await this.resolveOfferForAdd(input, transaction);
       const existing = cart.items.find((item) =>
         input.itemType === 'IPHONE'
           ? item.inventoryUnitId === offer.inventoryUnitId
@@ -127,15 +137,20 @@ export class CartService {
   public async removeItem(request: Request, itemId: string): Promise<void> {
     const identity = this.resolveIdentity(request.auth, request);
     requireExistingIdentity(identity);
-    await this.transactions.run('cart.remove-item', async (transaction) => {
-      await this.carts.lockIdentity(identityKey(identity), transaction);
-      const cart = await this.findExistingActive(identity, transaction);
-      await this.carts.lockCart(cart.id, transaction);
-      const item = cart.items.find((candidate) => candidate.id === itemId);
-      if (item === undefined) throw new ApiError('RESOURCE_NOT_FOUND');
-      await transaction.cartItem.delete({ where: { id: item.id } });
-      await touchCart(cart.id, transaction);
-    });
+    await this.transactions.run(
+      'cart.remove-item',
+      async (transaction) => {
+        await this.carts.lockIdentity(identityKey(identity), transaction);
+        const cart = await this.findExistingActive(identity, transaction);
+        await this.carts.lockCart(cart.id, transaction);
+        const item = cart.items.find((candidate) => candidate.id === itemId);
+        if (item === undefined) throw new ApiError('RESOURCE_NOT_FOUND');
+        await transaction.cartItem.delete({ where: { id: item.id } });
+        await touchCart(cart.id, transaction);
+      },
+      undefined,
+      CART_REMOVE_TRANSACTION_OPTIONS,
+    );
   }
 
   public async merge(auth: AuthContext, request: Request): Promise<CartDto> {
@@ -143,66 +158,75 @@ export class CartService {
     const guestToken = this.guestIdentity.readToken(request);
     const guestTokenHash =
       guestToken === undefined ? undefined : this.guestIdentity.digestToken(guestToken);
-    const cappedItemIds = new Set<string>();
-    const cartId = await this.transactions.run('cart.merge', async (transaction) => {
-      const keys = [`customer:${auth.userId}`];
-      if (guestTokenHash !== undefined) keys.push(`guest:${guestTokenHash}`);
-      for (const key of keys.sort()) await this.carts.lockIdentity(key, transaction);
+    const mergeResult = await this.transactions.run(
+      'cart.merge',
+      async (transaction) => {
+        const cappedItemIds = new Set<string>();
+        const keys = [`customer:${auth.userId}`];
+        if (guestTokenHash !== undefined) keys.push(`guest:${guestTokenHash}`);
+        for (const key of keys.sort()) await this.carts.lockIdentity(key, transaction);
 
-      const customerCart = await this.carts.findActiveForCustomer(auth.userId, transaction);
-      const guestCart =
-        guestTokenHash === undefined
-          ? null
-          : await this.carts.findActiveForGuest(guestTokenHash, transaction);
-      const activeGuest = guestCart !== null && !this.isExpired(guestCart) ? guestCart : null;
-      if (guestCart !== null && activeGuest === null) {
-        await transaction.cart.update({ where: { id: guestCart.id }, data: { status: 'EXPIRED' } });
-      }
-      if (activeGuest === null) return customerCart?.id ?? null;
-
-      if (customerCart === null) {
-        const claimed = await transaction.cart.update({
-          where: { id: activeGuest.id },
-          data: { customerId: auth.userId, guestTokenHash: null, expiresAt: null },
-          select: { id: true },
-        });
-        return claimed.id;
-      }
-
-      await this.carts.lockCart(customerCart.id, transaction);
-      await this.carts.lockCart(activeGuest.id, transaction);
-      for (const source of activeGuest.items) {
-        const existing = customerCart.items.find((target) =>
-          source.inventoryUnitId === null
-            ? target.inventoryUnitId === null && target.variantId === source.variantId
-            : target.inventoryUnitId === source.inventoryUnitId,
-        );
-        if (existing === undefined) {
-          const created = await transaction.cartItem.create({
-            data: {
-              cartId: customerCart.id,
-              variantId: source.variantId,
-              inventoryUnitId: source.inventoryUnitId,
-              quantity: source.quantity,
-              priceAtAddition: source.priceAtAddition,
-            },
+        const customerCart = await this.carts.findActiveForCustomer(auth.userId, transaction);
+        const guestCart =
+          guestTokenHash === undefined
+            ? null
+            : await this.carts.findActiveForGuest(guestTokenHash, transaction);
+        const activeGuest = guestCart !== null && !this.isExpired(guestCart) ? guestCart : null;
+        if (guestCart !== null && activeGuest === null) {
+          await transaction.cart.update({
+            where: { id: guestCart.id },
+            data: { status: 'EXPIRED' },
           });
-          customerCart.items.push(created);
-        } else if (source.inventoryUnitId === null) {
-          const uncapped = existing.quantity + source.quantity;
-          const quantity = Math.min(99, uncapped);
-          await transaction.cartItem.update({ where: { id: existing.id }, data: { quantity } });
-          existing.quantity = quantity;
-          if (quantity !== uncapped) cappedItemIds.add(existing.id);
         }
-      }
-      await touchCart(customerCart.id, transaction);
-      await transaction.cart.update({
-        where: { id: activeGuest.id },
-        data: { status: 'ABANDONED' },
-      });
-      return customerCart.id;
-    });
+        if (activeGuest === null) return { cartId: customerCart?.id ?? null, cappedItemIds };
+
+        if (customerCart === null) {
+          const claimed = await transaction.cart.update({
+            where: { id: activeGuest.id },
+            data: { customerId: auth.userId, guestTokenHash: null, expiresAt: null },
+            select: { id: true },
+          });
+          return { cartId: claimed.id, cappedItemIds };
+        }
+
+        await this.carts.lockCart(customerCart.id, transaction);
+        await this.carts.lockCart(activeGuest.id, transaction);
+        for (const source of activeGuest.items) {
+          const existing = customerCart.items.find((target) =>
+            source.inventoryUnitId === null
+              ? target.inventoryUnitId === null && target.variantId === source.variantId
+              : target.inventoryUnitId === source.inventoryUnitId,
+          );
+          if (existing === undefined) {
+            const created = await transaction.cartItem.create({
+              data: {
+                cartId: customerCart.id,
+                variantId: source.variantId,
+                inventoryUnitId: source.inventoryUnitId,
+                quantity: source.quantity,
+                priceAtAddition: source.priceAtAddition,
+              },
+            });
+            customerCart.items.push(created);
+          } else if (source.inventoryUnitId === null) {
+            const uncapped = existing.quantity + source.quantity;
+            const quantity = Math.min(99, uncapped);
+            await transaction.cartItem.update({ where: { id: existing.id }, data: { quantity } });
+            existing.quantity = quantity;
+            if (quantity !== uncapped) cappedItemIds.add(existing.id);
+          }
+        }
+        await touchCart(customerCart.id, transaction);
+        await transaction.cart.update({
+          where: { id: activeGuest.id },
+          data: { status: 'ABANDONED' },
+        });
+        return { cartId: customerCart.id, cappedItemIds };
+      },
+      undefined,
+      CART_MERGE_TRANSACTION_OPTIONS,
+    );
+    const { cartId, cappedItemIds } = mergeResult;
     if (cartId === null) return emptyCart();
     const cart = await this.carts.findActiveById(cartId);
     if (cart === null) return emptyCart();
@@ -263,10 +287,7 @@ export class CartService {
     );
   }
 
-  private async resolveOfferForAdd(
-    input: AddCartItemDto,
-    transaction: Prisma.TransactionClient,
-  ): Promise<CommerceOffer> {
+  private async resolveOfferForAdd(input: AddCartItemDto): Promise<CommerceOffer> {
     if (
       (input.itemType === 'IPHONE' &&
         (input.inventoryCode === undefined ||
@@ -281,8 +302,8 @@ export class CartService {
     }
     const offer =
       input.itemType === 'IPHONE'
-        ? await this.offers.findIphoneByInventoryCode(input.inventoryCode as string, transaction)
-        : await this.offers.findAccessoryByVariantId(input.variantId as string, transaction);
+        ? await this.offers.findIphoneByInventoryCode(input.inventoryCode as string)
+        : await this.offers.findAccessoryByVariantId(input.variantId as string);
     if (
       offer === null ||
       offer.itemType !== input.itemType ||
