@@ -3,9 +3,9 @@
 > Trạng thái: **PASS — FE-09 DONE**<br>
 > Release candidate code SHA: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
 > Production smoke/performance code SHA: `50b6cc9b1786accadc205489882342d8c6dd5752`<br>
-> Final code-bearing CI head SHA: `060f066b109b33278f51dfafe6e05fa02bc46a17`<br>
-> Final code-bearing CI merge SHA: `e7b3226ca163172752676e08f3a3f57071ffdf20`<br>
-> Final code-bearing CI: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) — 5/5 job xanh<br>
+> Final code-bearing CI head SHA: `a366b529f97d35e033bc1bc71762c81f4021b768`<br>
+> Final code-bearing CI merge SHA: `c74b2e6a6fc9f816f69731cb33c292d0f26c9804`<br>
+> Final code-bearing CI: [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) — 5/5 job xanh<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
 > Ngày chạy cuối: 03/09/2026
 
@@ -17,12 +17,13 @@ release candidate `de82f60` hoàn thành cả pass `1/2` và `2/2`; full Chromiu
 162 operation, 56 route hiện hữu, 13 state bắt buộc và toàn bộ browser owner khớp
 registry.
 
-Final code-bearing CI trên rebased equivalent `e7b3226` đã xanh đủ 5/5 job. Artifact trình duyệt,
-performance, client/media và database coverage đã được tải về, kiểm schema, thống kê
-và quét dữ liệu nhạy cảm. Không có credential, token, PII, signed URL hoặc fixture
-nhạy cảm; release SHA trong performance artifact là metadata có chủ đích. FE-09 đã
-chuyển **DONE**. Người dùng đã chấp nhận hai giới hạn mức thấp `FE9-R16`, `FE9-R17`
-ngày 02/09/2026; hai mục này không chặn release.
+Final code-bearing CI trên rebased equivalent `c74b2e6` đã xanh đủ 5/5 job. Artifact trình duyệt,
+performance, client/media và database coverage đã được tải về, kiểm schema, thống kê,
+xác nhận redaction và quét độc lập. Hai báo cáo trình duyệt đều đúng schema làm sạch;
+không phát hiện credential, token, JWT, PII hoặc signed URL. Release SHA trong
+performance artifact là metadata có chủ đích. FE-09 đã chuyển **DONE**. Người dùng
+đã chấp nhận hai giới hạn mức thấp `FE9-R16`, `FE9-R17` ngày 02/09/2026; hai mục này
+không chặn release.
 
 ## Release candidate và phạm vi thay đổi WP-14
 
@@ -35,6 +36,8 @@ ngày 02/09/2026; hai mục này không chặn release.
 | Critical smoke đa trình duyệt | `587be7c`, `65ed527`, `5958751` | Skip link hoạt động với WebKit; Firefox/WebKit có smoke riêng và workflow CI tương ứng |
 | Production container smoke | `465ee97`, `785dd49`, `50b6cc9` | Dựng stack production cô lập, kiểm health chi tiết, xác thực label cleanup và dọn sạch tài nguyên theo project |
 | Khóa test với hành vi sản phẩm hiện tại | `ecdc8e0`, `de82f60` | Auth lifecycle copy và snapshot touch target 44 px được review, cập nhật rồi strict-check lại |
+| Ổn định catalog public và chi tiết audit | `e6503e4`, `dd0915e` | Catalog GET thử lại tối đa một lần cho lỗi tạm thời; audit mở chi tiết lạc quan để request bắt đầu ngay khi chọn dòng |
+| Cô lập responsive matrix và giới hạn catalog read | `2a34ce6`, `a366b52` | Mỗi lượt đọc có timeout 8 giây và tối đa hai attempt; mỗi viewport dùng page riêng, từng route/viewport có tên bước chẩn đoán |
 
 ## Exact-set ownership
 
@@ -74,9 +77,9 @@ Coverage giống nhau ở hai pass: statements `88,11%` (`7237/8213`), branches
 `76,17%` (`4311/5659`), functions `84,06%` (`1677/1995`) và lines `93,19%`
 (`6921/7426`).
 
-Artifact coverage của final code-bearing CI ghi nhận statements `88,26%`
-(`7254/8218`), branches `76,34%` (`4324/5664`), functions `84,06%`
-(`1677/1995`) và lines `93,36%` (`6938/7431`).
+Artifact coverage của final code-bearing CI ghi nhận statements `88,12%`
+(`7242/8218`), branches `76,21%` (`4317/5664`), functions `84,06%`
+(`1677/1995`) và lines `93,2%` (`6926/7431`).
 
 ## Firefox và WebKit
 
@@ -114,7 +117,8 @@ Nguồn chạy lại: [production smoke runner](../../../scripts/infra/Invoke-Pr
 
 Final code-bearing CI đo lại đúng 12 route trên Windows/Chromium với một warm-up và ba
 sample mỗi route. Cả 12 route đạt absolute budget và không có runtime issue; artifact
-ghi đúng merge SHA `e7b3226`.
+ghi đúng merge SHA `c74b2e6`. Median xấu nhất vẫn dưới ngưỡng: LCP `1.252 ms`, CLS
+`0,0733`, interaction proxy `76,4 ms`.
 
 Trước production smoke, máy chỉ còn khoảng 1,5 GB ổ đĩa. Khoảng 40 GB cache có thể
 tạo lại trong `.turbo/cache` và `apps/web/.next/dev` được xác định đúng workspace rồi
@@ -154,6 +158,9 @@ Các worktree tạm được dọn sạch sau rehearsal; chỉ còn worktree ch�
 | CI `33698290404` | Cart cleanup không hoàn tất trong transaction contention budget ngắn | Chỉ tăng budget cho remove cart item, chờ và xác nhận DELETE `204` tại `c734727`; targeted fresh-data `5/5` |
 | CI `33700553561` | Bị hủy bởi push kế tiếp; Windows fast gate trước đó đã lộ static-render test vượt timeout 5 giây | Chỉ tăng timeout cho đúng test render nặng tại `060f066`; full web unit `677/677` |
 | CI `33701467467` | PASS | 5/5 job; Chromium `93/93`, Firefox/WebKit `2/2`, performance `12/12`, zero retry/skip/flaky; artifact sạch |
+| CI `33703594647` | Chromium `91/93` | Catalog public trả `500` tạm thời và audit detail request chưa bắt đầu trong 10 giây; sửa riêng tại `e6503e4`, `dd0915e` |
+| CI `33706357163` | Chromium `92/93` | Hai lỗi trước đã đóng; responsive matrix còn một lần điều hướng `/` hết 30 giây sau chuỗi page dài; giới hạn catalog read và cô lập page/viewport tại `2a34ce6`, `a366b52` |
+| CI [`33708368519`](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) | PASS | 5/5 job trên head `a366b52` / merge SHA `c74b2e6`; Chromium `93/93`, Firefox/WebKit `2/2`, performance `12/12`, zero retry/skip/flaky; artifact redaction và schema đều đạt |
 
 Không xóa hoặc mô tả lại các lượt đỏ thành flake. Mỗi lỗi đều có nguyên nhân được
 chứng minh và lần chạy lại trên tree sau sửa.
@@ -175,7 +182,7 @@ chứng minh và lần chạy lại trên tree sau sửa.
 
 ## Definition of done
 
-1. CI xanh trên rebased equivalent: **Đạt** — code-bearing run `33701467467`, 5/5 job.
+1. CI xanh trên rebased equivalent: **Đạt** — code-bearing run `33708368519`, 5/5 job.
 2. Artifact không chứa credential, token, PII hoặc signed URL: **Đạt** — redaction
    gate, schema verifier và scan bổ sung đều sạch.
 3. `plan-fe.md`, executable phase status và evidence index cùng `DONE`: **Đạt**.

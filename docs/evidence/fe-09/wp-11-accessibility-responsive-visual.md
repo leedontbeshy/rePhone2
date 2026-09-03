@@ -4,7 +4,7 @@
 > Phạm vi: tám miền giao diện từ storefront đến quản trị hệ thống<br>
 > Viewport chuẩn: `320×844`, `390×844`, `768×1024`, `1024×768`, `1440×900`<br>
 > Ngày kiểm tra: 02/09/2026<br>
-> CI mã nguồn cuối: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467), merge SHA `e7b3226`
+> CI mã nguồn cuối: [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519), merge SHA `c74b2e6`
 
 ## Kết luận
 
@@ -246,7 +246,7 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
   browser zoom thật.
 - **Phạm vi đa trình duyệt:** full 93-scenario matrix và PNG baseline vẫn là Chromium
   trên Windows. Critical smoke đạt Firefox `1/1` và WebKit `1/1` trên CI
-  `33701467467`, zero retry/skip/flaky; `FE9-R18` đã đóng.
+  `33708368519`, zero retry/skip/flaky; `FE9-R18` đã đóng.
 - **Không phải chứng nhận WCAG:** Axe zero serious/critical không phát hiện mọi vấn đề;
   forced-colors, touch và keyboard chỉ dùng representative journey/control.
 - **Không phải full Cartesian matrix:** không chạy mọi route × mọi state × năm
@@ -263,5 +263,5 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
 Với các giới hạn trên được giữ nguyên, WP-11 đạt acceptance cho representative
 accessibility/responsive/visual matrix. Người dùng/Product đã chấp nhận proxy reflow
 `FE9-R17` ngày 02/09/2026; `FE9-R18` đã đóng bằng artifact Firefox/WebKit của CI
-`33701467467`. Tổng hợp hiện hành nằm tại
+`33708368519`. Tổng hợp hiện hành nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).

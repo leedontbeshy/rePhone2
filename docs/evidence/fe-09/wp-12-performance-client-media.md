@@ -162,9 +162,10 @@ PostgreSQL test cô lập, kiểm health/projection rồi dọn còn 0 container
 của project smoke. Hai commit sau runtime SHA chỉ đổi auth test copy và một PNG
 baseline đã review; không đổi code runtime.
 
-CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
-đo lại `12/12` route trên merge SHA `e7b3226`, zero runtime issue. Artifact đã được
-tải về, kiểm schema và quét dữ liệu nhạy cảm.
+CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519)
+đo lại `12/12` route trên merge SHA `c74b2e6`, zero runtime issue. Median xấu nhất
+vẫn trong budget: LCP `1.252 ms`, CLS `0,0733`, interaction proxy `76,4 ms`.
+Artifact đã được tải về, kiểm schema và xác nhận redaction.
 
 ## Giới hạn và handoff
 
@@ -172,7 +173,7 @@ tải về, kiểm schema và quét dữ liệu nhạy cảm.
   test hay kết luận cross-browser.
 - Interaction proxy bằng hai animation frame, không phải field INP.
 - API performance harness chạy source qua `tsx`; compiled API/production image smoke
-  đã đạt ở WP-14 và CI artifact trên merge SHA `e7b3226` đã được xác minh.
+  đã đạt ở WP-14 và CI artifact trên merge SHA `c74b2e6` đã được xác minh.
 - Static boundary audit không tự chứng minh một chuyển đổi Server Component an toàn.
 - Raw report và ảnh giữ ở `.local/`; chỉ summary đã làm sạch được commit.
 - WP-13 chỉ xóa legacy sau consumer scan, build và browser proof; WP-14 đã đóng

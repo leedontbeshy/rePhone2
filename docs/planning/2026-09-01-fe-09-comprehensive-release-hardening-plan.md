@@ -46,7 +46,7 @@ bằng chứng đóng work package.
 | Work package | Trạng thái | Kết quả hiện tại / điều kiện còn lại |
 | --- | --- | --- |
 | WP-00 — Baseline | **PASS** | Baseline, command log và evidence skeleton đã được khóa |
-| WP-01 — Coverage + CI | **PASS** | Registry/CI workflow và CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) đều xanh; artifact đã rà soát |
+| WP-01 — Coverage + CI | **PASS** | Registry/CI workflow và CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) đều xanh; artifact đã rà soát |
 | WP-02 — Foundation | **PASS** | Shared form, loading, focus, pagination, upload và sidebar đã harden |
 | WP-03 — Storefront | **PASS** | Sáu route public đã qua browser, responsive, accessibility và performance đại diện |
 | WP-04 — Auth/account | **PASS** | Flow/privacy đã harden; `FE9-R13` đóng tại WP-14 bằng response đăng ký không phân biệt |
@@ -706,8 +706,8 @@ quyết định và CI confirmation condition được ghi tại
   rehearsal xanh trong worktree tạm.
 - `FE9-R13`–`FE9-R15` đã đóng; `FE9-R16`/`FE9-R17` đã được chấp nhận và `FE9-R18`
   đã đóng bằng Firefox/WebKit CI.
-- CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
-  trên head `060f066` / merge SHA `e7b3226` đạt 5/5 job: Chromium `93/93`,
+- CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519)
+  trên head `a366b52` / merge SHA `c74b2e6` đạt 5/5 job: Chromium `93/93`,
   Firefox/WebKit `2/2`, zero retry/skip/flaky, performance `12/12`, database/API,
   Linux và Windows đều xanh. Artifact redaction và scan bổ sung không tìm thấy
   credential, token, PII, signed URL hoặc metadata Git ngoài release SHA có chủ đích.
@@ -870,7 +870,7 @@ accessibility, security hoặc performance; không gộp chỉ vì cùng route.
 | FE9-R15 | tạo hoàn tiền chưa replay an toàn sau lỗi mạng mơ hồ | Cao — CLOSED | pending lock không phân biệt lost response | Đóng bằng UUID idempotency key, request fingerprint, persistence và sequential/concurrent replay test |
 | FE9-R16 | ngày giờ native phụ thuộc regional locale của Windows | Thấp — ACCEPTED | ô trống hiển thị định dạng Anh dù label/value/validation vẫn đúng | Người dùng/Product chấp nhận ngày 02/09/2026; shared accessible `DateTimeField` là cải tiến sau release |
 | FE9-R17 | bằng chứng reflow dùng proxy viewport, chưa phải native zoom 200% | Thấp — ACCEPTED | `720×450` chứng minh geometry/hit-test nhưng không đổi browser zoom thật | Người dùng/Product chấp nhận proxy ngày 02/09/2026; native zoom proof là cải tiến evidence sau release |
-| FE9-R18 | full visual/browser matrix chủ yếu Chromium/Windows | Trung bình — CLOSED | Firefox/WebKit critical smoke CI đạt `2/2`, zero retry/skip/flaky | Đóng bằng artifact run `33701467467`; full matrix/PNG tiếp tục thuộc Chromium/Windows |
+| FE9-R18 | full visual/browser matrix chủ yếu Chromium/Windows | Trung bình — CLOSED | Firefox/WebKit critical smoke CI đạt `2/2`, zero retry/skip/flaky | Đóng bằng artifact run `33708368519`; full matrix/PNG tiếp tục thuộc Chromium/Windows |
 
 Rollback policy:
 
@@ -926,8 +926,8 @@ surface tương ứng đã qua browser/visual gate.
 FE-09 và WP-14 đã hoàn tất. Local closeout trên candidate `de82f60` có hai release
 pass, exact-set ownership, production compiled smoke/performance, cross-browser
 critical smoke và ba rollback rehearsal đều xanh. Final CI
-[33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
-trên head `060f066` / merge SHA `e7b3226` đạt 5/5 job; artifact đã được xác minh
+[33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519)
+trên head `a366b52` / merge SHA `c74b2e6` đạt 5/5 job; artifact đã được xác minh
 schema, thống kê và dữ liệu nhạy cảm. Chi tiết tại
 [WP-14 evidence](../evidence/fe-09/wp-14-release-closeout.md).
 

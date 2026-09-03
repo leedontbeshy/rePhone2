@@ -674,22 +674,28 @@ business state.
 | `33698290404` | `b38b355` | FAIL | Cart cleanup không settle; scoped remove budget và xác nhận DELETE `204` tại `c734727` |
 | `33700553561` | `c734727` | CANCELLED | Push kế tiếp hủy run; Windows fast gate đã lộ static-render test vượt timeout mặc định, sửa per-test tại `060f066` |
 | [`33701467467`](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) | `060f066` | PASS 5/5 | Merge SHA `e7b3226`; toàn bộ gate và artifact đạt |
+| `33703594647` | `aea5c16` | FAIL 91/93 | Catalog public trả `500` tạm thời; audit detail request chưa bắt đầu trong 10 giây. Thêm retry có giới hạn tại `e6503e4`, mở audit detail lạc quan tại `dd0915e` |
+| `33706357163` | `dd0915e` | FAIL 92/93 | Hai lỗi trước đã đạt; responsive matrix còn một `page.goto('/')` hết 30 giây sau chuỗi page dài. Giới hạn catalog read tại `2a34ce6`, cô lập page theo viewport tại `a366b52` |
+| [`33708368519`](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) | `a366b52` | PASS 5/5 | Merge SHA `c74b2e6`; Chromium `93/93`, Firefox/WebKit `2/2`, performance `12/12`, zero retry/skip/flaky và artifact redaction/schema đạt |
 
 Focused proof trước final code-bearing CI: audit production-like repeat `10/10`;
 cart/checkout `13/13`; payment proof `5/5`; responsive visual `5/5`; cart cleanup
 fresh-data `5/5`; full web unit `677/677`; integration `55/55`; API E2E `103/103`.
+Riêng remediation cuối có catalog unit `4/4`, critical commerce fresh-data `5/5`,
+audit production-like `10/10`, combined critical-commerce/audit xanh và responsive
+matrix lặp `10/10` gồm storefront `5/5` cùng admin `5/5`.
 
-Final code-bearing artifact được tải vào `.local/ci-33701467467-final/` để review,
+Final code-bearing artifact được tải vào `.local/ci-33708368519-final/` để review,
 không commit:
 
 | Artifact/gate | Kết quả rà soát |
 | --- | --- |
 | Fast Linux + Windows | format, lint, typecheck, unit, frontend contract, generated drift và build đều success |
-| Database/API | prepare, migration preflight, integration, E2E và coverage success; lines `93,36%` (`6938/7431`), statements `88,26%` (`7254/8218`), functions `84,06%` (`1677/1995`), branches `76,34%` (`4324/5664`) |
-| Performance | `12/12` route pass, zero runtime issue, đúng merge SHA `e7b3226` |
+| Database/API | prepare, migration preflight, integration, E2E và coverage success; lines `93,2%` (`6926/7431`), statements `88,12%` (`7242/8218`), functions `84,06%` (`1677/1995`), branches `76,21%` (`4317/5664`) |
+| Performance | `12/12` route pass, zero runtime issue, đúng merge SHA `c74b2e6`; median xấu nhất LCP `1.252 ms`, CLS `0,0733`, interaction proxy `76,4 ms` |
 | Chromium report | `93/93` expected, 0 unexpected/flaky/skipped/retry |
 | Firefox/WebKit report | `2/2` expected, 0 unexpected/flaky/skipped/retry |
-| Redaction/privacy | Workflow redaction success; schema verifier xác nhận 2 report; scan JSON/HTML/TXT không tìm credential, email, device ID, JWT, URL credential, labelled secret, fixture token hoặc signed URL |
+| Redaction/privacy | Workflow redaction success; schema verifier xác nhận 2 report Chromium và Firefox/WebKit đã được làm sạch; scan JSON/HTML/TXT không tìm credential, JWT, labelled secret/PII, URL credential hoặc signed URL |
 
 Release SHA duy nhất trong performance artifact là metadata cần thiết để truy vết.
 Coverage artifact có đường dẫn runner chung và source path, không có dữ liệu người

@@ -7,9 +7,9 @@
 > Nhánh: `feat/fe-9-release-hardening`<br>
 > Con trỏ triển khai: **WP-14 — PASS, artifact đã rà soát**<br>
 > Release candidate cục bộ: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
-> CI mã nguồn cuối — head SHA: `060f066b109b33278f51dfafe6e05fa02bc46a17`<br>
-> CI mã nguồn cuối — merge SHA: `e7b3226ca163172752676e08f3a3f57071ffdf20`<br>
-> CI mã nguồn cuối: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) — **5/5 job xanh**<br>
+> CI mã nguồn cuối — head SHA: `a366b529f97d35e033bc1bc71762c81f4021b768`<br>
+> CI mã nguồn cuối — merge SHA: `c74b2e6a6fc9f816f69731cb33c292d0f26c9804`<br>
+> CI mã nguồn cuối: [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) — **5/5 job xanh**<br>
 > Điều kiện còn mở: **Không còn điều kiện chặn FE-09; PR #23 vẫn chờ quyết định merge riêng**<br>
 > Giới hạn đã chấp nhận: **FE9-R16, FE9-R17 — 02/09/2026**
 
@@ -71,7 +71,7 @@ projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài regi
 | Fast quality gates | PASS | format, lint, typecheck, unit/component, a11y, build và generated drift |
 | Release DB guard | PASS | Chặn DB không có hậu tố `_test` và host từ xa; lifecycle test 2/2 |
 | CI workflow | PASS | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
-| CI run URL | PASS | CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467), 5/5 job xanh |
+| CI run URL | PASS | CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519), 5/5 job xanh |
 
 ## Foundation và shared UX consistency WP-02
 
@@ -258,12 +258,13 @@ global CSS và performance geometry đều được rehearsal trong worktree t�
 sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).
 
-CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
-trên head `060f066` / merge SHA `e7b3226` đạt đủ 5/5 job. Báo cáo Chromium có
+CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519)
+trên head `a366b52` / merge SHA `c74b2e6` đạt đủ 5/5 job. Báo cáo Chromium có
 `93/93` expected, Firefox/WebKit có `2/2` expected; cả hai có zero
 unexpected/flaky/skipped/retry. Performance đạt `12/12` route, database/API và hai
-fast gate đều xanh. Artifact redaction gate, schema verifier và scan bổ sung không
-tìm thấy credential, token, PII, signed URL hay fixture nhạy cảm.
+fast gate đều xanh. Artifact redaction gate, schema verifier và lượt quét độc lập
+xác nhận không có giá trị nhạy cảm. Coverage cuối đạt lines `93,2%`, statements
+`88,12%`, functions `84,06%`, branches `76,21%`.
 
 ## Artifact index
 

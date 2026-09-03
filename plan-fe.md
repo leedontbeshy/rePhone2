@@ -407,12 +407,12 @@ Contract chung cho mọi phase:
 | Commit dự kiến    | `test(web): enforce operation coverage`; `refactor(web): remove legacy frontend paths`; `test(web): harden frontend release`.                                                                                  |
 | DoD/checkpoint C9 | OpenAPI IDs = ledger IDs = implemented coverage manifest, đúng 162 unique; không business op Swagger-only; release gates xanh; rollback evidence đầy đủ.                                                       |
 | Rollback          | Revert cleanup/performance change riêng; không quay lại nếu làm mất security/ownership fix. Không có database rollback.                                                                                        |
-| Evidence          | WP-14 hoàn tất; CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) xanh 5/5 trên head `060f066` / merge SHA `e7b3226`; artifact sạch. FE9-R16/R17 đã chấp nhận. |
+| Evidence          | WP-14 hoàn tất; CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) xanh 5/5 trên head `a366b52` / merge SHA `c74b2e6`; artifact sạch. FE9-R16/R17 đã chấp nhận. |
 
 Bằng chứng đóng phase: `docs/evidence/fe-09/wp-14-release-closeout.md`. Candidate
 `de82f60` đạt hai release pass cục bộ; CI
-[33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
-xanh 5/5 trên head `060f066` / merge SHA `e7b3226`. Báo cáo cuối đã xác nhận
+[33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519)
+xanh 5/5 trên head `a366b52` / merge SHA `c74b2e6`. Báo cáo cuối đã xác nhận
 Chromium `93/93`, Firefox/WebKit `2/2`, zero retry/skip/flaky và không chứa
 credential, token, PII hoặc metadata Git ngoài release SHA có chủ đích.
 
@@ -517,7 +517,7 @@ Không đánh dấu `DONE` chỉ vì component render; DoD, operation coverage v
 | 2026-08-30 | FE-8              | DONE                     | Khóa quản trị nhân viên, khách hàng, cấu hình, nhật ký và trạng thái hệ thống                      | 20/20 operation `DONE`; ledger 162/162 `DONE`; role/CAS/redaction smoke; browser QA 5 workspace và đối chiếu mockup phương án 2 đạt                                                                                                                                        |
 | 2026-09-01 | FE-9              | IN PROGRESS              | Bắt đầu hoàn thiện toàn diện FE-0–FE-8 và release hardening                                        | Product baseline `3e79db7`; baseline run `1b6f4b2`; evidence index `docs/evidence/fe-09/README.md`; operation/route ownership tiếp tục thuộc FE-1–FE-8                                                                                                                     |
 | 2026-09-02 | FE-9              | IN PROGRESS — LOCAL PASS | Hoàn tất WP-14 cục bộ; FE9-R16/R17 đã chấp nhận, release hold chỉ còn CI/artifact                  | Candidate `de82f60`; `verify:release` pass `1/2` + `2/2`, Chromium `93/93` mỗi pass, Firefox/WebKit `2/2`, exact-set 162 operation/56 route/13 state, compiled smoke/performance và rollback xanh; evidence `docs/evidence/fe-09/wp-14-release-closeout.md`                |
-| 2026-09-03 | FE-9              | DONE                     | Đóng WP-14 sau final CI và artifact privacy review                                                 | CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) xanh 5/5 trên head `060f066` / merge SHA `e7b3226`; Chromium `93/93`, Firefox/WebKit `2/2`, zero retry/skip/flaky, performance `12/12`, artifact sạch; PR #23 chưa merge |
+| 2026-09-03 | FE-9              | DONE                     | Xác nhận lại WP-14 sau hardening độ ổn định và artifact review                                     | CI mã nguồn cuối [33708368519](https://github.com/leedontbeshy/rePhone2/actions/runs/33708368519) xanh 5/5 trên head `a366b52` / merge SHA `c74b2e6`; Chromium `93/93`, Firefox/WebKit `2/2`, zero retry/skip/flaky, performance `12/12`, artifact sạch; PR #23 chưa merge |
 
 ## 12. Operation coverage ledger — 162/162
 
