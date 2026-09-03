@@ -1,6 +1,6 @@
 # FE-09 WP-12 — Performance, client boundary và media
 
-> Trạng thái: **PASS CỤC BỘ; CI ARTIFACT CHỜ PUSH**<br>
+> Trạng thái: **PASS — local và CI artifact đã xác minh**<br>
 > Baseline SHA: `783e029bff5203fc67df0f3651fd6607999ef159`<br>
 > After SHA: `e661e8b16c0e1f15892481686a4ca976a838dc21`<br>
 > CI gate implementation: `6b5fa41`<br>
@@ -162,8 +162,9 @@ PostgreSQL test cô lập, kiểm health/projection rồi dọn còn 0 container
 của project smoke. Hai commit sau runtime SHA chỉ đổi auth test copy và một PNG
 baseline đã review; không đổi code runtime.
 
-CI job chưa thể có URL/artifact thật khi nhánh chưa được push. Đây là điều kiện còn
-lại của WP-14, không làm thay đổi kết luận local WP-12.
+CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
+đo lại `12/12` route trên merge SHA `e7b3226`, zero runtime issue. Artifact đã được
+tải về, kiểm schema và quét dữ liệu nhạy cảm.
 
 ## Giới hạn và handoff
 
@@ -171,9 +172,8 @@ lại của WP-14, không làm thay đổi kết luận local WP-12.
   test hay kết luận cross-browser.
 - Interaction proxy bằng hai animation frame, không phải field INP.
 - API performance harness chạy source qua `tsx`; compiled API/production image smoke
-  đã đạt cục bộ ở WP-14, còn CI artifact trên release SHA chưa có.
+  đã đạt ở WP-14 và CI artifact trên merge SHA `e7b3226` đã được xác minh.
 - Static boundary audit không tự chứng minh một chuyển đổi Server Component an toàn.
 - Raw report và ảnh giữ ở `.local/`; chỉ summary đã làm sạch được commit.
 - WP-13 chỉ xóa legacy sau consumer scan, build và browser proof; WP-14 đã đóng
-  FE9-R13–R15 cục bộ và người dùng đã chấp nhận FE9-R16/R17. Chỉ còn CI/artifact
-  trước khi chuyển FE-09 sang `DONE`.
+  FE9-R13–R15, người dùng đã chấp nhận FE9-R16/R17 và FE-09 đã chuyển `DONE`.

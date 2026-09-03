@@ -7,9 +7,9 @@
 > Nhánh: `feat/fe-9-release-hardening`<br>
 > Con trỏ triển khai: **WP-14 — PASS, artifact đã rà soát**<br>
 > Release candidate cục bộ: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
-> CI head SHA: `ce4939dd6438b22bdc7a6994eb305e81732d0c2a`<br>
-> CI merge SHA: `e1ba2ebbbd65832a88569d0132483e30b9883ea6`<br>
-> CI run: [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254) — **5/5 job xanh**<br>
+> CI mã nguồn cuối — head SHA: `060f066b109b33278f51dfafe6e05fa02bc46a17`<br>
+> CI mã nguồn cuối — merge SHA: `e7b3226ca163172752676e08f3a3f57071ffdf20`<br>
+> CI mã nguồn cuối: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) — **5/5 job xanh**<br>
 > Điều kiện còn mở: **Không còn điều kiện chặn FE-09; PR #23 vẫn chờ quyết định merge riêng**<br>
 > Giới hạn đã chấp nhận: **FE9-R16, FE9-R17 — 02/09/2026**
 
@@ -71,7 +71,7 @@ projection. Contract sẽ đỏ khi test bị xóa, đổi ID, thêm ngoài regi
 | Fast quality gates | PASS | format, lint, typecheck, unit/component, a11y, build và generated drift |
 | Release DB guard | PASS | Chặn DB không có hậu tố `_test` và host từ xa; lifecycle test 2/2 |
 | CI workflow | PASS | Linux/Windows fast gate, PostgreSQL 17, Windows browser, artifact retention |
-| CI run URL | PASS | [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254), 5/5 job xanh |
+| CI run URL | PASS | CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467), 5/5 job xanh |
 
 ## Foundation và shared UX consistency WP-02
 
@@ -206,8 +206,9 @@ colors và proxy reflow `720×450` có geometry + hit-test. Hai full matrix cu�
 Review bắt và sửa thêm bốn lỗi sản phẩm: auth `autoFocus` bỏ qua skip link, validation
 cấu hình không đưa focus tới tóm tắt lỗi, liên kết icon backoffice mobile chỉ rộng
 `22 px`, và timeline đơn đang vận chuyển ghi nhầm “Đã giao hàng”. Full matrix/PNG
-vẫn là Chromium/Windows; WP-14 bổ sung critical smoke Firefox `1/1` và WebKit `1/1`
-cục bộ. Proxy reflow chưa phải native zoom và CI đa engine vẫn chờ push. Chi tiết ma
+vẫn là Chromium/Windows; WP-14 bổ sung critical smoke Firefox `1/1` và WebKit `1/1`,
+được CI xác nhận với zero retry/skip/flaky và đóng `FE9-R18`. Proxy reflow chưa phải
+native zoom. Chi tiết ma
 trận, ảnh, lịch sử lượt đỏ và giới hạn nằm tại
 [WP-11 accessibility/responsive/visual evidence](./wp-11-accessibility-responsive-visual.md).
 
@@ -257,8 +258,8 @@ global CSS và performance geometry đều được rehearsal trong worktree t�
 sạch. Chi tiết lượt đỏ, cleanup, rollback và điều kiện đóng nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).
 
-Final CI [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254)
-trên head `ce4939d` / merge SHA `e1ba2eb` đạt đủ 5/5 job. Báo cáo Chromium có
+CI mã nguồn cuối [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467)
+trên head `060f066` / merge SHA `e7b3226` đạt đủ 5/5 job. Báo cáo Chromium có
 `93/93` expected, Firefox/WebKit có `2/2` expected; cả hai có zero
 unexpected/flaky/skipped/retry. Performance đạt `12/12` route, database/API và hai
 fast gate đều xanh. Artifact redaction gate, schema verifier và scan bổ sung không

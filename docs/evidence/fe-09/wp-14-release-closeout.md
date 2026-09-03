@@ -3,9 +3,9 @@
 > Trạng thái: **PASS — FE-09 DONE**<br>
 > Release candidate code SHA: `de82f6095d0e8aaea8da563d2dd8ea58c8e196f4`<br>
 > Production smoke/performance code SHA: `50b6cc9b1786accadc205489882342d8c6dd5752`<br>
-> Final CI head SHA: `ce4939dd6438b22bdc7a6994eb305e81732d0c2a`<br>
-> Final CI merge SHA: `e1ba2ebbbd65832a88569d0132483e30b9883ea6`<br>
-> Final CI: [33690470254](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254) — 5/5 job xanh<br>
+> Final code-bearing CI head SHA: `060f066b109b33278f51dfafe6e05fa02bc46a17`<br>
+> Final code-bearing CI merge SHA: `e7b3226ca163172752676e08f3a3f57071ffdf20`<br>
+> Final code-bearing CI: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) — 5/5 job xanh<br>
 > Nhánh: `feat/fe-9-release-hardening`<br>
 > Ngày chạy cuối: 03/09/2026
 
@@ -17,7 +17,7 @@ release candidate `de82f60` hoàn thành cả pass `1/2` và `2/2`; full Chromiu
 162 operation, 56 route hiện hữu, 13 state bắt buộc và toàn bộ browser owner khớp
 registry.
 
-Final CI trên rebased equivalent `e1ba2eb` đã xanh đủ 5/5 job. Artifact trình duyệt,
+Final code-bearing CI trên rebased equivalent `e7b3226` đã xanh đủ 5/5 job. Artifact trình duyệt,
 performance, client/media và database coverage đã được tải về, kiểm schema, thống kê
 và quét dữ liệu nhạy cảm. Không có credential, token, PII, signed URL hoặc fixture
 nhạy cảm; release SHA trong performance artifact là metadata có chủ đích. FE-09 đã
@@ -74,6 +74,10 @@ Coverage giống nhau ở hai pass: statements `88,11%` (`7237/8213`), branches
 `76,17%` (`4311/5659`), functions `84,06%` (`1677/1995`) và lines `93,19%`
 (`6921/7426`).
 
+Artifact coverage của final code-bearing CI ghi nhận statements `88,26%`
+(`7254/8218`), branches `76,34%` (`4324/5664`), functions `84,06%`
+(`1677/1995`) và lines `93,36%` (`6938/7431`).
+
 ## Firefox và WebKit
 
 `pnpm test:browser:cross-browser-smoke` chạy sau release gate trên `de82f60`:
@@ -108,9 +112,9 @@ Nguồn chạy lại: [production smoke runner](../../../scripts/infra/Invoke-Pr
 | Profile | Chromium Windows, `390×844`, CPU ×4, latency 40 ms |
 | Raw report | `.local/release-performance/wp12-baseline.json` — local-only, không commit |
 
-Final CI đo lại đúng 12 route trên Windows/Chromium với một warm-up và ba sample mỗi
-route. Cả 12 route đạt absolute budget và không có runtime issue; artifact ghi đúng
-merge SHA `e1ba2eb`.
+Final code-bearing CI đo lại đúng 12 route trên Windows/Chromium với một warm-up và ba
+sample mỗi route. Cả 12 route đạt absolute budget và không có runtime issue; artifact
+ghi đúng merge SHA `e7b3226`.
 
 Trước production smoke, máy chỉ còn khoảng 1,5 GB ổ đĩa. Khoảng 40 GB cache có thể
 tạo lại trong `.turbo/cache` và `apps/web/.next/dev` được xác định đúng workspace rồi
@@ -144,6 +148,12 @@ Các worktree tạm được dọn sạch sau rehearsal; chỉ còn worktree ch�
 | CI `33686115334` | Wishlist visual chạy trước khi DELETE cuối hoàn tất | Chờ đúng response `204` tại `3dc5ef5`; targeted visual xanh |
 | CI `33688132546` | Audit race dùng hai cơ chế chờ trùng, hết 270 giây | Bỏ listener dư, giữ request gate và timeout chẩn đoán 10 giây tại `ce4939d`; lặp production-like `10/10` |
 | CI `33690470254` | PASS | 5/5 job; Chromium `93/93`, Firefox/WebKit `2/2`, zero retry/skip/flaky; artifact sạch |
+| CI `33692799444` | Payment proof submit trả API `500` dưới tải Windows | Chỉ tăng transaction budget cho payment-proof tại `2bde924`; targeted local `5/5`, full Chromium sau đó xanh |
+| CI `33695084078` | Firefox Axe phát hiện `aria-prohibited-attr` trên loading storefront | Dùng đúng ngữ nghĩa `role="status"` tại `fb436ab`; Firefox lặp `3/3`, cross-browser smoke `2/2` |
+| CI `33696603966` | Responsive route matrix hết budget tổng 90 giây khi chờ full `load` | Chỉ tăng budget test này và dùng navigation `domcontentloaded` có giới hạn tại `b38b355`; targeted local `5/5` |
+| CI `33698290404` | Cart cleanup không hoàn tất trong transaction contention budget ngắn | Chỉ tăng budget cho remove cart item, chờ và xác nhận DELETE `204` tại `c734727`; targeted fresh-data `5/5` |
+| CI `33700553561` | Bị hủy bởi push kế tiếp; Windows fast gate trước đó đã lộ static-render test vượt timeout 5 giây | Chỉ tăng timeout cho đúng test render nặng tại `060f066`; full web unit `677/677` |
+| CI `33701467467` | PASS | 5/5 job; Chromium `93/93`, Firefox/WebKit `2/2`, performance `12/12`, zero retry/skip/flaky; artifact sạch |
 
 Không xóa hoặc mô tả lại các lượt đỏ thành flake. Mỗi lỗi đều có nguyên nhân được
 chứng minh và lần chạy lại trên tree sau sửa.
@@ -165,7 +175,7 @@ chứng minh và lần chạy lại trên tree sau sửa.
 
 ## Definition of done
 
-1. CI xanh trên rebased equivalent: **Đạt** — run `33690470254`, 5/5 job.
+1. CI xanh trên rebased equivalent: **Đạt** — code-bearing run `33701467467`, 5/5 job.
 2. Artifact không chứa credential, token, PII hoặc signed URL: **Đạt** — redaction
    gate, schema verifier và scan bổ sung đều sạch.
 3. `plan-fe.md`, executable phase status và evidence index cùng `DONE`: **Đạt**.

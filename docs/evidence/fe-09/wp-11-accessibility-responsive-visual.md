@@ -1,10 +1,10 @@
 # FE-09 WP-11 — Ma trận accessibility, responsive và visual
 
-> Trạng thái: **PASS — visual matrix Chromium và critical smoke Firefox/WebKit cục bộ**<br>
+> Trạng thái: **PASS — visual matrix Chromium và critical smoke Firefox/WebKit trên CI**<br>
 > Phạm vi: tám miền giao diện từ storefront đến quản trị hệ thống<br>
 > Viewport chuẩn: `320×844`, `390×844`, `768×1024`, `1024×768`, `1440×900`<br>
 > Ngày kiểm tra: 02/09/2026<br>
-> Release SHA và CI artifact cuối: ghi tại WP-14 sau khi cây thay đổi được commit
+> CI mã nguồn cuối: [33701467467](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467), merge SHA `e7b3226`
 
 ## Kết luận
 
@@ -212,7 +212,7 @@ xác nhận cho hành vi đó.
 | Auth matrix | PASS — `2/2` |
 | FE-0 exact-unit strict | PASS — `1/1`, 2 snapshot |
 | Release-matrix executable ownership | PASS — coverage/browser contract `9/9` |
-| Critical cross-browser smoke WP-14 | PASS cục bộ — Firefox `1/1`, WebKit `1/1`; CI artifact còn chờ push |
+| Critical cross-browser smoke WP-14 | PASS trên CI — Firefox `1/1`, WebKit `1/1`; zero retry/skip/flaky |
 | Release-matrix lint/format/typecheck theo phạm vi | PASS |
 
 Playwright giữ warning môi trường `NO_COLOR`/`FORCE_COLOR`, Node `DEP0190` và Docker
@@ -245,8 +245,8 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
   `1440×900`; vẫn cần manual/native zoom smoke nếu release policy yêu cầu bằng chứng
   browser zoom thật.
 - **Phạm vi đa trình duyệt:** full 93-scenario matrix và PNG baseline vẫn là Chromium
-  trên Windows. Critical smoke cục bộ đã đạt Firefox `1/1` và WebKit `1/1`; workflow
-  CI đã có nhưng chưa có URL/artifact thật nên `FE9-R18` mới ở trạng thái mitigated.
+  trên Windows. Critical smoke đạt Firefox `1/1` và WebKit `1/1` trên CI
+  `33701467467`, zero retry/skip/flaky; `FE9-R18` đã đóng.
 - **Không phải chứng nhận WCAG:** Axe zero serious/critical không phát hiện mọi vấn đề;
   forced-colors, touch và keyboard chỉ dùng representative journey/control.
 - **Không phải full Cartesian matrix:** không chạy mọi route × mọi state × năm
@@ -262,6 +262,6 @@ vẫn dùng control thật, hai animation frame, polling geometry và hit-test n
 
 Với các giới hạn trên được giữ nguyên, WP-11 đạt acceptance cho representative
 accessibility/responsive/visual matrix. Người dùng/Product đã chấp nhận proxy reflow
-`FE9-R17` ngày 02/09/2026; `FE9-R18` chờ CI artifact dù local Firefox/WebKit đã
-xanh. Tổng hợp hiện hành nằm tại
+`FE9-R17` ngày 02/09/2026; `FE9-R18` đã đóng bằng artifact Firefox/WebKit của CI
+`33701467467`. Tổng hợp hiện hành nằm tại
 [WP-14 release closeout](./wp-14-release-closeout.md).

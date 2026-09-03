@@ -668,17 +668,25 @@ business state.
 | `33686115334` | `4f11f9b` | FAIL | Wishlist visual chạy trước DELETE cuối; chờ response `204` tại `3dc5ef5` |
 | `33688132546` | `3dc5ef5` | FAIL | Audit race dùng listener chờ trùng; thay bằng request gate có timeout chẩn đoán tại `ce4939d` |
 | [`33690470254`](https://github.com/leedontbeshy/rePhone2/actions/runs/33690470254) | `ce4939d` | PASS 5/5 | Merge SHA `e1ba2eb`; toàn bộ gate và artifact đạt |
+| `33692799444` | `f3570ed` | FAIL | Payment proof submit trả API `500` dưới tải Windows; scoped transaction budget tại `2bde924` |
+| `33695084078` | `2bde924` | FAIL | Firefox Axe phát hiện `aria-prohibited-attr`; sửa ngữ nghĩa loading tại `fb436ab` |
+| `33696603966` | `fb436ab` | FAIL | Responsive route matrix hết budget tổng; scoped budget và navigation có giới hạn tại `b38b355` |
+| `33698290404` | `b38b355` | FAIL | Cart cleanup không settle; scoped remove budget và xác nhận DELETE `204` tại `c734727` |
+| `33700553561` | `c734727` | CANCELLED | Push kế tiếp hủy run; Windows fast gate đã lộ static-render test vượt timeout mặc định, sửa per-test tại `060f066` |
+| [`33701467467`](https://github.com/leedontbeshy/rePhone2/actions/runs/33701467467) | `060f066` | PASS 5/5 | Merge SHA `e7b3226`; toàn bộ gate và artifact đạt |
 
-Focused proof trước final CI: audit production-like repeat `10/10`; cart/checkout
-`13/13`; responsive visual `1/1`; integration `55/55`; API E2E `103/103`.
+Focused proof trước final code-bearing CI: audit production-like repeat `10/10`;
+cart/checkout `13/13`; payment proof `5/5`; responsive visual `5/5`; cart cleanup
+fresh-data `5/5`; full web unit `677/677`; integration `55/55`; API E2E `103/103`.
 
-Final artifact được tải vào `.local/ci-33690470254-final/` để review, không commit:
+Final code-bearing artifact được tải vào `.local/ci-33701467467-final/` để review,
+không commit:
 
 | Artifact/gate | Kết quả rà soát |
 | --- | --- |
 | Fast Linux + Windows | format, lint, typecheck, unit, frontend contract, generated drift và build đều success |
-| Database/API | prepare, migration preflight, integration, E2E và coverage success; lines `93,25%`, statements `88,16%`, functions `84,16%`, branches `76,34%` |
-| Performance | `12/12` route pass, zero runtime issue, đúng merge SHA `e1ba2eb` |
+| Database/API | prepare, migration preflight, integration, E2E và coverage success; lines `93,36%` (`6938/7431`), statements `88,26%` (`7254/8218`), functions `84,06%` (`1677/1995`), branches `76,34%` (`4324/5664`) |
+| Performance | `12/12` route pass, zero runtime issue, đúng merge SHA `e7b3226` |
 | Chromium report | `93/93` expected, 0 unexpected/flaky/skipped/retry |
 | Firefox/WebKit report | `2/2` expected, 0 unexpected/flaky/skipped/retry |
 | Redaction/privacy | Workflow redaction success; schema verifier xác nhận 2 report; scan JSON/HTML/TXT không tìm credential, email, device ID, JWT, URL credential, labelled secret, fixture token hoặc signed URL |
