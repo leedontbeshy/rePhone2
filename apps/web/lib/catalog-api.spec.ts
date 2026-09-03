@@ -53,6 +53,20 @@ describe('listAllPublicProducts', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('retries one transient transport failure before returning the public catalog', async () => {
+    const item = product('iphone-17');
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockRejectedValueOnce(new TypeError('temporary transport failure'))
+      .mockResolvedValueOnce(catalogResponse([item], 1, 1, 1));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      listPublicProducts({ page: 1, pageSize: 20, sortBy: 'releaseYear', sortOrder: 'desc' }),
+    ).resolves.toMatchObject({ data: [item] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('does not retry a permanent public catalog error', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 404 }));
     vi.stubGlobal('fetch', fetchMock);
