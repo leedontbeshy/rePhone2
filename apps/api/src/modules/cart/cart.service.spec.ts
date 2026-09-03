@@ -146,6 +146,51 @@ describe('CartService merge', () => {
   });
 });
 
+describe('CartService remove item', () => {
+  it('uses the contention budget when removing an item after a cart merge', async () => {
+    const existingCart = iphoneCart();
+    const repository = {
+      lockIdentity: vi.fn(() => Promise.resolve(undefined)),
+      lockCart: vi.fn(() => Promise.resolve(undefined)),
+      findActiveForCustomer: vi.fn(() => Promise.resolve(existingCart)),
+    } as unknown as CartRepository;
+    const transaction = {
+      cartItem: { delete: vi.fn(() => Promise.resolve(undefined)) },
+      cart: { update: vi.fn(() => Promise.resolve({ id: CUSTOMER_CART_ID })) },
+    } as unknown as Prisma.TransactionClient;
+    const runTransaction = vi.fn(
+      async <T>(
+        _operation: string,
+        work: (client: Prisma.TransactionClient) => Promise<T>,
+      ): Promise<T> => work(transaction),
+    );
+    const service = new CartService(
+      repository,
+      {} as CommerceOfferReader,
+      { run: runTransaction } as unknown as SerializableTransactionRunner,
+      {} as GuestCartIdentityService,
+      {} as AppConfig,
+    );
+
+    await service.removeItem(
+      {
+        auth: { userId: CUSTOMER_ID, role: 'CUSTOMER', sessionId: 'session-a' },
+      } as Request,
+      ITEM_ID,
+    );
+
+    expect(runTransaction).toHaveBeenCalledWith(
+      'cart.remove-item',
+      expect.any(Function),
+      undefined,
+      {
+        maxWaitMs: 5_000,
+        timeoutMs: 15_000,
+      },
+    );
+  });
+});
+
 function cart(id: string, quantity: number): CartRecord {
   return {
     id,

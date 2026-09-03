@@ -27,6 +27,11 @@ const CART_MERGE_TRANSACTION_OPTIONS = {
   timeoutMs: 15_000,
 } as const;
 
+const CART_REMOVE_TRANSACTION_OPTIONS = {
+  maxWaitMs: 5_000,
+  timeoutMs: 15_000,
+} as const;
+
 export interface CartMutationResult {
   cart: CartDto;
   issuedGuestToken?: string;
@@ -132,15 +137,20 @@ export class CartService {
   public async removeItem(request: Request, itemId: string): Promise<void> {
     const identity = this.resolveIdentity(request.auth, request);
     requireExistingIdentity(identity);
-    await this.transactions.run('cart.remove-item', async (transaction) => {
-      await this.carts.lockIdentity(identityKey(identity), transaction);
-      const cart = await this.findExistingActive(identity, transaction);
-      await this.carts.lockCart(cart.id, transaction);
-      const item = cart.items.find((candidate) => candidate.id === itemId);
-      if (item === undefined) throw new ApiError('RESOURCE_NOT_FOUND');
-      await transaction.cartItem.delete({ where: { id: item.id } });
-      await touchCart(cart.id, transaction);
-    });
+    await this.transactions.run(
+      'cart.remove-item',
+      async (transaction) => {
+        await this.carts.lockIdentity(identityKey(identity), transaction);
+        const cart = await this.findExistingActive(identity, transaction);
+        await this.carts.lockCart(cart.id, transaction);
+        const item = cart.items.find((candidate) => candidate.id === itemId);
+        if (item === undefined) throw new ApiError('RESOURCE_NOT_FOUND');
+        await transaction.cartItem.delete({ where: { id: item.id } });
+        await touchCart(cart.id, transaction);
+      },
+      undefined,
+      CART_REMOVE_TRANSACTION_OPTIONS,
+    );
   }
 
   public async merge(auth: AuthContext, request: Request): Promise<CartDto> {

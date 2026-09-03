@@ -1103,7 +1103,13 @@ async function prepareVisualSnapshot(page: Page): Promise<void> {
 async function removeCartUnit(page: Page, inventoryCode: string): Promise<void> {
   await page.goto('/cart');
   const cartRow = page.locator('article').filter({ hasText: inventoryCode });
+  const removeResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'DELETE' &&
+      new URL(response.url()).pathname.startsWith('/api/v1/cart/items/'),
+  );
   await cartRow.getByRole('button', { name: 'Xóa', exact: true }).click();
+  expect((await removeResponse).status()).toBe(204);
   await expect(cartRow).toHaveCount(0);
 }
 
