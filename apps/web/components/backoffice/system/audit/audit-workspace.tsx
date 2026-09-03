@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type MouseEvent,
   type RefObject,
   type SetStateAction,
   type SyntheticEvent,
@@ -78,6 +79,7 @@ function AuditLogWorkspaceContent() {
   const [listReloadKey, setListReloadKey] = useState(0);
   const [loadedQueryKey, setLoadedQueryKey] = useState<string>();
   const [automaticSelection, setAutomaticSelection] = useState<string>();
+  const [optimisticSelection, setOptimisticSelection] = useState<string>();
   const [detail, setDetail] = useState<AuditLogDetail>();
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string>();
@@ -85,7 +87,13 @@ function AuditLogWorkspaceContent() {
   const listErrorRef = useRef<HTMLDivElement>(null);
   const filterErrorRef = useRef<HTMLDivElement>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
-  const activeId = selectedId ?? automaticSelection;
+  const activeId = optimisticSelection ?? selectedId ?? automaticSelection;
+
+  useEffect(() => {
+    if (optimisticSelection !== undefined && selectedId === optimisticSelection) {
+      setOptimisticSelection(undefined);
+    }
+  }, [optimisticSelection, selectedId]);
 
   useEffect(() => {
     setDraft(auditDraftFromQuery(query));
@@ -271,6 +279,7 @@ function AuditLogWorkspaceContent() {
             <AuditLogList
               activeId={activeId}
               buildHref={(id) => auditWorkspaceHref(query, id)}
+              onSelect={setOptimisticSelection}
               rows={rows}
               updating={updating || staleRows}
             />
@@ -489,11 +498,13 @@ function AuditFilters({
 export function AuditLogList({
   activeId,
   buildHref,
+  onSelect,
   rows,
   updating = false,
 }: Readonly<{
   activeId: string | undefined;
   buildHref: (id: string) => string;
+  onSelect?: (id: string) => void;
   rows: readonly AuditListRow[];
   updating?: boolean;
 }>) {
@@ -508,6 +519,9 @@ export function AuditLogList({
             data-selected={selected || undefined}
             href={buildHref(row.id)}
             key={row.id}
+            onClick={(event) => {
+              if (isPlainPrimaryClick(event)) onSelect?.(row.id);
+            }}
             scroll={false}
           >
             <span className={styles.avatar} aria-hidden="true">
@@ -524,6 +538,17 @@ export function AuditLogList({
         );
       })}
     </div>
+  );
+}
+
+function isPlainPrimaryClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return (
+    event.button === 0 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    event.currentTarget.target !== '_blank'
   );
 }
 
