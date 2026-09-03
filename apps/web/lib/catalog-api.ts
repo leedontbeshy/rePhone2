@@ -4,8 +4,14 @@ import { createApiClient, type components } from '@rephone/api-client';
 import type { CatalogListQuery } from './catalog-query';
 import { serverApiBaseUrl } from './server-api';
 
-const noStoreFetch: typeof globalThis.fetch = (input, init) =>
-  fetch(input, { ...init, cache: 'no-store' });
+const RETRYABLE_CATALOG_STATUSES = new Set([500, 502, 503, 504]);
+
+const noStoreFetch: typeof globalThis.fetch = async (input, init) => {
+  const requestInit = { ...init, cache: 'no-store' as const };
+  const response = await fetch(input, requestInit);
+  if (!RETRYABLE_CATALOG_STATUSES.has(response.status)) return response;
+  return fetch(input, requestInit);
+};
 
 const catalogClient = createApiClient({ baseUrl: serverApiBaseUrl, fetch: noStoreFetch });
 
