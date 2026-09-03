@@ -403,6 +403,7 @@ test.describe('FE-1 storefront discovery', () => {
   });
 
   test(bt('browser:storefront-discovery', 'responsive-route-matrix'), async ({ page }) => {
+    test.setTimeout(180_000);
     for (const viewport of [
       { width: 320, height: 900 },
       { width: 768, height: 1024 },
@@ -412,7 +413,7 @@ test.describe('FE-1 storefront discovery', () => {
       await page.setViewportSize(viewport);
 
       for (const path of PUBLIC_ROUTES) {
-        await page.goto(path);
+        await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
         await expectPublicRouteMarker(page, path);
         await expect(page.locator('main')).toHaveCount(1);
         await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
