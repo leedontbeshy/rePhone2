@@ -34,8 +34,8 @@ const FORBIDDEN_UNVERIFIED_CLAIMS = [
 ] as const;
 
 test.describe('FE-1 storefront discovery', () => {
-  test.beforeEach(async ({ page }) => {
-    await installDeterministicPublicMedia(page);
+  test.beforeEach(async ({ context }) => {
+    await installDeterministicPublicMedia(context);
   });
 
   test(bt('browser:storefront-discovery', 'public-six-surfaces'), async ({ page }) => {
@@ -402,7 +402,7 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(galleryTrigger).toBeFocused();
   });
 
-  test(bt('browser:storefront-discovery', 'responsive-route-matrix'), async ({ page }) => {
+  test(bt('browser:storefront-discovery', 'responsive-route-matrix'), async ({ context }) => {
     test.setTimeout(180_000);
     for (const viewport of [
       { width: 320, height: 900 },
@@ -410,23 +410,30 @@ test.describe('FE-1 storefront discovery', () => {
       { width: 1024, height: 900 },
       { width: 1440, height: 900 },
     ] as const) {
-      await page.setViewportSize(viewport);
+      const page = await context.newPage();
+      try {
+        await page.setViewportSize(viewport);
 
-      for (const path of PUBLIC_ROUTES) {
-        await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-        await expectPublicRouteMarker(page, path);
-        await expect(page.locator('main')).toHaveCount(1);
-        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-        await expectPublicPrimaryAction(page, path);
+        for (const path of PUBLIC_ROUTES) {
+          await test.step(`${String(viewport.width)}px · ${path}`, async () => {
+            await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+            await expectPublicRouteMarker(page, path);
+            await expect(page.locator('main')).toHaveCount(1);
+            await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+            await expectPublicPrimaryAction(page, path);
 
-        const dimensions = await page.evaluate(() => ({
-          clientWidth: document.documentElement.clientWidth,
-          scrollWidth: document.documentElement.scrollWidth,
-        }));
-        expect(
-          dimensions.scrollWidth,
-          `${path} overflows the ${String(viewport.width)}px viewport`,
-        ).toBeLessThanOrEqual(dimensions.clientWidth);
+            const dimensions = await page.evaluate(() => ({
+              clientWidth: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+            }));
+            expect(
+              dimensions.scrollWidth,
+              `${path} overflows the ${String(viewport.width)}px viewport`,
+            ).toBeLessThanOrEqual(dimensions.clientWidth);
+          });
+        }
+      } finally {
+        await page.close();
       }
     }
   });
