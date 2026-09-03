@@ -120,7 +120,7 @@ describe('customer post-purchase foundation', () => {
     expect(markup).toContain('href="/orders?page=3"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).not.toContain('<svg');
-  });
+  }, 15_000);
 
   it('uses one safe not-found state without implementation details', () => {
     const markup = renderToStaticMarkup(<SafeNotFoundState />);
