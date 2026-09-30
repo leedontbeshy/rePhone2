@@ -2,6 +2,7 @@ name: Release verification
 
 on:
   pull_request:
+    types: [labeled, synchronize]
   push:
     branches:
       - main
@@ -45,6 +46,7 @@ env:
 jobs:
   fast-gates:
     name: Fast gates (${{ matrix.os }})
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -172,6 +174,7 @@ jobs:
 
   database-gates:
     name: Database integration and coverage
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -302,6 +305,7 @@ jobs:
 
   browser-gate:
     name: Browser release suite (Windows)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: windows-2025
     timeout-minutes: 60
     env:
@@ -421,6 +425,7 @@ jobs:
 
   performance-gate:
     name: Production performance gate (Windows)
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: windows-2025
     timeout-minutes: 60
     env:

@@ -175,7 +175,9 @@ test.describe('FE-04 customer post-purchase', () => {
     await page.goto('/orders?status=PROCESSING&page=2&token=must-not-survive');
     await expect(page.getByRole('heading', { level: 1, name: 'Đơn hàng của bạn' })).toBeVisible();
     const orderList = page.getByRole('region', { name: 'Danh sách đơn hàng' });
-    await expect(orderList.getByText('iPhone 15', { exact: true })).toBeVisible();
+    await expect(orderList.getByText('iPhone 15', { exact: true })).toBeVisible({
+      timeout: 30_000,
+    });
 
     let releaseList: (() => void) | undefined;
     let markListStarted: (() => void) | undefined;

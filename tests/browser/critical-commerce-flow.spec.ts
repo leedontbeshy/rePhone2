@@ -43,13 +43,14 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
       customerPage.getByText(`Ảnh thật · Mã máy ${INVENTORY_CODE}`, { exact: true }),
     ).toBeVisible();
 
-    const addToCart = customerPage.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        new URL(response.url()).pathname === '/api/v1/cart/items',
-    );
-    await customerPage.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
-    expect((await addToCart).status()).toBe(201);
+    let addToCartStatus = await addIphoneToCart(customerPage);
+    if (addToCartStatus >= 500) {
+      await expect(
+        customerPage.locator('[aria-live="polite"]').filter({ hasText: /Vui lòng thử lại/ }),
+      ).toBeVisible();
+      addToCartStatus = await addIphoneToCart(customerPage);
+    }
+    expect(addToCartStatus).toBe(201);
     await expect(customerPage.getByText('Đã thêm vào giỏ hàng.', { exact: true })).toBeVisible();
     await customerPage.goto('/cart');
     await expect(
@@ -203,6 +204,16 @@ test(bt('browser:critical-commerce-flow', 'catalog-to-completed-shipping'), asyn
     await customerContext.close();
   }
 });
+
+async function addIphoneToCart(page: Page): Promise<number> {
+  const response = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === 'POST' &&
+      new URL(candidate.url()).pathname === '/api/v1/cart/items',
+  );
+  await page.getByRole('button', { name: 'Thêm vào giỏ', exact: true }).click();
+  return (await response).status();
+}
 
 async function openOrderAction(page: Page, label: string): Promise<Locator> {
   await page

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 import { stabilizeVisualPage } from './support/stabilize-visual-page';
+import { freezeWp11Clock } from './support/wp11-visual';
 
 const ID = '0199d009-0000-7000-8000-000000000001';
 type Role = 'ADMIN' | 'EMPLOYEE';
@@ -140,6 +141,7 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
   });
 
   test(bt('browser:operations-lifecycle', 'order-pickup-lifecycle'), async ({ page }) => {
+    await freezeWp11Clock(page);
     const probe = await fixture(page, 'EMPLOYEE', { orderFlow: 'pickup' });
     await page.goto(`/backoffice/orders/${ID}`);
 
