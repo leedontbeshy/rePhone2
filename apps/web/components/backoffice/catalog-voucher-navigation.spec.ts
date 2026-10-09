@@ -19,7 +19,7 @@ describe('FE-05 backoffice navigation', () => {
       'Sau mua',
       'Hệ thống',
     ]);
-    expect(groups.flatMap((group) => group.items)).toHaveLength(20);
+    expect(groups.flatMap((group) => group.items)).toHaveLength(21);
     expect(
       groups.flatMap((group) => group.items).find((item) => item.label === 'Danh mục'),
     ).toMatchObject({ href: '/backoffice/catalog/products', isCurrent: true });

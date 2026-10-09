@@ -27,10 +27,12 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
       GUEST_CART_COOKIE_NAME,
     )
     .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Guest-Order-Token' }, 'guestOrderToken')
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Dealer-Api-Key' }, 'dealerApiKey')
     .build();
 
   const document = SwaggerModule.createDocument(app, options, {
-    operationIdFactory: (_controllerKey, methodKey) => methodKey,
+    operationIdFactory: (controllerKey, methodKey) =>
+      controllerKey.startsWith('Dealer') ? `${controllerKey}_${methodKey}` : methodKey,
   });
   applyOptionalCommerceSecurity(document);
   return document;

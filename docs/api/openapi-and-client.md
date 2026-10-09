@@ -70,6 +70,7 @@ CI dùng script generate deterministic: không ghi timestamp, machine path hay p
 
 ## Liên kết
 
+- [Dealer API/webhook contract và owner](dealer-channel-contract.md) — phần mở rộng v1.0; chỉ sinh endpoint đã triển khai, không chỉnh tay generated artifacts.
 - [REST conventions](readme.md)
 - [Response contract](response-contract.md)
 - [Error catalog](error-catalog.md)

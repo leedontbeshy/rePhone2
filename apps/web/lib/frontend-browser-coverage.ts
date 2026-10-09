@@ -24,6 +24,25 @@ export interface FrontendBrowserSuiteDefinition {
 }
 
 export const FRONTEND_BROWSER_SUITES = {
+  'browser:dealer-flow': {
+    specFile: 'dealer-flow.spec.ts',
+    phase: 'FE-10',
+    tests: {
+      'purchase-delivery-warranty': {
+        title:
+          'controls dealer access, checks unit pricing, and completes purchase through warranty',
+        ownsRoutes: ['/dealer', '/backoffice/dealers'],
+        coversRoutes: [],
+        ownsStates: ['success', 'pending'],
+      },
+      'public-docs': {
+        title: 'opens dealer terms and the integration guide without a session',
+        ownsRoutes: ['/dealer/terms', '/dealer/api-guide'],
+        coversRoutes: [],
+        ownsStates: ['success'],
+      },
+    },
+  },
   'browser:frontend-foundation': {
     specFile: 'frontend-foundation.spec.ts',
     phase: null,

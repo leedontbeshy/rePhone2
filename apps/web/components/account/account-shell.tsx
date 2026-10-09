@@ -19,6 +19,7 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
     { href: '/account', label: 'Hồ sơ', isCurrent: pathname === '/account' },
     ...(status === 'authenticated' && user?.role === 'CUSTOMER'
       ? [
+          { href: '/dealer', label: 'Cổng đại lý', isCurrent: pathname === '/dealer' },
           {
             href: '/account/addresses',
             label: 'Địa chỉ',

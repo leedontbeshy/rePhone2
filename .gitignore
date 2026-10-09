@@ -1,6 +1,8 @@
 node_modules/
 .turbo/
 .next/
+.next-dealer-sandbox/
+.sandbox-dist/
 dist/
 coverage/
 *.tsbuildinfo

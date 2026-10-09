@@ -44,6 +44,11 @@ export class ShippingFeeOverrideService {
       async (transaction) => {
         const order = await this.orders.lock(id, transaction);
         if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
+        if (order.channel === 'DEALER')
+          throw new ApiError(
+            'INVALID_STATE_TRANSITION',
+            'Phí giao hàng của đơn đại lý đã được chốt khi tạo đơn.',
+          );
         const now = this.clock.now();
         if (isExactReplay(order, requestedFee, reason, auth.userId, now)) {
           return { orderId: order.id, changed: false };

@@ -46,9 +46,11 @@ describe('Current OpenAPI artifact', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('publishes exactly 162 unique operations and retains all seventeen Slice 12 operations', () => {
-    expect(operations).toHaveLength(162);
-    expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(162);
+  it('retains the 162 storefront operations and unique operation IDs alongside dealer extensions', () => {
+    expect(operations.filter(({ operationId }) => !operationId?.startsWith('Dealer'))).toHaveLength(
+      162,
+    );
+    expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(operations.length);
     expect(SLICE_12_OPERATIONS.every((operationId) => byId.has(operationId))).toBe(true);
   });
 

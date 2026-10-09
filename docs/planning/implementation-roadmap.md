@@ -1,5 +1,7 @@
 # Lộ trình triển khai 4 tuần
 
+Đây là roadmap P0 lịch sử. Phần mở rộng đại lý theo [backlog 2026-10-09](2026-10-09-dealer-channel.md), có phạm vi, trạng thái và tiêu chí nghiệm thu riêng.
+
 Kế hoạch ưu tiên backend/core, mỗi tuần kết thúc bằng một vertical slice chạy và test được. UI chi tiết không khóa trước; frontend chỉ làm mức tối thiểu để chứng minh luồng sau khi API tương ứng ổn định.
 
 ## 1. Nguyên tắc thực hiện

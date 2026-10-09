@@ -13,7 +13,7 @@ import {
   Min,
 } from 'class-validator';
 
-export const AUDIT_ACTOR_TYPES = ['USER', 'GUEST', 'SYSTEM'] as const;
+export const AUDIT_ACTOR_TYPES = ['USER', 'GUEST', 'SYSTEM', 'API_CLIENT'] as const;
 const AUDIT_SORT_FIELDS = ['createdAt'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 const ACTION_PATTERN = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*(?:\.[a-z][a-z0-9_]*|\.\*)$/;

@@ -161,6 +161,8 @@ export class BackofficeOrderPricingDto {
 }
 
 export class BackofficeOrderListItemDto {
+  @ApiPropertyOptional({ enum: ['STOREFRONT', 'DEALER'] }) public channel?: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public dealerId?: string | null;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String }) public orderNumber!: string;
   @ApiProperty({ type: String }) public customerName!: string;
@@ -183,6 +185,8 @@ export class BackofficeOrderListItemDto {
 }
 
 export class BackofficeOrderDetailDto {
+  @ApiPropertyOptional({ enum: ['STOREFRONT', 'DEALER'] }) public channel?: string;
+  @ApiPropertyOptional({ type: String, nullable: true }) public dealerId?: string | null;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String }) public orderNumber!: string;
   @ApiProperty({ type: String }) public status!: string;

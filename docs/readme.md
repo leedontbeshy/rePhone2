@@ -12,6 +12,17 @@
 
 ## Bản đồ tài liệu
 
+### Cổng đại lý — mở rộng 2026-10-09
+
+- [Spec nghiệp vụ v1.0](requirements/dealer-channel.md)
+- [Backlog và tiến độ triển khai](planning/2026-10-09-dealer-channel.md)
+- [Ma trận trạng thái dùng chung](architecture/state-machines.md#12-dealer-channel--spec-v10)
+- [Invariant và acceptance registry](quality/dealer-invariants.md)
+- [API/webhook contract và quyền sở hữu](api/dealer-channel-contract.md)
+- [Vận hành, sandbox và mở pilot](operations/dealer-channel.md)
+
+G0 chuẩn hóa contract và policy; trạng thái chức năng đại lý thực tế theo backlog, không theo các mốc P0 lịch sử ở trên.
+
 ### Yêu cầu sản phẩm
 
 - [Tầm nhìn và phạm vi](requirements/product-vision-and-scope.md)

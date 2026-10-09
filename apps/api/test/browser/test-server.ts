@@ -5,10 +5,18 @@ import { fileURLToPath } from 'node:url';
 import { setTestEnvironment } from '../support/test-environment.js';
 
 setTestEnvironment();
+Object.assign(process.env, {
+  DEALER_ENABLED: 'true',
+  DEALER_ENVIRONMENT: 'TEST',
+  DEALER_WORKER_ENABLED: 'false',
+});
 
 const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 run(['test:db:prepare']);
 run(['--filter', '@rephone/api', 'exec', 'tsx', 'test/browser/seed.ts']);
+if (process.env.DEALER_ENABLED === 'true' && process.env.DEALER_ENVIRONMENT === 'TEST') {
+  run(['dealer:sandbox:seed']);
+}
 run(['--filter', '@rephone/api', 'build']);
 
 const compiledModule: unknown = await import(

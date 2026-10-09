@@ -103,6 +103,7 @@ function record(): AuditOperationsRecord {
   return {
     id: AUDIT_ID,
     actorType: 'USER',
+    actorApiClientId: null,
     actorUserId: ACTOR_ID,
     action: 'settings.updated',
     resourceType: 'StoreSettings',

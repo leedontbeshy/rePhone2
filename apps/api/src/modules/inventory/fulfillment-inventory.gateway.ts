@@ -10,7 +10,7 @@ export interface FulfillmentReservation {
   stockLevelId: string | null;
   quantity: number;
   status: 'ACTIVE' | 'RELEASED' | 'EXPIRED' | 'CONSUMED';
-  holdReason: 'DEPOSIT' | 'REVIEW' | 'PICKUP' | 'FULFILLMENT';
+  holdReason: 'DEPOSIT' | 'REVIEW' | 'PICKUP' | 'FULFILLMENT' | 'DEALER_PAYMENT' | 'DEALER_BALANCE';
   expiresAt: Date | null;
   consumedAt: Date | null;
   orderItem: {

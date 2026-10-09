@@ -297,6 +297,7 @@ export class OrdersService {
   ): Promise<PaginatedApiResult<OrderListItemDto>> {
     if (auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
     const where: Prisma.OrderWhereInput = {
+      channel: 'STOREFRONT',
       customerId: auth.userId,
       ...(query.status === undefined ? {} : { status: query.status }),
       ...(query.fulfillmentType === undefined ? {} : { fulfillmentType: query.fulfillmentType }),

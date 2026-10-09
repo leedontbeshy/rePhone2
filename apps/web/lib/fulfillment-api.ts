@@ -123,6 +123,7 @@ export interface BackofficeOrderShipment {
 
 export interface BackofficeOrderDetail {
   id: string;
+  channel?: 'STOREFRONT' | 'DEALER';
   orderNumber: string;
   status: BackofficeOrderStatus;
   fulfillmentStatus: BackofficeFulfillmentStatus;
@@ -522,6 +523,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     fulfillmentStatus: fulfillmentStatus(input['fulfillmentStatus']),
     paymentStatus: paymentStatus(input['paymentStatus']),
     fulfillmentType: orderFulfillmentType,
+    channel: input['channel'] === 'DEALER' ? 'DEALER' : 'STOREFRONT',
     contact: {
       fullName: stringOrNull(contact['fullName']) ?? stringOr(input['customerName']),
       email: stringOrNull(contact['email']) ?? stringOr(input['customerEmail']),

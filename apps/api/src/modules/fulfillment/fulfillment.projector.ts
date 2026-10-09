@@ -16,6 +16,8 @@ export function projectBackofficeOrderDetail(
 ): BackofficeOrderDetailDto {
   const refundableAmount = calculateRefundableAmount(order);
   return {
+    channel: order.channel,
+    dealerId: order.dealerId,
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
@@ -129,7 +131,9 @@ export function projectBackofficeOrderDetail(
     availableActions: [
       ...availableFulfillmentActions(order, now),
       ...(canStaffCancelOrder(order) ? (['CANCEL_ORDER'] as const) : []),
-      ...(['CANCELLED', 'COMPLETED'].includes(order.status) && refundableAmount > 0n
+      ...(order.channel !== 'DEALER' &&
+      ['CANCELLED', 'COMPLETED'].includes(order.status) &&
+      refundableAmount > 0n
         ? (['CREATE_REFUND'] as const)
         : []),
     ],
@@ -175,6 +179,8 @@ export function projectBackofficeOrderListItem(
   now: Date,
 ): BackofficeOrderListItemDto {
   return {
+    channel: order.channel,
+    dealerId: order.dealerId,
     id: order.id,
     orderNumber: order.orderNumber,
     customerName: order.customerName,

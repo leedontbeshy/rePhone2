@@ -63,7 +63,7 @@ export interface CustomerQuery {
 
 export interface AuditQuery {
   actorUserId?: string;
-  actorType?: 'USER' | 'GUEST' | 'SYSTEM';
+  actorType?: 'USER' | 'GUEST' | 'SYSTEM' | 'API_CLIENT';
   action?: string;
   resourceType?: string;
   resourceId?: string;

@@ -50,6 +50,7 @@ const CUSTOMER_RETURN_PATHS = [
   '/after-sales',
   '/cart',
   '/checkout',
+  '/dealer',
   '/orders',
   '/warranties',
   '/wishlist',

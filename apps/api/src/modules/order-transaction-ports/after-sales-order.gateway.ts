@@ -19,6 +19,7 @@ const afterSalesOrderItemSelect = {
   order: {
     select: {
       id: true,
+      channel: true,
       orderNumber: true,
       customerId: true,
       guestAccessTokenHash: true,
@@ -41,9 +42,14 @@ const afterSalesOrderItemSelect = {
   },
 } satisfies Prisma.OrderItemSelect;
 
-export type AfterSalesOrderItemContext = Prisma.OrderItemGetPayload<{
+type SelectedAfterSalesOrderItemContext = Prisma.OrderItemGetPayload<{
   select: typeof afterSalesOrderItemSelect;
 }>;
+export type AfterSalesOrderItemContext = Omit<SelectedAfterSalesOrderItemContext, 'order'> & {
+  order: Omit<SelectedAfterSalesOrderItemContext['order'], 'channel'> & {
+    channel?: 'STOREFRONT' | 'DEALER';
+  };
+};
 
 @Injectable()
 export class AfterSalesOrderGateway {

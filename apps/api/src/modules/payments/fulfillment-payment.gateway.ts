@@ -3,8 +3,10 @@ import { ApiError } from '../../common/errors/api-error.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { projectOrderFinance, type OrderFinanceProjection } from './payment-finance.policy.js';
+import { readDealerFunding } from '../dealers/dealer-ledger.reader.js';
 
 export interface LockedOrderFinance {
+  dealer?: Awaited<ReturnType<typeof readDealerFunding>>;
   payments: Array<{
     id: string;
     purpose: 'DEPOSIT' | 'BALANCE' | 'FULL_PAYMENT';
@@ -28,7 +30,20 @@ export class FulfillmentPaymentGateway {
   public async lockFinance(
     orderId: string,
     transaction: Prisma.TransactionClient,
+    channel: 'STOREFRONT' | 'DEALER' = 'STOREFRONT',
   ): Promise<LockedOrderFinance> {
+    if (channel === 'DEALER') {
+      const order = await transaction.order.findUnique({
+        where: { id: orderId },
+        select: { grandTotal: true, channel: true },
+      });
+      if (order?.channel !== 'DEALER') throw new ApiError('ORDER_NOT_FOUND');
+      return {
+        payments: [],
+        refunds: [],
+        dealer: await readDealerFunding(transaction, orderId, BigInt(order.grandTotal.toString())),
+      };
+    }
     const paymentIds = await transaction.payment.findMany({
       where: { orderId },
       select: { id: true },
@@ -73,6 +88,7 @@ export class FulfillmentPaymentGateway {
   }
 
   public project(grandTotal: bigint, finance: LockedOrderFinance): OrderFinanceProjection {
+    if (finance.dealer !== undefined) return finance.dealer.summary;
     return projectOrderFinance(
       grandTotal,
       finance.payments.flatMap((payment) =>

@@ -31,6 +31,8 @@ export type FulfillmentOrderRecord = Prisma.OrderGetPayload<{
 }>;
 
 export const fulfillmentOrderListSelect = {
+  channel: true,
+  dealerId: true,
   id: true,
   orderNumber: true,
   customerName: true,

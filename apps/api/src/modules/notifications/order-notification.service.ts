@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service.js';
 import { safeHttpsUrl } from '../../common/security/safe-https-url.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
@@ -11,6 +12,7 @@ export class OrderNotificationService {
     @Inject(NotificationDeliveryService)
     private readonly delivery: NotificationDeliveryService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    @Optional() @Inject(PrismaService) private readonly prisma?: PrismaService,
   ) {}
 
   public sendPlaced(order: OrderDetailDto, guestAccessToken?: string): Promise<void> {
@@ -70,7 +72,7 @@ export class OrderNotificationService {
     });
   }
 
-  public sendCompleted(order: {
+  public async sendCompleted(order: {
     id: string;
     orderNumber: string;
     contact: { email: string };
@@ -84,6 +86,12 @@ export class OrderNotificationService {
       warrantyCodes.length === 0
         ? 'Đơn không phát sinh bảo hành.'
         : `Mã bảo hành: ${warrantyCodes.join(', ')}.`;
+    const dealerMessage = await this.dealerMessage(
+      order.id,
+      `Đơn hàng đã giao thành công. ${warrantyText}`,
+    );
+    if (dealerMessage !== null)
+      return this.deliver('dealer.order.completed', order.id, dealerMessage);
     const link = this.orderLink(order.orderNumber);
     return this.deliver('order.completed', order.id, {
       to: order.contact.email,
@@ -108,7 +116,7 @@ export class OrderNotificationService {
     });
   }
 
-  public sendShipmentHandedOver(order: {
+  public async sendShipmentHandedOver(order: {
     id: string;
     orderNumber: string;
     contact: { email: string };
@@ -121,6 +129,13 @@ export class OrderNotificationService {
   }): Promise<void> {
     const shipment = order.shipments.find(({ status }) => status === 'HANDED_TO_CARRIER');
     if (shipment === undefined) return Promise.resolve();
+    const trackingLink = safeHttpsUrl(shipment.trackingUrl);
+    const dealerMessage = await this.dealerMessage(
+      order.id,
+      `Đơn hàng đã bàn giao cho ${shipment.carrierName}. Mã vận đơn: ${shipment.trackingCode}.${trackingLink === null ? '' : ` Theo dõi: ${trackingLink}`}`,
+    );
+    if (dealerMessage !== null)
+      return this.deliver('dealer.shipment.handed_over', order.id, dealerMessage);
     const link = safeHttpsUrl(shipment.trackingUrl) ?? this.orderLink(order.orderNumber);
     return this.deliver('shipment.handed_over', order.id, {
       to: order.contact.email,
@@ -133,6 +148,32 @@ export class OrderNotificationService {
   private orderLink(orderNumber: string, token?: string): string {
     const base = `${this.config.api.webPublicUrl}/orders/${encodeURIComponent(orderNumber)}`;
     return token === undefined ? base : `${base}#token=${encodeURIComponent(token)}`;
+  }
+
+  private async dealerMessage(id: string, update: string) {
+    if (this.prisma === undefined) return null;
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      select: {
+        channel: true,
+        externalOrderId: true,
+        customerEmail: true,
+        dealerDetail: { select: { brandSnapshot: true, commercialSnapshot: true } },
+      },
+    });
+    if (order?.channel !== 'DEALER') return null;
+    const brand = order.dealerDetail?.brandSnapshot as Record<string, unknown> | undefined;
+    const parties = order.dealerDetail?.commercialSnapshot as Record<string, unknown> | undefined;
+    const name = typeof brand?.['displayName'] === 'string' ? brand['displayName'] : 'Đại lý';
+    const support = typeof brand?.['contactPhone'] === 'string' ? brand['contactPhone'] : '';
+    const backup = typeof parties?.['supportPhone'] === 'string' ? parties['supportPhone'] : '';
+    const text = `Bên bán: ${name}. Đơn ${order.externalOrderId ?? ''}. ${update} Sản phẩm được kiểm định và bảo hành bởi rePhone. Hỗ trợ ban đầu: ${support}. Hỗ trợ dự phòng rePhone: ${backup}.`;
+    return {
+      to: order.customerEmail,
+      subject: `[${name}] Cập nhật đơn ${order.externalOrderId ?? ''}`,
+      text,
+      html: `<p>${escapeHtml(text)}</p>`,
+    };
   }
 
   private async deliver(

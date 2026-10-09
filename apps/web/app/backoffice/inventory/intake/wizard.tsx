@@ -683,6 +683,7 @@ export function InventoryIntakeWizard() {
                 <Input
                   error={intakeErrors.salePrice}
                   id="intake-salePrice"
+                  hint="Giá bán trên web rePhone. Giá đại lý được tính theo chính sách riêng; sau khi nhập kho, admin có thể xem và đặt giá riêng trong hồ sơ máy → Giá đại lý."
                   inputMode="numeric"
                   label="Giá bán (đồng)"
                   value={intake.salePrice}

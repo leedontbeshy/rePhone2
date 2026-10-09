@@ -69,7 +69,12 @@ export class ShipmentFinalizationService {
           throw new ApiError('INVALID_STATE_TRANSITION');
         }
 
-        const finance = await this.payments.lockFinance(order.id, tx);
+        const finance = await this.payments.lockFinance(order.id, tx, order.channel);
+        if (
+          order.channel === 'DEALER' &&
+          (finance.dealer?.fullyFunded !== true || input.confirmCodCollected === true)
+        )
+          throw new ApiError('ORDER_NOT_FULLY_PAID');
         const proof = await this.inventory.lockShippingCompletionProof(order.id, tx);
         this.inventory.assertShippingCompletionProof(
           proof.reservations,

@@ -29,6 +29,11 @@ const SENSITIVE_LOG_FIELDS = [
   'smtpPassword',
   'encryptionKey',
   'hmacKey',
+  'apiKey',
+  'keyHash',
+  'secretCiphertext',
+  'accountNumberCiphertext',
+  'accountNumber',
   'imei',
   'imei1',
   'imei2',
@@ -63,6 +68,9 @@ const SENSITIVE_LOG_FIELDS = [
 ] as const;
 
 export const REDACTED_LOG_PATHS = [
+  "req.headers['x-dealer-api-key']",
+  "headers['x-dealer-api-key']",
+  "*.headers['x-dealer-api-key']",
   'req.headers.authorization',
   'req.headers.cookie',
   "req.headers['idempotency-key']",

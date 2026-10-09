@@ -60,7 +60,13 @@ import { ShippingOrderController } from './shipping-order.controller.js';
     ShipmentPreparationService,
     ShipmentFinalizationService,
   ],
-  exports: [FulfillmentClock, PickupExpiryService],
+  exports: [
+    FulfillmentClock,
+    PickupExpiryService,
+    PickupPreparationService,
+    ShipmentPreparationService,
+    ShipmentFinalizationService,
+  ],
 })
 export class FulfillmentModule implements NestModule {
   public configure(consumer: MiddlewareConsumer): void {

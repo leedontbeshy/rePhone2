@@ -197,7 +197,7 @@ async function loadCancellationOrder(
       fulfillmentStatus: true,
     },
   });
-  if (order === null) return null;
+  if (order === null || order.sourceCartId === null) return null;
   const sourceCart = await transaction.cart.findUnique({
     where: { id: order.sourceCartId },
     select: { status: true, guestTokenHash: true, expiresAt: true },

@@ -20,7 +20,7 @@ describe('database baseline', () => {
     await prisma.$disconnect();
   });
 
-  it('deploys exactly 28 domain tables', async () => {
+  it('deploys the 28 storefront and 23 dealer domain tables', async () => {
     const result = await prisma.$queryRaw<CountResult[]>`
       SELECT COUNT(*)::int AS count
       FROM information_schema.tables
@@ -29,7 +29,7 @@ describe('database baseline', () => {
         AND table_name <> '_prisma_migrations'
     `;
 
-    expect(result[0]?.count).toBe(28);
+    expect(result[0]?.count).toBe(51);
   });
 
   it('contains the required SQL constraints and partial unique indexes', async () => {

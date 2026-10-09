@@ -74,6 +74,12 @@ export function backofficeNavigationForRole(
           isCurrent: isPathWithin(activePath, BACKOFFICE_ORDERS_ROOT),
         },
         {
+          href: '/backoffice/dealers',
+          label: 'Đại lý',
+          icon: 'orders',
+          isCurrent: isPathWithin(activePath, '/backoffice/dealers'),
+        },
+        {
           href: BACKOFFICE_PAYMENTS_ROOT,
           label: 'Duyệt thanh toán',
           icon: 'payments',

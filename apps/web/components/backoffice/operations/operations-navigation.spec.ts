@@ -34,6 +34,7 @@ describe('FE-07 operations navigation', () => {
       { href: '/backoffice/inventory/stock/movements', label: 'Lịch sử kho' },
       { href: '/backoffice/inventory/locations', label: 'Địa điểm' },
       { href: OPERATIONS_ORDERS_ROOT, label: 'Danh sách đơn hàng' },
+      { href: '/backoffice/dealers', label: 'Đại lý' },
       { href: OPERATIONS_PAYMENTS_ROOT, label: 'Duyệt thanh toán' },
       { href: OPERATIONS_REFUNDS_ROOT, label: 'Hoàn tiền' },
       { href: OPERATIONS_AFTER_SALES_ROOT, label: 'Hỗ trợ sau mua' },
