@@ -47,6 +47,7 @@ export function authDestination(role: AuthRole, returnTo?: string | null): strin
 
 const CUSTOMER_RETURN_PATHS = [
   '/account',
+  '/affiliate',
   '/after-sales',
   '/cart',
   '/checkout',

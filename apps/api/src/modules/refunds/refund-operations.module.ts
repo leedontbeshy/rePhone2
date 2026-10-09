@@ -1,3 +1,4 @@
+import { AffiliateCoreModule } from '../affiliate-core/affiliate-core.module.js';
 import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module.js';
 import { AuthModule } from '../auth/auth.module.js';
@@ -18,6 +19,7 @@ import { RefundQueryService } from './refund-query.service.js';
 
 @Module({
   imports: [
+    AffiliateCoreModule,
     AuthModule,
     AuditModule,
     RefundCoreModule,

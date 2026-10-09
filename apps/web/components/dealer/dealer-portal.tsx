@@ -13,7 +13,7 @@ import {
 import { DealerCatalog } from './dealer-catalog';
 import { DealerWorkspaceHeader, DealerEnvironmentPanel, DealerCode } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
-import { CustomerShell } from '@/components/shells/customer-shell';
+import { PartnerLanding } from '@/components/partners/partner-landing';
 import { Button, InlineAlert } from '@/components/ui';
 import {
   dealerApi,
@@ -53,21 +53,11 @@ const tabIcons = {
 export function DealerPortal() {
   const auth = useAuth();
   return (
-    <CustomerShell
-      customerNavigation={[
-        { href: '/account', label: 'Tài khoản' },
-        { href: '/dealer', label: 'Cổng đại lý', isCurrent: true },
-        { href: '/', label: 'Về cửa hàng' },
-      ]}
-    >
+    <>
       {auth.status === 'loading' ? (
         <DealerEmpty>Đang kiểm tra tài khoản…</DealerEmpty>
       ) : auth.status !== 'authenticated' ? (
-        <DealerEmpty>
-          <h1>Cổng đại lý rePhone</h1>
-          <p>Đăng nhập để đăng ký, đặt máy và theo dõi đơn hàng.</p>
-          <Link href="/login?returnTo=%2Fdealer">Đăng nhập</Link>
-        </DealerEmpty>
+        <PartnerLanding kind="dealer" />
       ) : auth.role !== 'CUSTOMER' ? (
         <DealerEmpty>
           <Link href="/backoffice/dealers">Mở khu vực quản lý đại lý</Link>
@@ -75,7 +65,7 @@ export function DealerPortal() {
       ) : (
         <PortalContent key={auth.user?.id} client={auth.client} />
       )}
-    </CustomerShell>
+    </>
   );
 }
 
@@ -149,26 +139,32 @@ function PortalContent({ client }: { client: unknown }) {
   }
   const active = profile?.['businessStatus'] === 'ACTIVE';
   return (
-    <div className={styles.page}>
-      <DealerWorkspaceHeader
-        title={dealerText(profile?.['displayName']) || 'Cổng đại lý'}
-        description="Chọn máy, quản lý đơn và kết nối website bán hàng của bạn."
-        test={configuration['environment'] === 'TEST'}
-      >
-        <span className={styles.badge}>
-          {dealerStatus(profile?.['businessStatus']) || 'Đăng ký đối tác'}
-        </span>
-        <Link className={styles.secondaryLink} href="/dealer/api-guide">
-          Hướng dẫn API →
-        </Link>
-      </DealerWorkspaceHeader>
+    <div className={[styles.page, styles.portalPage].join(' ')}>
+      {loaded && !profile ? (
+        <PartnerLanding kind="dealer" signedIn />
+      ) : (
+        <DealerWorkspaceHeader
+          title={dealerText(profile?.['displayName']) || 'Cổng đại lý'}
+          description="Chọn máy, quản lý đơn và kết nối website bán hàng của bạn."
+          test={configuration['environment'] === 'TEST'}
+        >
+          <span className={styles.badge}>
+            {dealerStatus(profile?.['businessStatus']) || 'Đăng ký đối tác'}
+          </span>
+          <Link className={styles.secondaryLink} href="/dealer/api-guide">
+            Hướng dẫn API →
+          </Link>
+        </DealerWorkspaceHeader>
+      )}
       {error && <InlineAlert tone="danger">{error}</InlineAlert>}
       {!loaded ? (
         <DealerEmpty>Đang tải hồ sơ…</DealerEmpty>
       ) : configuration['enabled'] !== true ? (
-        <DealerEmpty>
-          Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình thử nghiệm.
-        </DealerEmpty>
+        <div id="dang-ky">
+          <DealerEmpty>
+            Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình thử nghiệm.
+          </DealerEmpty>
+        </div>
       ) : (
         <>
           {configuration['open'] !== true && (
@@ -182,37 +178,40 @@ function PortalContent({ client }: { client: unknown }) {
               Đây là môi trường thử nghiệm. Không chuyển tiền thật theo thông tin tại đây.
             </InlineAlert>
           )}
-          <nav className={styles.tabs} aria-label="Chức năng đại lý">
-            {tabs.map(([key, label]) => (
-              <Button
-                key={key}
-                variant={tab === key ? 'primary' : 'secondary'}
-                aria-current={tab === key ? 'page' : undefined}
-                disabled={!profile && !['profile', 'sandbox'].includes(key)}
-                onClick={() => {
-                  setTab(key);
-                  setPage(1);
-                  setRows([]);
-                  setOrder(null);
-                  setOffer(null);
-                  setError('');
-                }}
-              >
-                {(() => {
-                  const Icon = tabIcons[key];
-                  return <Icon size={18} aria-hidden />;
-                })()}
-                {label}
-              </Button>
-            ))}
-          </nav>
+          {profile && (
+            <nav className={styles.tabs} aria-label="Chức năng đại lý">
+              {tabs.map(([key, label]) => (
+                <Button
+                  key={key}
+                  variant={tab === key ? 'primary' : 'secondary'}
+                  aria-current={tab === key ? 'page' : undefined}
+                  onClick={() => {
+                    setTab(key);
+                    setPage(1);
+                    setRows([]);
+                    setOrder(null);
+                    setOffer(null);
+                    setError('');
+                  }}
+                >
+                  {(() => {
+                    const Icon = tabIcons[key];
+                    return <Icon size={18} aria-hidden />;
+                  })()}
+                  {label}
+                </Button>
+              ))}
+            </nav>
+          )}
           {tab === 'profile' && (
-            <DealerProfilePanel
-              api={api}
-              profile={profile}
-              configuration={configuration}
-              reload={loadProfile}
-            />
+            <div id="dang-ky">
+              <DealerProfilePanel
+                api={api}
+                profile={profile}
+                configuration={configuration}
+                reload={loadProfile}
+              />
+            </div>
           )}
           {tab === 'catalog' &&
             (configuration['open'] !== true ? (

@@ -1,3 +1,4 @@
+import { AffiliatesModule } from './modules/affiliates/affiliates.module.js';
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { createLoggerParams } from './common/logging/logger.config.js';
@@ -58,6 +59,7 @@ import { OperationsOverviewModule } from './modules/operations-overview/operatio
     SchedulerModule,
     HealthModule,
     DealersModule,
+    AffiliatesModule,
   ],
 })
 export class AppModule {}

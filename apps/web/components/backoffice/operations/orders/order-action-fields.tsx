@@ -15,6 +15,7 @@ export interface OrderActionValues {
   failureReason: string;
   holdReason: string;
   holdUntil: string;
+  refundAllocations?: Record<string, string>;
   refundAmount: string;
   refundMethod: 'BANK_TRANSFER' | 'CASH';
   refundPaymentId: string;
@@ -35,6 +36,7 @@ export interface OrderActionSetters {
   setFailureReason(value: string): void;
   setHoldReason(value: string): void;
   setHoldUntil(value: string): void;
+  setRefundAllocations?(value: Record<string, string>): void;
   setRefundAmount(value: string): void;
   setRefundMethod(value: 'BANK_TRANSFER' | 'CASH'): void;
   setRefundPaymentId(value: string): void;
@@ -313,6 +315,43 @@ export function ActionFields({
               </option>
             ))}
         </Select>
+        <details open={detail.hasAffiliateCommission}>
+          <summary>Phân bổ tiền hoàn theo sản phẩm và phí</summary>
+          <p className={styles.actionHint}>
+            Bắt buộc với đơn có hoa hồng cộng tác viên. Nhập đúng khoản hoàn từng sản phẩm; tổng
+            phải bằng số tiền hoàn. Bỏ trống khoản không hoàn.
+          </p>
+          {detail.items.map((item) => (
+            <Input
+              key={item.id}
+              id={`refund-allocation-${item.id}`}
+              label={`${item.productName} (tối đa ${formatVnd(item.lineTotal)})`}
+              inputMode="numeric"
+              value={values.refundAllocations?.[item.id] ?? ''}
+              onChange={(event) =>
+                setters.setRefundAllocations?.({
+                  ...values.refundAllocations,
+                  [item.id]: event.target.value.replace(/\D/g, ''),
+                })
+              }
+            />
+          ))}
+          {(['SHIPPING', 'OVERPAYMENT'] as const).map((kind) => (
+            <Input
+              key={kind}
+              id={`refund-allocation-${kind}`}
+              label={kind === 'SHIPPING' ? 'Phí giao hàng (đ)' : 'Tiền khách chuyển thừa (đ)'}
+              inputMode="numeric"
+              value={values.refundAllocations?.[kind] ?? ''}
+              onChange={(event) =>
+                setters.setRefundAllocations?.({
+                  ...values.refundAllocations,
+                  [kind]: event.target.value.replace(/\D/g, ''),
+                })
+              }
+            />
+          ))}
+        </details>
         <Textarea
           id="refund-reason"
           label="Lý do hoàn tiền"

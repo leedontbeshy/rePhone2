@@ -2,6 +2,7 @@ node_modules/
 .turbo/
 .next/
 .next-dealer-sandbox/
+.next-affiliate-test/
 .sandbox-dist/
 dist/
 coverage/

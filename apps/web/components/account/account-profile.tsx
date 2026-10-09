@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth, type AuthAccountProfile } from '@/app/auth-provider';
+import { useAffiliateMembership } from '@/components/affiliate/affiliate-membership';
+import Link from 'next/link';
+import partnerStyles from '@/components/partners/partner.module.css';
 import { Button, ErrorSummary, InlineAlert, Input, type ErrorSummaryItem } from '@/components/ui';
 import {
   AccountRequestError,
@@ -22,6 +25,7 @@ type ProfileField = keyof AccountUpdate;
 type ProfileErrors = Partial<Record<ProfileField, string>>;
 
 export function AccountProfile() {
+  const { registered } = useAffiliateMembership();
   const { client, status, user } = useAuth();
   const ownerId = status === 'authenticated' ? (user?.id ?? null) : null;
   const ownerIdRef = useRef(ownerId);
@@ -87,6 +91,13 @@ export function AccountProfile() {
         eyebrow="Tài khoản"
         title="Hồ sơ của bạn"
         description="Cập nhật thông tin liên hệ dùng cho trải nghiệm mua hàng và hỗ trợ sau bán."
+        action={
+          registered ? (
+            <Link className={partnerStyles.primaryLink} href="/affiliate">
+              Cộng tác viên →
+            </Link>
+          ) : undefined
+        }
       />
       {status === 'loading' || initialLoading ? (
         <AccountLoadingState label="Đang tải hồ sơ tài khoản" />

@@ -32,7 +32,9 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
 
   const document = SwaggerModule.createDocument(app, options, {
     operationIdFactory: (controllerKey, methodKey) =>
-      controllerKey.startsWith('Dealer') ? `${controllerKey}_${methodKey}` : methodKey,
+      controllerKey.startsWith('Dealer') || controllerKey.startsWith('Affiliate')
+        ? `${controllerKey}_${methodKey}`
+        : methodKey,
   });
   applyOptionalCommerceSecurity(document);
   return document;

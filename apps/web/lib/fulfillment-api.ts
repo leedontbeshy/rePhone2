@@ -122,6 +122,7 @@ export interface BackofficeOrderShipment {
 }
 
 export interface BackofficeOrderDetail {
+  hasAffiliateCommission?: boolean;
   id: string;
   channel?: 'STOREFRONT' | 'DEALER';
   orderNumber: string;
@@ -522,6 +523,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     status: orderStatus(input['status']),
     fulfillmentStatus: fulfillmentStatus(input['fulfillmentStatus']),
     paymentStatus: paymentStatus(input['paymentStatus']),
+    ...(input['hasAffiliateCommission'] === true ? { hasAffiliateCommission: true } : {}),
     fulfillmentType: orderFulfillmentType,
     channel: input['channel'] === 'DEALER' ? 'DEALER' : 'STOREFRONT',
     contact: {

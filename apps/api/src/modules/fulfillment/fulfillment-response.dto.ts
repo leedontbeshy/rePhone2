@@ -185,6 +185,7 @@ export class BackofficeOrderListItemDto {
 }
 
 export class BackofficeOrderDetailDto {
+  @ApiPropertyOptional({ type: Boolean }) public hasAffiliateCommission?: boolean;
   @ApiPropertyOptional({ enum: ['STOREFRONT', 'DEALER'] }) public channel?: string;
   @ApiPropertyOptional({ type: String, nullable: true }) public dealerId?: string | null;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;

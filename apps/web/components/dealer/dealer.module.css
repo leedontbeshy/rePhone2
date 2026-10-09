@@ -11,6 +11,13 @@
 .page h1 {
   line-height: 1.2;
 }
+.portalPage {
+  padding: 0;
+  gap: 32px;
+}
+.portalPage [id='dang-ky'] {
+  scroll-margin-top: 160px;
+}
 .guideLayout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);

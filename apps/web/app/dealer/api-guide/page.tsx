@@ -1,4 +1,5 @@
-import { CustomerShell } from '@/components/shells/customer-shell';
+import { StorefrontFrame } from '@/components/storefront/storefront-frame';
+import styles from '@/components/partners/partner.module.css';
 import { DealerApiGuide } from '@/components/dealer/dealer-api-guide';
 
 export default function Page() {
@@ -6,18 +7,14 @@ export default function Page() {
     ? `${process.env.API_PUBLIC_URL.replace(/\/$/, '')}/api/v1`
     : (process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1');
   return (
-    <CustomerShell
-      customerNavigation={[
-        { href: '/dealer', label: 'Cổng đại lý' },
-        { href: '/dealer/api-guide', label: 'Hướng dẫn API', isCurrent: true },
-        { href: '/', label: 'Về cửa hàng' },
-      ]}
-    >
-      <DealerApiGuide
-        liveApiUrl={process.env.DEALER_ENVIRONMENT === 'TEST' ? '' : current}
-        sandboxApiUrl={process.env.DEALER_SANDBOX_API_URL ?? ''}
-        sandboxWebUrl={process.env.DEALER_SANDBOX_WEB_URL ?? ''}
-      />
-    </CustomerShell>
+    <StorefrontFrame>
+      <div className={styles.page}>
+        <DealerApiGuide
+          liveApiUrl={process.env.DEALER_ENVIRONMENT === 'TEST' ? '' : current}
+          sandboxApiUrl={process.env.DEALER_SANDBOX_API_URL ?? ''}
+          sandboxWebUrl={process.env.DEALER_SANDBOX_WEB_URL ?? ''}
+        />
+      </div>
+    </StorefrontFrame>
   );
 }

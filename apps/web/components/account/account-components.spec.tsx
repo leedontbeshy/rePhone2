@@ -37,6 +37,10 @@ const ADDRESS = {
   createdAt: '2026-08-27T00:00:00.000Z',
   updatedAt: '2026-08-27T00:00:00.000Z',
 };
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/account',
+}));
 
 describe('account self-service components', () => {
   it('renders explicit loading, anonymous return target and staff-safe account states', () => {
@@ -59,10 +63,8 @@ describe('account self-service components', () => {
     );
 
     expect(loading).toContain('aria-busy="true"');
-    expect(anonymous).toContain('returnTo=%2Faccount%2Fsecurity');
-    expect(anonymous).toContain(
-      'Đăng nhập giúp rePhone bảo vệ hồ sơ, mật khẩu và địa chỉ của bạn.',
-    );
+    expect(anonymous).toContain('Đang mở trang đăng nhập…');
+    expect(anonymous).not.toContain('<a');
     expect(anonymous).not.toMatch(
       /access token|refresh session|cookie|localStorage|fragment|ADMIN|phiên đăng nhập/i,
     );

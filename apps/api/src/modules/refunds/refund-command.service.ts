@@ -1,5 +1,6 @@
+import { AffiliateLedgerService } from '../affiliate-core/affiliate-ledger.service.js';
 import { createHash, randomUUID } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiError } from '../../common/errors/api-error.js';
 import { requestContext } from '../../common/http/request-context.js';
@@ -51,6 +52,9 @@ export class RefundCommandService {
     @Inject(RefundClock) private readonly clock: RefundClock,
     @Inject(RefundNotificationService)
     private readonly notifications: RefundNotificationService,
+    @Optional()
+    @Inject(AffiliateLedgerService)
+    private readonly affiliates?: AffiliateLedgerService,
   ) {}
 
   public async create(
@@ -87,8 +91,17 @@ export class RefundCommandService {
         ) {
           throw new ApiError('REFUND_AMOUNT_EXCEEDS_PAID');
         }
+        await this.affiliates?.validateRefund(
+          transaction,
+          orderId,
+          input.amount,
+          input.allocations,
+        );
         const refund = await transaction.refund.create({
           data: {
+            ...(input.allocations
+              ? { affiliateAllocations: input.allocations as unknown as Prisma.InputJsonArray }
+              : {}),
             idempotencyKey,
             requestFingerprint,
             orderId: order.id,
@@ -494,6 +507,7 @@ function refundCreateFingerprint(
     input.amount,
     input.method,
     input.reason.trim(),
+    ...(input.allocations ? [input.allocations] : []),
   ]);
   return createHash('sha256').update(canonical, 'utf8').digest('hex');
 }

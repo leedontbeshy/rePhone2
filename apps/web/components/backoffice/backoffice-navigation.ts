@@ -74,6 +74,13 @@ export function backofficeNavigationForRole(
           isCurrent: isPathWithin(activePath, BACKOFFICE_ORDERS_ROOT),
         },
         {
+          href: '/backoffice/affiliates',
+          label: 'Cộng tác viên',
+          icon: 'vouchers',
+          isCurrent: isPathWithin(activePath, '/backoffice/affiliates'),
+          isDisabled: role !== 'ADMIN',
+        },
+        {
           href: '/backoffice/dealers',
           label: 'Đại lý',
           icon: 'orders',

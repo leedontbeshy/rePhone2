@@ -1,4 +1,5 @@
 'use client';
+import { LoginRedirect } from '@/components/auth/login-redirect';
 
 import type { components } from '@rephone/api-client';
 import {
@@ -146,14 +147,7 @@ function WishlistSession() {
       </p>
 
       {initialLoading ? <WishlistLoading /> : null}
-      {status === 'anonymous' ? (
-        <EmptyWishlistState
-          title="Đăng nhập để xem sản phẩm ưa thích"
-          description="Danh sách của bạn sẽ luôn sẵn sàng khi quay lại."
-          actionHref="/login?returnTo=%2Fwishlist"
-          actionLabel="Đăng nhập"
-        />
-      ) : null}
+      {status === 'anonymous' ? <LoginRedirect returnTo="/wishlist" /> : null}
       {status === 'authenticated' && user?.role !== 'CUSTOMER' ? (
         <EmptyWishlistState
           title="Mục này dành cho khách hàng"

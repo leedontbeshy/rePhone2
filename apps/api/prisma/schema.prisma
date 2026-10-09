@@ -342,7 +342,178 @@ enum DealerProofStatus {
   CANCELLED
 }
 
+model AffiliatePolicy {
+  key           String   @id @default("GLOBAL") @db.VarChar(16)
+  enabled       Boolean  @default(false)
+  rateBps       Int?     @map("rate_bps")
+  reserveAmount Decimal? @map("reserve_amount") @db.Decimal(15, 0)
+  minimumProfit Decimal? @map("minimum_profit") @db.Decimal(15, 0)
+  version       Int      @default(1)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("affiliate_policies")
+}
+
+model AffiliateProfile {
+  id                String                 @id @default(uuid(7)) @db.Uuid
+  ownerUserId       String                 @unique @map("owner_user_id") @db.Uuid
+  owner             User                   @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  code              String                 @unique @db.VarChar(24)
+  displayName       String                 @map("display_name") @db.VarChar(120)
+  phone             String                 @db.VarChar(32)
+  promotionChannels String                 @map("promotion_channels") @db.VarChar(1000)
+  termsVersion      String                 @map("terms_version") @db.VarChar(40)
+  termsAcceptedAt   DateTime               @map("terms_accepted_at") @db.Timestamptz(3)
+  status            String                 @default("PENDING") @db.VarChar(20)
+  reason            String?                @db.Text
+  payoutHold        Boolean                @default(false) @map("payout_hold")
+  version           Int                    @default(1)
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  banks             AffiliateBankAccount[]
+  referrals         AffiliateReferral[]
+  attributions      AffiliateAttribution[]
+  payouts           AffiliatePayout[]
+
+  @@map("affiliate_profiles")
+}
+
+model AffiliateInventoryOverride {
+  inventoryUnitId String        @id @map("inventory_unit_id") @db.Uuid
+  inventoryUnit   InventoryUnit @relation(fields: [inventoryUnitId], references: [id], onDelete: Restrict)
+  enabled         Boolean       @default(true)
+  rateBps         Int?          @map("rate_bps")
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("affiliate_inventory_overrides")
+}
+
+model AffiliateBankAccount {
+  id                    String            @id @default(uuid(7)) @db.Uuid
+  affiliateId           String            @map("affiliate_id") @db.Uuid
+  affiliate             AffiliateProfile  @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  bankName              String            @map("bank_name") @db.VarChar(120)
+  accountHolder         String            @map("account_holder") @db.VarChar(120)
+  accountCiphertext     String            @map("account_ciphertext") @db.Text
+  accountFingerprint    String            @map("account_fingerprint") @db.Char(64)
+  lastFour              String            @map("last_four") @db.VarChar(4)
+  confirmationHash      String?           @unique @map("confirmation_hash") @db.Char(64)
+  confirmationExpiresAt DateTime?         @map("confirmation_expires_at") @db.Timestamptz(3)
+  confirmationSentAt    DateTime?         @map("confirmation_sent_at") @db.Timestamptz(3)
+  emailConfirmedAt      DateTime?         @map("email_confirmed_at") @db.Timestamptz(3)
+  verifiedAt            DateTime?         @map("verified_at") @db.Timestamptz(3)
+  effectiveAt           DateTime?         @map("effective_at") @db.Timestamptz(3)
+  disabledAt            DateTime?         @map("disabled_at") @db.Timestamptz(3)
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  payouts               AffiliatePayout[]
+
+  @@index([affiliateId, createdAt])
+  @@map("affiliate_bank_accounts")
+}
+
+model AffiliateReferral {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  affiliateId String           @map("affiliate_id") @db.Uuid
+  affiliate   AffiliateProfile @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  tokenHash   String           @unique @map("token_hash") @db.Char(64)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt   DateTime         @map("expires_at") @db.Timestamptz(3)
+
+  @@index([affiliateId, createdAt])
+  @@index([expiresAt])
+  @@map("affiliate_referrals")
+}
+
+model AffiliateAttribution {
+  orderId       String                @id @map("order_id") @db.Uuid
+  order         Order                 @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  affiliateId   String                @map("affiliate_id") @db.Uuid
+  affiliate     AffiliateProfile      @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  referredAt    DateTime              @map("referred_at") @db.Timestamptz(3)
+  policyVersion Int                   @map("policy_version")
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  commissions   AffiliateCommission[]
+
+  @@index([affiliateId, createdAt])
+  @@map("affiliate_attributions")
+}
+
+model AffiliateCommission {
+  id             String                @id @default(uuid(7)) @db.Uuid
+  orderId        String                @map("order_id") @db.Uuid
+  attribution    AffiliateAttribution  @relation(fields: [orderId], references: [orderId], onDelete: Restrict)
+  orderItemId    String                @unique @map("order_item_id") @db.Uuid
+  orderItem      OrderItem             @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  rateBps        Int                   @map("rate_bps")
+  baseAmount     Decimal               @map("base_amount") @db.Decimal(15, 0)
+  floorAmount    Decimal               @map("floor_amount") @db.Decimal(15, 0)
+  originalAmount Decimal               @map("original_amount") @db.Decimal(15, 0)
+  amount         Decimal               @db.Decimal(15, 0)
+  paidAmount     Decimal               @default(0) @map("paid_amount") @db.Decimal(15, 0)
+  absorbedLoss   Decimal               @default(0) @map("absorbed_loss") @db.Decimal(15, 0)
+  status         String                @default("PENDING") @db.VarChar(20)
+  holdReason     String?               @map("hold_reason") @db.VarChar(120)
+  availableAt    DateTime?             @map("available_at") @db.Timestamptz(3)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  adjustments    AffiliateAdjustment[]
+  payoutItems    AffiliatePayoutItem[]
+
+  @@index([orderId])
+  @@index([status, availableAt])
+  @@map("affiliate_commissions")
+}
+
+model AffiliateAdjustment {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  commissionId String              @map("commission_id") @db.Uuid
+  commission   AffiliateCommission @relation(fields: [commissionId], references: [id], onDelete: Restrict)
+  sourceKey    String              @unique @map("source_key") @db.VarChar(180)
+  amount       Decimal             @db.Decimal(15, 0)
+  reason       String              @db.VarChar(120)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("affiliate_adjustments")
+}
+
+model AffiliatePayout {
+  id                String                @id @default(uuid(7)) @db.Uuid
+  affiliateId       String                @map("affiliate_id") @db.Uuid
+  affiliate         AffiliateProfile      @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  bankAccountId     String                @map("bank_account_id") @db.Uuid
+  bankAccount       AffiliateBankAccount  @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  bankSnapshot      Json                  @map("bank_snapshot") @db.JsonB
+  requestKey        String                @map("request_key") @db.VarChar(100)
+  amount            Decimal               @db.Decimal(15, 0)
+  status            String                @default("REQUESTED") @db.VarChar(20)
+  note              String?               @db.Text
+  transferReference String?               @unique @map("transfer_reference") @db.VarChar(150)
+  evidence          Json?                 @db.JsonB
+  transferredAt     DateTime?             @map("transferred_at") @db.Timestamptz(3)
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  items             AffiliatePayoutItem[]
+
+  @@unique([affiliateId, requestKey])
+  @@index([status, createdAt])
+  @@map("affiliate_payouts")
+}
+
+model AffiliatePayoutItem {
+  id           String              @id @default(uuid(7)) @db.Uuid
+  payoutId     String              @map("payout_id") @db.Uuid
+  payout       AffiliatePayout     @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  commissionId String              @map("commission_id") @db.Uuid
+  commission   AffiliateCommission @relation(fields: [commissionId], references: [id], onDelete: Restrict)
+  amount       Decimal             @db.Decimal(15, 0)
+  active       Boolean             @default(true)
+
+  @@unique([payoutId, commissionId])
+  @@map("affiliate_payout_items")
+}
+
 model User {
+  affiliateProfile           AffiliateProfile?
   dealerProfile              DealerProfile?
   id                         String                @id @default(uuid(7)) @db.Uuid
   email                      String                @db.VarChar(320)
@@ -526,41 +697,42 @@ model InventoryLocation {
 }
 
 model InventoryUnit {
+  affiliateOverride     AffiliateInventoryOverride?
   dealerOverride        DealerInventoryOverride?
-  id                    String                   @id @default(uuid(7)) @db.Uuid
-  variantId             String                   @map("variant_id") @db.Uuid
-  locationId            String                   @map("location_id") @db.Uuid
-  inventoryCode         String                   @unique @map("inventory_code") @db.VarChar(64)
-  modelNumber           String?                  @map("model_number") @db.VarChar(255)
-  regionCode            String?                  @map("region_code") @db.VarChar(255)
-  simLockStatus         SimLockStatus            @default(UNKNOWN) @map("sim_lock_status")
-  carrierName           String?                  @map("carrier_name") @db.VarChar(255)
-  simConfiguration      SimConfiguration         @default(UNKNOWN) @map("sim_configuration")
-  imei1Encrypted        String?                  @map("imei1_encrypted") @db.Text
-  imei1Hmac             String?                  @unique @map("imei1_hmac") @db.Char(64)
-  imei1Suffix           String?                  @map("imei1_suffix") @db.VarChar(8)
-  imei2Encrypted        String?                  @map("imei2_encrypted") @db.Text
-  imei2Hmac             String?                  @unique @map("imei2_hmac") @db.Char(64)
-  imei2Suffix           String?                  @map("imei2_suffix") @db.VarChar(8)
-  serialEncrypted       String?                  @map("serial_encrypted") @db.Text
-  serialHmac            String?                  @unique @map("serial_hmac") @db.Char(64)
-  serialSuffix          String?                  @map("serial_suffix") @db.VarChar(8)
-  eidEncrypted          String?                  @map("eid_encrypted") @db.Text
-  eidHmac               String?                  @unique @map("eid_hmac") @db.Char(64)
-  eidSuffix             String?                  @map("eid_suffix") @db.VarChar(8)
-  identifierKeyVersion  Int                      @default(1) @map("identifier_key_version")
-  lifecycleStatus       InventoryLifecycleStatus @default(RECEIVED) @map("lifecycle_status")
-  acquisitionCost       Decimal?                 @map("acquisition_cost") @db.Decimal(15, 0)
-  additionalCost        Decimal                  @default(0) @map("additional_cost") @db.Decimal(15, 0)
-  salePrice             Decimal?                 @map("sale_price") @db.Decimal(15, 0)
-  compareAtPrice        Decimal?                 @map("compare_at_price") @db.Decimal(15, 0)
-  warrantyDaysOverride  Int?                     @map("warranty_days_override")
-  receivedAt            DateTime                 @default(now()) @map("received_at") @db.Timestamptz(3)
-  soldAt                DateTime?                @map("sold_at") @db.Timestamptz(3)
-  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
-  variant               ProductVariant           @relation(fields: [variantId], references: [id], onDelete: Restrict)
-  location              InventoryLocation        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  id                    String                      @id @default(uuid(7)) @db.Uuid
+  variantId             String                      @map("variant_id") @db.Uuid
+  locationId            String                      @map("location_id") @db.Uuid
+  inventoryCode         String                      @unique @map("inventory_code") @db.VarChar(64)
+  modelNumber           String?                     @map("model_number") @db.VarChar(255)
+  regionCode            String?                     @map("region_code") @db.VarChar(255)
+  simLockStatus         SimLockStatus               @default(UNKNOWN) @map("sim_lock_status")
+  carrierName           String?                     @map("carrier_name") @db.VarChar(255)
+  simConfiguration      SimConfiguration            @default(UNKNOWN) @map("sim_configuration")
+  imei1Encrypted        String?                     @map("imei1_encrypted") @db.Text
+  imei1Hmac             String?                     @unique @map("imei1_hmac") @db.Char(64)
+  imei1Suffix           String?                     @map("imei1_suffix") @db.VarChar(8)
+  imei2Encrypted        String?                     @map("imei2_encrypted") @db.Text
+  imei2Hmac             String?                     @unique @map("imei2_hmac") @db.Char(64)
+  imei2Suffix           String?                     @map("imei2_suffix") @db.VarChar(8)
+  serialEncrypted       String?                     @map("serial_encrypted") @db.Text
+  serialHmac            String?                     @unique @map("serial_hmac") @db.Char(64)
+  serialSuffix          String?                     @map("serial_suffix") @db.VarChar(8)
+  eidEncrypted          String?                     @map("eid_encrypted") @db.Text
+  eidHmac               String?                     @unique @map("eid_hmac") @db.Char(64)
+  eidSuffix             String?                     @map("eid_suffix") @db.VarChar(8)
+  identifierKeyVersion  Int                         @default(1) @map("identifier_key_version")
+  lifecycleStatus       InventoryLifecycleStatus    @default(RECEIVED) @map("lifecycle_status")
+  acquisitionCost       Decimal?                    @map("acquisition_cost") @db.Decimal(15, 0)
+  additionalCost        Decimal                     @default(0) @map("additional_cost") @db.Decimal(15, 0)
+  salePrice             Decimal?                    @map("sale_price") @db.Decimal(15, 0)
+  compareAtPrice        Decimal?                    @map("compare_at_price") @db.Decimal(15, 0)
+  warrantyDaysOverride  Int?                        @map("warranty_days_override")
+  receivedAt            DateTime                    @default(now()) @map("received_at") @db.Timestamptz(3)
+  soldAt                DateTime?                   @map("sold_at") @db.Timestamptz(3)
+  createdAt             DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  variant               ProductVariant              @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  location              InventoryLocation           @relation(fields: [locationId], references: [id], onDelete: Restrict)
   inspections           InventoryInspection[]
   media                 ProductMedia[]
   reservations          InventoryReservation[]
@@ -568,7 +740,7 @@ model InventoryUnit {
   wishlistItems         WishlistItem[]
   orderItems            OrderItem[]
   warranties            Warranty[]
-  replacementAfterSales AfterSalesRequest[]      @relation("AfterSalesReplacementUnit")
+  replacementAfterSales AfterSalesRequest[]         @relation("AfterSalesReplacementUnit")
 
   @@index([variantId, lifecycleStatus, locationId])
   @@map("inventory_units")
@@ -792,6 +964,7 @@ model VoucherUsage {
 }
 
 model Order {
+  affiliateAttribution      AffiliateAttribution?
   dealerResourceVersion     Int                       @default(0) @map("dealer_resource_version")
   channel                   OrderChannel              @default(STOREFRONT)
   dealerId                  String?                   @map("dealer_id") @db.Uuid
@@ -864,6 +1037,7 @@ model Order {
 }
 
 model OrderItem {
+  affiliateCommission   AffiliateCommission?
   id                    String                 @id @default(uuid(7)) @db.Uuid
   orderId               String                 @map("order_id") @db.Uuid
   productId             String                 @map("product_id") @db.Uuid
@@ -936,46 +1110,47 @@ model Payment {
 }
 
 model Refund {
-  dealerId            String?              @map("dealer_id") @db.Uuid
-  dealer              DealerProfile?       @relation(fields: [dealerId], references: [id], onDelete: Restrict)
-  dealerSources       DealerRefundSource[]
-  destinationSnapshot Json?                @map("destination_snapshot") @db.JsonB
-  dealerBankAccountId String?              @map("dealer_bank_account_id") @db.Uuid
-  dealerBankAccount   DealerBankAccount?   @relation(fields: [dealerBankAccountId], references: [id], onDelete: Restrict)
-  payoutHold          Boolean              @default(false) @map("payout_hold")
-  payoutHoldReason    String?              @map("payout_hold_reason") @db.Text
-  transferState       String               @default("NOT_SENT") @map("transfer_state") @db.VarChar(16)
-  id                  String               @id @default(uuid(7)) @db.Uuid
-  idempotencyKey      String?              @unique @map("idempotency_key") @db.Uuid
-  requestFingerprint  String?              @map("request_fingerprint") @db.Char(64)
-  orderId             String?              @map("order_id") @db.Uuid
-  paymentId           String?              @map("payment_id") @db.Uuid
-  amount              Decimal              @db.Decimal(15, 0)
-  method              RefundMethod
-  status              RefundStatus         @default(REQUESTED)
-  reason              String               @db.Text
-  terminalReason      String?              @map("terminal_reason") @db.Text
-  terminalById        String?              @map("terminal_by_id") @db.Uuid
-  terminalAt          DateTime?            @map("terminal_at") @db.Timestamptz(3)
-  evidenceBucket      String?              @map("evidence_bucket") @db.Text
-  evidenceObjectPath  String?              @map("evidence_object_path") @db.Text
-  evidenceMimeType    String?              @map("evidence_mime_type") @db.VarChar(100)
-  evidenceFileSize    Int?                 @map("evidence_file_size")
-  evidenceSha256      String?              @map("evidence_sha256") @db.Char(64)
-  requestedByType     RefundRequesterType  @map("requested_by_type")
-  requestedById       String?              @map("requested_by_id") @db.Uuid
-  processedById       String?              @map("processed_by_id") @db.Uuid
-  processingAt        DateTime?            @map("processing_at") @db.Timestamptz(3)
-  completedAt         DateTime?            @map("completed_at") @db.Timestamptz(3)
-  note                String?              @db.Text
-  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
-  order               Order?               @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  payment             Payment?             @relation(fields: [paymentId, orderId], references: [id, orderId], onDelete: Restrict)
-  terminalBy          User?                @relation("RefundTerminalActor", fields: [terminalById], references: [id], onDelete: Restrict)
-  requestedBy         User?                @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: Restrict)
-  processedBy         User?                @relation("RefundProcessor", fields: [processedById], references: [id], onDelete: Restrict)
-  afterSalesRequest   AfterSalesRequest?
+  affiliateAllocations Json?                @map("affiliate_allocations") @db.JsonB
+  dealerId             String?              @map("dealer_id") @db.Uuid
+  dealer               DealerProfile?       @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  dealerSources        DealerRefundSource[]
+  destinationSnapshot  Json?                @map("destination_snapshot") @db.JsonB
+  dealerBankAccountId  String?              @map("dealer_bank_account_id") @db.Uuid
+  dealerBankAccount    DealerBankAccount?   @relation(fields: [dealerBankAccountId], references: [id], onDelete: Restrict)
+  payoutHold           Boolean              @default(false) @map("payout_hold")
+  payoutHoldReason     String?              @map("payout_hold_reason") @db.Text
+  transferState        String               @default("NOT_SENT") @map("transfer_state") @db.VarChar(16)
+  id                   String               @id @default(uuid(7)) @db.Uuid
+  idempotencyKey       String?              @unique @map("idempotency_key") @db.Uuid
+  requestFingerprint   String?              @map("request_fingerprint") @db.Char(64)
+  orderId              String?              @map("order_id") @db.Uuid
+  paymentId            String?              @map("payment_id") @db.Uuid
+  amount               Decimal              @db.Decimal(15, 0)
+  method               RefundMethod
+  status               RefundStatus         @default(REQUESTED)
+  reason               String               @db.Text
+  terminalReason       String?              @map("terminal_reason") @db.Text
+  terminalById         String?              @map("terminal_by_id") @db.Uuid
+  terminalAt           DateTime?            @map("terminal_at") @db.Timestamptz(3)
+  evidenceBucket       String?              @map("evidence_bucket") @db.Text
+  evidenceObjectPath   String?              @map("evidence_object_path") @db.Text
+  evidenceMimeType     String?              @map("evidence_mime_type") @db.VarChar(100)
+  evidenceFileSize     Int?                 @map("evidence_file_size")
+  evidenceSha256       String?              @map("evidence_sha256") @db.Char(64)
+  requestedByType      RefundRequesterType  @map("requested_by_type")
+  requestedById        String?              @map("requested_by_id") @db.Uuid
+  processedById        String?              @map("processed_by_id") @db.Uuid
+  processingAt         DateTime?            @map("processing_at") @db.Timestamptz(3)
+  completedAt          DateTime?            @map("completed_at") @db.Timestamptz(3)
+  note                 String?              @db.Text
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  order                Order?               @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment              Payment?             @relation(fields: [paymentId, orderId], references: [id, orderId], onDelete: Restrict)
+  terminalBy           User?                @relation("RefundTerminalActor", fields: [terminalById], references: [id], onDelete: Restrict)
+  requestedBy          User?                @relation("RefundRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  processedBy          User?                @relation("RefundProcessor", fields: [processedById], references: [id], onDelete: Restrict)
+  afterSalesRequest    AfterSalesRequest?
 
   @@index([orderId, status])
   @@index([paymentId])
@@ -1060,53 +1235,53 @@ model Warranty {
 }
 
 model AfterSalesRequest {
-  id                         String                @id @default(uuid(7)) @db.Uuid
-  requestNumber              String                @unique @map("request_number") @db.VarChar(64)
-  warrantyId                 String?               @map("warranty_id") @db.Uuid
-  orderItemId                String                @map("order_item_id") @db.Uuid
-  customerId                 String?               @map("customer_id") @db.Uuid
-  type                       AfterSalesType
-  issueDescription           String                @map("issue_description") @db.Text
-  requestedResolution        String?               @map("requested_resolution") @db.Text
-  dealerAssessment           Json?                 @map("dealer_assessment") @db.JsonB
-  dealerWarrantyExtensionDays Int?                 @map("dealer_warranty_extension_days")
-  status                     AfterSalesStatus      @default(REQUESTED)
-  assignedToId               String?               @map("assigned_to_id") @db.Uuid
-  receivedLocationId         String?               @map("received_location_id") @db.Uuid
-  receivedById               String?               @map("received_by_id") @db.Uuid
-  receiveNote                String?               @map("receive_note") @db.Text
-  attachments                Json?                 @db.JsonB
-  inspectionSummary          String?               @map("inspection_summary") @db.Text
-  inventoryInspectionId      String?               @unique @map("inventory_inspection_id") @db.Uuid
-  decisionNote               String?               @map("decision_note") @db.Text
-  decidedById                String?               @map("decided_by_id") @db.Uuid
-  decidedAt                  DateTime?             @map("decided_at") @db.Timestamptz(3)
-  resolutionType             AfterSalesResolution? @map("resolution_type")
-  resolutionNote             String?               @map("resolution_note") @db.Text
-  replacementInventoryUnitId String?               @map("replacement_inventory_unit_id") @db.Uuid
-  refundId                   String?               @unique @map("refund_id") @db.Uuid
-  resolvedById               String?               @map("resolved_by_id") @db.Uuid
-  returnNote                 String?               @map("return_note") @db.Text
-  cancelReason               String?               @map("cancel_reason") @db.Text
-  requestedAt                DateTime              @default(now()) @map("requested_at") @db.Timestamptz(3)
-  receivedAt                 DateTime?             @map("received_at") @db.Timestamptz(3)
-  inspectedAt                DateTime?             @map("inspected_at") @db.Timestamptz(3)
-  resolvedAt                 DateTime?             @map("resolved_at") @db.Timestamptz(3)
-  returnedAt                 DateTime?             @map("returned_at") @db.Timestamptz(3)
-  cancelledAt                DateTime?             @map("cancelled_at") @db.Timestamptz(3)
-  createdAt                  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt                  DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
-  warranty                   Warranty?             @relation(fields: [warrantyId, orderItemId], references: [id, orderItemId], onDelete: Restrict)
-  orderItem                  OrderItem             @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
-  customer                   User?                 @relation("AfterSalesCustomer", fields: [customerId], references: [id], onDelete: Restrict)
-  assignedTo                 User?                 @relation("AfterSalesAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
-  receivedLocation           InventoryLocation?    @relation("AfterSalesReceivedLocation", fields: [receivedLocationId], references: [id], onDelete: Restrict)
-  receivedBy                 User?                 @relation("AfterSalesReceiver", fields: [receivedById], references: [id], onDelete: Restrict)
-  inventoryInspection        InventoryInspection?  @relation(fields: [inventoryInspectionId], references: [id], onDelete: Restrict)
-  decidedBy                  User?                 @relation("AfterSalesDecider", fields: [decidedById], references: [id], onDelete: Restrict)
-  replacementInventoryUnit   InventoryUnit?        @relation("AfterSalesReplacementUnit", fields: [replacementInventoryUnitId], references: [id], onDelete: Restrict)
-  refund                     Refund?               @relation(fields: [refundId], references: [id], onDelete: Restrict)
-  resolvedBy                 User?                 @relation("AfterSalesResolver", fields: [resolvedById], references: [id], onDelete: Restrict)
+  id                          String                @id @default(uuid(7)) @db.Uuid
+  requestNumber               String                @unique @map("request_number") @db.VarChar(64)
+  warrantyId                  String?               @map("warranty_id") @db.Uuid
+  orderItemId                 String                @map("order_item_id") @db.Uuid
+  customerId                  String?               @map("customer_id") @db.Uuid
+  type                        AfterSalesType
+  issueDescription            String                @map("issue_description") @db.Text
+  requestedResolution         String?               @map("requested_resolution") @db.Text
+  dealerAssessment            Json?                 @map("dealer_assessment") @db.JsonB
+  dealerWarrantyExtensionDays Int?                  @map("dealer_warranty_extension_days")
+  status                      AfterSalesStatus      @default(REQUESTED)
+  assignedToId                String?               @map("assigned_to_id") @db.Uuid
+  receivedLocationId          String?               @map("received_location_id") @db.Uuid
+  receivedById                String?               @map("received_by_id") @db.Uuid
+  receiveNote                 String?               @map("receive_note") @db.Text
+  attachments                 Json?                 @db.JsonB
+  inspectionSummary           String?               @map("inspection_summary") @db.Text
+  inventoryInspectionId       String?               @unique @map("inventory_inspection_id") @db.Uuid
+  decisionNote                String?               @map("decision_note") @db.Text
+  decidedById                 String?               @map("decided_by_id") @db.Uuid
+  decidedAt                   DateTime?             @map("decided_at") @db.Timestamptz(3)
+  resolutionType              AfterSalesResolution? @map("resolution_type")
+  resolutionNote              String?               @map("resolution_note") @db.Text
+  replacementInventoryUnitId  String?               @map("replacement_inventory_unit_id") @db.Uuid
+  refundId                    String?               @unique @map("refund_id") @db.Uuid
+  resolvedById                String?               @map("resolved_by_id") @db.Uuid
+  returnNote                  String?               @map("return_note") @db.Text
+  cancelReason                String?               @map("cancel_reason") @db.Text
+  requestedAt                 DateTime              @default(now()) @map("requested_at") @db.Timestamptz(3)
+  receivedAt                  DateTime?             @map("received_at") @db.Timestamptz(3)
+  inspectedAt                 DateTime?             @map("inspected_at") @db.Timestamptz(3)
+  resolvedAt                  DateTime?             @map("resolved_at") @db.Timestamptz(3)
+  returnedAt                  DateTime?             @map("returned_at") @db.Timestamptz(3)
+  cancelledAt                 DateTime?             @map("cancelled_at") @db.Timestamptz(3)
+  createdAt                   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  warranty                    Warranty?             @relation(fields: [warrantyId, orderItemId], references: [id, orderItemId], onDelete: Restrict)
+  orderItem                   OrderItem             @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  customer                    User?                 @relation("AfterSalesCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  assignedTo                  User?                 @relation("AfterSalesAssignee", fields: [assignedToId], references: [id], onDelete: Restrict)
+  receivedLocation            InventoryLocation?    @relation("AfterSalesReceivedLocation", fields: [receivedLocationId], references: [id], onDelete: Restrict)
+  receivedBy                  User?                 @relation("AfterSalesReceiver", fields: [receivedById], references: [id], onDelete: Restrict)
+  inventoryInspection         InventoryInspection?  @relation(fields: [inventoryInspectionId], references: [id], onDelete: Restrict)
+  decidedBy                   User?                 @relation("AfterSalesDecider", fields: [decidedById], references: [id], onDelete: Restrict)
+  replacementInventoryUnit    InventoryUnit?        @relation("AfterSalesReplacementUnit", fields: [replacementInventoryUnitId], references: [id], onDelete: Restrict)
+  refund                      Refund?               @relation(fields: [refundId], references: [id], onDelete: Restrict)
+  resolvedBy                  User?                 @relation("AfterSalesResolver", fields: [resolvedById], references: [id], onDelete: Restrict)
 
   @@index([orderItemId, status])
   @@index([warrantyId])
@@ -1484,15 +1659,15 @@ model DealerApiClient {
 }
 
 model DealerIdempotencyRecord {
-  id          String        @id @default(uuid(7)) @db.Uuid
-  dealerId    String        @map("dealer_id") @db.Uuid
-  dealer      DealerProfile @relation(fields: [dealerId], references: [id], onDelete: Restrict)
-  operation   String        @db.VarChar(100)
-  keyHash     String        @map("key_hash") @db.Char(64)
-  payloadHash String        @map("payload_hash") @db.Char(64)
-  resourceId  String        @map("resource_id") @db.Uuid
-  responseSnapshot Json?    @map("response_snapshot") @db.JsonB
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  id               String        @id @default(uuid(7)) @db.Uuid
+  dealerId         String        @map("dealer_id") @db.Uuid
+  dealer           DealerProfile @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  operation        String        @db.VarChar(100)
+  keyHash          String        @map("key_hash") @db.Char(64)
+  payloadHash      String        @map("payload_hash") @db.Char(64)
+  resourceId       String        @map("resource_id") @db.Uuid
+  responseSnapshot Json?         @map("response_snapshot") @db.JsonB
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([dealerId, operation, keyHash])
   @@map("dealer_idempotency_records")

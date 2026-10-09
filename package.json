@@ -92,7 +92,9 @@
     "verify:generated": "git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts",
     "verify:release:once": "pnpm verify && pnpm verify:generated && pnpm test:coverage && pnpm test:browser",
     "verify:release": "node scripts/run-release-verification.mjs",
-    "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build"
+    "postinstall": "pnpm db:generate && pnpm --filter @rephone/api-client build",
+    "affiliate:test:prepare": "node scripts/affiliate-test.mjs prepare",
+    "affiliate:test": "node scripts/affiliate-test.mjs start"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

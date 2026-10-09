@@ -1,4 +1,5 @@
 'use client';
+import { AuthSwitchLink } from '@/components/auth/auth-switch-link';
 
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '../auth-provider';
@@ -20,7 +21,7 @@ import {
   useAuthFormIssue,
   type AuthFieldErrors,
 } from '@/components/auth';
-import { Button, ErrorSummary, InlineAlert, Input, Link } from '@/components/ui';
+import { Button, ErrorSummary, InlineAlert, Input } from '@/components/ui';
 
 const description = 'Tạo tài khoản khách hàng để lưu đơn hàng, bảo hành và địa chỉ nhận máy.';
 
@@ -85,9 +86,9 @@ export default function RegisterPage() {
             Nếu thông tin phù hợp, bạn có thể đăng nhập để tiếp tục.
           </InlineAlert>
           <AuthFormActions>
-            <Link href="/login" standalone>
+            <AuthSwitchLink destination="/login" standalone>
               Đi đến đăng nhập
-            </Link>
+            </AuthSwitchLink>
           </AuthFormActions>
         </div>
       ) : (
@@ -148,7 +149,7 @@ export default function RegisterPage() {
               Tạo tài khoản
             </Button>
             <AuthFormFooter>
-              Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
+              Đã có tài khoản? <AuthSwitchLink destination="/login">Đăng nhập</AuthSwitchLink>
             </AuthFormFooter>
           </AuthFormActions>
           <AuthSecurityNote>

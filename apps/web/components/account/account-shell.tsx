@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
+import { useAffiliateMembership } from '@/components/affiliate/affiliate-membership';
 import { CustomerShell } from '@/components/shells';
 import { MobileNavigation } from '@/components/storefront/mobile-navigation';
 import { StorefrontDesktopNavigation } from '@/components/storefront/storefront-desktop-navigation';
@@ -14,9 +15,11 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, logoutPending, status, user } = useAuth();
+  const { registered } = useAffiliateMembership();
   const [logoutError, setLogoutError] = useState(false);
   const customerNavigation = [
     { href: '/account', label: 'Hồ sơ', isCurrent: pathname === '/account' },
+    ...(registered ? [{ href: '/affiliate', label: 'Cộng tác viên', isCurrent: false }] : []),
     ...(status === 'authenticated' && user?.role === 'CUSTOMER'
       ? [
           { href: '/dealer', label: 'Cổng đại lý', isCurrent: pathname === '/dealer' },

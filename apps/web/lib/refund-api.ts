@@ -35,6 +35,11 @@ export interface RefundListResult {
 }
 
 export interface CreateRefundInput {
+  allocations?: Array<{
+    kind: 'ITEM' | 'SHIPPING' | 'OVERPAYMENT';
+    orderItemId?: string;
+    amount: string;
+  }>;
   paymentId?: string;
   amount: string;
   method: Exclude<RefundMethod, 'OTHER'>;
@@ -153,6 +158,7 @@ export function createRefundIntentKeyStore(
         input.amount,
         input.method,
         input.reason,
+        ...(input.allocations ? [input.allocations] : []),
       ]);
       if (current?.signature === signature) return current.key;
       const key = generateKey();

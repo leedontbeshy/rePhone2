@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { AffiliateLedgerService } from '../affiliate-core/affiliate-ledger.service.js';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import {
@@ -31,6 +32,9 @@ export class RefundCoreGateway {
   public constructor(
     @Inject(RefundPaymentGateway)
     private readonly payments: RefundPaymentGateway,
+    @Optional()
+    @Inject(AffiliateLedgerService)
+    private readonly affiliates?: AffiliateLedgerService,
   ) {}
 
   public async lockFinance(
@@ -131,8 +135,16 @@ export class RefundCoreGateway {
     if (refundable === 0n) return null;
 
     const verified = finance.payments.filter(({ status }) => status === 'VERIFIED');
+    const allocations = await this.affiliates?.cancellationAllocations(
+      transaction,
+      input.orderId,
+      refundable,
+    );
     const refund = await transaction.refund.create({
       data: {
+        ...(allocations
+          ? { affiliateAllocations: allocations as unknown as Prisma.InputJsonArray }
+          : {}),
         orderId: input.orderId,
         paymentId: verified.length === 1 ? (verified[0]?.id ?? null) : null,
         amount: refundable.toString(),

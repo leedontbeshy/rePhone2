@@ -8,12 +8,14 @@ import {
   ShoppingCartSimpleIcon,
   UserCircleIcon,
   UserGearIcon,
+  UsersThreeIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useCommerce } from '@/app/commerce-provider';
+import { useAffiliateMembership } from '@/components/affiliate/affiliate-membership';
 import { CUSTOMER_ACCOUNT_MENU, isStorefrontNavigationCurrent } from './storefront-navigation';
 import styles from './storefront-header-actions.module.css';
 
@@ -57,6 +59,11 @@ export function StorefrontSessionActions() {
 }
 
 function CustomerAccountMenu() {
+  const { registered } = useAffiliateMembership();
+  const menuItems = [
+    ...CUSTOMER_ACCOUNT_MENU,
+    ...(registered ? [{ href: '/affiliate', label: 'Cộng tác viên' }] : []),
+  ];
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -124,7 +131,7 @@ function CustomerAccountMenu() {
       {open ? (
         <nav id={menuId} className={styles.accountMenuPanel} aria-label="Tùy chọn tài khoản">
           <ul className={styles.accountMenuList}>
-            {CUSTOMER_ACCOUNT_MENU.map((item, index) => {
+            {menuItems.map((item, index) => {
               const isCurrent = isStorefrontNavigationCurrent(item.href, pathname);
               return (
                 <li key={item.href}>
@@ -155,5 +162,6 @@ function AccountMenuItemIcon({ href }: Readonly<{ href: string }>) {
   if (href === '/warranties') return <ShieldCheckIcon {...iconProps} />;
   if (href === '/wishlist') return <HeartIcon {...iconProps} />;
   if (href === '/orders') return <ReceiptIcon {...iconProps} />;
+  if (href === '/affiliate') return <UsersThreeIcon {...iconProps} />;
   return <UserGearIcon {...iconProps} />;
 }

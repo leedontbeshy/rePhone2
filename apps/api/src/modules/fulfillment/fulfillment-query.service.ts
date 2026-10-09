@@ -1,4 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { AffiliateRuntime } from '../affiliate-core/affiliate-runtime.service.js';
+import { PrismaService } from '../../database/prisma.service.js';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
 import { FulfillmentOrderGateway } from '../order-transaction-ports/fulfillment-order.gateway.js';
@@ -18,6 +20,8 @@ export class FulfillmentQueryService {
   public constructor(
     @Inject(FulfillmentOrderGateway) private readonly orders: FulfillmentOrderGateway,
     @Inject(FulfillmentClock) private readonly clock: FulfillmentClock,
+    @Optional() @Inject(AffiliateRuntime) private readonly affiliateRuntime?: AffiliateRuntime,
+    @Optional() @Inject(PrismaService) private readonly prisma?: PrismaService,
   ) {}
 
   public async list(
@@ -67,6 +71,14 @@ export class FulfillmentQueryService {
   public async detail(id: string): Promise<BackofficeOrderDetailDto> {
     const order = await this.orders.findById(id);
     if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
-    return projectBackofficeOrderDetail(order, this.clock.now());
+    const result = projectBackofficeOrderDetail(order, this.clock.now());
+    if (this.affiliateRuntime?.enabled && this.prisma)
+      result.hasAffiliateCommission = Boolean(
+        await this.prisma.affiliateAttribution.findUnique({
+          where: { orderId: id },
+          select: { orderId: true },
+        }),
+      );
+    return result;
   }
 }

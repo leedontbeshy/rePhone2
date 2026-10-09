@@ -1,3 +1,4 @@
+import { AffiliateCoreModule } from '../affiliate-core/affiliate-core.module.js';
 import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module.js';
 import { AuthModule } from '../auth/auth.module.js';
@@ -17,6 +18,7 @@ import { OrdersService } from './orders.service.js';
 
 @Module({
   imports: [
+    AffiliateCoreModule,
     AuthModule,
     AuditModule,
     CartModule,
