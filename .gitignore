@@ -21,3 +21,4 @@ docs.7z
 .vscode/
 .DS_Store
 Thumbs.db
+output/
