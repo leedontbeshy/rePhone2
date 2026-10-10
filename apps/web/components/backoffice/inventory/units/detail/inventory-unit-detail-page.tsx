@@ -28,6 +28,7 @@ import {
   type UpdateInventoryUnitInput,
 } from '@/lib/backoffice-inventory-api';
 import { AdminInventoryCostPanel } from './admin-inventory-cost-panel';
+import { DealerInventoryPricing } from '@/components/dealer/dealer-inventory-pricing';
 import {
   InventoryUnitDetailView,
   type InventoryLifecycleCommand,
@@ -307,7 +308,10 @@ export function InventoryUnitDetailPage({ unitId }: InventoryUnitDetailPageProps
 
   const adminContent =
     user?.role === 'ADMIN' && unit !== null ? (
-      <AdminInventoryCostPanel client={client} role={user.role} unitId={unit.id} />
+      <>
+        <AdminInventoryCostPanel client={client} role={user.role} unitId={unit.id} />
+        <DealerInventoryPricing key={unit.id} client={client} unitId={unit.id} />
+      </>
     ) : undefined;
 
   return (

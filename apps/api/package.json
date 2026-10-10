@@ -43,6 +43,7 @@
     "demo:refund-processing": "tsx prisma/scripts/demo-refund-processing.ts",
     "demo:after-sales-inspecting": "tsx prisma/scripts/demo-after-sales-inspecting.ts",
     "demo:scenarios": "tsx prisma/scripts/demo-scenarios.ts",
+    "dealer:sandbox:seed": "tsx prisma/scripts/dealer-sandbox-seed.ts",
     "assets:fetch:rich-models": "tsx prisma/scripts/fetch-rich-model-assets.ts",
     "demo:catalog:rich": "tsx prisma/scripts/provision-rich-catalog.ts",
     "db:studio": "prisma studio --config prisma.config.ts",

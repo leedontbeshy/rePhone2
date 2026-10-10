@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -22,6 +23,9 @@ export function OrderSummaryBand({ detail }: Readonly<{ detail: BackofficeOrderD
       >
         <span className={styles.orderSummaryLabel}>Đơn hàng</span>
         <h1>{detail.orderNumber}</h1>
+        {detail.channel === 'DEALER' && (
+          <Link href="/backoffice/dealers">Đơn đại lý · quản lý thanh toán và hoàn tiền</Link>
+        )}
         <span className={styles.orderSummarySupporting}>
           Đặt lúc {formatOrderDateTime(detail.placedAt)}
         </span>

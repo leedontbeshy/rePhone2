@@ -673,6 +673,11 @@ async function installFe06Api(
     const { pathname } = url;
     const method = route.request().method();
 
+    if (pathname.endsWith('/backoffice/dealers/configuration') && method === 'GET') {
+      await fulfillJson(route, { data: { enabled: false } });
+      return;
+    }
+
     if (pathname.endsWith('/backoffice/products') && method === 'GET') {
       await fulfillJson(route, paged([catalogProductListItem()], 100));
       return;
@@ -1255,6 +1260,7 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
 }
 
 async function expectAccessible(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

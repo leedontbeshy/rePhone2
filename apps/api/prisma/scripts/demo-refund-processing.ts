@@ -37,8 +37,8 @@ export async function provisionRefundProcessingScenario(): Promise<void> {
       include: { order: true },
       orderBy: { createdAt: 'desc' },
     });
-    if (existing !== null) {
-      assertScenarioState(existing);
+    if (existing !== null && existing.order !== null) {
+      assertScenarioState({ ...existing, order: existing.order });
       await assertPreflight(prisma);
       await writeManifest(
         existing.order.id,
@@ -110,7 +110,8 @@ export async function provisionRefundProcessingScenario(): Promise<void> {
       where: { id: refundId },
       include: { order: true },
     });
-    assertScenarioState(persisted);
+    if (persisted.order === null) throw new Error('Demo refund must belong to an order');
+    assertScenarioState({ ...persisted, order: persisted.order });
     await assertPreflight(prisma);
     await writeManifest(
       completedOrder.id,

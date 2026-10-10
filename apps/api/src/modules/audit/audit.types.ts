@@ -8,6 +8,7 @@ export interface AuditActorContext extends RequestContext {
 
 export type AuditWriteActorContext =
   | AuditActorContext
+  | (RequestContext & { actorType: 'API_CLIENT'; actorApiClientId: string; actorUserId?: never })
   | (RequestContext & { actorType: 'GUEST'; actorUserId?: never })
   | (RequestContext & { actorType: 'SYSTEM'; actorUserId?: never });
 

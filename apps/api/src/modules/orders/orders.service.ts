@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { AffiliateLedgerService } from '../affiliate-core/affiliate-ledger.service.js';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Request } from 'express';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
@@ -83,6 +84,9 @@ export class OrdersService {
     private readonly notifications: OrderNotificationService,
     @Inject(OrderCancellationService)
     private readonly cancellations: OrderCancellationService,
+    @Optional()
+    @Inject(AffiliateLedgerService)
+    private readonly affiliates?: AffiliateLedgerService,
   ) {}
 
   public preview(request: Request, input: CheckoutPreviewRequestDto): Promise<CheckoutPreviewDto> {
@@ -200,6 +204,7 @@ export class OrdersService {
           });
           orderItemIds.set(line.cartItemId, item.id);
         }
+        await this.affiliates?.capture(transaction, order.id, request);
         try {
           await this.inventory.reserve(
             {
@@ -297,6 +302,7 @@ export class OrdersService {
   ): Promise<PaginatedApiResult<OrderListItemDto>> {
     if (auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
     const where: Prisma.OrderWhereInput = {
+      channel: 'STOREFRONT',
       customerId: auth.userId,
       ...(query.status === undefined ? {} : { status: query.status }),
       ...(query.fulfillmentType === undefined ? {} : { fulfillmentType: query.fulfillmentType }),

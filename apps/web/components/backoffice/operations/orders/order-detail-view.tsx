@@ -25,7 +25,7 @@ import {
   type BackofficeOrderLocation,
   type FulfillmentAction,
 } from '@/lib/fulfillment-api';
-import { createRefund, createRefundIntentKeyStore } from '@/lib/refund-api';
+import { createRefund, createRefundIntentKeyStore, type CreateRefundInput } from '@/lib/refund-api';
 import { OperationsShell } from '../operations-shell';
 import {
   isPositiveMoney,
@@ -60,6 +60,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
   const [returnLocationId, setReturnLocationId] = useState('');
   const [returnLocations, setReturnLocations] = useState<BackofficeOrderLocation[]>([]);
   const [cancelReason, setCancelReason] = useState('Khách hàng xác nhận không tiếp tục đơn hàng');
+  const [refundAllocations, setRefundAllocations] = useState<Record<string, string>>({});
   const [refundAmount, setRefundAmount] = useState('');
   const [refundMethod, setRefundMethod] = useState<'BANK_TRANSFER' | 'CASH'>('BANK_TRANSFER');
   const [refundPaymentId, setRefundPaymentId] = useState('');
@@ -429,7 +430,26 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
       showError('Lý do hoàn tiền phải có từ 5 đến 500 ký tự.');
       return;
     }
+    const allocations = Object.entries(refundAllocations)
+      .filter(([, value]) => /^\d+$/.test(value) && BigInt(value) > BigInt(0))
+      .map<NonNullable<CreateRefundInput['allocations']>[number]>(([key, value]) => ({
+        kind: key === 'SHIPPING' || key === 'OVERPAYMENT' ? key : 'ITEM',
+        ...(key === 'SHIPPING' || key === 'OVERPAYMENT' ? {} : { orderItemId: key }),
+        amount: value,
+      }));
+    if (detail.hasAffiliateCommission && !allocations.length) {
+      showError('Hãy phân bổ khoản hoàn cho từng sản phẩm hoặc phí của đơn có hoa hồng.');
+      return;
+    }
+    if (
+      allocations.length &&
+      allocations.reduce((sum, a) => sum + BigInt(a.amount), BigInt(0)) !== BigInt(amount)
+    ) {
+      showError('Tổng phân bổ phải bằng số tiền hoàn.');
+      return;
+    }
     const input = {
+      ...(allocations.length ? { allocations } : {}),
       ...(refundPaymentId === '' ? {} : { paymentId: refundPaymentId }),
       amount,
       method: refundMethod,
@@ -533,6 +553,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                       holdReason,
                       holdUntil,
                       refundAmount,
+                      refundAllocations,
                       refundMethod,
                       refundPaymentId,
                       refundReason,
@@ -552,6 +573,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                       setHoldReason,
                       setHoldUntil,
                       setRefundAmount,
+                      setRefundAllocations,
                       setRefundMethod,
                       setRefundPaymentId,
                       setRefundReason,

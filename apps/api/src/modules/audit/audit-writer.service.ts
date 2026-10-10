@@ -16,7 +16,12 @@ export class AuditWriter {
       data: {
         actorType: actor.actorType ?? 'USER',
         actorUserId:
-          actor.actorType === 'GUEST' || actor.actorType === 'SYSTEM' ? null : actor.actorUserId,
+          actor.actorType === 'GUEST' ||
+          actor.actorType === 'SYSTEM' ||
+          actor.actorType === 'API_CLIENT'
+            ? null
+            : actor.actorUserId,
+        ...(actor.actorType === 'API_CLIENT' ? { actorApiClientId: actor.actorApiClientId } : {}),
         action: input.action,
         resourceType: input.resourceType,
         requestId: actor.requestId,

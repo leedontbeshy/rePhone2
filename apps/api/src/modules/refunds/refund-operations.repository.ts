@@ -34,16 +34,30 @@ export const refundProjectionInclude = {
   terminalBy: { select: actorSelect },
 } satisfies Prisma.RefundInclude;
 
-export type RefundOperationsRecord = Prisma.RefundGetPayload<{
+type RefundRecord = Prisma.RefundGetPayload<{
   include: typeof refundProjectionInclude;
 }>;
+export type RefundOperationsRecord = RefundRecord & {
+  orderId: string;
+  order: NonNullable<RefundRecord['order']>;
+};
+
+function isRetailRefund(refund: RefundRecord | null): refund is RefundOperationsRecord {
+  return (
+    refund !== null && refund.dealerId === null && refund.orderId !== null && refund.order !== null
+  );
+}
 
 @Injectable()
 export class RefundOperationsRepository {
   public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  public findById(id: string): Promise<RefundOperationsRecord | null> {
-    return this.prisma.refund.findUnique({ where: { id }, include: refundProjectionInclude });
+  public async findById(id: string): Promise<RefundOperationsRecord | null> {
+    const refund = await this.prisma.refund.findUnique({
+      where: { id },
+      include: refundProjectionInclude,
+    });
+    return isRetailRefund(refund) ? refund : null;
   }
 
   public async findByIdInTransaction(
@@ -51,7 +65,7 @@ export class RefundOperationsRepository {
     transaction: Prisma.TransactionClient,
   ): Promise<RefundOperationsRecord | null> {
     const refund = await transaction.refund.findUnique({ where: { id } });
-    if (refund === null) return null;
+    if (refund === null || refund.orderId === null || refund.dealerId !== null) return null;
 
     const order = await transaction.order.findUnique({
       where: { id: refund.orderId },
@@ -87,12 +101,20 @@ export class RefundOperationsRepository {
             select: actorSelect,
           });
 
-    return { ...refund, order, payment, requestedBy, processedBy, terminalBy };
+    return {
+      ...refund,
+      orderId: refund.orderId,
+      order,
+      payment,
+      requestedBy,
+      processedBy,
+      terminalBy,
+    };
   }
 
   public async findOrderId(id: string): Promise<string | null> {
     const refund = await this.prisma.refund.findUnique({
-      where: { id },
+      where: { id, dealerId: null },
       select: { orderId: true },
     });
     return refund?.orderId ?? null;
@@ -103,6 +125,7 @@ export class RefundOperationsRepository {
     totalItems: number;
   }> {
     const where: Prisma.RefundWhereInput = {
+      dealerId: null,
       ...(query.status === undefined ? {} : { status: query.status }),
       ...(query.method === undefined ? {} : { method: query.method }),
       ...(query.orderNumber === undefined
@@ -132,7 +155,7 @@ export class RefundOperationsRepository {
       }),
       this.prisma.refund.count({ where }),
     ]);
-    return { refunds, totalItems };
+    return { refunds: refunds.filter(isRetailRefund), totalItems };
   }
 }
 

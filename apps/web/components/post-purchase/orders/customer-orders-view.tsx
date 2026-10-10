@@ -1,4 +1,5 @@
 'use client';
+import { LoginRedirect } from '@/components/auth/login-redirect';
 
 import { PackageIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -133,14 +134,7 @@ export function CustomerOrdersView() {
         description="Theo dõi thanh toán, nhận hàng và các hỗ trợ liên quan đến từng đơn."
       />
       {status === 'loading' ? <CollectionLoading label="Đang tải đơn hàng…" /> : null}
-      {status === 'anonymous' ? (
-        <EmptyState
-          title="Đăng nhập để xem đơn hàng"
-          description="Các đơn mua bằng tài khoản sẽ xuất hiện đầy đủ sau khi bạn đăng nhập."
-          actionHref="/login"
-          actionLabel="Đăng nhập"
-        />
-      ) : null}
+      {status === 'anonymous' ? <LoginRedirect returnTo="/orders" /> : null}
       {status === 'authenticated' && user?.role !== 'CUSTOMER' ? (
         <EmptyState
           title="Không thể mở danh sách này"

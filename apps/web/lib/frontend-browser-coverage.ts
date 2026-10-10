@@ -24,6 +24,49 @@ export interface FrontendBrowserSuiteDefinition {
 }
 
 export const FRONTEND_BROWSER_SUITES = {
+  'browser:affiliate-flow': {
+    specFile: 'affiliate-flow.spec.ts',
+    phase: 'FE-11',
+    tests: {
+      'public-program-and-terms': {
+        title: 'opens the affiliate program and terms and preserves the sign-in destination',
+        ownsRoutes: ['/affiliate', '/affiliate/terms'],
+        coversRoutes: ['/login'],
+        ownsStates: ['success'],
+      },
+      'direct-referral-navigation': {
+        title: 'opens the linked inventory unit even when referral attribution is unavailable',
+        ownsRoutes: ['/r/[code]'],
+        coversRoutes: ['/products/[slug]/units/[inventoryCode]'],
+        ownsStates: ['unavailable'],
+      },
+      'admin-readiness': {
+        title: 'shows the affiliate administration readiness state without enabling business',
+        ownsRoutes: ['/backoffice/affiliates'],
+        coversRoutes: ['/login'],
+        ownsStates: ['disabled'],
+      },
+    },
+  },
+  'browser:dealer-flow': {
+    specFile: 'dealer-flow.spec.ts',
+    phase: 'FE-10',
+    tests: {
+      'purchase-delivery-warranty': {
+        title:
+          'controls dealer access, checks unit pricing, and completes purchase through warranty',
+        ownsRoutes: ['/dealer', '/backoffice/dealers'],
+        coversRoutes: [],
+        ownsStates: ['success', 'pending'],
+      },
+      'public-docs': {
+        title: 'opens dealer terms and the integration guide without a session',
+        ownsRoutes: ['/dealer/terms', '/dealer/api-guide'],
+        coversRoutes: [],
+        ownsStates: ['success'],
+      },
+    },
+  },
   'browser:frontend-foundation': {
     specFile: 'frontend-foundation.spec.ts',
     phase: null,

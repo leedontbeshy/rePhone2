@@ -69,6 +69,11 @@ test.describe('Backoffice access boundary', () => {
     const runtimeErrors = collectRuntimeErrors(page);
     let cartMergeRequests = 0;
 
+    await page.route('**/api/v1/affiliate/profile', async (route) => {
+      if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
+      await fulfillJson(route, { data: null });
+    });
+
     await page.route('**/api/v1/auth/refresh', async (route) => {
       if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
       refreshStarted.resolve(undefined);
@@ -289,6 +294,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page }).analyze();
   expect(
     results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious'),

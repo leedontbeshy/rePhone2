@@ -442,9 +442,8 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
   test(bt('browser:cart-checkout', 'wishlist-role-state-matrix'), async ({ browser, page }) => {
     const anonymousWishlistRequests = collectWishlistRequests(page);
     await page.goto('/wishlist');
-    await expect(
-      page.getByRole('heading', { name: 'Đăng nhập để xem sản phẩm ưa thích' }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Fwishlist$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeVisible();
     expect(anonymousWishlistRequests).toEqual([]);
 
     for (const account of [EMPLOYEE, ADMIN]) {
@@ -1075,6 +1074,7 @@ async function inspectCommerceSurface(page: Page, label: string): Promise<string
       `${label}: horizontal overflow ${String(dimensions.scrollWidth)} > ${String(dimensions.clientWidth)}`,
     );
   }
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   for (const violation of results.violations) {
     if (violation.impact !== 'serious' && violation.impact !== 'critical') continue;

@@ -505,6 +505,9 @@ test.describe('FE-04 customer post-purchase', () => {
 
 async function installCustomerApi(page: Page): Promise<void> {
   let currentOrderDetail: typeof orderDetail | typeof cancelledOrderDetail = orderDetail;
+  await page.route('**/api/v1/affiliate/profile', async (route) => {
+    await fulfillJson(route, { data: null });
+  });
   await page.route('**/api/v1/auth/refresh', async (route) => {
     await fulfillJson(route, { data: { accessToken: 'browser-access-token', user: customer } });
   });
@@ -655,6 +658,8 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
 }
 
 async function expectAccessible(page: Page): Promise<void> {
+  // Route content can arrive before Next.js finishes attaching streamed metadata.
+  await expect(page).toHaveTitle('rePhone');
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

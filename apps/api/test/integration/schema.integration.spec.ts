@@ -4,10 +4,6 @@ import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { createTestPrisma } from '../support/test-prisma.js';
 import { setTestEnvironment } from '../support/test-environment.js';
 
-interface CountResult {
-  count: number;
-}
-
 describe('database baseline', () => {
   let prisma: PrismaClient;
 
@@ -20,16 +16,31 @@ describe('database baseline', () => {
     await prisma.$disconnect();
   });
 
-  it('deploys exactly 28 domain tables', async () => {
-    const result = await prisma.$queryRaw<CountResult[]>`
-      SELECT COUNT(*)::int AS count
+  it('deploys 28 storefront, 23 dealer and 10 affiliate domain tables', async () => {
+    const result = await prisma.$queryRaw<Array<{ table_name: string }>>`
+      SELECT table_name
       FROM information_schema.tables
       WHERE table_schema = 'public'
         AND table_type = 'BASE TABLE'
         AND table_name <> '_prisma_migrations'
     `;
 
-    expect(result[0]?.count).toBe(28);
+    const affiliateTables = result
+      .map(({ table_name }) => table_name)
+      .filter((name) => name.startsWith('affiliate_'));
+    expect(result).toHaveLength(61);
+    expect(affiliateTables.sort()).toEqual([
+      'affiliate_adjustments',
+      'affiliate_attributions',
+      'affiliate_bank_accounts',
+      'affiliate_commissions',
+      'affiliate_inventory_overrides',
+      'affiliate_payout_items',
+      'affiliate_payouts',
+      'affiliate_policies',
+      'affiliate_profiles',
+      'affiliate_referrals',
+    ]);
   });
 
   it('contains the required SQL constraints and partial unique indexes', async () => {

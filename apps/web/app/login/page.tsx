@@ -1,4 +1,5 @@
 'use client';
+import { AuthSwitchLink } from '@/components/auth/auth-switch-link';
 
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type SyntheticEvent } from 'react';
@@ -108,7 +109,7 @@ export default function LoginPage() {
             <Link href="/forgot-password">Quên mật khẩu?</Link>
           </AuthFormFooter>
           <AuthFormFooter>
-            Chưa có tài khoản? <Link href="/register">Đăng ký</Link>
+            Chưa có tài khoản? <AuthSwitchLink destination="/register">Đăng ký</AuthSwitchLink>
           </AuthFormFooter>
         </AuthFormActions>
         <AuthSecurityNote>

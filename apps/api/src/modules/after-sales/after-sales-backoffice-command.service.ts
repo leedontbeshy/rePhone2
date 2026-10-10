@@ -20,6 +20,7 @@ import {
   type AfterSalesResolutionUpdate,
 } from './after-sales-command.repository.js';
 import { AfterSalesClock } from './after-sales-clock.service.js';
+import { dealerPrice } from '../dealers/dealer-pricing.policy.js';
 import type {
   ApproveAfterSalesRequestDto,
   AssignAfterSalesRequestDto,
@@ -358,6 +359,39 @@ export class AfterSalesBackofficeCommandService {
       const originalUnitId = requireOriginalUnit(item);
       if (originalUnitId === input.replacementInventoryUnitId) throw requirementsNotMet();
 
+      if (item.order.channel === 'DEALER') {
+        await this.inventory.lockUnit(input.replacementInventoryUnitId, transaction);
+        const replacement = await transaction.inventoryUnit.findUnique({
+          where: { id: input.replacementInventoryUnitId },
+          include: { dealerOverride: true },
+        });
+        const policy = await transaction.dealerPricingPolicy.findUnique({
+          where: { key: 'GLOBAL' },
+        });
+        const amount = (value: { toString(): string } | null) =>
+          value === null ? null : BigInt(value.toString());
+        const replacementPrice =
+          replacement === null || policy === null
+            ? null
+            : dealerPrice({
+                publicPrice: amount(replacement.salePrice),
+                acquisitionCost: amount(replacement.acquisitionCost),
+                additionalCost: BigInt(replacement.additionalCost.toString()),
+                reserve: amount(policy.reserveAmount),
+                minimumProfit: amount(policy.minimumProfit),
+                discountBps: policy.discountBps,
+                override: amount(replacement.dealerOverride?.price ?? null),
+              });
+        if (
+          replacement?.variantId !== item.variantId ||
+          replacementPrice !== BigInt(item.lineTotal.toString())
+        )
+          throw new ApiError(
+            'INVALID_STATE_TRANSITION',
+            'Đổi trực tiếp cần cùng cấu hình và cùng giá đại lý. Khác giá: hoàn đơn cũ rồi tạo đơn mới có liên kết.',
+          );
+      }
+
       const warranty = await this.lockRelatedWarranty(context, transaction);
       if (warranty !== null && warranty.inventoryUnitId !== originalUnitId) {
         throw requirementsNotMet();
@@ -538,7 +572,37 @@ export class AfterSalesBackofficeCommandService {
       if (request === null || request.orderItemId !== item.id) {
         throw new ApiError('RESOURCE_NOT_FOUND');
       }
-      return work({ request, item }, transaction);
+      const result = await work({ request, item }, transaction);
+      if (
+        item.order.channel === 'DEALER' &&
+        result.changed &&
+        result.record.status === 'RESOLVED' &&
+        ['REPAIRED', 'REPLACED'].includes(result.record.resolutionType ?? '') &&
+        request.receivedAt !== null &&
+        result.record.resolvedAt !== null
+      ) {
+        const days = Math.max(
+          0,
+          Math.ceil(
+            (result.record.resolvedAt.getTime() - request.receivedAt.getTime()) / 86400_000,
+          ),
+        );
+        const warranty = await this.lockRelatedWarranty({ request, item }, transaction);
+        if (warranty !== null && warranty.status === 'ACTIVE') {
+          await transaction.warranty.update({
+            where: { id: warranty.id },
+            data: {
+              daysSnapshot: { increment: days },
+              endAt: new Date(warranty.endAt.getTime() + days * 86400_000),
+            },
+          });
+          await transaction.afterSalesRequest.update({
+            where: { id },
+            data: { dealerWarrantyExtensionDays: days },
+          });
+        }
+      }
+      return result;
     });
   }
 
@@ -547,6 +611,24 @@ export class AfterSalesBackofficeCommandService {
     item: AfterSalesOrderItemContext,
     transaction: Prisma.TransactionClient,
   ): Promise<void> {
+    if (item.order.channel === 'DEALER') {
+      const record = await transaction.afterSalesRequest.findUnique({
+        where: { id: request.id },
+        select: { dealerAssessment: true },
+      });
+      const assessment = record?.dealerAssessment as Record<string, unknown> | null | undefined;
+      if (
+        assessment === null ||
+        assessment === undefined ||
+        assessment['cause'] === 'UNDETERMINED' ||
+        assessment['coverage'] === 'PENDING' ||
+        assessment['shippingPayer'] === 'UNDETERMINED'
+      )
+        throw new ApiError(
+          'INVALID_STATE_TRANSITION',
+          'Chốt kết quả kiểm định, phạm vi bảo hành và bên chịu phí trong mục Đại lý trước khi quyết định.',
+        );
+    }
     if (!isIphone(item)) {
       if (request.inventoryInspectionId !== null || request.inspectionSummary === null) {
         throw requirementsNotMet();

@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
+  ArrayMaxSize,
+  ValidateNested,
   IsIn,
   IsInt,
   IsISO8601,
@@ -97,7 +100,28 @@ export class BackofficeRefundListQueryDto {
   public sortOrder: (typeof SORT_ORDERS)[number] = 'desc';
 }
 
+export class RefundAllocationDto {
+  @ApiProperty({ enum: ['ITEM', 'SHIPPING', 'OVERPAYMENT'] })
+  @IsIn(['ITEM', 'SHIPPING', 'OVERPAYMENT'])
+  public kind!: 'ITEM' | 'SHIPPING' | 'OVERPAYMENT';
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  public orderItemId?: string;
+  @ApiProperty({ type: String })
+  @Matches(/^[1-9]\d{0,14}$/)
+  public amount!: string;
+}
+
 export class CreateRefundDto {
+  @ApiPropertyOptional({ type: [RefundAllocationDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @ValidateNested({ each: true })
+  @Type(() => RefundAllocationDto)
+  public allocations?: RefundAllocationDto[];
+
   @ApiPropertyOptional({ type: String, format: 'uuid' })
   @IsOptional()
   @IsUUID()

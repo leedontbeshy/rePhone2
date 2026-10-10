@@ -4,6 +4,7 @@ import '../styles/base.css';
 import './globals.css';
 import { AuthProvider } from './auth-provider';
 import { CommerceProvider } from './commerce-provider';
+import { AffiliateMembershipProvider } from '@/components/affiliate/affiliate-membership';
 
 export const metadata: Metadata = {
   title: 'rePhone',
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html data-scroll-behavior="smooth" lang="vi">
       <body>
         <AuthProvider>
-          <CommerceProvider>{children}</CommerceProvider>
+          <AffiliateMembershipProvider>
+            <CommerceProvider>{children}</CommerceProvider>
+          </AffiliateMembershipProvider>
         </AuthProvider>
       </body>
     </html>

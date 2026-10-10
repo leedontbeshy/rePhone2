@@ -15,6 +15,6 @@ import { CheckoutCatalogReader } from './checkout-catalog.reader.js';
     CommerceOfferReader,
     CheckoutCatalogReader,
   ],
-  exports: [CommerceOfferReader, CheckoutCatalogReader],
+  exports: [CommerceOfferReader, CheckoutCatalogReader, PublicMediaUrlBuilder],
 })
 export class CatalogModule {}

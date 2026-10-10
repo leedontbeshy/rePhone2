@@ -538,7 +538,13 @@ export function VoucherSummary({
               </Button>
             </InlineAlert>
           )}
-          <div className={styles.usageTableWrap} aria-busy={usageLoading || undefined}>
+          <div
+            className={styles.usageTableWrap}
+            aria-busy={usageLoading || undefined}
+            aria-label="Lịch sử sử dụng mã ưu đãi"
+            role="region"
+            tabIndex={0}
+          >
             <table className={styles.usageTable}>
               <caption className="rp-visually-hidden">Lịch sử sử dụng mã ưu đãi</caption>
               <thead>

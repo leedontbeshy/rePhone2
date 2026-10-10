@@ -40,7 +40,7 @@ export class AuditOperationsController {
   @Get()
   @ApiOperation({ operationId: 'listBackofficeAuditLogs', summary: 'List append-only audit logs' })
   @ApiQuery({ name: 'actorUserId', required: false, type: String, format: 'uuid' })
-  @ApiQuery({ name: 'actorType', required: false, enum: ['USER', 'GUEST', 'SYSTEM'] })
+  @ApiQuery({ name: 'actorType', required: false, enum: ['USER', 'GUEST', 'SYSTEM', 'API_CLIENT'] })
   @ApiQuery({ name: 'action', required: false, type: String, maxLength: 255 })
   @ApiQuery({ name: 'resourceType', required: false, type: String, maxLength: 255 })
   @ApiQuery({ name: 'resourceId', required: false, type: String, format: 'uuid' })

@@ -53,7 +53,7 @@ describe('FE-09 browser ownership contract', () => {
     }
   });
 
-  it('assigns all 56 routes to one primary browser test and validates secondary claims', () => {
+  it('assigns all registered routes to one primary browser test and validates secondary claims', () => {
     const manifestRoutes = FRONTEND_ROUTE_COVERAGE.map(([route]) => route).sort();
     const knownRoutes = new Set(manifestRoutes);
     const primaryRoutes: string[] = [];
@@ -73,8 +73,8 @@ describe('FE-09 browser ownership contract', () => {
       }
     }
 
-    expect(primaryRoutes).toHaveLength(56);
-    expect(new Set(primaryRoutes).size).toBe(56);
+    expect(primaryRoutes).toHaveLength(manifestRoutes.length);
+    expect(new Set(primaryRoutes).size).toBe(manifestRoutes.length);
     expect([...primaryRoutes].sort()).toEqual(manifestRoutes);
   });
 

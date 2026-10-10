@@ -434,6 +434,7 @@ async function settleIntersectionObservers(page: Page): Promise<void> {
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page, label: string): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
@@ -495,6 +496,7 @@ async function installReleaseFixture(page: Page, role: FixtureRole): Promise<voi
       });
     }
     if (path.startsWith('/api/v1/cart')) return fulfillJson(route, emptyCart());
+    if (path === '/api/v1/affiliate/profile') return fulfillJson(route, { data: null });
     if (path === '/api/v1/account' && request.method() === 'GET') {
       return fulfillJson(route, { data: customerAccount() });
     }

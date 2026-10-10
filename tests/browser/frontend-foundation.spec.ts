@@ -14,7 +14,41 @@ test.describe('FE-0 frontend foundation baseline', () => {
       { name: 'mobile-390', width: 390, height: 844 },
     ] as const) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto(EXACT_UNIT_PATH);
+      if (viewport.name === 'desktop-1440') {
+        // Exercise cached/SSR media: the image loads before React can attach onLoad.
+        let releaseScripts!: () => void;
+        const scriptsReady = new Promise<void>((resolve) => {
+          releaseScripts = resolve;
+        });
+        const scriptsPattern = '**/_next/static/**/*.js';
+        await page.route(scriptsPattern, async (route) => {
+          await scriptsReady;
+          await route.continue();
+        });
+        const mainImage = page
+          .getByRole('button', { name: 'Mở ảnh ở kích thước lớn' })
+          .locator('img');
+        try {
+          await page.goto(EXACT_UNIT_PATH, { waitUntil: 'commit' });
+          await expect(mainImage).toBeVisible();
+          await expect
+            .poll(() =>
+              mainImage.evaluate(
+                (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
+              ),
+            )
+            .toBe(true);
+        } finally {
+          releaseScripts();
+        }
+        await page.waitForLoadState('networkidle');
+        await page.unroute(scriptsPattern);
+        // Deliberately cross the media fallback's 4-second deadline after hydration.
+        await page.waitForTimeout(4_500);
+        await expect(mainImage).toBeVisible();
+      } else {
+        await page.goto(EXACT_UNIT_PATH);
+      }
       await expect(
         page.getByText('Ảnh thật · Mã máy IP14P-128-001', { exact: true }),
       ).toBeVisible();

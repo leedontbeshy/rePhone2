@@ -184,3 +184,84 @@ Admin: ACTIVE
 - Invalid transition trả domain conflict, không sửa một phần dữ liệu.
 - Transition quan trọng ghi AuditLog với actor, request ID và reason nếu cần.
 - State machine P0 đã bao phủ account, order, payment, refund, fulfillment, inventory, inspection, reservation, voucher, warranty và after-sales.
+
+## 12. Dealer channel — Spec v1.0
+
+Phần 1–11 giữ nguyên baseline STOREFRONT. Bảng sau là nguồn transition cho kênh DEALER, theo [business spec](../requirements/dealer-channel.md) và [invariant registry](../quality/dealer-invariants.md). Các transition đã được nối với controllers, ledger, migration và worker trên `codex/dealer-portal`; tên command trong bảng là nghiệp vụ, đường dẫn HTTP thực tế xem [contract](../api/dealer-channel-contract.md).
+
+Mọi command ghi AuditLog cùng transaction; cột A = audit bắt buộc. E = outbox sự kiện safe DTO cùng commit. Dealer = credential hợp lệ, đủ scope/ownership; Staff = quyền nghiệp vụ phù hợp; Admin = admin re-auth cho thao tác nhạy cảm. System = job/service đã có ngữ cảnh server. Guard thất bại rollback toàn bộ và trả domain conflict. Replay cùng idempotency không tạo thêm audit/business event. Enum chung reuse Prisma baseline; không thêm PAUSED vào ReservationStatus hoặc RESERVED vào InventoryLifecycleStatus.
+
+| ID / Đối tượng | Từ | Command | Guard | Đến | Tác động trong transaction | Actor | Audit/event |
+|---|---|---|---|---|---|---|---|
+| DLR-01 / Dealer | chưa có | applyDealer | Tài khoản active, hồ sơ hợp lệ, không profile trùng; xác nhận email ngân hàng trước khi duyệt ACTIVE | PENDING/NORMAL | Tạo profile và contract acceptance version | Chủ tài khoản | A |
+| DLR-02 / Dealer | PENDING | approveDealer | Hồ sơ LIVE đủ điều kiện, contract và tài khoản hoàn đã xác minh | ACTIVE / security giữ nguyên | Approval history, approvedAt/By | Admin | A |
+| DLR-03 / Dealer | PENDING | rejectDealer | Lý do bắt buộc | REJECTED / security giữ nguyên | Approval history | Admin | A |
+| DLR-04 / Dealer | REJECTED | resubmitDealer | Bổ sung hồ sơ; không đổi chủ | PENDING / security giữ nguyên | Snapshot revision/acceptance | Chủ tài khoản | A |
+| DLR-05 / Dealer | ACTIVE | suspendDealerBusiness | Lý do bắt buộc | BUSINESS_SUSPENDED / security giữ nguyên | Chặn đơn/key mới; giữ nghĩa vụ cũ | Admin | A |
+| DLR-06 / Dealer | BUSINESS_SUSPENDED | resumeDealerBusiness | Đủ điều kiện hiện hành, lý do | ACTIVE / security giữ nguyên | History; không tự mở khóa security | Admin | A |
+| DLR-07 / Dealer | ACTIVE/BUSINESS_SUSPENDED | closeDealerBusiness | Lý do, chuyển nghĩa vụ đang mở cho vận hành | CLOSED / security giữ nguyên | Chặn sale mới; bảo hành/đơn cũ vẫn xử lý | Admin | A |
+| DLR-08 / Dealer | bất kỳ/NORMAL | lockDealerSecurity | Có thẩm quyền, lý do | business giữ nguyên/SECURITY_LOCKED | Revoke sessions/keys, pause deliveries, giữ orders | Admin | A |
+| DLR-09 / Dealer | bất kỳ/SECURITY_LOCKED | unlockDealerSecurity | Xác minh khôi phục, lý do | business giữ nguyên/NORMAL | Không phục hồi raw keys đã revoke; cấp mới riêng | Admin | A |
+| ORD-01 / Order | chưa có | createDealerOrder | Approved, unlocked, quota, exact unit available, preview còn khớp, shipping quote hợp lệ | PLACED | Snapshot + item + reservation + FULL_PAYMENT request + idem + outbox | Dealer | A/E |
+| ORD-02 / Order | PLACED | allocateVerifiedDealerReceipt | Nguồn đã xác minh cùng dealer, funding đủ total, order vẫn active | CONFIRMED | Allocation, request SATISFIED, reservation FULFILLMENT, projection | Staff | A/E |
+| ORD-03 / Order | PLACED | allocateVerifiedDealerReceipt | Nguồn hợp lệ, funding vẫn thiếu, deadline chưa từng mở hoặc giữ nguyên deadline cũ | PLACED hoặc CANCELLED nếu hết hạn sau review | Allocation; FULL superseded/BALANCE request; nếu hết hạn hủy+refund sources | Staff | A/E |
+| ORD-04 / Order | CONFIRMED | prepareDealerShipment | Funding đủ, đúng unit/location | PROCESSING | Fulfillment PREPARING, shipment CREATED | Staff | A/E |
+| ORD-05 / Order | PROCESSING | confirmDealerDelivery | Shipment HANDED_TO_CARRIER, funding hợp lệ, delivery evidence theo baseline | COMPLETED | Fulfillment COMPLETED, unit SOLD, warranty; không COD | Staff | A/E |
+| ORD-06 / Order | PLACED/CONFIRMED/PROCESSING | cancelDealerOrder | Chưa handover hoặc đã returned; review cần admin override | CANCELLED | Close requests, release active hold, refund nghĩa vụ eligible; không xóa receipt/proof | Dealer/Staff/Admin theo guard | A/E |
+| ORD-07 / Order | PLACED | expireDealerOrder | Dưới lock: thiếu tiền, deadline due, không review | CANCELLED | Close requests, reservation EXPIRED, refund phần thực nhận hợp lệ | System | A/E |
+| RSV-01 / Reservation | chưa có | reserveDealerUnit | Order/item hợp lệ, không ACTIVE khác | ACTIVE / DEALER_PAYMENT | Tạo expiresAt theo submission clock | System trong ORD-01 | A/E qua order/catalog |
+| RSV-02 / Reservation | ACTIVE / DEALER_PAYMENT hoặc DEALER_BALANCE | beginProofReview | Proof đúng hạn, chưa review khác | ACTIVE / REVIEW | Lưu origin/remaining/deadline, expiresAt null, reviewStartedAt | System trong proof submit | A/E qua order |
+| RSV-03 / Reservation | ACTIVE / REVIEW | finishProofReview | Proof terminal, order còn active | ACTIVE hoặc EXPIRED | Reject submission: restore remaining; shortage: giữ absolute balance; đủ tiền: FULFILLMENT | System trong review | A/E qua order/catalog |
+| RSV-04 / Reservation | ACTIVE | consumeDealerReservation | Handover đủ guard, chưa consume | CONSUMED | Unit IN_TRANSIT, movement duy nhất | System trong handover | A/E |
+| RSV-05 / Reservation | ACTIVE | releaseDealerReservation | Owning cancellation hoặc expiry đã hợp lệ | RELEASED hoặc EXPIRED | Giải phóng đúng unit; không đổi IN_TRANSIT thành AVAILABLE | System | A/E |
+| REQ-01 / PaymentRequest | chưa có | openFullPaymentRequest | Đơn mới còn active | OPEN / FULL_PAYMENT | Amount/transfer content/bank snapshot/dueAt | System | A qua order |
+| REQ-02 / PaymentRequest | OPEN / FULL_PAYMENT | openBalanceRequest | Receipt đã phân bổ, funding thiếu, chưa có BALANCE | SUPERSEDED | Tạo OPEN/BALANCE với phần thiếu, deadline thiết lập một lần | System trong allocation | A/E qua order |
+| REQ-03 / PaymentRequest | OPEN / BALANCE | recordPartialTopUp | Nguồn tiền hợp lệ, còn thiếu | OPEN / BALANCE | Projection còn thiếu; không đổi requiredAmount/deadline | System | A/E qua order |
+| REQ-04 / PaymentRequest | OPEN | satisfyDealerPaymentRequest | Funding đủ theo ledger, không từ proof | SATISFIED | Đóng nghĩa vụ hiện hành, giữ history | System | A/E qua order |
+| REQ-05 / PaymentRequest | OPEN | closeDealerPaymentRequest | Owning order cancel/expire | CANCELLED hoặc EXPIRED | Không xóa tiền; proof/history được giữ | System | A/E qua order |
+| PRF-01 / PaymentProof | chưa có | submitDealerProof | Authorized private file đã validate; deadline còn, không proof review trùng | UNDER_REVIEW | Proof metadata + pause hold; file I/O trước transaction | Dealer | A/E |
+| PRF-02 / PaymentProof | UNDER_REVIEW | acceptDealerProof | Nhân viên đối chiếu được receipt VERIFIED liên quan; không chỉ xem ảnh | ACCEPTED | Link receipt, end review theo funding; không cộng tiền lần hai | Staff | A/E |
+| PRF-03 / PaymentProof | UNDER_REVIEW | rejectDealerProof | Lý do; order còn active | REJECTED | Restore clock/expire nếu cần; không đảo receipt thật đã ghi nhận | Staff | A/E |
+| PRF-04 / PaymentProof | UNDER_REVIEW | closeProofOnCancellation | Owning force-cancel hợp lệ | CANCELLED | Giữ file/history cho late money reconciliation | System | A/E |
+| BNK-01 / BankTransaction | chưa có | recordVerifiedBankReceipt | Nhân viên đã kiểm tra ngân hàng, ref unique, amount dương | VERIFIED | Bản ghi thực nhận bất biến; attribution nếu xác minh được; allocate riêng/cùng transaction khi đủ guard | Staff | A/E khi dealer known |
+| BNK-02 / BankTransaction | VERIFIED | correctBankReceipt | Reversal an toàn sau đảo allocations, không shipment/refund ràng buộc | VERIFIED, net amount suy ra | Append correction + references/audit, projection; không UPDATE amount gốc | Admin | A/E |
+| BNK-03 / BankTransaction | VERIFIED | openReceiptReconciliation | Có shipment/refund hoặc chưa rõ khả năng đảo | VERIFIED / reconciliation hold | Tạo case/hold; giữ lịch sử và nghĩa vụ thực tế | Admin | A/E safe |
+| ALC-01 / PaymentAllocation | chưa có | allocateVerifiedReceipt | Cùng dealer, active Order, receipt đủ unallocated quota, không vượt order total | Append allocation có hiệu lực | Nguồn/request link, funding projection; không tin client amount aggregate | Staff/System | A/E |
+| ALC-02 / PaymentAllocation | effectiveAmount > 0 | reverseAllocation | Không dùng phần đã giữ cho refund, chưa irreversible side effect, đúng correction context | EffectiveAmount giảm, có thể 0 | Append reversal idempotent, không sửa row gốc; update projection | Admin | A/E |
+| REF-01 / Refund | chưa có | requestDealerRefund | Source verified, eligible amount/quota, destination version xác minh | REQUESTED | Source link + snapshot bank + quota held | Staff/System | A/E |
+| REF-02 / Refund | REQUESTED | startDealerRefund | Đủ quota, source/destination không hold | PROCESSING | Processor/time, quota giữ nguyên; chưa đánh dấu đã chuyển | Staff | A/E |
+| REF-03 / Refund | REQUESTED/PROCESSING | holdDealerRefund | Tài khoản không an toàn hoặc reconciliation | Status giữ nguyên / payoutHold=true | Lý do hold và audit; quota giữ nguyên | Admin/System | A/E safe |
+| REF-04 / Refund | REQUESTED/PROCESSING, hold | releaseDealerRefundHold | Xác minh lại, chưa có transfer SENT/UNKNOWN; cùng destination snapshot hoặc case xử lý riêng | Status giữ nguyên / payoutHold=false | Không tạo refund thứ hai | Admin | A/E |
+| REF-05 / Refund | PROCESSING | completeDealerRefund | Actual transfer đã xác minh, evidence riêng tư, đúng actor, source đủ quota | COMPLETED | Completion/evidence immutable, update projections; không tạo balance mới | Staff/Admin theo baseline | A/E |
+| REF-06 / Refund | REQUESTED | rejectOrCancelDealerRefund | Lý do, chưa bắt đầu chuyển | REJECTED hoặc CANCELLED | Release quota; không xóa row | Staff/Admin | A/E |
+| SHP-01 / Shipment | chưa có | prepareDealerShipment | Order CONFIRMED, funding đủ, unit held | CREATED | Order PROCESSING, fulfillment PREPARING, carrier/tracking | Staff | A/E |
+| SHP-02 / Shipment | CREATED | handOverDealerShipment | Recheck funding, order PROCESSING, active reservation và inventory | HANDED_TO_CARRIER | Fulfillment IN_TRANSIT, consume reservation, unit IN_TRANSIT | Staff | A/E |
+| SHP-03 / Shipment | HANDED_TO_CARRIER | deliverDealerShipment | Funding đủ; không COD | DELIVERED | Complete order/fulfillment, issue warranty, unit SOLD | Staff | A/E |
+| SHP-04 / Shipment | HANDED_TO_CARRIER | failDealerShipment | Lý do thất bại | FAILED | Fulfillment FAILED, unit vẫn IN_TRANSIT | Staff | A/E |
+| SHP-05 / Shipment | FAILED | receiveDealerReturn | Máy thực nhận về, đúng serial/location | RETURNED | Fulfillment RETURNED, unit INSPECTING; ghi phí/reason | Staff | A/E |
+| SHP-06 / Shipment | CREATED | cancelDealerShipment | Owning order cancellation trước handover | CANCELLED | Cancel fulfillment; reservation release qua owning command | System | A/E |
+| AFS-01 / AfterSalesRequest | chưa có | requestDealerAfterSales | Own order item, policy/coverage hợp lệ, không case mở trùng | REQUESTED | Snapshot complaint/recipient, không void warranty do business suspension | Dealer/Staff | A/E |
+| AFS-02 / AfterSalesRequest | REQUESTED | receiveDealerAfterSales | Nhận đúng máy thực tế | RECEIVED | Inventory SOLD → INSPECTING, tiếp nhận timestamp | Staff | A/E |
+| AFS-03 / AfterSalesRequest | RECEIVED | inspectDealerAfterSales | Inspection context hợp lệ | INSPECTING | Finding/cause/coverage độc lập | Staff | A/E |
+| AFS-04 / AfterSalesRequest | INSPECTING | decideDealerAfterSales | Kết quả kiểm định, lý do và policy | APPROVED hoặc REJECTED | Quyết định, nghĩa vụ phí nếu có; trả máy nếu reject theo baseline | Staff | A/E |
+| AFS-05 / AfterSalesRequest | APPROVED | resolveDealerAfterSales | REPAIRED có sửa xong; REPLACED có replacement reservation; REFUNDED có refund completed | RESOLVED | Ghi resolution, device links, warranty timeline; đổi khác giá tạo case liên kết đơn mới | Staff | A/E |
+| AFS-06 / AfterSalesRequest | REQUESTED | cancelDealerAfterSales | Chưa nhận máy, đúng quyền | CANCELLED | Không void warranty hoặc sửa order history | Dealer/Staff | A/E |
+| UNT-01 / InventoryUnit | AVAILABLE | reserveDealerUnit | Eligible và không ACTIVE reservation | AVAILABLE | Reservation ACTIVE; lifecycle không có RESERVED | System | A/E qua reservation/catalog |
+| UNT-02 / InventoryUnit | AVAILABLE | handOverDealerShipment | Consume đúng active reservation | IN_TRANSIT | Movement và shipment cập nhật atomically | Staff/System | A/E |
+| UNT-03 / InventoryUnit | IN_TRANSIT | deliverDealerShipment | Delivered transition hợp lệ | SOLD | Không tạo payment COD | Staff/System | A/E |
+| UNT-04 / InventoryUnit | IN_TRANSIT/SOLD | receiveDealerReturn/AfterSales | Máy đã thực nhận, đúng owning case | INSPECTING | Inspection context; không tự AVAILABLE | Staff | A/E |
+| UNT-05 / InventoryUnit | INSPECTING | completeResaleInspection | PASSED và điều kiện catalog/identifier/price đủ, không hold | AVAILABLE | Publish catalog availability theo baseline | Staff | A/E |
+| UNT-06 / InventoryUnit | INSPECTING | returnAfterSalesDevice | Trả chính máy khách, case reject/repaired/unchanged hợp lệ | SOLD | Không ghi một sale mới; warranty timeline xử lý theo case | Staff | A/E |
+| WRN-01 / Warranty | chưa có | issueDealerWarranty | Delivered order item, policy snapshot hợp lệ, chưa phát hành | ACTIVE | Code, kỳ hạn và liên kết máy/đơn; hiển thị đại lý bán và rePhone bảo hành | System | A/E |
+| WRN-02 / Warranty | ACTIVE | recordWarrantyServicePeriod | After-sales repair thực tế, khoảng thời gian không trùng/không ghi hai lần | ACTIVE | Lưu service period, cập nhật kỳ hạn theo quyền lợi; không chỉ đổi device link | Staff/System | A/E |
+| WRN-03 / Warranty | ACTIVE | replaceWarrantyDevice | Replacement đã cấp hợp lệ; policy thời hạn được áp dụng cho sự kiện đổi | ACTIVE | Machine lineage và mốc bảo hành mới được ghi/audit theo policy, giữ lịch sử cũ | Staff/System | A/E |
+| WRN-04 / Warranty | ACTIVE | voidDealerWarranty | Refund resolution hoặc quyết định admin có căn cứ; không do đình chỉ đại lý | VOIDED | Reason/actor; không xóa warranty hay order | Admin/System theo case | A/E |
+
+### Quy tắc phối hợp
+
+- Order COMPLETED/CANCELLED và Reservation RELEASED/EXPIRED/CONSUMED là terminal; không hồi sinh khi tiền đến muộn. Các dòng mô tả cùng command trên nhiều đối tượng là một transaction, không phải nhiều API cập nhật status độc lập.
+- REF-03 chỉ chặn payout mới. Nếu ngân hàng đã nhận lệnh hoặc chưa rõ kết quả, tạo reconciliation; không coi flag phần mềm là đảo giao dịch. Khi xác minh tiền đã đi, completion phải ghi nhận sự thật ngay cả khi hold được bật sau lúc gửi, qua quy trình staff/admin có audit; không gửi lại tiền.
+- BNK-02/ALC-02 chỉ dùng khi reversal giữ được invariants. Sai sót sau giao/hoàn dùng BNK-03; không buộc dữ liệu thật phải vừa một phép toán bằng cách xóa lịch sử.
+- API permission không quyết định quyền backoffice. Security lock chặn đối tác nhưng không làm shipment/after-sales terminal. Business status và security status không ghi đè nhau.
+- Giao dịch expiry và verify lấy cùng order lock. Nếu verify thắng, expiry no-op; nếu cancel thắng, record tiền vẫn tồn tại để đối soát/hoàn, không allocate vào order hủy. Acceptance OPS-07 cần test nhiều PostgreSQL connection.
+- ACTIVE reservation REVIEW không expiry nhưng có cảnh báo/SLA và giới hạn holds. Worker không tự giải phóng chỉ vì hết SLA review. Job và money commands lock/recheck aggregate, ghi audit/outbox trong cùng transaction.

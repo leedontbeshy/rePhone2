@@ -18,6 +18,7 @@ import { FulfillmentClock } from './fulfillment-clock.service.js';
 import { projectBackofficeOrderDetail } from './fulfillment.projector.js';
 import type { BackofficeOrderDetailDto } from './fulfillment-response.dto.js';
 import { assertPickupDeadline, validatePickupHoldExtension } from './pickup-fulfillment.policy.js';
+import { readDealerFunding } from '../dealers/dealer-ledger.reader.js';
 
 interface CommandOutcome {
   orderId: string;
@@ -86,6 +87,12 @@ export class PickupPreparationService {
       const transitional =
         order.status === 'CONFIRMED' && ['PENDING', 'PREPARING'].includes(order.fulfillmentStatus);
       if (!replayed && !transitional) throw new ApiError('INVALID_STATE_TRANSITION');
+      if (
+        order.channel === 'DEALER' &&
+        !(await readDealerFunding(transaction, order.id, BigInt(order.grandTotal.toString())))
+          .fullyFunded
+      )
+        throw new ApiError('ORDER_NOT_FULLY_PAID');
       const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
       this.inventory.assertReservationTargets(
         reservations,

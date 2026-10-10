@@ -411,6 +411,7 @@ function AuditFilters({
           <option value="USER">Người dùng</option>
           <option value="GUEST">Khách vãng lai</option>
           <option value="SYSTEM">Hệ thống</option>
+          <option value="API_CLIENT">Kết nối API đại lý</option>
         </Select>
         <Select
           id="audit-sort-order"

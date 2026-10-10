@@ -28,10 +28,12 @@ describe('FE-0 frontend coverage contract', () => {
       }),
     );
 
-    expect(openApiOperationIds).toHaveLength(162);
-    expect(new Set(openApiOperationIds).size).toBe(162);
-    expect(manifestOperationIds).toHaveLength(162);
-    expect(new Set(manifestOperationIds).size).toBe(162);
+    expect(openApiOperationIds.filter((id) => !/^(Dealer|Affiliate)/.test(id))).toHaveLength(162);
+    expect(openApiOperationIds.filter((id) => id.startsWith('Dealer'))).toHaveLength(67);
+    expect(openApiOperationIds.filter((id) => id.startsWith('Affiliate'))).toHaveLength(23);
+    expect(new Set(openApiOperationIds).size).toBe(openApiOperationIds.length);
+    expect(manifestOperationIds).toHaveLength(openApiOperationIds.length);
+    expect(new Set(manifestOperationIds).size).toBe(manifestOperationIds.length);
     expect([...manifestOperationIds].sort()).toEqual([...openApiOperationIds].sort());
     expect(sortOperations(manifestOperations)).toEqual(sortOperations(openApiOperations));
 
@@ -52,7 +54,7 @@ describe('FE-0 frontend coverage contract', () => {
       expect(accessMode.length).toBeGreaterThan(0);
       expect(targetRoute.length).toBeGreaterThan(0);
       expect(actionState.length).toBeGreaterThan(0);
-      expect(phase).toMatch(/^FE-[1-8]$/);
+      expect(phase).toMatch(/^FE-(?:[1-8]|10|11)$/);
       expect(browserOwner.startsWith('browser:')).toBe(true);
       const owningPhaseStatus = FRONTEND_PHASE_STATUS[phase];
       expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
@@ -106,8 +108,8 @@ describe('FE-0 frontend coverage contract', () => {
     );
 
     expect(currentRoutes).toHaveLength(existingRoutes.length);
-    expect(new Set(manifestRoutes).size).toBe(56);
-    expect(existingRoutes.length + plannedRoutes.length).toBe(56);
+    expect(new Set(manifestRoutes).size).toBe(64);
+    expect(existingRoutes.length + plannedRoutes.length).toBe(64);
     expect([...existingRoutes].sort()).toEqual([...currentRoutes].sort());
     expect(plannedRoutes.filter((route) => currentRoutes.includes(route))).toEqual([]);
     expect(plannedRoutes).not.toContain('/backoffice/catalog/products/[id]/variants/[variantId]');
@@ -225,7 +227,7 @@ function readPlanPhaseStatuses(): Record<string, string> {
   return Object.fromEntries(
     [
       ...plan.matchAll(
-        /^### (FE-\d) —[^\n]*\n\n[\s\S]*?^\| Trạng thái\s+\| \*\*(NOT STARTED|IN PROGRESS|DONE)\*\*/gm,
+        /^### (FE-\d+) —[^\n]*\n\n[\s\S]*?^\| Trạng thái\s+\| \*\*(NOT STARTED|IN PROGRESS|DONE)\*\*/gm,
       ),
     ].map(([, phase, status]) => [phase, status]),
   ) as Record<string, string>;

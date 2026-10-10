@@ -5,7 +5,11 @@ import { defineConfig } from 'prisma/config';
 
 const candidates = [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')];
 const environmentFile = candidates.find((candidate) => existsSync(candidate));
-if (environmentFile !== undefined) {
+if (
+  environmentFile !== undefined &&
+  process.env.REPHONE_AFFILIATE_TEST !== 'true' &&
+  process.env.REPHONE_LOCAL_SANDBOX !== 'true'
+) {
   loadDotenv({ path: environmentFile, quiet: true });
 }
 

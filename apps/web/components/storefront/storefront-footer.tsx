@@ -28,6 +28,7 @@ interface StorefrontFooterProps {
 const IPHONE_GENERATIONS = ['17', '16', '15', '14', '13', '12', '11', 'X'] as const;
 
 const DISCOVERY_LINKS = [
+  { href: '/affiliate', label: 'Cộng tác viên' },
   { href: '/products?productType=IPHONE&inStock=true', label: 'Máy đang bán' },
   { href: '/products?productType=ACCESSORY&inStock=true', label: 'Phụ kiện' },
   { href: '/vouchers', label: 'Ưu đãi' },

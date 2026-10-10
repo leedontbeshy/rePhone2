@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
+import { Button, InlineAlert, Skeleton } from '@/components/ui';
+import { LoginRedirect } from '@/components/auth/login-redirect';
 import type { AccountRequestError } from '@/lib/account-api';
 import styles from './account.module.css';
 
@@ -42,17 +43,7 @@ export function AccountLoadingState({ label }: Readonly<{ label: string }>) {
 }
 
 export function AccountAnonymousState({ returnTo = '/account' }: Readonly<{ returnTo?: string }>) {
-  return (
-    <section className={styles.emptyState}>
-      <h2>Đăng nhập để quản lý tài khoản</h2>
-      <p>Đăng nhập giúp rePhone bảo vệ hồ sơ, mật khẩu và địa chỉ của bạn.</p>
-      <div className={styles.stateActions}>
-        <Link href={`/login?returnTo=${encodeURIComponent(returnTo)}`} standalone>
-          Đăng nhập
-        </Link>
-      </div>
-    </section>
-  );
+  return <LoginRedirect returnTo={returnTo} />;
 }
 
 export function AccountPermissionState() {

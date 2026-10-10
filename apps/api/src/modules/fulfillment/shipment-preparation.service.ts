@@ -69,7 +69,7 @@ export class ShipmentPreparationService {
           throw new ApiError('DUPLICATE_RESOURCE');
         }
         assertPreparingShippingOrder(order);
-        const finance = await this.payments.lockFinance(order.id, transaction);
+        const finance = await this.payments.lockFinance(order.id, transaction, order.channel);
         assertVerifiedDeposit(order, finance);
         const reservations = await this.inventory.lockActiveReservations(order.id, transaction);
         this.inventory.assertShippingHold(
@@ -139,7 +139,7 @@ export class ShipmentPreparationService {
       assertPreparingShippingOrder(order);
       if (shipment.status !== 'CREATED') throw new ApiError('INVALID_STATE_TRANSITION');
 
-      const finance = await this.payments.lockFinance(order.id, tx);
+      const finance = await this.payments.lockFinance(order.id, tx, order.channel);
       assertVerifiedDeposit(order, finance);
       const reservations = await this.inventory.lockActiveReservations(order.id, tx);
       this.inventory.assertShippingHold(
@@ -225,6 +225,10 @@ function assertVerifiedDeposit(
   order: FulfillmentOrderRecord,
   finance: Awaited<ReturnType<FulfillmentPaymentGateway['lockFinance']>>,
 ): void {
+  if (order.channel === 'DEALER') {
+    if (finance.dealer?.fullyFunded !== true) throw new ApiError('ORDER_NOT_FULLY_PAID');
+    return;
+  }
   const depositRequired = BigInt(order.depositRequired.toString());
   if (depositRequired === 0n && BigInt(order.grandTotal.toString()) === 0n) return;
   const verifiedDeposit = finance.payments.find(

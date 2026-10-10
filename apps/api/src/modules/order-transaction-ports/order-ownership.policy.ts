@@ -5,13 +5,14 @@ import { GuestCartIdentityService } from '../auth/guest-cart-identity.service.js
 import { GuestOrderIdentityService } from './guest-order-identity.service.js';
 
 export interface OrderOwnershipRecord {
+  channel?: 'STOREFRONT' | 'DEALER';
   customerId: string | null;
   guestAccessTokenHash: string | null;
   sourceCart: {
     status: string;
     guestTokenHash: string | null;
     expiresAt: Date | null;
-  };
+  } | null;
 }
 
 @Injectable()
@@ -24,6 +25,8 @@ export class OrderOwnershipPolicy {
   ) {}
 
   public assertAccess(request: Request, order: OrderOwnershipRecord, now = new Date()): void {
+    if (order.channel === 'DEALER' || order.sourceCart === null)
+      throw new ApiError('ORDER_NOT_FOUND');
     if (request.auth !== undefined) {
       if (request.auth.role !== 'CUSTOMER') throw new ApiError('FORBIDDEN');
       if (order.customerId !== request.auth.userId) throw new ApiError('ORDER_NOT_FOUND');

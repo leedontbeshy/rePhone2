@@ -288,11 +288,13 @@
 
 .customerLayout {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   inline-size: min(100%, var(--container-max, 1440px));
   margin-inline: auto;
 }
 
 .customerSidebar {
+  min-inline-size: 0;
   padding: 16px;
   border-block-end: 1px solid var(--color-border, #dce4ea);
   background: var(--color-surface, #fff);
@@ -300,6 +302,11 @@
 
 .customerNavigationList {
   overflow-x: auto;
+}
+
+.customerNavigationList > li {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .customerMain {

@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
+import { useAffiliateMembership } from '@/components/affiliate/affiliate-membership';
 import { CustomerShell } from '@/components/shells';
 import { MobileNavigation } from '@/components/storefront/mobile-navigation';
 import { StorefrontDesktopNavigation } from '@/components/storefront/storefront-desktop-navigation';
@@ -14,11 +15,19 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, logoutPending, status, user } = useAuth();
+  const { registered } = useAffiliateMembership();
   const [logoutError, setLogoutError] = useState(false);
+  const [logoutRequested, setLogoutRequested] = useState(false);
   const customerNavigation = [
     { href: '/account', label: 'Hồ sơ', isCurrent: pathname === '/account' },
+    {
+      href: '/account/security',
+      label: 'Bảo mật',
+      isCurrent: pathname === '/account/security',
+    },
     ...(status === 'authenticated' && user?.role === 'CUSTOMER'
       ? [
+          { href: '/dealer', label: 'Cổng đại lý', isCurrent: pathname === '/dealer' },
           {
             href: '/account/addresses',
             label: 'Địa chỉ',
@@ -26,14 +35,11 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
           },
         ]
       : []),
-    {
-      href: '/account/security',
-      label: 'Bảo mật',
-      isCurrent: pathname === '/account/security',
-    },
+    ...(registered ? [{ href: '/affiliate', label: 'Cộng tác viên', isCurrent: false }] : []),
   ];
 
   async function signOut() {
+    setLogoutRequested(true);
     setLogoutError(false);
     try {
       await logout();
@@ -52,9 +58,9 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
       mobileNavigation={<MobileNavigation />}
     >
       <div className={styles.accountSurface}>
-        {status === 'authenticated' || logoutPending || logoutError ? (
+        {status === 'loading' || status === 'authenticated' || logoutPending || logoutError ? (
           <div className={styles.sessionControls}>
-            {logoutError ? (
+            {status === 'loading' ? null : logoutError ? (
               <InlineAlert
                 className={styles.sessionError ?? ''}
                 tone="warning"
@@ -75,7 +81,7 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
             )}
           </div>
         ) : null}
-        {children}
+        {logoutRequested ? null : children}
       </div>
     </CustomerShell>
   );

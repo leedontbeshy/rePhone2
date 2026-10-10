@@ -1,4 +1,5 @@
 'use client';
+import { LoginRedirect } from '@/components/auth/login-redirect';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -108,14 +109,7 @@ function CustomerWarrantiesContent() {
         }
       />
       {status === 'loading' ? <CollectionLoading label="Đang kiểm tra tài khoản…" /> : null}
-      {status === 'anonymous' ? (
-        <EmptyState
-          title="Đăng nhập để xem bảo hành"
-          description="Danh sách bảo hành chỉ hiển thị cho tài khoản đã mua hàng."
-          actionHref="/login?returnTo=%2Fwarranties"
-          actionLabel="Đăng nhập"
-        />
-      ) : null}
+      {status === 'anonymous' ? <LoginRedirect returnTo="/warranties" /> : null}
       {status === 'authenticated' && !isCustomer ? (
         <EmptyState
           title="Khu vực dành cho khách hàng"

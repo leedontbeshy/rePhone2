@@ -1,6 +1,7 @@
 import type { FulfillmentAction } from './fulfillment-response.dto.js';
 
 export interface FulfillmentActionOrder {
+  channel?: 'STOREFRONT' | 'DEALER';
   status: 'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
   fulfillmentStatus:
     | 'PENDING'
@@ -38,6 +39,7 @@ export function availableFulfillmentActions(
 }
 
 export function canStaffCancelOrder(order: FulfillmentActionOrder): boolean {
+  if (order.channel === 'DEALER') return false; // Dealer cancellation includes bank-ledger refunds and return fees.
   if (!['PLACED', 'CONFIRMED', 'PROCESSING'].includes(order.status)) return false;
   if (order.payments.some(({ status }) => status === 'UNDER_REVIEW')) return false;
   if (

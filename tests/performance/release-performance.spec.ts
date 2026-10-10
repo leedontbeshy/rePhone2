@@ -315,7 +315,7 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
   const revision = currentRevision();
   expect(
     revision.clean,
-    'WP-12 performance measurement must run from a clean commit so the report SHA is reproducible.',
+    `WP-12 performance measurement must run from a clean commit so the report SHA is reproducible.\n${revision.changes}`,
   ).toBe(true);
 
   const customer = await createAuthenticatedContext(browser, CUSTOMER, '/account', {
@@ -912,10 +912,10 @@ function reportTypeFrom(value: string | undefined): ReportType {
   throw new Error('WP12_REPORT_TYPE must be either "baseline" or "after".');
 }
 
-function currentRevision(): { sha: string; clean: boolean } {
+function currentRevision(): { sha: string; clean: boolean; changes: string } {
   const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const status = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
-  return { sha, clean: status.length === 0 };
+  return { sha, clean: status.length === 0, changes: status };
 }
 
 function round(value: number, digits: number): number {

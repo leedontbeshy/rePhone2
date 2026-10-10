@@ -68,7 +68,12 @@ export const AUDIT_ACTION_FILTERS = [
   { label: 'Mã ưu đãi', value: 'voucher.*' },
 ] as const;
 
-const ACTOR_TYPES = new Set<NonNullable<AuditQuery['actorType']>>(['USER', 'GUEST', 'SYSTEM']);
+const ACTOR_TYPES = new Set<NonNullable<AuditQuery['actorType']>>([
+  'USER',
+  'GUEST',
+  'SYSTEM',
+  'API_CLIENT',
+]);
 const ACTION_PATTERN = /^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*(?:\.[a-z][a-z0-9_]*|\.\*)$/;
 const RESOURCE_TYPE_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,254}$/;
 
@@ -449,6 +454,7 @@ export function auditActorLabel(item: Pick<AuditLogListItem, 'actor' | 'actorTyp
     return item.actor.fullName;
   }
   if (item.actorType === 'SYSTEM') return 'Hệ thống';
+  if (item.actorType === 'API_CLIENT') return 'Kết nối API đại lý';
   if (item.actorType === 'GUEST') return 'Khách vãng lai';
   return 'Người dùng';
 }

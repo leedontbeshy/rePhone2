@@ -102,6 +102,7 @@ describe('auth UI foundation', () => {
       '/account/addresses?edit=1',
     );
     expect(safeAuthReturnTo('/cart', 'CUSTOMER')).toBe('/cart');
+    expect(safeAuthReturnTo('/affiliate', 'CUSTOMER')).toBe('/affiliate');
     expect(safeAuthReturnTo('/backoffice/orders?page=2', 'EMPLOYEE')).toBe(
       '/backoffice/orders?page=2',
     );

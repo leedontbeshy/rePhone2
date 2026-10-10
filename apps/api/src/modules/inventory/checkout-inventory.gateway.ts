@@ -32,7 +32,7 @@ export interface ReserveCheckoutInventoryInput {
   orderId: string;
   orderItemIds: ReadonlyMap<string, string>;
   allocation: CheckoutInventoryAllocation;
-  holdReason: 'DEPOSIT' | 'PICKUP' | 'FULFILLMENT';
+  holdReason: 'DEPOSIT' | 'PICKUP' | 'FULFILLMENT' | 'DEALER_PAYMENT' | 'DEALER_BALANCE';
   expiresAt: Date | null;
 }
 

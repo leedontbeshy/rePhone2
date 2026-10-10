@@ -8,6 +8,7 @@ export default mergeConfig(sharedVitestConfig, {
     environment: 'node',
     fileParallelism: false,
     testTimeout: 20_000,
-    hookTimeout: 20_000,
+    // Cold application imports include all commerce modules; business tests stay bounded separately.
+    hookTimeout: 60_000,
   },
 });

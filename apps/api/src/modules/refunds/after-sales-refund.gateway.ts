@@ -32,9 +32,10 @@ export class AfterSalesRefundGateway {
         completedAt: true,
       },
     });
-    if (refund === null || refund.completedAt === null) return null;
+    if (refund === null || refund.completedAt === null || refund.orderId === null) return null;
     return {
       ...refund,
+      orderId: refund.orderId,
       amount: refund.amount.toString(),
       completedAt: refund.completedAt,
     };

@@ -371,7 +371,7 @@ async function assertNoUnresolvedPriorRun(customerId: string): Promise<void> {
     },
     select: { id: true, order: { select: { orderNumber: true } } },
   });
-  if (unresolved !== null) {
+  if (unresolved !== null && unresolved.order !== null) {
     throw new Error(
       `Prior Slice 10 smoke left Refund ${unresolved.id} for ${unresolved.order.orderNumber} PROCESSING; resolve it through the application before rerun`,
     );

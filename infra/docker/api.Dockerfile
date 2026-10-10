@@ -78,6 +78,21 @@ USER node
 CMD ["pnpm", "--filter", "@rephone/api", "db:check"]
 
 
+# Local-only adapters, demo assets and persistent uploads for the portable test stack.
+FROM api-build AS api-local
+
+ENV NODE_ENV=test
+
+RUN mkdir -p /workspace/.local/affiliate/storage \
+    && chown -R node:node /workspace/.local
+
+USER node
+
+EXPOSE 4001
+
+CMD ["node", "scripts/affiliate-test-server.mjs"]
+
+
 FROM ${NODE_IMAGE} AS api-runtime
 
 ENV NODE_ENV=production

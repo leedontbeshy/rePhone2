@@ -1,4 +1,5 @@
 'use client';
+import { LoginRedirect } from '@/components/auth/login-redirect';
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -130,14 +131,7 @@ export function AfterSalesList() {
       />
 
       {status === 'loading' ? <CollectionLoading label="Đang kiểm tra tài khoản…" /> : null}
-      {status === 'anonymous' ? (
-        <EmptyState
-          title="Đăng nhập để xem yêu cầu hỗ trợ"
-          description="Các yêu cầu mua không cần tài khoản chỉ mở được từ liên kết của đơn hàng."
-          actionHref="/login"
-          actionLabel="Đăng nhập"
-        />
-      ) : null}
+      {status === 'anonymous' ? <LoginRedirect returnTo="/after-sales" /> : null}
       {status === 'authenticated' && !isCustomer ? (
         <ErrorState message="Tài khoản này không sử dụng khu vực hỗ trợ dành cho khách hàng." />
       ) : null}
