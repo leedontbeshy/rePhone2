@@ -658,6 +658,8 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
 }
 
 async function expectAccessible(page: Page): Promise<void> {
+  // Route content can arrive before Next.js finishes attaching streamed metadata.
+  await expect(page).toHaveTitle('rePhone');
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
