@@ -1,7 +1,7 @@
 'use client';
 
 import { ImageSquareIcon } from '@phosphor-icons/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PublicMedia } from '@/lib/catalog-api';
 import { classNames } from '@/components/ui/class-names';
 import styles from './public-media.module.css';
@@ -23,12 +23,18 @@ export function PublicMediaImage({
 }: PublicMediaProps) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const mediaClassName = classNames(styles.media, className);
 
   useEffect(() => {
     if (media === undefined || loadedUrl === media.url || failedUrl === media.url) return;
+    // An SSR image may finish loading before hydration attaches onLoad.
+    if (imageRef.current?.complete && imageRef.current.naturalWidth > 0) return;
     const timeout = window.setTimeout(() => {
-      setFailedUrl(media.url);
+      const image = imageRef.current;
+      if (image !== null && (!image.complete || image.naturalWidth === 0)) {
+        setFailedUrl(media.url);
+      }
     }, MEDIA_LOAD_TIMEOUT_MS);
     return () => {
       window.clearTimeout(timeout);
@@ -50,6 +56,7 @@ export function PublicMediaImage({
 
   return (
     <img
+      ref={imageRef}
       alt={media.altText}
       className={mediaClassName}
       fetchPriority={priority ? 'high' : 'auto'}
