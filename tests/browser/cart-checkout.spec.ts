@@ -1074,6 +1074,7 @@ async function inspectCommerceSurface(page: Page, label: string): Promise<string
       `${label}: horizontal overflow ${String(dimensions.scrollWidth)} > ${String(dimensions.clientWidth)}`,
     );
   }
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   for (const violation of results.violations) {
     if (violation.impact !== 'serious' && violation.impact !== 'critical') continue;

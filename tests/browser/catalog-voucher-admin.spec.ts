@@ -523,6 +523,33 @@ test.describe('FE-05 catalog and voucher administration', () => {
     }
 
     await page.setViewportSize({ width: 390, height: 844 });
+    let releaseUsages!: () => void;
+    const usagesReady = new Promise<void>((resolve) => {
+      releaseUsages = resolve;
+    });
+    const usagesPattern = `**/api/v1/backoffice/vouchers/${VOUCHER_ID}/usages*`;
+    await page.route(usagesPattern, async (route) => {
+      await usagesReady;
+      await route.fallback();
+    });
+    try {
+      await page.goto(`/backoffice/vouchers/${VOUCHER_ID}`);
+      const usageRegion = page.getByRole('region', { name: 'Lịch sử sử dụng mã ưu đãi' });
+      await expect(usageRegion).toHaveAttribute('aria-busy', 'true');
+      await page.getByLabel('Trạng thái lượt sử dụng').focus();
+      await page.keyboard.press('Tab');
+      await expect(usageRegion).toBeFocused();
+      await page.keyboard.press('ArrowRight');
+      await expect
+        .poll(() => usageRegion.evaluate((element) => element.scrollLeft))
+        .toBeGreaterThan(0);
+      await expectAccessible(page);
+    } finally {
+      releaseUsages();
+    }
+    await expect(page.getByText('RPH-20260828-FE050001', { exact: true })).toBeVisible();
+    await page.unroute(usagesPattern);
+
     await page.goto(`/backoffice/catalog/products/${PRODUCT_ID}`);
     await page.getByRole('button', { name: 'Thêm biến thể', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Thêm biến thể' })).toBeVisible();
@@ -1085,6 +1112,7 @@ async function expectSingleMainAndNoOverflow(page: Page): Promise<void> {
 }
 
 async function expectAccessible(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

@@ -150,6 +150,7 @@ async function login(page: Page, email: string, password: string, destination: s
   await page.waitForURL(destination);
 }
 async function accessible(page: Page) {
+  await expect(page).toHaveTitle(/rePhone/);
   const result = await new AxeBuilder({ page }).analyze();
   expect(
     result.violations.filter((row) => row.impact === 'serious' || row.impact === 'critical'),

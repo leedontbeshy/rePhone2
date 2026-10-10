@@ -294,6 +294,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page }).analyze();
   expect(
     results.violations.filter(({ impact }) => impact === 'critical' || impact === 'serious'),

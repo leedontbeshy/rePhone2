@@ -47,6 +47,7 @@ test(bt('browser:affiliate-flow', 'admin-readiness'), async ({ page }) => {
 });
 
 async function accessible(page: Page) {
+  await expect(page).toHaveTitle(/rePhone/);
   const result = await new AxeBuilder({ page }).analyze();
   expect(
     result.violations.filter((row) => row.impact === 'serious' || row.impact === 'critical'),

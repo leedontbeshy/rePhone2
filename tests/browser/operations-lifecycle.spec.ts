@@ -86,6 +86,7 @@ test.describe('FE-09 operations lifecycle through the rendered UI', () => {
           scroll: document.documentElement.scrollWidth,
         }));
         expect(size.scroll, `${route} không tràn ngang`).toBeLessThanOrEqual(size.client);
+        await expect(isolated).toHaveTitle(/rePhone/);
         const axe = await new AxeBuilder({ page: isolated }).exclude('nextjs-portal').analyze();
         expect(
           axe.violations.filter(({ impact }) => impact === 'serious' || impact === 'critical'),
@@ -910,6 +911,7 @@ async function expectNoDocumentOverflow(page: Page, label: string): Promise<void
 }
 
 async function expectNoSeriousAxeViolations(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const axe = await new AxeBuilder({ page }).exclude('nextjs-portal').analyze();
   expect(
     axe.violations.filter(({ impact }) => impact === 'serious' || impact === 'critical'),

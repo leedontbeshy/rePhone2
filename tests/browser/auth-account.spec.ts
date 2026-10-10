@@ -935,6 +935,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 }
 
 async function expectNoSeriousAccessibilityViolations(page: Page, route: string): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

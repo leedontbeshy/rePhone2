@@ -533,6 +533,7 @@ async function expectNoSeriousAccessibilityViolations(
   route: string,
   width: number,
 ): Promise<void> {
+  await expect(page).toHaveTitle(/rePhone/);
   const results = await new AxeBuilder({ page })
     .exclude('nextjs-portal')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
