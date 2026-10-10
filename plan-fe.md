@@ -138,7 +138,7 @@ Component ownership dự kiến:
 - `features/**`: API adapter, state hook và domain form cho từng bounded UI feature; không import Prisma/internal API DTO.
 - `styles/tokens.css` + `styles/base.css` và CSS Modules; `globals.css` tồn tại tạm thời cho legacy route đến khi route owner hoàn tất migration.
 
-### 5.1. Route ownership ledger — 55 hiện có + 1 mới
+### 5.1. Route ownership ledger — 64 route hiện có
 
 Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc embedded workflow không được tạo URL công khai khác.
 
@@ -204,6 +204,10 @@ Mỗi URL xuất hiện đúng một lần trong ledger này. Route group hoặc
 |  58 | `/dealer/terms`                          | Hiện có | FE-10       |
 |  59 | `/dealer/api-guide`                      | Hiện có | FE-10       |
 |  60 | `/backoffice/dealers`                    | Hiện có | FE-10       |
+|  61 | `/affiliate`                             | Hiện có | FE-11       |
+|  62 | `/affiliate/terms`                       | Hiện có | FE-11       |
+|  63 | `/r/[code]`                              | Hiện có | FE-11       |
+|  64 | `/backoffice/affiliates`                 | Hiện có | FE-11       |
 
 ## 6. Dependency graph
 
@@ -776,3 +780,39 @@ API mở rộng giữ nguyên 162 operation bán lẻ. Ownership browser là ki�
 | 227 | `DealerController_submit`                          | `POST /api/v1/dealer/payment-requests/{id}/proofs`                   | Dealer API key or CUSTOMER Bearer | `/dealer`                          | `Thao tác; validation, pending, success, conflict`              | FE-10 | `browser:dealer-flow` | DONE   |
 | 228 | `DealerController_refundList`                      | `GET /api/v1/dealer/refunds`                                         | Dealer API key or CUSTOMER Bearer | `/dealer`                          | `Đọc dữ liệu; loading, empty, error, permission`                | FE-10 | `browser:dealer-flow` | DONE   |
 | 229 | `DealerPortalController_resendBankConfirmation`    | `POST /api/v1/dealer-portal/bank-accounts/{id}/resend-confirmation`  | CUSTOMER Bearer                   | `/dealer`                          | `Thao tác; validation, pending, success, conflict`              | FE-10 | `browser:dealer-flow` | DONE   |
+
+### FE-11 — Cộng tác viên và quản trị
+
+| Thuộc tính | Giá trị                                                                                                                                            |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trạng thái | **DONE**                                                                                                                                           |
+| Phạm vi    | Chương trình affiliate một cấp, hồ sơ, ngân hàng, link giới thiệu, hoa hồng và chi trả.                                                            |
+| Evidence   | Contract 23 API và 4 route; API E2E kiểm tra nghiệp vụ; browser:affiliate-flow kiểm tra trang công khai, chuyển hướng link và trạng thái quản trị. |
+
+Browser owner chỉ xác định suite chịu trách nhiệm; không có nghĩa mọi thao tác tài chính đã được chạy qua UI. Các bất biến tiền, phân quyền và đối soát được kiểm tra ở API E2E.
+
+| #   | Operation                               | Contract                                                     | Access          | Route                    | State                                              | Phase | Browser owner            | Status |
+| --- | --------------------------------------- | ------------------------------------------------------------ | --------------- | ------------------------ | -------------------------------------------------- | ----- | ------------------------ | ------ |
+| 230 | `AffiliatePublicController_config`      | `GET /api/v1/affiliate-program`                              | Public          | `/affiliate`             | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 231 | `AffiliatePublicController_refer`       | `POST /api/v1/affiliate-program/referrals`                   | Public          | `/r/[code]`              | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 232 | `AffiliatePortalController_apply`       | `POST /api/v1/affiliate/application`                         | Customer Bearer | `/affiliate`             | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 233 | `AffiliatePortalController_bank`        | `POST /api/v1/affiliate/banks`                               | Customer Bearer | `/affiliate`             | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 234 | `AffiliatePortalController_confirm`     | `POST /api/v1/affiliate/banks/confirm`                       | Customer Bearer | `/affiliate`             | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 235 | `AffiliatePortalController_dashboard`   | `GET /api/v1/affiliate/dashboard`                            | Customer Bearer | `/affiliate`             | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 236 | `AffiliatePortalController_offers`      | `GET /api/v1/affiliate/offers`                               | Customer Bearer | `/affiliate`             | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 237 | `AffiliatePortalController_withdraw`    | `POST /api/v1/affiliate/payouts`                             | Customer Bearer | `/affiliate`             | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 238 | `AffiliatePortalController_profile`     | `GET /api/v1/affiliate/profile`                              | Customer Bearer | `/affiliate`             | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 239 | `AffiliateAdminController_bankDetails`  | `GET /api/v1/backoffice/affiliates/banks/{id}`               | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 240 | `AffiliateAdminController_verify`       | `POST /api/v1/backoffice/affiliates/banks/{id}/verify`       | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 241 | `AffiliateAdminController_dashboard`    | `GET /api/v1/backoffice/affiliates/dashboard`                | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 242 | `AffiliateAdminController_members`      | `GET /api/v1/backoffice/affiliates/members`                  | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 243 | `AffiliateAdminController_transition`   | `POST /api/v1/backoffice/affiliates/members/{id}`            | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 244 | `AffiliateAdminController_offers`       | `GET /api/v1/backoffice/affiliates/offers`                   | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 245 | `AffiliateAdminController_override`     | `POST /api/v1/backoffice/affiliates/offers/{id}`             | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 246 | `AffiliateAdminController_payoutAction` | `POST /api/v1/backoffice/affiliates/payouts/{id}`            | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 247 | `AffiliateAdminController_complete`     | `POST /api/v1/backoffice/affiliates/payouts/{id}/complete`   | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 248 | `AffiliateAdminController_destination`  | `GET /api/v1/backoffice/affiliates/payouts/{id}/destination` | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 249 | `AffiliateAdminController_evidence`     | `GET /api/v1/backoffice/affiliates/payouts/{id}/evidence`    | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 250 | `AffiliateAdminController_policy`       | `GET /api/v1/backoffice/affiliates/policy`                   | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
+| 251 | `AffiliateAdminController_savePolicy`   | `POST /api/v1/backoffice/affiliates/policy`                  | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+| 252 | `AffiliateAdminController_reconcile`    | `POST /api/v1/backoffice/affiliates/reconcile`               | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |

@@ -21,6 +21,11 @@ Sổ chi cộng tác viên tách khỏi Payment/Refund của bán lẻ và sổ 
 
 ## Database và bộ chạy thử
 
+Máy mới có thể dùng `docker compose -f compose.local.yaml up --build -d --wait` mà không cần Node/Supabase.
+Xem [README](../../README.md) để cài đặt, sao lưu và chuyển dữ liệu. Docker local dùng volume riêng
+`rephone-local_database`, không phải PostgreSQL cổng 5433 của bộ chạy Node dưới đây. Admin phải mở
+chương trình và xét duyệt hồ sơ trên database mới; seed không tự sao chép các hồ sơ từ máy cũ.
+
 Nhánh triển khai: `feat/affiliate-v1`.
 Database kiểm thử: **127.0.0.1:5433/rephone_test**.
 Không chạy migration này lên Supabase hoặc `rephone_dealer_sandbox` để thử tính năng.

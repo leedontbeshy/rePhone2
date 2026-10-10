@@ -6,6 +6,8 @@ import { setTestEnvironment } from '../support/test-environment.js';
 
 setTestEnvironment();
 Object.assign(process.env, {
+  AFFILIATE_ENABLED: 'false',
+  AFFILIATE_WORKER_ENABLED: 'false',
   DEALER_ENABLED: 'true',
   DEALER_ENVIRONMENT: 'TEST',
   DEALER_WORKER_ENABLED: 'false',

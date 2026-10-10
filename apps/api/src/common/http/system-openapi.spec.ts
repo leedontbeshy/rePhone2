@@ -46,12 +46,38 @@ describe('Current OpenAPI artifact', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('retains the 162 storefront operations and unique operation IDs alongside dealer extensions', () => {
-    expect(operations.filter(({ operationId }) => !operationId?.startsWith('Dealer'))).toHaveLength(
-      162,
+  it('retains the 162 storefront operations alongside dealer and affiliate extensions', () => {
+    expect(
+      operations.filter(({ operationId }) => !/^(Dealer|Affiliate)/.test(operationId ?? '')),
+    ).toHaveLength(162);
+    expect(operations.filter(({ operationId }) => operationId?.startsWith('Dealer'))).toHaveLength(
+      67,
     );
+    expect(
+      operations.filter(({ operationId }) => operationId?.startsWith('Affiliate')),
+    ).toHaveLength(23);
+    expect(
+      operations.every(
+        ({ operationId }) => typeof operationId === 'string' && operationId.length > 0,
+      ),
+    ).toBe(true);
     expect(new Set(operations.map(({ operationId }) => operationId)).size).toBe(operations.length);
     expect(SLICE_12_OPERATIONS.every((operationId) => byId.has(operationId))).toBe(true);
+  });
+
+  it('keeps affiliate public entrypoints anonymous and account operations Bearer-only', () => {
+    for (const operation of operations.filter(({ operationId }) =>
+      operationId?.startsWith('Affiliate'),
+    )) {
+      if (operation.operationId?.startsWith('AffiliatePublic')) {
+        expect(operation.security).toBeUndefined();
+      } else {
+        expect(operation.security).toEqual([{ 'access-token': [] }]);
+      }
+    }
+    expect(byId.get('AffiliateAdminController_complete')?.requestBody?.content).toHaveProperty(
+      'multipart/form-data',
+    );
   });
 
   it('keeps public store anonymous and every backoffice operation Bearer-only', () => {

@@ -1,5 +1,16 @@
 export type FrontendPhase =
-  'FE-0' | 'FE-1' | 'FE-2' | 'FE-3' | 'FE-4' | 'FE-5' | 'FE-6' | 'FE-7' | 'FE-8' | 'FE-9' | 'FE-10';
+  | 'FE-0'
+  | 'FE-1'
+  | 'FE-2'
+  | 'FE-3'
+  | 'FE-4'
+  | 'FE-5'
+  | 'FE-6'
+  | 'FE-7'
+  | 'FE-8'
+  | 'FE-9'
+  | 'FE-10'
+  | 'FE-11';
 
 export type FrontendBusinessPhase = Exclude<FrontendPhase, 'FE-0' | 'FE-9'>;
 
@@ -17,6 +28,7 @@ export const FRONTEND_PHASE_STATUS = {
   'FE-8': 'DONE',
   'FE-9': 'DONE',
   'FE-10': 'DONE',
+  'FE-11': 'DONE',
 } as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
 
 export type FrontendOperationCoverage = readonly [
@@ -38,7 +50,7 @@ export type FrontendRouteCoverage = readonly [
 ];
 
 /**
- * Executable counterpart of the approved 162-row ledger in plan-fe.md.
+ * Executable counterpart of the storefront, dealer and affiliate ledgers in plan-fe.md.
  *
  * Operation status progresses with its owning phase. Ownership alone never
  * counts as implemented UI and the plan ledger must move atomically with this
@@ -2565,9 +2577,262 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'browser:dealer-flow',
     'DONE',
   ],
+  [
+    'AffiliatePublicController_config',
+    'GET',
+    '/api/v1/affiliate-program',
+    'Public',
+    '/affiliate',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePublicController_refer',
+    'POST',
+    '/api/v1/affiliate-program/referrals',
+    'Public',
+    '/r/[code]',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_apply',
+    'POST',
+    '/api/v1/affiliate/application',
+    'Customer Bearer',
+    '/affiliate',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_bank',
+    'POST',
+    '/api/v1/affiliate/banks',
+    'Customer Bearer',
+    '/affiliate',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_confirm',
+    'POST',
+    '/api/v1/affiliate/banks/confirm',
+    'Customer Bearer',
+    '/affiliate',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_dashboard',
+    'GET',
+    '/api/v1/affiliate/dashboard',
+    'Customer Bearer',
+    '/affiliate',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_offers',
+    'GET',
+    '/api/v1/affiliate/offers',
+    'Customer Bearer',
+    '/affiliate',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_withdraw',
+    'POST',
+    '/api/v1/affiliate/payouts',
+    'Customer Bearer',
+    '/affiliate',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliatePortalController_profile',
+    'GET',
+    '/api/v1/affiliate/profile',
+    'Customer Bearer',
+    '/affiliate',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_bankDetails',
+    'GET',
+    '/api/v1/backoffice/affiliates/banks/{id}',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_verify',
+    'POST',
+    '/api/v1/backoffice/affiliates/banks/{id}/verify',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_dashboard',
+    'GET',
+    '/api/v1/backoffice/affiliates/dashboard',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_members',
+    'GET',
+    '/api/v1/backoffice/affiliates/members',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_transition',
+    'POST',
+    '/api/v1/backoffice/affiliates/members/{id}',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_offers',
+    'GET',
+    '/api/v1/backoffice/affiliates/offers',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_override',
+    'POST',
+    '/api/v1/backoffice/affiliates/offers/{id}',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_payoutAction',
+    'POST',
+    '/api/v1/backoffice/affiliates/payouts/{id}',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_complete',
+    'POST',
+    '/api/v1/backoffice/affiliates/payouts/{id}/complete',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_destination',
+    'GET',
+    '/api/v1/backoffice/affiliates/payouts/{id}/destination',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_evidence',
+    'GET',
+    '/api/v1/backoffice/affiliates/payouts/{id}/evidence',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_policy',
+    'GET',
+    '/api/v1/backoffice/affiliates/policy',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Đọc dữ liệu; loading, empty, error, permission',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_savePolicy',
+    'POST',
+    '/api/v1/backoffice/affiliates/policy',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
+  [
+    'AffiliateAdminController_reconcile',
+    'POST',
+    '/api/v1/backoffice/affiliates/reconcile',
+    'Admin Bearer',
+    '/backoffice/affiliates',
+    'Thao tác; validation, pending, success, conflict',
+    'FE-11',
+    'browser:affiliate-flow',
+    'DONE',
+  ],
 ] as const satisfies readonly FrontendOperationCoverage[];
 
-/** Route ownership baseline: 56 existing URLs. */
+/** Route ownership: storefront, backoffice, dealer and affiliate URLs. */
 export const FRONTEND_ROUTE_COVERAGE: readonly FrontendRouteCoverage[] = [
   ['/', 'EXISTING', 'FE-1'],
   ['/login', 'EXISTING', 'FE-2'],
@@ -2629,6 +2894,10 @@ export const FRONTEND_ROUTE_COVERAGE: readonly FrontendRouteCoverage[] = [
   ['/dealer/terms', 'EXISTING', 'FE-10'],
   ['/dealer/api-guide', 'EXISTING', 'FE-10'],
   ['/backoffice/dealers', 'EXISTING', 'FE-10'],
+  ['/affiliate', 'EXISTING', 'FE-11'],
+  ['/affiliate/terms', 'EXISTING', 'FE-11'],
+  ['/r/[code]', 'EXISTING', 'FE-11'],
+  ['/backoffice/affiliates', 'EXISTING', 'FE-11'],
 ];
 
 export const FRONTEND_REQUIRED_STATES = [

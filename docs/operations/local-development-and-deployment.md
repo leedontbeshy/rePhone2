@@ -1,11 +1,14 @@
 # Chạy rePhone bằng Docker và triển khai VPS
 
-Docker đóng gói Web, API, gateway và công cụ migration. Supabase vẫn là PostgreSQL và Storage chính; PostgreSQL 17 trong Compose chỉ phục vụ kiểm thử. Không có bước khởi động nào tự seed, reset hoặc migrate dữ liệu thật.
+Docker đóng gói Web, API và công cụ migration. **Clone trên máy mới, không dùng Supabase:** bắt đầu với [README gốc](../../README.md), mục Docker local (`compose.local.yaml`). Stack đó có PostgreSQL và file upload riêng, tự migrate/seed dữ liệu demo và không đọc credential máy cũ.
+
+Các chế độ dev/demo/prod dưới đây dùng Supabase PostgreSQL/Storage và Caddy gateway. Không có bước khởi động nào tự seed, reset hoặc migrate dữ liệu thật.
 
 ## 1. Kiến trúc chạy
 
 | Môi trường | Thành phần | Cổng công khai | Dữ liệu |
 | --- | --- | --- | --- |
+| `local` | PostgreSQL, init, API với provider local, Next dev | Web `localhost:3001`, API `localhost:4001` | Database và uploads trong volume `rephone-local`; dealer/affiliate TEST |
 | `dev` | Caddy, Next dev, Nest watch, Mailpit | Web/API chung `localhost:3000`; Mailpit `localhost:8025` | Supabase |
 | `demo` | Caddy, image Next standalone, Nest đã build, Mailpit | Web/API chung `localhost:3000` | Supabase |
 | `test` | API operations + PostgreSQL 17.6 | PostgreSQL test chỉ bind `127.0.0.1:5433` | Volume test riêng |
@@ -16,6 +19,7 @@ Caddy giữ cùng origin: browser gọi `/api/v1`, còn Next server gọi `http:
 Các file chính:
 
 - `compose.yaml`: network, volume và PostgreSQL test.
+- `compose.local.yaml`: stack độc lập cho máy mới, không ghép với `compose.yaml`.
 - `compose.dev.yaml`: hot reload bằng Compose Watch.
 - `compose.demo.yaml`: image bất biến chạy local HTTP.
 - `compose.test.yaml`: unit, integration và E2E trong Linux.
@@ -134,7 +138,9 @@ docker build -f infra/docker/api.Dockerfile --target api-operations -t <registry
 docker build -f infra/docker/web.Dockerfile --target web-runtime -t <registry>/rephone-web:<tag> .
 ```
 
-Khi build Web, truyền các `NEXT_PUBLIC_*` bằng `--build-arg` nếu khác mặc định. Không truyền secret bằng build arg. Push cả ba image rồi tạo file environment production ngoài repository với `API_IMAGE`, `API_OPS_IMAGE`, `WEB_IMAGE` cùng tag bất biến.
+Khi build Web, truyền các `NEXT_PUBLIC_*` bằng `--build-arg` nếu khác mặc định. Metadata hướng dẫn đại lý cũng được đóng vào Web lúc build: truyền `API_PUBLIC_URL=https://<domain>`, `DEALER_ENVIRONMENT=LIVE`, `DEALER_SANDBOX_WEB_URL` và `DEALER_SANDBOX_API_URL` nếu có sandbox. Thay biến runtime của image Web đã build không thay được các giá trị này. Không truyền secret bằng build arg. Push cả ba image rồi tạo file environment production ngoài repository với `API_IMAGE`, `API_OPS_IMAGE`, `WEB_IMAGE` cùng tag bất biến.
+
+Compose dev/demo/prod đã truyền cấu hình dealer và affiliate cho API. Bật `DEALER_ENABLED`/`AFFILIATE_ENABLED` cần khóa riêng `DEALER_ENCRYPTION_KEY`/`AFFILIATE_ENCRYPTION_KEY` ở LIVE; giữ các khóa khi chuyển máy hoặc khôi phục dữ liệu. Nút bật kinh doanh ở backoffice vẫn là bước riêng. Production cố định cả hai môi trường thành LIVE; không đưa endpoint mô phỏng TEST vào production.
 
 Production bắt buộc có file CA Supabase trên VPS. Compose mount file do `SUPABASE_DB_CA_FILE` chỉ định vào `/run/secrets/supabase-db-ca.crt`; cả hai URL trong container dùng:
 

@@ -15,6 +15,9 @@
 node_modules
 **/node_modules
 **/.next
+**/.next-*
+**/.sandbox-dist
+**/.turbo
 **/dist
 **/coverage
 **/*.tsbuildinfo
@@ -23,6 +26,8 @@ apps/api/src/generated/prisma
 *.dump
 *.log
 *.7z
+output
+.understand-anything
 design.md
 design-qa.md
 plan.md

@@ -2,13 +2,21 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
 import { seedDatabase } from '../seed-data.js';
 const database = new URL(process.env['DATABASE_URL'] ?? 'postgresql://invalid/invalid');
+const localTarget = database.hostname === '127.0.0.1' && database.port === '5433';
+const dockerTarget =
+  process.env['REPHONE_LOCAL_DOCKER'] === 'true' &&
+  database.hostname === 'postgres-test' &&
+  database.port === '5432';
 if (
-  database.hostname !== '127.0.0.1' ||
-  database.port !== '5433' ||
+  process.env['NODE_ENV'] !== 'test' ||
+  !['postgres:', 'postgresql:'].includes(database.protocol) ||
+  database.search !== '' ||
+  database.hash !== '' ||
+  (!localTarget && !dockerTarget) ||
   database.pathname !== '/rephone_test' ||
   process.env['AFFILIATE_ENVIRONMENT'] !== 'TEST'
 )
-  throw new Error('Affiliate seed requires local rephone_test:5433');
+  throw new Error('Affiliate seed requires the isolated local rephone_test database');
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: database.toString() }),
 });

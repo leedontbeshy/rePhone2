@@ -28,7 +28,9 @@ describe('FE-0 frontend coverage contract', () => {
       }),
     );
 
-    expect(openApiOperationIds.filter((id) => !id.startsWith('Dealer'))).toHaveLength(162);
+    expect(openApiOperationIds.filter((id) => !/^(Dealer|Affiliate)/.test(id))).toHaveLength(162);
+    expect(openApiOperationIds.filter((id) => id.startsWith('Dealer'))).toHaveLength(67);
+    expect(openApiOperationIds.filter((id) => id.startsWith('Affiliate'))).toHaveLength(23);
     expect(new Set(openApiOperationIds).size).toBe(openApiOperationIds.length);
     expect(manifestOperationIds).toHaveLength(openApiOperationIds.length);
     expect(new Set(manifestOperationIds).size).toBe(manifestOperationIds.length);
@@ -52,7 +54,7 @@ describe('FE-0 frontend coverage contract', () => {
       expect(accessMode.length).toBeGreaterThan(0);
       expect(targetRoute.length).toBeGreaterThan(0);
       expect(actionState.length).toBeGreaterThan(0);
-      expect(phase).toMatch(/^FE-(?:[1-8]|10)$/);
+      expect(phase).toMatch(/^FE-(?:[1-8]|10|11)$/);
       expect(browserOwner.startsWith('browser:')).toBe(true);
       const owningPhaseStatus = FRONTEND_PHASE_STATUS[phase];
       expect(allowedOperationStatuses[owningPhaseStatus]).toContain(status);
@@ -106,8 +108,8 @@ describe('FE-0 frontend coverage contract', () => {
     );
 
     expect(currentRoutes).toHaveLength(existingRoutes.length);
-    expect(new Set(manifestRoutes).size).toBe(60);
-    expect(existingRoutes.length + plannedRoutes.length).toBe(60);
+    expect(new Set(manifestRoutes).size).toBe(64);
+    expect(existingRoutes.length + plannedRoutes.length).toBe(64);
     expect([...existingRoutes].sort()).toEqual([...currentRoutes].sort());
     expect(plannedRoutes.filter((route) => currentRoutes.includes(route))).toEqual([]);
     expect(plannedRoutes).not.toContain('/backoffice/catalog/products/[id]/variants/[variantId]');
