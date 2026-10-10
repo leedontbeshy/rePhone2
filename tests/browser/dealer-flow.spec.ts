@@ -17,7 +17,10 @@ test(
     await page.getByRole('button', { name: 'Kho máy', exact: true }).click();
     await expect(page.getByText(/Pin \d+%/).first()).toBeVisible();
     await expect(page.getByLabel('Ngoại hình', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Chọn máy này' }).first().click();
+    await page.getByLabel('Tìm máy', { exact: true }).fill('DEALER-BROWSER-001');
+    await page.getByRole('button', { name: 'Tìm máy', exact: true }).click();
+    const fixture = page.getByRole('article').filter({ hasText: 'DEALER-BROWSER-001' });
+    await fixture.getByRole('button', { name: 'Chọn máy này' }).click();
     const externalId = `browser-dealer-${Date.now().toString()}`;
     for (const [label, value] of Object.entries({
       'Mã đơn tại cửa hàng của bạn': externalId,

@@ -21,8 +21,53 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 try {
   await seedDatabase(prisma);
   await seedBrowserAuthFixtures(prisma);
+  await seedDealerBrowserUnit(prisma);
 } finally {
   await prisma.$disconnect();
+}
+
+async function seedDealerBrowserUnit(client: PrismaClient): Promise<void> {
+  // The dealer journey sells this unit; storefront visual tests keep their own stock.
+  const source = await client.inventoryUnit.findUniqueOrThrow({
+    where: { inventoryCode: 'IP14P-256-001' },
+    include: { inspections: { where: { isCurrent: true }, take: 1 } },
+  });
+  const inspection = source.inspections[0];
+  if (inspection === undefined)
+    throw new Error('Dealer browser fixture requires an inspected unit');
+  await client.inventoryUnit.upsert({
+    where: { inventoryCode: 'DEALER-BROWSER-001' },
+    update: {},
+    create: {
+      inventoryCode: 'DEALER-BROWSER-001',
+      variantId: source.variantId,
+      locationId: source.locationId,
+      lifecycleStatus: 'AVAILABLE',
+      modelNumber: source.modelNumber,
+      regionCode: source.regionCode,
+      simLockStatus: source.simLockStatus,
+      simConfiguration: source.simConfiguration,
+      salePrice: source.salePrice,
+      compareAtPrice: source.compareAtPrice,
+      inspections: {
+        create: {
+          inspectionType: inspection.inspectionType,
+          status: inspection.status,
+          isCurrent: true,
+          overallResult: inspection.overallResult,
+          inspectorId: inspection.inspectorId,
+          inspectedAt: inspection.inspectedAt,
+          batteryHealthPercent: inspection.batteryHealthPercent,
+          batteryCycleCount: inspection.batteryCycleCount,
+          batteryReplacementStatus: inspection.batteryReplacementStatus,
+          conditionGrade: inspection.conditionGrade,
+          cosmeticNotes: inspection.cosmeticNotes,
+          checks: inspection.checks ?? [],
+          repairHistoryStatus: inspection.repairHistoryStatus,
+        },
+      },
+    },
+  });
 }
 
 async function seedBrowserAuthFixtures(client: PrismaClient): Promise<void> {

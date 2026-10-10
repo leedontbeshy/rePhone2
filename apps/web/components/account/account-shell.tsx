@@ -17,9 +17,14 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
   const { logout, logoutPending, status, user } = useAuth();
   const { registered } = useAffiliateMembership();
   const [logoutError, setLogoutError] = useState(false);
+  const [logoutRequested, setLogoutRequested] = useState(false);
   const customerNavigation = [
     { href: '/account', label: 'Hồ sơ', isCurrent: pathname === '/account' },
-    ...(registered ? [{ href: '/affiliate', label: 'Cộng tác viên', isCurrent: false }] : []),
+    {
+      href: '/account/security',
+      label: 'Bảo mật',
+      isCurrent: pathname === '/account/security',
+    },
     ...(status === 'authenticated' && user?.role === 'CUSTOMER'
       ? [
           { href: '/dealer', label: 'Cổng đại lý', isCurrent: pathname === '/dealer' },
@@ -30,14 +35,11 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
           },
         ]
       : []),
-    {
-      href: '/account/security',
-      label: 'Bảo mật',
-      isCurrent: pathname === '/account/security',
-    },
+    ...(registered ? [{ href: '/affiliate', label: 'Cộng tác viên', isCurrent: false }] : []),
   ];
 
   async function signOut() {
+    setLogoutRequested(true);
     setLogoutError(false);
     try {
       await logout();
@@ -79,7 +81,7 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
             )}
           </div>
         ) : null}
-        {children}
+        {logoutRequested ? null : children}
       </div>
     </CustomerShell>
   );

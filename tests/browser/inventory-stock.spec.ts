@@ -673,6 +673,11 @@ async function installFe06Api(
     const { pathname } = url;
     const method = route.request().method();
 
+    if (pathname.endsWith('/backoffice/dealers/configuration') && method === 'GET') {
+      await fulfillJson(route, { data: { enabled: false } });
+      return;
+    }
+
     if (pathname.endsWith('/backoffice/products') && method === 'GET') {
       await fulfillJson(route, paged([catalogProductListItem()], 100));
       return;
