@@ -34,6 +34,7 @@ describe('FE-07 operations navigation', () => {
       { href: '/backoffice/inventory/stock/movements', label: 'Lịch sử kho' },
       { href: '/backoffice/inventory/locations', label: 'Địa điểm' },
       { href: OPERATIONS_ORDERS_ROOT, label: 'Danh sách đơn hàng' },
+      { href: '/backoffice/affiliates', label: 'Cộng tác viên' },
       { href: '/backoffice/dealers', label: 'Đại lý' },
       { href: OPERATIONS_PAYMENTS_ROOT, label: 'Duyệt thanh toán' },
       { href: OPERATIONS_REFUNDS_ROOT, label: 'Hoàn tiền' },
@@ -74,6 +75,7 @@ describe('FE-07 operations navigation', () => {
 
     expect(items.find((item) => item.href === '/backoffice/customers')?.isDisabled).toBeFalsy();
     for (const href of [
+      '/backoffice/affiliates',
       '/backoffice/employees',
       '/backoffice/settings',
       '/backoffice/audit-logs',

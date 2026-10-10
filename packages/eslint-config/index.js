@@ -7,6 +7,8 @@ export function createConfig({ tsconfigRootDir }) {
       ignores: [
         '**/node_modules/**',
         '**/.next/**',
+        '**/.next-*/**',
+        '**/.sandbox-dist/**',
         '**/.local/**',
         '**/.turbo/**',
         '**/dist/**',

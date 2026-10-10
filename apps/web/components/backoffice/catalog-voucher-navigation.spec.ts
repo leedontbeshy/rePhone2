@@ -19,13 +19,16 @@ describe('FE-05 backoffice navigation', () => {
       'Sau mua',
       'Hệ thống',
     ]);
-    expect(groups.flatMap((group) => group.items)).toHaveLength(21);
+    expect(groups.flatMap((group) => group.items)).toHaveLength(22);
     expect(
       groups.flatMap((group) => group.items).find((item) => item.label === 'Danh mục'),
     ).toMatchObject({ href: '/backoffice/catalog/products', isCurrent: true });
     expect(
       groups.flatMap((group) => group.items).find((item) => item.label === 'Mã ưu đãi'),
     ).toMatchObject({ href: '/backoffice/vouchers', isDisabled: true });
+    expect(
+      groups.flatMap((group) => group.items).find((item) => item.label === 'Cộng tác viên'),
+    ).toMatchObject({ href: '/backoffice/affiliates', isDisabled: true });
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/catalog/products/new')).toBe(true);
     expect(canAccessCatalogVoucherPath('EMPLOYEE', '/backoffice/vouchers')).toBe(false);
   });
