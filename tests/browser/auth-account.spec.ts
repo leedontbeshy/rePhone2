@@ -103,9 +103,8 @@ test.describe('FE-2 authentication and account', () => {
     await expect(page.getByRole('button', { name: 'Đổi mật khẩu', exact: true })).toHaveCount(0);
 
     await page.goto('/account');
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Đăng nhập để quản lý tài khoản' }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Faccount$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeVisible();
     expect(authenticatedRequestsAfterReset).toEqual([]);
 
     await login(page, BROWSER_RESET_ACCOUNT.email, BROWSER_RESET_ACCOUNT.newPassword, '/account');
@@ -493,9 +492,8 @@ test.describe('FE-2 authentication and account', () => {
     await expectNoRefreshCookie(page);
 
     await page.goto('/account');
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Đăng nhập để quản lý tài khoản' }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Faccount$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Đăng nhập' })).toBeVisible();
 
     await page.goto('/login');
     await page.locator('#email').fill(BROWSER_CUSTOMER.email);

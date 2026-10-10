@@ -33,3 +33,12 @@ test('the pull request browser command stays a bounded Chromium smoke suite', ()
   assert.match(command, /catalog-to-completed-shipping/);
   assert.doesNotMatch(command, /cross-browser/);
 });
+
+test('visual baseline refresh requires explicit manual dispatch and uploads only baseline PNGs', () => {
+  assert.match(releaseWorkflow, /refresh_visual_baselines:[\s\S]*?default: false/);
+  assert.match(
+    releaseWorkflow,
+    /REFRESH_VISUAL_BASELINES: \$\{\{ github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines \}\}/,
+  );
+  assert.match(releaseWorkflow, /path: tests\/browser\/\*-snapshots\/\*-win32\.png/);
+});

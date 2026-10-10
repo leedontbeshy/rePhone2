@@ -56,9 +56,9 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
       mobileNavigation={<MobileNavigation />}
     >
       <div className={styles.accountSurface}>
-        {status === 'authenticated' || logoutPending || logoutError ? (
+        {status === 'loading' || status === 'authenticated' || logoutPending || logoutError ? (
           <div className={styles.sessionControls}>
-            {logoutError ? (
+            {status === 'loading' ? null : logoutError ? (
               <InlineAlert
                 className={styles.sessionError ?? ''}
                 tone="warning"

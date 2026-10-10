@@ -505,6 +505,9 @@ test.describe('FE-04 customer post-purchase', () => {
 
 async function installCustomerApi(page: Page): Promise<void> {
   let currentOrderDetail: typeof orderDetail | typeof cancelledOrderDetail = orderDetail;
+  await page.route('**/api/v1/affiliate/profile', async (route) => {
+    await fulfillJson(route, { data: null });
+  });
   await page.route('**/api/v1/auth/refresh', async (route) => {
     await fulfillJson(route, { data: { accessToken: 'browser-access-token', user: customer } });
   });

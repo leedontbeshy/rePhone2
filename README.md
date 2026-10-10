@@ -367,6 +367,13 @@ Project `rephone-ci` có volume riêng. Nếu cổng 5433 của mục 3 đang ch
 `pnpm test:db:prepare`, integration/E2E hoặc `pnpm verify` cũng có thể xóa dữ liệu test.
 Không chạy chúng chung database với phiên thử thủ công cần giữ.
 
+CI so sánh ảnh giao diện trên Windows. Khi chủ ý thay đổi bố cục, chạy workflow
+**Release verification** trên nhánh đang sửa và bật `refresh_visual_baselines`.
+Tải artifact `visual-baseline-candidates`, đối chiếu từng ảnh thay đổi rồi đưa các ảnh
+đã duyệt vào `tests/browser/*-snapshots/`. Chế độ này chỉ tạo ảnh ứng viên để kiểm tra;
+trước khi merge, CI của pull request vẫn phải chạy đạt với chế độ so sánh mặc định.
+Không cập nhật ảnh chuẩn để bỏ qua lỗi tràn khung, thiếu nội dung hoặc sai dữ liệu.
+
 ## 8. Cấu trúc và tài liệu
 
 ```text

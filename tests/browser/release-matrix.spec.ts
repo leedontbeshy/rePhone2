@@ -495,6 +495,7 @@ async function installReleaseFixture(page: Page, role: FixtureRole): Promise<voi
       });
     }
     if (path.startsWith('/api/v1/cart')) return fulfillJson(route, emptyCart());
+    if (path === '/api/v1/affiliate/profile') return fulfillJson(route, { data: null });
     if (path === '/api/v1/account' && request.method() === 'GET') {
       return fulfillJson(route, { data: customerAccount() });
     }

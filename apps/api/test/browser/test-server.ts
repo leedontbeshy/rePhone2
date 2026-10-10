@@ -6,6 +6,7 @@ import { setTestEnvironment } from '../support/test-environment.js';
 
 setTestEnvironment();
 Object.assign(process.env, {
+  LOG_LEVEL: process.env.TEST_LOG_LEVEL ?? 'error',
   AFFILIATE_ENABLED: 'false',
   AFFILIATE_WORKER_ENABLED: 'false',
   DEALER_ENABLED: 'true',
