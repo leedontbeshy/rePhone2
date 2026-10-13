@@ -4,9 +4,9 @@ import { resolve } from 'node:path';
 
 // Host development shares the root configuration with the API. Container
 // environment variables and Next's app-local configuration take precedence.
+const workspaceRoot = resolve(process.cwd(), '../..');
 const workspaceEnv = resolve(
-  process.cwd(),
-  '../..',
+  workspaceRoot,
   process.env.REPHONE_ENV_FILE ??
     (process.env.NODE_ENV === 'production' ? '.env.production' : '.env'),
 );
@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
     API_PUBLIC_URL: process.env.API_PUBLIC_URL ?? '',
   },
   distDir: process.env.REPHONE_WEB_DIST_DIR ?? '.next',
+  turbopack: { root: workspaceRoot },
+  outputFileTracingRoot: workspaceRoot,
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
