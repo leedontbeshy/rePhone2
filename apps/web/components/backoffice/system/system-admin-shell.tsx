@@ -1,14 +1,13 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
+import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells/backoffice-shell';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
 import { canAccessBackofficeNavigation } from '../backoffice-navigation';
 import {
   canAccessSystemAdminPath,
-  systemNavigationOverflowState,
   systemAdminAccessForPath,
   systemAdminNavigationForRole,
 } from './system-admin-navigation';
@@ -29,39 +28,9 @@ export function SystemAdminShell({
   const router = useRouter();
   const { logout, logoutPending, status, user } = useAuth();
   const [logoutError, setLogoutError] = useState(false);
-  const surfaceRef = useRef<HTMLDivElement>(null);
   const access = systemAdminAccessForPath(pathname);
   const hasAccess = canAccessSystemAdminPath(user?.role, pathname);
   const navigationGroups = systemAdminNavigationForRole(user?.role, pathname);
-
-  useEffect(() => {
-    const shell = surfaceRef.current?.closest<HTMLElement>('[data-shell="backoffice"]');
-    const navigation = shell?.querySelector<HTMLElement>(
-      'aside[aria-label="Điều hướng backoffice"] nav',
-    );
-    if (navigation === null || navigation === undefined) return;
-
-    navigation.dataset.systemNavigation = 'true';
-    const updateOverflow = () => {
-      const overflow = systemNavigationOverflowState(navigation);
-      navigation.dataset.canScrollStart = String(overflow.canScrollStart);
-      navigation.dataset.canScrollEnd = String(overflow.canScrollEnd);
-    };
-    const frame = window.requestAnimationFrame(() => {
-      updateOverflow();
-    });
-    navigation.addEventListener('scroll', updateOverflow, { passive: true });
-    const resizeObserver = new ResizeObserver(updateOverflow);
-    resizeObserver.observe(navigation);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      navigation.removeEventListener('scroll', updateOverflow);
-      resizeObserver.disconnect();
-      delete navigation.dataset.systemNavigation;
-      delete navigation.dataset.canScrollStart;
-      delete navigation.dataset.canScrollEnd;
-    };
-  }, [pathname, user?.role]);
 
   async function signOut() {
     setLogoutError(false);
@@ -103,7 +72,7 @@ export function SystemAdminShell({
         ) : undefined
       }
     >
-      <div className={styles.surface} ref={surfaceRef}>
+      <div className={styles.surface}>
         {logoutError ? (
           <InlineAlert role="alert" title="Chưa xác nhận được đăng xuất" tone="warning">
             Hãy thử lại khi kết nối ổn định.

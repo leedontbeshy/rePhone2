@@ -14,6 +14,7 @@ import { WarrantyModule } from '../warranty/warranty.module.js';
 import { BackofficeOrderController } from './backoffice-order.controller.js';
 import { BackofficeShipmentController } from './backoffice-shipment.controller.js';
 import { BackofficeOrderService } from './backoffice-order.service.js';
+import { BackofficeOrderCostReader } from './backoffice-order-cost.reader.js';
 import { FulfillmentClock } from './fulfillment-clock.service.js';
 import { FulfillmentNoStoreMiddleware } from './fulfillment-no-store.middleware.js';
 import { FulfillmentQueryService } from './fulfillment-query.service.js';
@@ -53,6 +54,7 @@ import { ShippingOrderController } from './shipping-order.controller.js';
   providers: [
     FulfillmentClock,
     FulfillmentQueryService,
+    BackofficeOrderCostReader,
     BackofficeOrderService,
     PickupPreparationService,
     PickupCompletionService,

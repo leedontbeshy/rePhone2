@@ -10,6 +10,7 @@
 .sessionAction,
 .cartAction,
 .sessionLoading {
+  flex-shrink: 0;
   min-height: 3rem;
   border: var(--border-strong);
   border-radius: var(--radius-control);
@@ -44,6 +45,12 @@ button.sessionAction {
 .sessionAction,
 .cartAction {
   gap: var(--space-2);
+}
+
+.sessionAction svg,
+.cartAction svg,
+.accountMenuLink svg {
+  flex-shrink: 0;
 }
 
 .mobileCartLabel {
@@ -81,14 +88,6 @@ button.sessionAction {
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-}
-
-.accountMenuCaret {
-  transition: transform var(--motion-fast) var(--ease-standard);
-}
-
-.sessionAction[aria-expanded='true'] .accountMenuCaret {
-  transform: rotate(180deg);
 }
 
 .accountMenuPanel {
@@ -164,8 +163,7 @@ button.sessionAction {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sessionLoading,
-  .accountMenuCaret {
+  .sessionLoading {
     animation: none;
     transition: none;
   }

@@ -11,15 +11,16 @@ import {
   HeadsetIcon,
   HeartbeatIcon,
   PackageIcon,
+  PlusIcon,
   ReceiptIcon,
   ShoppingBagIcon,
   ShoppingBagOpenIcon,
-  StorefrontIcon,
   TagIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
 import NextLink from 'next/link';
 import type { ReactNode } from 'react';
+import { joinClassNames } from '@/components/shells/shell-utils';
 import { Button, InlineAlert, Skeleton, StatusChip, formatVnd } from '@/components/ui';
 import {
   formatOrderDateTime,
@@ -59,7 +60,6 @@ export function OperationsOverview({
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <div className={styles.heading}>
-          <p className={styles.eyebrow}>Trung tâm vận hành</p>
           <h1>Tổng quan vận hành</h1>
           <p>Nắm nhanh tình hình hiện tại và mở đúng khu vực cần xử lý.</p>
         </div>
@@ -77,7 +77,6 @@ export function OperationsOverview({
             iconLeading={<ArrowClockwiseIcon aria-hidden="true" size={19} />}
             loading={refreshing}
             loadingLabel="Đang cập nhật tổng quan"
-            variant="secondary"
             onClick={onRefresh}
           >
             Cập nhật
@@ -129,7 +128,11 @@ export function OverviewDashboard({
   const quickLinks = overviewQuickLinks(role);
 
   return (
-    <div aria-busy={refreshing || undefined} className={styles.dashboard}>
+    <section
+      aria-busy={refreshing || undefined}
+      aria-label="Dữ liệu tổng quan vận hành"
+      className={styles.dashboard}
+    >
       {refreshing ? (
         <p aria-live="polite" className={styles.refreshingNotice} role="status">
           Đang cập nhật dữ liệu; thông tin hiện tại vẫn có thể sử dụng.
@@ -137,13 +140,9 @@ export function OverviewDashboard({
       ) : null}
 
       <section aria-labelledby="overview-metrics-title" className={styles.metricsSection}>
-        <div className={styles.sectionHeadingCompact}>
-          <div>
-            <p className={styles.sectionEyebrow}>Hiện tại</p>
-            <h2 id="overview-metrics-title">Tình hình vận hành</h2>
-          </div>
-          <span>Bốn nhóm cần theo dõi thường xuyên</span>
-        </div>
+        <h2 className="rp-visually-hidden" id="overview-metrics-title">
+          Tình hình vận hành
+        </h2>
         <div className={styles.metricsGrid}>
           {metrics.map((metric) => (
             <NextLink
@@ -153,27 +152,27 @@ export function OverviewDashboard({
               href={metric.href}
               key={metric.key}
             >
-              <span className={styles.metricTopline}>
-                <span className={styles.metricIcon} aria-hidden="true">
-                  <MetricIcon metric={metric.key} />
-                </span>
-                <ArrowRightIcon aria-hidden="true" className={styles.cardArrow} size={18} />
+              <span className={styles.metricIcon} aria-hidden="true">
+                <MetricIcon metric={metric.key} />
               </span>
-              <span className={styles.metricValue}>{formatOverviewCount(metric.value)}</span>
-              <span className={styles.metricLabel}>{metric.label}</span>
-              <small>{metric.description}</small>
+              <span className={styles.metricCopy}>
+                <span className={styles.metricValue}>{formatOverviewCount(metric.value)}</span>
+                <span className={styles.metricLabel}>{metric.label}</span>
+              </span>
+              <span className="rp-visually-hidden">{metric.description}</span>
             </NextLink>
           ))}
         </div>
       </section>
 
       <div className={styles.workGrid}>
-        <section aria-labelledby="overview-priority-title" className={styles.panel}>
+        <section
+          aria-labelledby="overview-priority-title"
+          className={joinClassNames(styles.panel, styles.priorityPanel)}
+        >
           <div className={styles.panelHeader}>
             <div>
-              <p className={styles.sectionEyebrow}>Theo mức ưu tiên</p>
               <h2 id="overview-priority-title">Hàng đợi cần chú ý</h2>
-              <p>Xếp trước những hồ sơ đã chờ lâu hoặc cần phản hồi sớm.</p>
             </div>
             {priorities.length === 0 ? (
               <StatusChip label="Không có tồn đọng" tone="success" />
@@ -209,7 +208,7 @@ export function OverviewDashboard({
                     </span>
                     <span className={styles.priorityCopy}>
                       <strong>{priority.label}</strong>
-                      <span>{priority.description}</span>
+                      <span className="rp-visually-hidden">{priority.description}</span>
                       <small>{priority.oldestLabel}</small>
                     </span>
                     <span className={styles.priorityCount}>
@@ -223,17 +222,26 @@ export function OverviewDashboard({
           )}
         </section>
 
-        <section aria-labelledby="overview-quick-links-title" className={styles.panel}>
+        <RecentOrders orders={snapshot.recentOrders.slice(0, 5)} />
+
+        <section
+          aria-labelledby="overview-quick-links-title"
+          className={joinClassNames(styles.panel, styles.shortcutsPanel)}
+        >
           <div className={styles.panelHeader}>
             <div>
-              <p className={styles.sectionEyebrow}>Truy cập nhanh</p>
-              <h2 id="overview-quick-links-title">Khu vực công việc</h2>
-              <p>Các lối tắt được hiển thị theo quyền tài khoản.</p>
+              <h2 id="overview-quick-links-title">Thao tác nhanh</h2>
+              <p>Truy cập nhanh các tác vụ theo quyền tài khoản.</p>
             </div>
           </div>
           <nav aria-label="Lối tắt công việc" className={styles.quickLinks}>
             {quickLinks.map((link) => (
-              <NextLink className={styles.quickLink} href={link.href} key={link.href}>
+              <NextLink
+                className={styles.quickLink}
+                data-icon={link.icon}
+                href={link.href}
+                key={link.href}
+              >
                 <span className={styles.quickLinkIcon} aria-hidden="true">
                   <QuickLinkIcon icon={link.icon} />
                 </span>
@@ -241,26 +249,24 @@ export function OverviewDashboard({
                   <strong>{link.label}</strong>
                   <small>{link.description}</small>
                 </span>
-                <ArrowRightIcon aria-hidden="true" className={styles.rowArrow} size={17} />
               </NextLink>
             ))}
           </nav>
         </section>
       </div>
-
-      <RecentOrders orders={snapshot.recentOrders.slice(0, 5)} />
-    </div>
+    </section>
   );
 }
 
 function RecentOrders({ orders }: Readonly<{ orders: readonly OperationsOverviewRecentOrder[] }>) {
   return (
-    <section aria-labelledby="overview-recent-orders-title" className={styles.panel}>
+    <section
+      aria-labelledby="overview-recent-orders-title"
+      className={joinClassNames(styles.panel, styles.ordersPanel)}
+    >
       <div className={styles.panelHeader}>
         <div>
-          <p className={styles.sectionEyebrow}>Cập nhật mới</p>
           <h2 id="overview-recent-orders-title">Đơn hàng gần đây</h2>
-          <p>Năm đơn mới nhất tại thời điểm tổng quan được tạo.</p>
         </div>
         <NextLink className={styles.panelLink} href="/backoffice/orders">
           Xem tất cả đơn hàng
@@ -277,52 +283,72 @@ function RecentOrders({ orders }: Readonly<{ orders: readonly OperationsOverview
           </div>
         </div>
       ) : (
-        <div
-          className={styles.ordersBoard}
-          role="region"
-          aria-label="Năm đơn hàng gần đây"
-          tabIndex={0}
-        >
-          <div aria-hidden="true" className={styles.ordersHeader}>
-            <span>Đơn hàng và khách</span>
-            <span>Giá trị</span>
-            <span>Trạng thái</span>
-            <span />
+        <>
+          <p className={styles.ordersScrollHint} id="overview-orders-scroll-hint">
+            Cuộn ngang để xem đủ trạng thái.
+          </p>
+          <div
+            className={styles.ordersBoard}
+            role="region"
+            aria-label="Năm đơn hàng gần đây"
+            aria-describedby="overview-orders-scroll-hint"
+            tabIndex={0}
+          >
+            <table className={styles.ordersTable}>
+              <caption className="rp-visually-hidden">
+                Năm đơn mới nhất tại thời điểm tổng quan được tạo.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Đơn hàng và khách</th>
+                  <th scope="col">Giá trị</th>
+                  <th scope="col">Trạng thái đơn</th>
+                  <th scope="col">Giao nhận</th>
+                  <th scope="col">Thanh toán</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr key={order.id}>
+                    <th scope="row">
+                      <NextLink
+                        aria-label={`Mở đơn hàng ${order.orderNumber} của ${order.customerName}`}
+                        className={styles.orderIdentity}
+                        href={`/backoffice/orders/${encodeURIComponent(order.id)}`}
+                      >
+                        <strong>{order.orderNumber}</strong>
+                        <span>{order.customerName}</span>
+                        <time dateTime={order.placedAt}>{formatOrderDateTime(order.placedAt)}</time>
+                      </NextLink>
+                    </th>
+                    <td className={styles.orderTotal}>{formatVnd(order.grandTotal)}</td>
+                    <td>
+                      <StatusChip
+                        className={styles.orderStatus}
+                        label={orderStatusLabel(order.status)}
+                        tone={orderStatusTone(order.status)}
+                      />
+                    </td>
+                    <td>
+                      <StatusChip
+                        className={styles.orderStatus}
+                        label={fulfillmentStatusLabel(order.fulfillmentStatus)}
+                        tone={fulfillmentStatusTone(order.fulfillmentStatus)}
+                      />
+                    </td>
+                    <td>
+                      <StatusChip
+                        className={styles.orderStatus}
+                        label={paymentStatusLabel(order.paymentStatus)}
+                        tone={paymentStatusTone(order.paymentStatus)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <ol className={styles.orderRows}>
-            {orders.map((order) => (
-              <li key={order.id}>
-                <NextLink
-                  aria-label={`Mở đơn hàng ${order.orderNumber} của ${order.customerName}`}
-                  className={styles.orderRow}
-                  href={`/backoffice/orders/${encodeURIComponent(order.id)}`}
-                >
-                  <span className={styles.orderIdentity}>
-                    <strong>{order.orderNumber}</strong>
-                    <span>{order.customerName}</span>
-                    <time dateTime={order.placedAt}>{formatOrderDateTime(order.placedAt)}</time>
-                  </span>
-                  <strong className={styles.orderTotal}>{formatVnd(order.grandTotal)}</strong>
-                  <span className={styles.orderStatuses}>
-                    <StatusChip
-                      label={orderStatusLabel(order.status)}
-                      tone={orderStatusTone(order.status)}
-                    />
-                    <StatusChip
-                      label={fulfillmentStatusLabel(order.fulfillmentStatus)}
-                      tone={fulfillmentStatusTone(order.fulfillmentStatus)}
-                    />
-                    <StatusChip
-                      label={paymentStatusLabel(order.paymentStatus)}
-                      tone={paymentStatusTone(order.paymentStatus)}
-                    />
-                  </span>
-                  <ArrowRightIcon aria-hidden="true" className={styles.rowArrow} size={18} />
-                </NextLink>
-              </li>
-            ))}
-          </ol>
-        </div>
+        </>
       )}
     </section>
   );
@@ -335,10 +361,11 @@ function OverviewLoadingState() {
       <div aria-hidden="true" className={styles.loadingMetrics}>
         {Array.from({ length: 4 }, (_, index) => (
           <div className={styles.loadingMetric} key={index}>
-            <Skeleton height="2.25rem" width="2.25rem" />
-            <Skeleton height="2.25rem" width="42%" />
-            <Skeleton height="1rem" width="66%" />
-            <Skeleton height="0.875rem" width="82%" />
+            <Skeleton height="3rem" width="3rem" />
+            <div>
+              <Skeleton height="2rem" width="42%" />
+              <Skeleton height="1rem" width="82%" />
+            </div>
           </div>
         ))}
       </div>
@@ -416,7 +443,7 @@ function PriorityIcon({ priority }: Readonly<{ priority: OperationsOverviewPrior
 function QuickLinkIcon({ icon }: Readonly<{ icon: OverviewQuickLinkIcon }>): ReactNode {
   if (icon === 'orders') return <ShoppingBagIcon size={21} />;
   if (icon === 'payments') return <CreditCardIcon size={21} />;
-  if (icon === 'intake') return <StorefrontIcon size={21} />;
+  if (icon === 'intake') return <PlusIcon size={23} />;
   if (icon === 'after-sales') return <HeadsetIcon size={21} />;
   if (icon === 'vouchers') return <TagIcon size={21} />;
   if (icon === 'settings') return <GearIcon size={21} />;

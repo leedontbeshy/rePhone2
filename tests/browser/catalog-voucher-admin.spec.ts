@@ -539,15 +539,31 @@ test.describe('FE-05 catalog and voucher administration', () => {
       await page.getByLabel('Trạng thái lượt sử dụng').focus();
       await page.keyboard.press('Tab');
       await expect(usageRegion).toBeFocused();
-      await page.keyboard.press('ArrowRight');
       await expect
-        .poll(() => usageRegion.evaluate((element) => element.scrollLeft))
-        .toBeGreaterThan(0);
+        .poll(() => usageRegion.evaluate((element) => element.scrollWidth <= element.clientWidth))
+        .toBe(true);
+      await expect(usageRegion.getByText('Đang tải…', { exact: true })).toBeVisible();
       await expectAccessible(page);
     } finally {
       releaseUsages();
     }
-    await expect(page.getByText('RPH-20260828-FE050001', { exact: true })).toBeVisible();
+    const loadedUsageRegion = page.getByRole('region', { name: 'Lịch sử sử dụng mã ưu đãi' });
+    const usageOrder = loadedUsageRegion.getByRole('link', {
+      name: 'RPH-20260828-FE050001',
+      exact: true,
+    });
+    await expect(usageOrder).toBeVisible();
+    await expect(loadedUsageRegion.locator('td[data-label="Khách hàng"]')).toBeVisible();
+    await expect(loadedUsageRegion.locator('td[data-label="Trạng thái"]')).toBeVisible();
+    await expect(loadedUsageRegion.locator('td[data-label="Thời gian"]')).toBeVisible();
+    await expect
+      .poll(() =>
+        loadedUsageRegion.evaluate((element) => element.scrollWidth <= element.clientWidth),
+      )
+      .toBe(true);
+    await loadedUsageRegion.focus();
+    await page.keyboard.press('Tab');
+    await expect(usageOrder).toBeFocused();
     await page.unroute(usagesPattern);
 
     await page.goto(`/backoffice/catalog/products/${PRODUCT_ID}`);

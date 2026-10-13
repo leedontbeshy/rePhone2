@@ -13,6 +13,8 @@ interface ProductMediaGalleryProps {
   readonly label: string;
   readonly media: readonly PublicMedia[];
   readonly priority?: boolean;
+  readonly variant?: 'default' | 'model' | 'unit';
+  readonly fit?: 'contain' | 'cover';
 }
 
 export function ProductMediaGallery({
@@ -20,6 +22,8 @@ export function ProductMediaGallery({
   label,
   media,
   priority = false,
+  variant = 'default',
+  fit = 'contain',
 }: ProductMediaGalleryProps) {
   const mediaIdentity = media.map(({ url }) => url).join('\u0000');
   const [selection, setSelection] = useState({ identity: mediaIdentity, index: 0 });
@@ -38,7 +42,7 @@ export function ProductMediaGallery({
   };
 
   return (
-    <section className={styles.gallery} aria-label={label}>
+    <section className={classNames(styles.gallery, styles[variant])} aria-label={label}>
       <p className={styles.galleryLabel}>{label}</p>
       <div className={classNames(styles.galleryFrame, !hasMultipleImages && styles.singleImage)}>
         {hasMultipleImages ? (
@@ -73,7 +77,7 @@ export function ProductMediaGallery({
             onClick={openDialog}
           >
             <PublicMediaImage
-              className={styles.mainMedia}
+              className={classNames(styles.mainMedia, fit === 'cover' && styles.coverMainMedia)}
               fallbackLabel={fallbackLabel}
               media={selected}
               priority={priority}

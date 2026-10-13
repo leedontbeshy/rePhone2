@@ -46,8 +46,8 @@ test(
     const backofficeMutations = collectBackofficeMutationRequests(page);
 
     const overview = await loginAsAdmin(page);
-    expectRecordWith(overview.data, 'metrics', 'operations overview');
-    await expectProtectedWorkspace(page, 'Tổng quan vận hành');
+    expectRecordWith(overview.data, 'sales', 'financial report');
+    await expectProtectedWorkspace(page, 'Báo cáo tài chính');
     await expectNoHorizontalOverflow(page);
 
     const employees = await visitLiveProjection(
@@ -109,10 +109,10 @@ async function loginAsAdmin(page: Page): Promise<{ data: unknown; response: Resp
   await page.goto('/login?returnTo=%2Fbackoffice');
   await page.getByLabel(/^Email/).fill(ADMIN.email);
   await page.getByLabel(/^Mật khẩu/).fill(ADMIN.password);
-  const responsePromise = waitForLiveResponse(page, '/api/v1/backoffice/overview');
+  const responsePromise = waitForLiveResponse(page, '/api/v1/backoffice/overview/financial');
   await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
   const response = await responsePromise;
-  const data = await dataFromLiveResponse(response, '/api/v1/backoffice/overview');
+  const data = await dataFromLiveResponse(response, '/api/v1/backoffice/overview/financial');
   await page.waitForURL('/backoffice');
   await expect(page.getByText('Quản trị viên Demo', { exact: true })).toBeVisible();
   return { data, response };

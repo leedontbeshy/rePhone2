@@ -31,6 +31,11 @@ describe('bảo vệ thay đổi sản phẩm chưa lưu', () => {
     );
 
     expect(markup).toContain('type="button">Hủy</button>');
+    expect(markup).toContain('aria-label="Thao tác sản phẩm"');
+    expect(markup.indexOf('id="search-preview-title"')).toBeLessThan(
+      markup.indexOf('aria-label="Thao tác sản phẩm"'),
+    );
+    expect(markup.match(/>Lưu bản nháp<\/button>/g)).toHaveLength(1);
     expect(markup).toContain('Bỏ các thay đổi chưa lưu?');
     expect(markup).toContain('Tiếp tục chỉnh sửa');
     expect(markup).not.toContain('href="/backoffice/catalog/products"');

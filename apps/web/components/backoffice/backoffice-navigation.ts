@@ -41,7 +41,7 @@ export function backofficeNavigationForRole(
       items: [
         {
           href: BACKOFFICE_ROOT,
-          label: 'Tổng quan',
+          label: 'Tài chính',
           icon: 'overview',
           isCurrent: activePath === BACKOFFICE_ROOT,
         },

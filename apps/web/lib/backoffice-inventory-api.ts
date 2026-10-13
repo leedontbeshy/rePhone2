@@ -129,6 +129,7 @@ export interface InventoryInspectionCurrentSummary {
 }
 
 export interface InventoryUnitListItem {
+  isFeatured: boolean;
   id: string;
   inventoryCode: string;
   lifecycleStatus: InventoryLifecycleStatus;
@@ -949,6 +950,7 @@ function toInventoryUnitListItem(unit: ApiInventoryUnitListItem): InventoryUnitL
   return {
     id: unit.id,
     inventoryCode: unit.inventoryCode,
+    isFeatured: unit.isFeatured,
     lifecycleStatus: unit.lifecycleStatus,
     product: toProduct(unit.product),
     variant: toVariant(unit.variant),

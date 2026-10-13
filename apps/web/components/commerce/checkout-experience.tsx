@@ -3,8 +3,8 @@
 import type { components } from '@rephone/api-client';
 import {
   ArrowLeftIcon,
-  MapPinIcon,
-  ShieldCheckIcon,
+  CaretRightIcon,
+  CheckIcon,
   StorefrontIcon,
   TagIcon,
   TruckIcon,
@@ -12,17 +12,20 @@ import {
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { useCommerce, type Cart, type CartItem } from '@/app/commerce-provider';
-import { PublicMediaImage } from '@/components/catalog/public-media';
+import { useCommerce, type Cart } from '@/app/commerce-provider';
 import { Button, Input, Select, Textarea } from '@/components/ui';
 import {
-  checkoutWarningMessage,
   classifyCheckoutCreateFailure,
   createCheckoutRequestEpoch,
   type CheckoutPreview,
   type CheckoutRequestEpoch,
 } from '@/lib/checkout-api';
 import { customerApiError } from '@/lib/order-access';
+import {
+  CheckoutReceiptItems,
+  CheckoutReceiptPricing,
+  CheckoutVerification,
+} from './checkout-receipt';
 import styles from './checkout-experience.module.css';
 
 type Address = components['schemas']['AddressDto'];
@@ -501,7 +504,7 @@ function CheckoutSession() {
         title="Giỏ hàng cần được điều chỉnh"
         description="Một sản phẩm hiện không còn sẵn hoặc số lượng chưa phù hợp. Hãy kiểm tra lại giỏ hàng trước khi đặt hàng."
       >
-        <Link className={styles.primaryLink} href="/cart">
+        <Link className={styles.primaryLink} href="/cart" prefetch={false}>
           Kiểm tra giỏ hàng
         </Link>
       </CheckoutState>
@@ -521,44 +524,41 @@ function CheckoutSession() {
           }}
         >
           <nav aria-label="Đường dẫn" className={styles.breadcrumbs}>
-            <Link href="/cart">Giỏ hàng</Link>
-            <span aria-hidden="true">/</span>
-            <span>Đặt hàng</span>
+            <Link href="/cart" prefetch={false}>
+              Giỏ hàng
+            </Link>
+            <CaretRightIcon aria-hidden="true" size={14} />
+            <span
+              aria-current={
+                preview === null || reviewRequired || uncertainRequest !== null ? 'page' : undefined
+              }
+            >
+              Thông tin nhận hàng
+            </span>
+            <CaretRightIcon aria-hidden="true" size={14} />
+            <span
+              aria-current={
+                preview !== null && !reviewRequired && uncertainRequest === null
+                  ? 'page'
+                  : undefined
+              }
+            >
+              Xác nhận đơn
+            </span>
           </nav>
           <header className={styles.introduction}>
             <h1>Hoàn tất đơn hàng</h1>
-            <p>Chỉ còn một bước nữa để nhận sản phẩm. Hãy kiểm tra thông tin trước khi đặt hàng.</p>
+            <p>Kiểm tra thông tin trước khi đặt hàng.</p>
           </header>
 
-          <fieldset className={styles.fulfillmentGroup}>
-            <legend className={styles.visuallyHidden}>Cách nhận hàng</legend>
-            <FulfillmentCard
-              checked={fulfillmentType === 'SHIPPING'}
-              description="Giao hàng đến địa chỉ của bạn"
-              icon={<TruckIcon aria-hidden="true" size={30} weight="regular" />}
-              id="checkout-shipping"
-              label="Giao tận nơi"
-              disabled={formLocked}
-              onChange={() => {
-                setFulfillmentType('SHIPPING');
-                invalidatePreview();
-              }}
-            />
-            <FulfillmentCard
-              checked={fulfillmentType === 'PICKUP'}
-              description="Nhận hàng và thanh toán tại cửa hàng"
-              icon={<StorefrontIcon aria-hidden="true" size={30} weight="regular" />}
-              id="checkout-pickup"
-              label="Nhận tại cửa hàng"
-              disabled={formLocked}
-              onChange={() => {
-                setFulfillmentType('PICKUP');
-                invalidatePreview();
-              }}
-            />
-          </fieldset>
+          <CheckoutProgress
+            hasPreview={preview !== null && !reviewRequired && uncertainRequest === null}
+          />
 
-          <FormSection title="Thông tin liên hệ">
+          <FormSection
+            title="Thông tin liên hệ"
+            description="Thông tin này sẽ được sử dụng để liên hệ về đơn hàng."
+          >
             <div className={styles.fieldsGrid}>
               <Input
                 autoComplete="name"
@@ -591,7 +591,7 @@ function CheckoutSession() {
               />
               <Input
                 autoComplete="email"
-                containerClassName={styles.field ?? ''}
+                containerClassName={styles.fieldWide ?? ''}
                 error={fieldErrors.email}
                 id="checkout-email"
                 inputMode="email"
@@ -608,8 +608,44 @@ function CheckoutSession() {
             </div>
           </FormSection>
 
+          <FormSection
+            title="Cách nhận hàng"
+            description="Chọn phương thức nhận hàng phù hợp với bạn."
+          >
+            <fieldset className={styles.fulfillmentGroup}>
+              <legend className={styles.visuallyHidden}>Cách nhận hàng</legend>
+              <FulfillmentCard
+                checked={fulfillmentType === 'SHIPPING'}
+                description="Giao hàng đến địa chỉ của bạn"
+                icon={<TruckIcon aria-hidden="true" size={30} weight="regular" />}
+                id="checkout-shipping"
+                label="Giao tận nơi"
+                disabled={formLocked}
+                onChange={() => {
+                  setFulfillmentType('SHIPPING');
+                  invalidatePreview();
+                }}
+              />
+              <FulfillmentCard
+                checked={fulfillmentType === 'PICKUP'}
+                description="Nhận hàng và thanh toán tại cửa hàng"
+                icon={<StorefrontIcon aria-hidden="true" size={30} weight="regular" />}
+                id="checkout-pickup"
+                label="Nhận tại cửa hàng"
+                disabled={formLocked}
+                onChange={() => {
+                  setFulfillmentType('PICKUP');
+                  invalidatePreview();
+                }}
+              />
+            </fieldset>
+          </FormSection>
+
           {fulfillmentType === 'SHIPPING' ? (
-            <FormSection title="Địa chỉ giao hàng">
+            <FormSection
+              title="Địa chỉ giao hàng"
+              description="Thông tin được sử dụng để giao hàng cho bạn."
+            >
               {status === 'authenticated' && user?.role === 'CUSTOMER' ? (
                 <div className={styles.savedAddress}>
                   {addressesLoading ? <p>Đang tải địa chỉ đã lưu…</p> : null}
@@ -764,6 +800,8 @@ function CheckoutSession() {
             <Textarea
               id="checkout-customerNote"
               label="Ghi chú (nếu có)"
+              hint={<span className={styles.noteCount}>{form.customerNote.length}/500</span>}
+              placeholder="Nhập ghi chú cho đơn hàng (không bắt buộc)"
               disabled={formLocked}
               maxLength={500}
               value={form.customerNote}
@@ -831,10 +869,38 @@ function FulfillmentCard({
   );
 }
 
-function FormSection({ children, title }: Readonly<{ children: React.ReactNode; title: string }>) {
+function CheckoutProgress({ hasPreview }: Readonly<{ hasPreview: boolean }>) {
+  return (
+    <ol className={styles.progress} aria-label="Tiến trình đặt hàng">
+      <li data-complete="true">
+        <span className={styles.progressNumber}>
+          <CheckIcon aria-hidden="true" size={18} weight="bold" />
+        </span>
+        <span>Giỏ hàng</span>
+      </li>
+      <li data-complete={hasPreview || undefined} aria-current={hasPreview ? undefined : 'step'}>
+        <span className={styles.progressNumber}>
+          {hasPreview ? <CheckIcon aria-hidden="true" size={18} weight="bold" /> : '2'}
+        </span>
+        <span>Thông tin nhận hàng</span>
+      </li>
+      <li aria-current={hasPreview ? 'step' : undefined}>
+        <span className={styles.progressNumber}>3</span>
+        <span>Xác nhận đơn</span>
+      </li>
+    </ol>
+  );
+}
+
+function FormSection({
+  children,
+  description,
+  title,
+}: Readonly<{ children: React.ReactNode; description?: string; title: string }>) {
   return (
     <section className={styles.formSection}>
       <h2>{title}</h2>
+      {description ? <p className={styles.sectionDescription}>{description}</p> : null}
       {children}
     </section>
   );
@@ -870,21 +936,7 @@ function OrderSummary({
   return (
     <aside className={styles.summary} aria-label="Đơn hàng của bạn">
       <h2>Đơn hàng của bạn</h2>
-      <div className={styles.summaryItems}>
-        {(preview?.items ?? cart.items).map((source) => {
-          const cartItem =
-            'cartItemId' in source
-              ? cart.items.find((item) => item.id === source.cartItemId)
-              : source;
-          return (
-            <SummaryItem
-              key={'cartItemId' in source ? source.cartItemId : source.id}
-              cartItem={cartItem}
-              source={source}
-            />
-          );
-        })}
-      </div>
+      <CheckoutReceiptItems cart={cart} preview={preview} />
 
       {reviewRequired ? (
         <div ref={reviewRef} className={styles.reviewAlert} role="alert" tabIndex={-1}>
@@ -898,16 +950,9 @@ function OrderSummary({
         </p>
       ) : null}
 
-      {preview === null ? null : <PreviewPricing preview={preview} />}
+      {preview === null ? null : <CheckoutReceiptPricing preview={preview} />}
 
-      <div className={styles.assurance}>
-        <ShieldCheckIcon aria-hidden="true" size={22} weight="fill" />
-        <span>
-          {preview === null
-            ? 'Giá và tình trạng sản phẩm sẽ được kiểm tra trước khi đặt hàng'
-            : 'Giá và tình trạng sản phẩm đã được kiểm tra'}
-        </span>
-      </div>
+      {!reviewRequired && !uncertain ? <CheckoutVerification verified={preview !== null} /> : null}
 
       {uncertain ? (
         <div className={styles.uncertainNotice} role="alert">
@@ -948,99 +993,10 @@ function OrderSummary({
           Đặt hàng
         </Button>
       )}
-      <Link className={styles.backLink} href="/cart">
+      <Link className={styles.backLink} href="/cart" prefetch={false}>
         <ArrowLeftIcon aria-hidden="true" size={18} /> Quay lại giỏ hàng
       </Link>
     </aside>
-  );
-}
-
-function SummaryItem({
-  cartItem,
-  source,
-}: Readonly<{
-  cartItem: CartItem | undefined;
-  source: CartItem | CheckoutPreview['items'][number];
-}>) {
-  const quantity = source.quantity;
-  const target = source.target;
-  const price =
-    'lineTotal' in source
-      ? source.lineTotal
-      : (source.estimatedLineTotal ?? source.priceAtAddition);
-  return (
-    <article className={styles.summaryItem}>
-      <PublicMediaImage
-        className={styles.summaryImage}
-        fallbackLabel={`Ảnh ${target.productName}`}
-        media={cartItem?.media ?? undefined}
-      />
-      <div className={styles.summaryItemCopy}>
-        <strong>{target.productName}</strong>
-        <span>{target.variantName}</span>
-        {target.inventoryCode ? <span>Mã máy: {target.inventoryCode}</span> : null}
-        <div>
-          <span>Số lượng: {quantity}</span>
-          <b>{money(price)} ₫</b>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function PreviewPricing({ preview }: Readonly<{ preview: CheckoutPreview }>) {
-  const pricing = preview.pricing;
-  return (
-    <div className={styles.pricing}>
-      {preview.warnings.length > 0 ? (
-        <div className={styles.previewWarnings} role="status">
-          {preview.warnings.map((warning, index) => (
-            <p key={`${warning}-${String(index)}`}>{checkoutWarningMessage(warning)}</p>
-          ))}
-        </div>
-      ) : null}
-      {preview.voucher ? (
-        <p className={styles.voucherSuccess}>
-          <TagIcon aria-hidden="true" size={18} /> {preview.voucher.name} ({preview.voucher.code})
-        </p>
-      ) : null}
-      <PriceLine label="Tạm tính" value={pricing.subtotal} />
-      {moneyIsPositive(pricing.itemDiscountAmount) ? (
-        <PriceLine discount label="Giảm theo sản phẩm" value={pricing.itemDiscountAmount} />
-      ) : null}
-      {moneyIsPositive(pricing.voucherDiscountAmount) ? (
-        <PriceLine discount label="Giảm giá" value={pricing.voucherDiscountAmount} />
-      ) : null}
-      <PriceLine label="Phí giao hàng" value={pricing.shippingFee} />
-      <PriceLine label="Đặt cọc" value={pricing.depositRequired} />
-      <div className={styles.grandTotal}>
-        <span>Tổng thanh toán</span>
-        <strong>{money(pricing.grandTotal)} ₫</strong>
-      </div>
-      <PriceLine label="Số tiền còn lại" value={pricing.balanceDue} />
-      {preview.fulfillmentSummary.pickupStore ? (
-        <p className={styles.pickupStore}>
-          <MapPinIcon aria-hidden="true" size={18} /> Nhận tại{' '}
-          {preview.fulfillmentSummary.pickupStore.name}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function PriceLine({
-  discount = false,
-  label,
-  value,
-}: Readonly<{ discount?: boolean; label: string; value: string }>) {
-  return (
-    <div className={styles.priceLine}>
-      <span>{label}</span>
-      <strong className={discount ? styles.discount : undefined}>
-        {discount ? '−' : ''}
-        {money(value)} ₫
-      </strong>
-    </div>
   );
 }
 
@@ -1098,22 +1054,6 @@ function hasBlockingCartIssue(cart: Cart): boolean {
         item.warnings.some((warning) => blockingWarnings.has(warning)),
     )
   );
-}
-
-function money(value: string): string {
-  try {
-    return new Intl.NumberFormat('vi-VN').format(BigInt(value));
-  } catch {
-    return value;
-  }
-}
-
-function moneyIsPositive(value: string): boolean {
-  try {
-    return BigInt(value) > BigInt(0);
-  } catch {
-    return false;
-  }
 }
 
 function withoutFields(

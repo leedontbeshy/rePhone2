@@ -9,18 +9,12 @@ describe('inventory inspection form geometry', () => {
     );
     const stylesheet = readFileSync(stylesheetPath, 'utf8');
 
-    expect(stylesheet).toContain(`.summaryFields {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: start;`);
-    expect(stylesheet).toContain(`.notesGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;`);
-    expect(stylesheet).toContain(`.checkFields {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(11rem, 0.7fr) minmax(15rem, 1.3fr);
-  align-items: start;`);
+    for (const selector of ['summaryFields', 'notesGrid', 'checkFields']) {
+      expect(stylesheet).toMatch(
+        new RegExp(String.raw`\.${selector}\s*\{[^}]*align-items:\s*start;`),
+      );
+    }
+    expect(stylesheet).toMatch(/\.checkFields\s*\{[^}]*min-width:\s*0;/);
+    expect(stylesheet).toMatch(/@container inventory-inspection \(max-width: 41\.999rem\)/);
   });
 });

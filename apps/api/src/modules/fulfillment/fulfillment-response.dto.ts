@@ -44,7 +44,35 @@ export class BackofficeWarrantyDto {
   @ApiProperty({ type: String, format: 'date-time' }) public endAt!: string;
 }
 
+export class BackofficeOrderCostSummaryDto {
+  @ApiProperty({
+    enum: ['CURRENT_INVENTORY'],
+    description: 'Current inventory costs, not sale-time snapshots. ADMIN only.',
+  })
+  public source!: 'CURRENT_INVENTORY';
+  @ApiProperty({ type: String, pattern: '^\\d+$' }) public knownCost!: string;
+  @ApiProperty({ type: String, nullable: true, pattern: '^\\d+$' }) public totalCost!:
+    string | null;
+  @ApiProperty({ type: Number, minimum: 0 }) public missingQuantity!: number;
+}
+
+export class BackofficeOrderItemCostDto {
+  @ApiProperty({ type: String, format: 'uuid', nullable: true }) public inventoryUnitId!:
+    string | null;
+  @ApiProperty({ type: String, nullable: true, pattern: '^\\d+$' }) public acquisitionCost!:
+    string | null;
+  @ApiProperty({ type: String, nullable: true, pattern: '^\\d+$' }) public additionalCost!:
+    string | null;
+  @ApiProperty({ type: String, nullable: true, pattern: '^\\d+$' }) public unitCost!: string | null;
+  @ApiProperty({ type: String, nullable: true, pattern: '^\\d+$' }) public lineCost!: string | null;
+}
+
 export class BackofficeOrderItemDto {
+  @ApiPropertyOptional({
+    type: () => BackofficeOrderItemCostDto,
+    description: 'ADMIN-only current inventory costs. Absent for other roles.',
+  })
+  public currentCost?: BackofficeOrderItemCostDto;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ enum: ['IPHONE', 'ACCESSORY'] }) public productType!: string;
   @ApiProperty({ type: String }) public productName!: string;
@@ -161,6 +189,11 @@ export class BackofficeOrderPricingDto {
 }
 
 export class BackofficeOrderListItemDto {
+  @ApiPropertyOptional({
+    type: () => BackofficeOrderCostSummaryDto,
+    description: 'ADMIN only. Absent for other roles.',
+  })
+  public currentCostSummary?: BackofficeOrderCostSummaryDto;
   @ApiPropertyOptional({ enum: ['STOREFRONT', 'DEALER'] }) public channel?: string;
   @ApiPropertyOptional({ type: String, nullable: true }) public dealerId?: string | null;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
@@ -185,6 +218,11 @@ export class BackofficeOrderListItemDto {
 }
 
 export class BackofficeOrderDetailDto {
+  @ApiPropertyOptional({
+    type: () => BackofficeOrderCostSummaryDto,
+    description: 'ADMIN only. Absent for other roles.',
+  })
+  public currentCostSummary?: BackofficeOrderCostSummaryDto;
   @ApiPropertyOptional({ type: Boolean }) public hasAffiliateCommission?: boolean;
   @ApiPropertyOptional({ enum: ['STOREFRONT', 'DEALER'] }) public channel?: string;
   @ApiPropertyOptional({ type: String, nullable: true }) public dealerId?: string | null;

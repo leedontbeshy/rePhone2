@@ -72,12 +72,14 @@
 }
 
 .compact {
+  min-height: var(--control-height-compact);
   padding-block: var(--space-2);
 }
 
 .iconOnly {
-  width: var(--control-height);
-  min-width: var(--control-height);
+  width: var(--control-hit-target);
+  min-width: var(--control-hit-target);
+  min-height: var(--control-hit-target);
   padding: 0;
 }
 
@@ -201,7 +203,8 @@ select.control {
 .filePicker:has(.fileInput:focus-visible) {
   border-color: var(--color-primary);
   box-shadow: var(--focus-ring);
-  outline: 2px solid transparent;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .filePicker[data-invalid='true'] {
@@ -307,7 +310,7 @@ select.control {
 .radio {
   width: 1.25rem;
   height: 1.25rem;
-  margin: 0.75rem;
+  margin: calc((var(--control-height) - 1.25rem) / 2);
   accent-color: var(--color-primary);
 }
 
@@ -471,7 +474,8 @@ select.control {
   width: fit-content;
   align-items: center;
   gap: var(--space-1);
-  border: 1px solid;
+  border-width: 1px;
+  border-style: solid;
   border-radius: var(--radius-pill);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-semibold);
@@ -562,6 +566,10 @@ select.control {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .button:hover:not(:disabled) {
+    transform: none;
+  }
+
   .button,
   .control,
   .filePicker {

@@ -1,7 +1,8 @@
 .page {
   display: grid;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  container: settings-page / inline-size;
 }
 
 .pageHeader {
@@ -9,7 +10,7 @@
   min-width: 0;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .pageHeader h1,
@@ -27,9 +28,10 @@
 
 .pageHeader h1 {
   color: var(--color-ink);
-  font-size: clamp(var(--font-size-page-title), 2vw, 1.875rem);
+  font-size: var(--font-size-page-title);
   letter-spacing: -0.035em;
   line-height: var(--line-height-page-title);
+  overflow-wrap: anywhere;
 }
 
 .pageHeader > div > p:last-child {
@@ -52,9 +54,9 @@
 .layout {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1.65fr) minmax(19rem, 0.72fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .form,
@@ -67,15 +69,16 @@
 
 .form {
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
+  gap: 0;
 }
 
 .section {
   display: grid;
-  gap: var(--space-6);
-  padding: var(--space-6);
+  gap: var(--space-5);
+  padding: var(--space-5);
   border-bottom: var(--border-default);
 }
 
@@ -135,9 +138,9 @@
 .twoColumns {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .fullWidth {
@@ -149,8 +152,10 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-4);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-4) var(--space-5);
   background: var(--color-surface-subtle);
+  flex-wrap: wrap;
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
 }
 
 .saveStatus {
@@ -193,9 +198,10 @@
 }
 
 .rail {
-  position: sticky;
+  position: static;
   inset-block-start: calc(var(--backoffice-topbar-height, 76px) + var(--space-6));
   align-items: start;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .summaryCard,
@@ -203,7 +209,7 @@
   min-width: 0;
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -385,9 +391,10 @@
 
 .filePicker strong,
 .filePicker small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .filePicker strong {
@@ -402,6 +409,8 @@
 
 .filePicker:has(+ .fileInput:focus-visible) {
   box-shadow: var(--focus-ring);
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: var(--space-1);
 }
 
 .fileInput {
@@ -436,7 +445,7 @@
 .loadingPanel {
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
 }
 
@@ -445,55 +454,8 @@
   justify-items: start;
   padding: var(--space-8);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
-}
-
-@media (max-width: 79.999rem) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .rail {
-    position: static;
-    grid-template-columns: minmax(0, 0.65fr) minmax(18rem, 1fr);
-  }
-}
-
-@media (max-width: 47.999rem) {
-  .pageHeader,
-  .formFooter,
-  .cardHeading {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .pageHeader > button,
-  .formFooter > button {
-    width: 100%;
-  }
-
-  .twoColumns,
-  .rail {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .section,
-  .qrCard {
-    padding: var(--space-4);
-  }
-
-  .formFooter {
-    padding-inline: var(--space-4);
-  }
-
-  .saveStatus {
-    margin-inline-end: 0;
-  }
-
-  .conflictActions > button {
-    width: 100%;
-  }
 }
 
 @media (forced-colors: active) {
@@ -501,5 +463,113 @@
   .sectionIcon,
   .filePicker {
     border: 1px solid CanvasText;
+  }
+}
+
+.sectionHeading,
+.cardHeading > div,
+.saveStatus,
+.summaryHeading > div:last-child {
+  min-width: 0;
+}
+
+.summaryMeta,
+.saveStatus,
+.cardHeading,
+.summaryMetrics dd {
+  overflow-wrap: anywhere;
+}
+
+@container settings-page (min-width: 40rem) {
+  .twoColumns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container settings-page (min-width: 62rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+  .rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container settings-page (max-width: 39.999rem) {
+  .pageHeader,
+  .formFooter,
+  .cardHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .pageHeader > button,
+  .formFooter > button {
+    width: 100%;
+  }
+  .saveStatus {
+    margin-inline-end: 0;
+  }
+  .fullWidth {
+    grid-column: auto;
+  }
+  .conflictActions > button {
+    flex: 1 1 100%;
+  }
+}
+
+@container settings-page (max-width: 27.999rem) {
+  .section,
+  .qrCard {
+    padding: var(--space-4);
+  }
+  .formFooter {
+    padding-inline: var(--space-4);
+  }
+  .summaryHeading {
+    padding: var(--space-4);
+  }
+  .summaryMetrics {
+    padding-inline: var(--space-4);
+  }
+  .summaryMeta {
+    padding-inline: var(--space-4);
+  }
+  .emptyState {
+    padding: var(--space-5);
+  }
+}
+.partnerChannels {
+  display: grid;
+  gap: var(--space-4);
+}
+.partnerChannels h2,
+.partnerCard h3 {
+  margin: 0;
+}
+.partnerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.partnerCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+}
+.partnerCard p {
+  margin: 0;
+}
+@media (max-width: 59.999rem) {
+  .partnerGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

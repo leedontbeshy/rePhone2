@@ -2,6 +2,7 @@
   display: grid;
   min-width: 0;
   gap: var(--space-5);
+  container: catalog-page / inline-size;
 }
 
 .pageHeader,
@@ -60,8 +61,8 @@
 }
 
 .pageHeading h1 {
-  font-size: clamp(1.75rem, 3vw, 2.25rem);
-  line-height: 1.15;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-page-title);
   letter-spacing: -0.035em;
 }
 
@@ -124,7 +125,7 @@
 }
 
 .textButton {
-  min-height: 2.25rem;
+  min-height: var(--control-height-compact);
   padding: var(--space-1) var(--space-2);
   border-color: transparent;
   color: var(--color-primary-hover);
@@ -161,8 +162,13 @@
 .filters {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(16rem, 1.5fr) repeat(3, minmax(10rem, 0.85fr));
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
 }
 
 .searchField {
@@ -267,7 +273,8 @@
 }
 
 .searchField input {
-  padding: var(--space-3) var(--space-3) var(--space-3) 2.75rem;
+  height: var(--control-height);
+  padding: var(--space-2) var(--space-3) var(--space-2) 2.75rem;
 }
 
 .filterSelect,
@@ -275,6 +282,13 @@
 .nativeSelect,
 .nativeTextarea {
   padding: var(--space-3);
+}
+
+.filterSelect,
+.nativeInput,
+.nativeSelect {
+  height: var(--control-height);
+  padding-block: var(--space-2);
 }
 
 .nativeTextarea {
@@ -294,7 +308,7 @@
 }
 
 .toolbarTabs {
-  gap: clamp(var(--space-4), 4vw, var(--space-10));
+  gap: var(--space-4);
   border-block-end: var(--border-default);
   overflow-x: auto;
   scrollbar-width: none;
@@ -338,8 +352,13 @@
   position: relative;
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .updateStatus {
@@ -355,27 +374,27 @@
 }
 
 .productCard {
-  min-height: 9.5rem;
+  min-width: 0;
+  min-height: 5.75rem;
   justify-content: space-between;
   gap: var(--space-5);
-  padding: var(--space-4);
-  border: var(--border-default);
-  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-5);
+  border-block-end: var(--border-default);
   color: inherit;
   background: var(--color-surface);
   text-decoration: none;
-  box-shadow: var(--shadow-raised);
+  transition: background var(--motion-fast) var(--ease-standard);
 }
 
 .productCard:hover,
 .productCard:focus-visible {
-  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
 }
 
 .productIdentity {
   flex: 1;
-  align-items: stretch;
-  gap: var(--space-4);
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .productThumbnail,
@@ -391,8 +410,8 @@
 }
 
 .productThumbnail {
-  width: 6.25rem;
-  height: 7.5rem;
+  width: 4rem;
+  height: 4rem;
 }
 
 .detailThumbnail {
@@ -427,12 +446,10 @@
 .variantCopy h3 {
   min-width: 0;
   margin: 0;
-  overflow: hidden;
   color: var(--color-ink);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .productCode,
@@ -449,19 +466,21 @@
 }
 
 .cardStatus {
-  margin-block-start: var(--space-2);
+  flex: 0 0 auto;
 }
 
 .productMetrics {
   flex: 0 0 auto;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
 .productMetric {
+  min-width: 8rem;
   gap: var(--space-1);
   color: var(--color-muted);
   font-size: var(--font-size-small);
-  white-space: nowrap;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
 }
 
 .productMetric strong {
@@ -471,11 +490,9 @@
 
 .cardArrow {
   display: grid;
-  min-height: 3.5rem;
+  min-height: var(--control-height-compact);
   place-items: center;
-  padding-inline-start: var(--space-4);
-  border-inline-start: var(--border-default);
-  color: var(--color-ink);
+  color: var(--color-muted);
 }
 
 .emptyState,
@@ -485,21 +502,21 @@
   justify-items: start;
   padding: var(--space-10);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
 }
 
 .loadingCards {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
 
 .loadingCard {
   min-height: 9.5rem;
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
 }
 
@@ -507,7 +524,7 @@
 .detailLayout {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 21rem);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: var(--space-5);
 }
@@ -516,16 +533,17 @@
 .detailMain {
   display: grid;
   min-width: 0;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .formSection,
 .panel,
 .asideCard {
   gap: var(--space-4);
+  align-content: start;
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -649,9 +667,11 @@
 }
 
 .sideStack {
-  position: sticky;
-  inset-block-start: calc(var(--header-height) + var(--space-5));
+  position: static;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+  align-items: start;
+  align-content: start;
 }
 
 .statusDescription {
@@ -737,9 +757,10 @@
 }
 
 .detailTitleBlock h1 {
-  font-size: clamp(1.75rem, 3vw, 2.4rem);
-  line-height: 1.1;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-page-title);
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .detailCode {
@@ -789,14 +810,13 @@
 
 .descriptionList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 var(--space-8);
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
 }
 
 .descriptionList div {
   display: grid;
-  grid-template-columns: minmax(8rem, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(7rem, 0.65fr) minmax(0, 1.35fr);
   gap: var(--space-3);
   padding-block: var(--space-3);
   border-block-end: var(--border-default);
@@ -827,8 +847,8 @@
 
 .variantRow {
   display: grid;
-  grid-template-columns: minmax(13rem, 1.55fr) minmax(8rem, 0.8fr) minmax(7rem, 0.7fr) auto;
-  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface);
 }
@@ -862,7 +882,7 @@
 .variantMediaGrid {
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   padding-block-start: var(--space-3);
   border-block-start: var(--border-default);
@@ -914,11 +934,13 @@
 }
 
 .variantActions {
+  grid-column: 2;
+  grid-row: 1 / span 3;
   justify-content: flex-end;
 }
 
 .mediaGrid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
 }
 
 .mediaCard {
@@ -1154,7 +1176,7 @@
   padding: var(--space-6);
   overflow: auto;
   border: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   color: var(--color-body);
   background: var(--color-surface);
   box-shadow: var(--shadow-overlay);
@@ -1219,128 +1241,151 @@
   background: var(--color-success-soft);
 }
 
-@media (max-width: 74rem) {
-  .productCard {
-    align-items: stretch;
-  }
-
-  .productMetrics {
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .cardArrow {
-    align-self: stretch;
-  }
-
-  .mediaGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.productCard:last-child {
+  border-block-end: 0;
+}
+.productCard:focus-visible {
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: -4px;
+}
+.board > .emptyState,
+.board > .loadingState {
+  border: 0;
+  box-shadow: none;
+}
+.variantPrice,
+.variantStatus {
+  grid-column: 1;
+  margin-inline-start: calc(2.75rem + var(--space-3));
+}
+.formActions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+.panel[id] {
+  scroll-margin-block-start: calc(var(--header-height) + var(--space-5));
 }
 
-@media (max-width: 74rem) {
+@container catalog-page (min-width: 40rem) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .board,
-  .loadingCards {
-    grid-template-columns: 1fr;
-  }
-
-  .formLayout,
-  .detailLayout {
-    grid-template-columns: 1fr;
-  }
-
   .sideStack {
-    position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
   .sideStack > :last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
 }
 
-@media (max-width: 47.999rem) {
-  .pageHeader,
+@container catalog-page (min-width: 62rem) {
+  .filters {
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  }
+  .formLayout,
+  .detailLayout {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+  .sideStack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sideStack > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+  .variantRow {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr) minmax(0, 0.7fr) auto;
+  }
+  .variantPrice,
+  .variantStatus {
+    grid-column: auto;
+    margin-inline-start: 0;
+  }
+  .variantActions {
+    grid-column: 4;
+    grid-row: auto;
+  }
+}
+
+@container catalog-page (max-width: 55.999rem) {
   .detailHero {
     align-items: stretch;
     flex-direction: column;
   }
-
-  .headerActions,
-  .inlineActions {
+  .headerActions {
     justify-content: flex-start;
   }
-
-  .filters,
-  .fieldGrid,
-  .radioGrid,
-  .specGrid,
-  .threeColumnGrid,
-  .descriptionList,
-  .sideStack {
-    grid-template-columns: 1fr;
-  }
-
-  .wideField,
-  .sideStack > :last-child:nth-child(odd) {
-    grid-column: auto;
-  }
-
-  .productCard {
-    display: grid;
+  .productMetrics {
     gap: var(--space-3);
   }
-
-  .productMetrics {
-    padding-inline-start: calc(5rem + var(--space-3));
-    align-items: flex-start;
-    flex-direction: row;
-  }
-
-  .productThumbnail {
-    width: 5rem;
-    height: 6rem;
-  }
-
   .cardArrow {
     display: none;
   }
+}
 
-  .variantRow {
-    grid-template-columns: minmax(0, 1fr) auto;
+@container catalog-page (max-width: 39.999rem) {
+  .pageHeader,
+  .sectionHeading,
+  .mediaHeading {
+    align-items: stretch;
+    flex-direction: column;
   }
-
-  .variantPrice,
-  .variantStatus {
-    grid-column: 1;
-    margin-inline-start: calc(2.75rem + var(--space-3));
+  .pageHeader .primaryLink {
+    align-self: flex-start;
   }
-
-  .variantActions {
-    grid-column: 2;
-    grid-row: 1 / span 3;
+  .fieldGrid,
+  .radioGrid,
+  .specGrid,
+  .threeColumnGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
-
-  .variantMediaGrid {
-    grid-template-columns: 1fr;
+  .wideField {
+    grid-column: auto;
   }
-
-  .mediaGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .productCard {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
   }
-
+  .productMetrics {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding-inline-start: calc(4rem + var(--space-3));
+  }
+  .productMetric {
+    min-width: 0;
+    text-align: start;
+  }
+  .formActions > * {
+    flex: 1 1 8rem;
+  }
+  .inlineActions {
+    justify-content: flex-start;
+  }
+  .variantMediaCard {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+  }
+  .variantMediaCard .mediaActions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+  .variantMediaThumbnail {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
   .attributeRow {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-
   .attributeRow .field {
     grid-column: 1;
   }
-
   .removeAttributeButton {
     grid-column: 2;
     grid-row: 1 / span 2;
@@ -1348,63 +1393,79 @@
   }
 }
 
-@media (max-width: 31rem) {
+@container catalog-page (max-width: 27.999rem) {
+  .toolbarTabs,
+  .detailTabs {
+    flex-wrap: wrap;
+    gap: 0 var(--space-4);
+    overflow-x: visible;
+  }
+  .tabLink,
+  .detailTab {
+    min-inline-size: 0;
+    flex: 1 1 calc(50% - var(--space-2));
+  }
   .formSection,
   .panel,
-  .asideCard {
+  .asideCard,
+  .filters {
     padding: var(--space-4);
   }
-
   .detailIdentity {
-    grid-template-columns: 1fr;
-  }
-
-  .detailThumbnail {
-    width: 5rem;
-    height: 6rem;
-  }
-
-  .productIdentity {
     gap: var(--space-3);
   }
-
+  .detailThumbnail {
+    width: 4rem;
+    height: 4.75rem;
+  }
   .productMetrics {
     padding-inline-start: 0;
   }
-
-  .mediaGrid {
-    grid-template-columns: 1fr;
+  .variantRow {
+    grid-template-columns: minmax(0, 1fr);
   }
-
-  .mediaThumbnail {
-    height: 12rem;
+  .variantActions {
+    grid-column: 1;
+    grid-row: auto;
+    justify-content: flex-start;
   }
+  .variantPrice,
+  .variantStatus {
+    margin-inline-start: 0;
+  }
+  .descriptionList div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+  .fieldLoadError {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
 
+@media (max-width: 31rem) {
   .dialogPanel {
     width: calc(100% - var(--space-4));
     padding: var(--space-5);
   }
-
-  .variantMediaCard {
-    grid-template-columns: 3.5rem minmax(0, 1fr);
-  }
-
-  .variantMediaCard .mediaActions {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-  }
-
   .dialogActions > * {
     flex: 1 1 100%;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .productCard {
+    transition: none;
+  }
+}
 @media (forced-colors: active) {
   .tabLink[data-active='true'],
   .detailTab[data-current='true'],
   .radioCard:has(input:checked),
-  .productCard:hover,
-  .productCard:focus-visible {
+  .productCard:hover {
     border-color: CanvasText;
+  }
+  .productCard:focus-visible {
+    outline-color: Highlight;
   }
 }

@@ -10,6 +10,7 @@ interface CustomerShellProps extends SharedShellProps {
   readonly customerNavigation: readonly ShellNavigationItem[];
   readonly mobileNavigation?: ReactNode;
   readonly headerActions?: ReactNode;
+  readonly mobileSearch?: ReactNode;
   readonly navigationLabel?: string;
 }
 
@@ -21,6 +22,7 @@ export function CustomerShell({
   customerNavigation,
   mobileNavigation,
   headerActions,
+  mobileSearch,
   navigationLabel = 'Tài khoản của bạn',
   mainId = DEFAULT_MAIN_ID,
   mainClassName,
@@ -46,6 +48,9 @@ export function CustomerShell({
             )}
           </div>
         </div>
+        {mobileSearch === undefined ? null : (
+          <div className={styles.mobileSearch}>{mobileSearch}</div>
+        )}
         {storefrontNavigation.length === 0 && primaryNavigation === undefined ? null : (
           <div className={styles.categoryRow}>
             <nav className={styles.primaryNavigation} aria-label="Điều hướng chính">
@@ -56,6 +61,7 @@ export function CustomerShell({
       </header>
       <div className={styles.customerLayout}>
         <aside className={styles.customerSidebar}>
+          <p className={styles.customerNavigationLabel}>{navigationLabel}</p>
           <nav aria-label={navigationLabel}>
             <NavigationList items={customerNavigation} className={styles.customerNavigationList} />
           </nav>

@@ -1772,6 +1772,37 @@
         ],
         "type": "object"
       },
+      "BackofficeOrderCostSummaryDto": {
+        "properties": {
+          "knownCost": {
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "missingQuantity": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "source": {
+            "description": "Current inventory costs, not sale-time snapshots. ADMIN only.",
+            "enum": [
+              "CURRENT_INVENTORY"
+            ],
+            "type": "string"
+          },
+          "totalCost": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "knownCost",
+          "totalCost",
+          "missingQuantity"
+        ],
+        "type": "object"
+      },
       "BackofficeOrderDetailDto": {
         "properties": {
           "availableActions": {
@@ -1823,6 +1854,14 @@
           },
           "contact": {
             "$ref": "#/components/schemas/BackofficeOrderContactDto"
+          },
+          "currentCostSummary": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeOrderCostSummaryDto"
+              }
+            ],
+            "description": "ADMIN only. Absent for other roles."
           },
           "customerNote": {
             "nullable": true,
@@ -1966,8 +2005,53 @@
         ],
         "type": "object"
       },
+      "BackofficeOrderItemCostDto": {
+        "properties": {
+          "acquisitionCost": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "additionalCost": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "inventoryUnitId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "lineCost": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          },
+          "unitCost": {
+            "nullable": true,
+            "pattern": "^\\d+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "inventoryUnitId",
+          "acquisitionCost",
+          "additionalCost",
+          "unitCost",
+          "lineCost"
+        ],
+        "type": "object"
+      },
       "BackofficeOrderItemDto": {
         "properties": {
+          "currentCost": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeOrderItemCostDto"
+              }
+            ],
+            "description": "ADMIN-only current inventory costs. Absent for other roles."
+          },
           "id": {
             "format": "uuid",
             "type": "string"
@@ -2064,6 +2148,14 @@
               "DEALER"
             ],
             "type": "string"
+          },
+          "currentCostSummary": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BackofficeOrderCostSummaryDto"
+              }
+            ],
+            "description": "ADMIN only. Absent for other roles."
           },
           "customerName": {
             "type": "string"
@@ -5876,6 +5968,206 @@
         ],
         "type": "object"
       },
+      "FinancialChannelDto": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "STOREFRONT",
+              "DEALER"
+            ],
+            "type": "string"
+          },
+          "discounts": {
+            "type": "string"
+          },
+          "grossRevenue": {
+            "type": "string"
+          },
+          "netRevenue": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "number"
+          },
+          "refunds": {
+            "type": "string"
+          },
+          "shippingRevenue": {
+            "type": "string"
+          },
+          "unitsSold": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "grossRevenue",
+          "refunds",
+          "netRevenue",
+          "shippingRevenue",
+          "discounts",
+          "orderCount",
+          "unitsSold",
+          "channel"
+        ],
+        "type": "object"
+      },
+      "FinancialCostDto": {
+        "properties": {
+          "estimatedGrossProfit": {
+            "nullable": true,
+            "type": "string"
+          },
+          "knownCost": {
+            "type": "string"
+          },
+          "missingCostItems": {
+            "type": "number"
+          },
+          "stockCapitalKnown": {
+            "type": "string"
+          },
+          "stockCostMissing": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "knownCost",
+          "missingCostItems",
+          "estimatedGrossProfit",
+          "stockCapitalKnown",
+          "stockCostMissing"
+        ],
+        "type": "object"
+      },
+      "FinancialDayDto": {
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "discounts": {
+            "type": "string"
+          },
+          "grossRevenue": {
+            "type": "string"
+          },
+          "netRevenue": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "number"
+          },
+          "refunds": {
+            "type": "string"
+          },
+          "shippingRevenue": {
+            "type": "string"
+          },
+          "unitsSold": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "grossRevenue",
+          "refunds",
+          "netRevenue",
+          "shippingRevenue",
+          "discounts",
+          "orderCount",
+          "unitsSold",
+          "date"
+        ],
+        "type": "object"
+      },
+      "FinancialReportDto": {
+        "properties": {
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/FinancialChannelDto"
+            },
+            "type": "array"
+          },
+          "costs": {
+            "$ref": "#/components/schemas/FinancialCostDto"
+          },
+          "daily": {
+            "items": {
+              "$ref": "#/components/schemas/FinancialDayDto"
+            },
+            "type": "array"
+          },
+          "generatedAt": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string"
+          },
+          "receivables": {
+            "type": "string"
+          },
+          "sales": {
+            "$ref": "#/components/schemas/FinancialSalesDto"
+          },
+          "stockUnits": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "generatedAt",
+          "sales",
+          "daily",
+          "channels",
+          "receivables",
+          "stockUnits"
+        ],
+        "type": "object"
+      },
+      "FinancialReportResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FinancialReportDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "FinancialSalesDto": {
+        "properties": {
+          "discounts": {
+            "type": "string"
+          },
+          "grossRevenue": {
+            "type": "string"
+          },
+          "netRevenue": {
+            "type": "string"
+          },
+          "orderCount": {
+            "type": "number"
+          },
+          "refunds": {
+            "type": "string"
+          },
+          "shippingRevenue": {
+            "type": "string"
+          },
+          "unitsSold": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "grossRevenue",
+          "refunds",
+          "netRevenue",
+          "shippingRevenue",
+          "discounts",
+          "orderCount",
+          "unitsSold"
+        ],
+        "type": "object"
+      },
       "ForgotPasswordDto": {
         "properties": {
           "email": {
@@ -5994,7 +6286,8 @@
             "enum": [
               "IMEI",
               "SERIAL",
-              "EID"
+              "EID",
+              "INVENTORY_CODE"
             ],
             "type": "string"
           },
@@ -6581,6 +6874,9 @@
           "inventoryCode": {
             "type": "string"
           },
+          "isFeatured": {
+            "type": "boolean"
+          },
           "lifecycleStatus": {
             "enum": [
               "RECEIVED",
@@ -6662,6 +6958,7 @@
           }
         },
         "required": [
+          "isFeatured",
           "id",
           "inventoryCode",
           "lifecycleStatus",
@@ -6702,6 +6999,9 @@
           },
           "inventoryCode": {
             "type": "string"
+          },
+          "isFeatured": {
+            "type": "boolean"
           },
           "lifecycleStatus": {
             "enum": [
@@ -6756,6 +7056,7 @@
           }
         },
         "required": [
+          "isFeatured",
           "id",
           "inventoryCode",
           "lifecycleStatus",
@@ -8263,6 +8564,81 @@
         ],
         "type": "object"
       },
+      "PendingTaskCountsDto": {
+        "properties": {
+          "affiliates": {
+            "description": "Affiliate tasks; ADMIN only.",
+            "minimum": 0,
+            "type": "number"
+          },
+          "afterSales": {
+            "description": "Open after-sales requests.",
+            "minimum": 0,
+            "type": "number"
+          },
+          "dealers": {
+            "description": "Dealer tasks actionable by the current role.",
+            "minimum": 0,
+            "type": "number"
+          },
+          "inventory": {
+            "description": "Units RECEIVED or INSPECTING.",
+            "minimum": 0,
+            "type": "number"
+          },
+          "orders": {
+            "description": "Orders awaiting confirmation (PLACED).",
+            "minimum": 0,
+            "type": "number"
+          },
+          "payments": {
+            "description": "Payments UNDER_REVIEW.",
+            "minimum": 0,
+            "type": "number"
+          },
+          "refunds": {
+            "description": "Storefront refunds REQUESTED or PROCESSING.",
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "orders",
+          "payments",
+          "refunds",
+          "afterSales",
+          "inventory",
+          "dealers"
+        ],
+        "type": "object"
+      },
+      "PendingTasksDto": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/PendingTaskCountsDto"
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "counts"
+        ],
+        "type": "object"
+      },
+      "PendingTasksResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PendingTasksDto"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
       "PickupStoreSummaryDto": {
         "properties": {
           "code": {
@@ -8633,6 +9009,59 @@
         },
         "required": [
           "data"
+        ],
+        "type": "object"
+      },
+      "PublicUnitListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicUnitOfferDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicUnitOfferDto": {
+        "properties": {
+          "colorHex": {
+            "nullable": true,
+            "type": "string"
+          },
+          "colorName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "productRamGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "productSlug": {
+            "type": "string"
+          },
+          "storageCapacityGb": {
+            "nullable": true,
+            "type": "number"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/UsedIphoneCardDto"
+          },
+          "variantDisplayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "productName",
+          "productSlug",
+          "variantDisplayName",
+          "unit"
         ],
         "type": "object"
       },
@@ -10268,6 +10697,9 @@
           },
           "imei2": {
             "type": "string"
+          },
+          "isFeatured": {
+            "type": "boolean"
           },
           "modelNumber": {
             "maxLength": 255,
@@ -28215,6 +28647,140 @@
         ]
       }
     },
+    "/api/v1/backoffice/overview/financial": {
+      "get": {
+        "operationId": "getBackofficeFinancialReport",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "pattern": "^(20[0-9]{2})-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialReportResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Monthly completed sales and current financial position; costs are admin-only",
+        "tags": [
+          "backoffice-overview"
+        ]
+      }
+    },
+    "/api/v1/backoffice/overview/pending-tasks": {
+      "get": {
+        "operationId": "getBackofficePendingTasks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingTasksResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "FORBIDDEN"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Get role-aware pending task counts for the backoffice sidebar",
+        "tags": [
+          "backoffice-overview"
+        ]
+      }
+    },
     "/api/v1/backoffice/payments": {
       "get": {
         "operationId": "listBackofficePayments",
@@ -40003,6 +40569,29 @@
           },
           {
             "in": "query",
+            "name": "ramGb",
+            "required": false,
+            "schema": {
+              "maximum": 64,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "simLockStatus",
+            "required": false,
+            "schema": {
+              "enum": [
+                "UNLOCKED",
+                "CARRIER_LOCKED",
+                "UNKNOWN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "colorName",
             "required": false,
             "schema": {
@@ -40068,7 +40657,8 @@
                 "createdAt",
                 "name",
                 "fromPrice",
-                "releaseYear"
+                "releaseYear",
+                "generation"
               ],
               "type": "string"
             }
@@ -40252,6 +40842,69 @@
           }
         },
         "summary": "Get one exact public used iPhone unit",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/products/units": {
+      "get": {
+        "operationId": "listPublicInventoryUnits",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "featuredFirst",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 30,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicUnitListResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "INTERNAL_ERROR"
+          }
+        },
+        "summary": "Available exact units, optionally prioritizing featured units",
         "tags": [
           "catalog"
         ]

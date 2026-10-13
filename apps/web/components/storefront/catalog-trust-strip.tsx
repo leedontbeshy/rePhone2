@@ -10,13 +10,13 @@ const ITEMS: readonly { icon: ReactNode; title: string; description: string }[] 
   },
   {
     icon: <ShieldCheckIcon aria-hidden="true" size={28} weight="regular" />,
-    title: 'Kiểm định rõ ràng',
-    description: 'Kết quả kiểm tra được trình bày theo từng máy.',
+    title: 'Xem kỹ rồi hãy chọn',
+    description: 'Pin, ngoại hình và chức năng đều có trong hồ sơ máy.',
   },
   {
     icon: <TagIcon aria-hidden="true" size={28} weight="regular" />,
-    title: 'Giá theo máy đang bán',
-    description: 'Giá dòng máy lấy từ chiếc máy khả dụng thấp nhất.',
+    title: 'Vừa nhu cầu, vừa túi tiền',
+    description: 'So sánh những máy đang có để chọn chiếc hợp với bạn.',
   },
 ];
 

@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import { stabilizeWp11VisualPage } from './support/wp11-visual';
 import { expect, test, type Page } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -48,7 +49,7 @@ test(
     await expect(
       page.getByText('TEST BANK — KHÔNG CHUYỂN TIỀN', { exact: false }).first(),
     ).toBeVisible();
-    await page.screenshot({
+    await captureStablePage(page, {
       path: testInfo.outputPath('dealer-order-desktop.png'),
       fullPage: true,
     });
@@ -57,8 +58,10 @@ test(
     const adminContext = await browser.newContext();
     const admin = await adminContext.newPage();
     admin.on('pageerror', (error) => errors.push(error.message));
-    await login(admin, 'admin@rephone.local', 'AdminDemo123', '/backoffice/dealers');
-    await admin.getByText('Quản lý trạng thái cổng', { exact: true }).click();
+    await login(admin, 'admin@rephone.local', 'AdminDemo123', '/backoffice/settings');
+    await expect(
+      admin.getByRole('heading', { name: 'Kênh bán hàng & đối tác', exact: true }),
+    ).toBeVisible();
     await admin.getByRole('button', { name: 'Tạm đóng cổng đại lý', exact: true }).click();
     await expect(admin.getByRole('button', { name: 'Mở cổng đại lý', exact: true })).toBeVisible();
     await page.reload();
@@ -71,7 +74,7 @@ test(
     await expect(
       admin.getByRole('button', { name: 'Tạm đóng cổng đại lý', exact: true }),
     ).toBeVisible();
-    await admin.screenshot({
+    await captureStablePage(admin, {
       path: testInfo.outputPath('dealer-channel-control.png'),
       fullPage: true,
     });
@@ -83,7 +86,7 @@ test(
       .fill('Kiểm tra áp dụng chính sách giá chung');
     await pricing.getByRole('button', { name: 'Lưu giá đại lý của máy' }).click();
     await expect(pricing.getByText('Đã lưu giá đại lý của máy.')).toBeVisible();
-    await admin.screenshot({
+    await captureStablePage(admin, {
       path: testInfo.outputPath('dealer-unit-pricing.png'),
       fullPage: true,
     });
@@ -100,7 +103,7 @@ test(
     await admin.getByLabel('Tình huống mô phỏng').selectOption('DELIVER');
     await admin.getByRole('button', { name: 'Chạy tình huống TEST' }).click();
     await expect(admin.getByText('Hoàn tất', { exact: true }).first()).toBeVisible();
-    await admin.screenshot({
+    await captureStablePage(admin, {
       path: testInfo.outputPath('dealer-backoffice-desktop.png'),
       fullPage: true,
     });
@@ -124,7 +127,7 @@ test(
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
       .toBe(true);
-    await page.screenshot({
+    await captureStablePage(page, {
       path: testInfo.outputPath('dealer-warranty-mobile.png'),
       fullPage: true,
     });
@@ -133,14 +136,60 @@ test(
   },
 );
 
-test(bt('browser:dealer-flow', 'public-docs'), async ({ page }) => {
+test(bt('browser:dealer-flow', 'public-docs'), async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/dealer');
+  await expect(
+    page.getByRole('heading', { name: 'Chương trình đại lý rePhone.', exact: true }),
+  ).toBeVisible();
+  await captureStablePage(page, {
+    path: testInfo.outputPath('dealer-public-desktop.png'),
+    fullPage: true,
+  });
   await page.goto('/dealer/terms');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await accessible(page);
   await page.goto('/dealer/api-guide');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await captureStablePage(page, {
+    path: testInfo.outputPath('dealer-guide-desktop.png'),
+    fullPage: true,
+  });
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
+      .toBe(true);
+    for (const name of [
+      'Quyền truy cập API',
+      'Tình huống đặt hàng',
+      'Thanh toán và hậu mãi',
+      'Xử lý lỗi kết nối',
+    ]) {
+      const region = page.getByRole('region', { name, exact: true });
+      await expect(region).toHaveAttribute('tabindex', '0');
+      await expect(region.getByRole('table', { name, exact: true })).toBeVisible();
+      await region.focus();
+      await expect(region).toBeFocused();
+      await expect(region.locator('thead th:not([scope="col"])')).toHaveCount(0);
+    }
+    await captureStablePage(page, {
+      path: testInfo.outputPath(`dealer-guide-${String(width)}.png`),
+      fullPage: true,
+    });
+  }
   await accessible(page);
 });
+
+async function captureStablePage(page: Page, options: Parameters<Page['screenshot']>[0]) {
+  await stabilizeWp11VisualPage(page);
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  });
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await page.mouse.move(0, 0);
+  await page.screenshot(options);
+}
 
 async function login(page: Page, email: string, password: string, destination: string) {
   await page.goto(`/login?returnTo=${encodeURIComponent(destination)}`);

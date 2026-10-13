@@ -83,6 +83,7 @@ export class CurrentInspectionSummaryDto {
 }
 
 export class InventoryUnitListItemDto {
+  @ApiProperty({ type: Boolean }) public isFeatured!: boolean;
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiProperty({ type: String }) public inventoryCode!: string;
   @ApiProperty({

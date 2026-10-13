@@ -35,7 +35,7 @@
   background: var(--color-surface);
 }
 
-.search[data-variant='desktop'] .control input {
+.search:is([data-variant='desktop'], [data-variant='compact']) .control input {
   border-inline-end: 0;
   border-start-end-radius: 0;
   border-end-end-radius: 0;
@@ -54,7 +54,7 @@
   cursor: pointer;
 }
 
-.search[data-variant='desktop'] .control button {
+.search:is([data-variant='desktop'], [data-variant='compact']) .control button {
   padding: 0;
   border-start-start-radius: 0;
   border-end-start-radius: 0;

@@ -2,7 +2,7 @@
 import { LoginRedirect } from '@/components/auth/login-redirect';
 
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
@@ -34,7 +34,6 @@ const PAGE_SIZE = 10;
 export function AfterSalesList() {
   const { client, status, user } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const page = positiveInt(searchParams.get('page'));
   const type = allowedType(searchParams.get('type'));
@@ -70,9 +69,10 @@ export function AfterSalesList() {
         if (active) {
           const finalPage = Math.max(1, next.pagination.totalPages);
           if (page > finalPage) {
-            router.replace(
+            window.history.replaceState(
+              null,
+              '',
               buildAfterSalesListHref({ type, status: requestStatus, page: finalPage }, pathname),
-              { scroll: false },
             );
             return;
           }
@@ -93,18 +93,7 @@ export function AfterSalesList() {
     return () => {
       active = false;
     };
-  }, [
-    client,
-    isCustomer,
-    listKey,
-    ownerKey,
-    page,
-    pathname,
-    reloadKey,
-    requestStatus,
-    router,
-    type,
-  ]);
+  }, [client, isCustomer, listKey, ownerKey, page, pathname, reloadKey, requestStatus, type]);
 
   const ownedSnapshot = snapshot?.ownerKey === ownerKey ? snapshot : null;
   const contextReady = ownedSnapshot?.key === listKey;
@@ -116,9 +105,12 @@ export function AfterSalesList() {
   const updateQuery = (key: 'status' | 'type', value: string) => {
     const nextType = key === 'type' ? allowedType(value) : type;
     const nextStatus = key === 'status' ? allowedStatus(value) : requestStatus;
-    router.replace(
+    // The list fetch is client-owned. Native history updates the query without a competing
+    // server navigation restoring the old query during production hydration/prefetch.
+    window.history.replaceState(
+      null,
+      '',
       buildAfterSalesListHref({ type: nextType, status: nextStatus, page: 1 }, pathname),
-      { scroll: false },
     );
   };
 

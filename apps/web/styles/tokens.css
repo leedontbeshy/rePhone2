@@ -6,14 +6,22 @@
   --color-surface: #ffffff;
   --color-surface-subtle: #f1f5f8;
   --color-brand-soft: #e2f5f9;
+  --color-studio-cyan: #eaf6ff;
+  --color-studio-lavender: #f1edff;
+  --color-studio-mint: #eaf8f5;
+  --color-studio-warm: #f3f1ef;
   --color-ink: #0c1728;
   --color-body: #273548;
-  --color-muted: #667486;
-  --color-border: #dce4ea;
-  --color-border-strong: #c7d2dc;
+  --color-muted: #5c6a7c;
+  --color-border: #cdd9e2;
+  --color-border-strong: #aebfcd;
   --color-primary: #007c9f;
   --color-primary-hover: #006780;
   --color-primary-active: #00556b;
+  --color-on-brand-soft: #006780;
+  --color-sidebar: #0c1728;
+  --color-sidebar-text: #d6e4f0;
+  --color-sidebar-active: #00556b;
   --color-on-primary: #ffffff;
   --color-success: #16875b;
   --color-success-strong: #0b6b45;
@@ -32,24 +40,33 @@
 
   /* Typography */
   --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    var(--font-inter, Inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  --font-size-label: 0.75rem;
+  --font-size-label: 0.875rem;
   --font-size-small: 0.875rem;
   --font-size-body: 1rem;
   --font-size-card-title: 1.125rem;
-  --font-size-section-title: 1.25rem;
-  --font-size-page-title: 1.5rem;
+  --font-size-section-title: 1.5rem;
+  --font-size-page-title: 1.75rem;
   --font-size-display: 2rem;
-  --font-size-price: 1.875rem;
-  --line-height-label: 1rem;
+  --font-size-auth-title: 1.75rem;
+  --font-size-price: 1.5rem;
+  --font-size-hero-price: 2rem;
+  --font-size-count: 2rem;
+  --font-size-bo-meta: 0.75rem;
+  --line-height-label: 1.25rem;
   --line-height-small: 1.25rem;
   --line-height-body: 1.5rem;
   --line-height-card-title: 1.75rem;
-  --line-height-section-title: 1.75rem;
-  --line-height-page-title: 2rem;
+  --line-height-section-title: 2rem;
+  --line-height-page-title: 2.25rem;
   --line-height-display: 2.5rem;
-  --line-height-price: 2.25rem;
+  --line-height-auth-title: 2.25rem;
+  --line-height-price: 2rem;
+  --line-height-hero-price: 2.5rem;
+  --line-height-count: 2.5rem;
+  --line-height-bo-meta: 1rem;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -69,15 +86,17 @@
   --space-20: 5rem;
 
   /* Shape and elevation */
-  --radius-small: 0.375rem;
-  --radius-control: 0.5rem;
-  --radius-card: 0.625rem;
+  --radius-small: 0.5rem;
+  --radius-control: 0.75rem;
+  --radius-panel: 1.25rem;
+  --radius-card: 1.5rem;
+  --radius-media: 1.75rem;
   --radius-pill: 999px;
-  --border-default: 1px solid var(--color-border);
-  --border-strong: 1px solid var(--color-border-strong);
-  --shadow-raised: 0 1px 2px rgb(12 23 40 / 6%);
-  --shadow-hover: 0 8px 24px rgb(12 23 40 / 8%);
-  --shadow-floating: 0 10px 30px rgb(12 23 40 / 10%);
+  --border-default: 2px solid var(--color-border);
+  --border-strong: 2px solid var(--color-border-strong);
+  --shadow-raised: 0 2px 3px rgb(12 23 40 / 5%), 0 8px 20px rgb(12 23 40 / 7%);
+  --shadow-hover: 0 4px 6px rgb(12 23 40 / 6%), 0 14px 30px rgb(12 23 40 / 12%);
+  --shadow-floating: 0 12px 32px rgb(12 23 40 / 8%);
   --shadow-overlay: 0 20px 48px rgb(12 23 40 / 14%);
 
   /* Motion */
@@ -90,9 +109,12 @@
   --container-max: 90rem;
   --content-reading-max: 65ch;
   --page-gutter: 1rem;
-  --control-height: 2.75rem;
+  --control-height: 3rem;
+  --control-height-compact: 2.75rem;
+  --control-hit-target: 2.75rem;
+  --auth-form-max: 30rem;
   --header-height: 4rem;
-  --storefront-header-offset: 4.5rem;
+  --storefront-header-offset: 8.5rem;
   --backoffice-sidebar-width: 15rem;
 
   /* Layering */
@@ -109,6 +131,14 @@
 @media (min-width: 40rem) {
   :root {
     --page-gutter: 1.5rem;
+    --font-size-page-title: 2rem;
+    --line-height-page-title: 2.5rem;
+    --font-size-display: 3rem;
+    --line-height-display: 3.5rem;
+    --font-size-auth-title: 2.5rem;
+    --line-height-auth-title: 3rem;
+    --font-size-hero-price: 2.5rem;
+    --line-height-hero-price: 3rem;
   }
 }
 

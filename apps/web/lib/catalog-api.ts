@@ -36,6 +36,18 @@ export type IphoneVariant = components['schemas']['IphoneVariantDto'];
 export type AccessoryVariant = components['schemas']['AccessoryVariantDto'];
 export type UsedIphoneDetail = components['schemas']['UsedIphoneDetailDto'];
 export type PublicMedia = components['schemas']['PublicMediaDto'];
+export type PublicUnitOffer = components['schemas']['PublicUnitOfferDto'];
+
+export async function listPublicUnits(
+  limit = 24,
+  featuredFirst = false,
+): Promise<readonly PublicUnitOffer[]> {
+  const result = await catalogClient.GET('/api/v1/products/units', {
+    params: { query: { limit, featuredFirst } },
+  });
+  if (result.data === undefined) throw new CatalogApiError(result.response.status);
+  return result.data.data;
+}
 
 export class CatalogApiError extends Error {
   public constructor(public readonly status: number) {
@@ -44,12 +56,38 @@ export class CatalogApiError extends Error {
   }
 }
 
-export async function listPublicProducts(query: CatalogListQuery) {
-  const result = await catalogClient.GET('/api/v1/products', { params: { query } });
+export async function listPublicProducts(query: CatalogListQuery, signal?: AbortSignal) {
+  const result = await catalogClient.GET('/api/v1/products', {
+    params: { query },
+    ...(signal === undefined ? {} : { signal }),
+  });
   if (result.data === undefined) {
     throw new CatalogApiError(result.response.status);
   }
   return result.data;
+}
+
+/** One bounded public-list lookup supplies the same authoritative price as catalog cards.
+ * It has a two-second total deadline; failure must not make a valid model route unavailable. */
+export async function getPublicProductSummary(
+  product: Pick<ProductDetail, 'id' | 'name' | 'slug'>,
+): Promise<ProductListItem | undefined> {
+  try {
+    const result = await listPublicProducts(
+      {
+        q: product.name.slice(0, 100),
+        productType: 'IPHONE',
+        page: 1,
+        pageSize: 100,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      },
+      AbortSignal.timeout(2_000),
+    );
+    return result.data.find((item) => item.id === product.id && item.slug === product.slug);
+  } catch {
+    return undefined;
+  }
 }
 
 export async function listAllPublicProducts(

@@ -1,3 +1,4 @@
+import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import {
   expect,
@@ -66,7 +67,7 @@ test(
     await installReleaseFixture(backofficePage, 'ADMIN');
     await backofficePage.goto('/backoffice', { waitUntil: 'domcontentloaded' });
     await expect(
-      backofficePage.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+      backofficePage.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
     ).toBeVisible();
     await removeNextDevPortal(backofficePage);
     await expectReducedMotionStyles(backofficePage, [
@@ -102,7 +103,7 @@ test(
     await installReleaseFixture(backofficePage, 'ADMIN');
     await backofficePage.goto('/backoffice', { waitUntil: 'domcontentloaded' });
     await expect(
-      backofficePage.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+      backofficePage.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
     ).toBeVisible();
     expect(await backofficePage.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(
       true,
@@ -159,9 +160,9 @@ test(
 
       await menuTrigger.click();
       const closeButton = storefrontPage.getByRole('button', { name: 'Đóng', exact: true });
-      const mobileSearch = storefrontPage.getByRole('combobox', {
-        name: 'Tìm iPhone hoặc phụ kiện',
-      });
+      const mobileSearch = storefrontPage
+        .getByRole('dialog', { name: 'Danh mục', exact: true })
+        .getByRole('combobox', { name: 'Tìm iPhone hoặc phụ kiện' });
       await expectCriticalTouchTarget(
         closeButton,
         `storefront menu close at ${String(viewport.width)}px`,
@@ -205,7 +206,7 @@ test(
       await backofficePage.setViewportSize(viewport);
       await backofficePage.goto('/backoffice', { waitUntil: 'domcontentloaded' });
       await expect(
-        backofficePage.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+        backofficePage.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
       ).toBeVisible();
       await expectCriticalTouchTarget(
         backofficePage.getByRole('link', { name: 'Về cửa hàng', exact: true }),
@@ -296,7 +297,7 @@ async function waitForShellState(page: Page, role: FixtureRole, path: string): P
   }
   if (role === 'ADMIN') {
     await expect(
-      page.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+      page.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
     ).toBeVisible();
     return;
   }
@@ -500,8 +501,10 @@ async function installReleaseFixture(page: Page, role: FixtureRole): Promise<voi
     if (path === '/api/v1/account' && request.method() === 'GET') {
       return fulfillJson(route, { data: customerAccount() });
     }
-    if (path === '/api/v1/backoffice/overview' && request.method() === 'GET') {
-      return fulfillJson(route, { data: overviewSnapshot() });
+    if (path === '/api/v1/backoffice/overview/financial' && request.method() === 'GET') {
+      return fulfillJson(route, {
+        data: financialReportFixture(new URL(request.url()).searchParams.get('month') ?? '2026-09'),
+      });
     }
     if (path === '/api/v1/backoffice/employees' && request.method() === 'GET') {
       return fulfillJson(route, paged([firstEmployee(), secondEmployee()]));
@@ -512,6 +515,12 @@ async function installReleaseFixture(page: Page, role: FixtureRole): Promise<voi
     if (path === `/api/v1/backoffice/employees/${SECOND_EMPLOYEE_ID}`) {
       return fulfillJson(route, { data: secondEmployee() });
     }
+    if (path === '/api/v1/backoffice/dealers/configuration')
+      return fulfillJson(route, {
+        data: { enabled: false, open: false, pricingReady: false, environment: 'TEST', version: 0 },
+      });
+    if (path === '/api/v1/backoffice/affiliates/policy')
+      return fulfillJson(route, { data: { ready: false, enabled: false } });
     if (path === '/api/v1/backoffice/settings' && request.method() === 'GET') {
       return fulfillJson(route, { data: settingsProjection() });
     }
@@ -587,20 +596,6 @@ function employeeProjection(identity: {
     phone: '0900000092',
     status: 'ACTIVE',
     updatedAt: '2026-09-02T02:00:00.000Z',
-  };
-}
-
-function overviewSnapshot() {
-  return {
-    generatedAt: '2026-09-02T03:00:00.000Z',
-    metrics: {
-      activeOrders: 12,
-      lowStockLevels: 2,
-      openAfterSales: 4,
-      paymentsUnderReview: 3,
-    },
-    priorities: [],
-    recentOrders: [],
   };
 }
 

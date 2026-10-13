@@ -49,6 +49,8 @@ describe('FE-07 operations primitives', () => {
     expect(markup).toContain('Xử lý đơn hàng');
     expect(markup).toContain('Bàn giao đơn vị vận chuyển');
     expect(markup).toContain('Sản phẩm trong đơn');
+    expect(markup.indexOf('<aside')).toBeLessThan(markup.indexOf('Sản phẩm trong đơn'));
+    expect(markup.match(/>Bàn giao đơn vị vận chuyển<\/span>/g)).toHaveLength(1);
   });
 
   it('renders a semantic timeline and financial summary', () => {

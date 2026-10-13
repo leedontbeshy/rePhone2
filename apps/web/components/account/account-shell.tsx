@@ -4,10 +4,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { useAffiliateMembership } from '@/components/affiliate/affiliate-membership';
-import { CustomerShell } from '@/components/shells';
+import { CustomerShell } from '@/components/shells/customer-shell';
 import { MobileNavigation } from '@/components/storefront/mobile-navigation';
 import { StorefrontDesktopNavigation } from '@/components/storefront/storefront-desktop-navigation';
 import { StorefrontHeaderActions } from '@/components/storefront/storefront-header-actions';
+import { StorefrontSearch } from '@/components/storefront/storefront-search';
 import { Button, InlineAlert, Link } from '@/components/ui';
 import styles from './account.module.css';
 
@@ -55,6 +56,7 @@ export function AccountShell({ children }: Readonly<{ children: ReactNode }>) {
       customerNavigation={customerNavigation}
       primaryNavigation={<StorefrontDesktopNavigation />}
       headerActions={<StorefrontHeaderActions />}
+      mobileSearch={<StorefrontSearch id="account-mobile-storefront-search" variant="compact" />}
       mobileNavigation={<MobileNavigation />}
     >
       <div className={styles.accountSurface}>

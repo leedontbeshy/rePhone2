@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import { PaginatedApiResult } from '../../common/http/api-response.interceptor.js';
-import type { ProductListQueryDto } from './catalog.dto.js';
+import type { ProductListQueryDto, PublicUnitListQueryDto } from './catalog.dto.js';
 import {
   type AccessoryVariantDto,
   type IphoneVariantDto,
@@ -11,6 +11,7 @@ import {
   type UsedIphoneCardDto,
   type UsedIphoneDetailDto,
   type WarrantySummaryDto,
+  type PublicUnitOfferDto,
 } from './catalog-response.dto.js';
 import { projectFunctionalChecks, projectMaskedIdentifiers } from './catalog-projection.js';
 import { CatalogRepository, type ProductListItemRecord } from './catalog.repository.js';
@@ -60,6 +61,36 @@ export class CatalogService {
       throw new ApiError('RESOURCE_NOT_FOUND');
     }
     return this.toProductDetail(product, defaults);
+  }
+
+  public async listUnits(query: PublicUnitListQueryDto): Promise<PublicUnitOfferDto[]> {
+    const [units, defaults] = await Promise.all([
+      this.repository.listPublicUnits(query),
+      this.repository.findStoreWarrantyDefaults(),
+    ]);
+    return units.flatMap((record) => {
+      const variant = record.variant;
+      const product = variant.product;
+      const unit = this.toUsedIphoneCard(
+        record,
+        [],
+        effectiveWarranty(variant.warrantyPolicy, product.warrantyPolicy, defaults),
+      );
+      return unit === null
+        ? []
+        : [
+            {
+              productName: product.name,
+              productSlug: product.slug,
+              productRamGb: product.ramGb,
+              variantDisplayName: variant.displayName,
+              storageCapacityGb: variant.storageCapacityGb,
+              colorName: variant.colorName,
+              colorHex: variant.colorHex,
+              unit,
+            },
+          ];
+    });
   }
 
   public async getUsedIphone(slug: string, inventoryCode: string): Promise<UsedIphoneDetailDto> {

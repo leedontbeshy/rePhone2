@@ -33,6 +33,14 @@ page=1, pageSize=20, sortBy=placedAt, sortOrder=desc
 - Backoffice detail trả snapshot contact/address/items, ba trục status, totals, reservation summary, payment/refund/shipment timeline, pickup deadline và internal note.
 - Không trả raw device identifier; staff dùng reveal endpoint inventory có audit.
 
+### Giá vốn hiện tại trong đơn hàng — bổ sung 13/10/2026
+
+- Hai GET list/detail bổ sung `currentCostSummary` **chỉ cho ADMIN**: `source: CURRENT_INVENTORY`, `knownCost`, `totalCost` nullable và `missingQuantity`. Detail còn có `items[].currentCost` gồm `inventoryUnitId`, `acquisitionCost`, `additionalCost`, `unitCost`, `lineCost`.
+- Nguồn là hồ sơ máy hiện tại, theo lựa chọn của người dùng; không phải snapshot giá vốn lúc bán. Áp dụng cả đơn đã hoàn tất/hủy và đơn đại lý trong danh sách vận hành. Thay chi phí máy thì lần đọc đơn sau phản ánh giá vốn mới.
+- Tổng dùng `(acquisitionCost + additionalCost) × quantity` bằng số nguyên. Thiếu giá nhập hoặc không có máy liên kết (kể cả phụ kiện chưa theo dõi vốn) thì giá vốn dòng là null, cộng số lượng thiếu; tổng đơn là null nếu còn thiếu. `knownCost` chỉ cộng các dòng đủ dữ liệu; giá nhập đã ghi bằng 0 vẫn hợp lệ.
+- Không truy vấn giá vốn cho EMPLOYEE; response bỏ hẳn các trường này. Giữ `no-store`, quyền staff và pagination hiện có. Reader đọc batch cho các order ID trong trang, không gọi API giá vốn riêng cho từng dòng.
+- Mutation response tiếp tục projection vận hành cũ; giao diện đã refetch GET detail sau thao tác để lấy số liệu mới. Không thêm endpoint, schema migration hoặc thay tổng tiền khách phải trả.
+
 ## 3. Order preparation và Pickup workflow
 
 | Method/path | Request | Success |

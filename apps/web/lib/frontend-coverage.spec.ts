@@ -28,7 +28,7 @@ describe('FE-0 frontend coverage contract', () => {
       }),
     );
 
-    expect(openApiOperationIds.filter((id) => !/^(Dealer|Affiliate)/.test(id))).toHaveLength(162);
+    expect(openApiOperationIds.filter((id) => !/^(Dealer|Affiliate)/.test(id))).toHaveLength(165);
     expect(openApiOperationIds.filter((id) => id.startsWith('Dealer'))).toHaveLength(67);
     expect(openApiOperationIds.filter((id) => id.startsWith('Affiliate'))).toHaveLength(23);
     expect(new Set(openApiOperationIds).size).toBe(openApiOperationIds.length);

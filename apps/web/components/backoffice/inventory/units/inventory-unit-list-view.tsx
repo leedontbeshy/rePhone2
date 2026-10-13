@@ -1,6 +1,6 @@
 'use client';
 
-import { MagnifyingGlassIcon, PlusIcon, ScanIcon } from '@phosphor-icons/react/ssr';
+import { MagnifyingGlassIcon, PlusIcon, ScanIcon, StarIcon } from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import { useEffect, useState, type MouseEvent } from 'react';
 import {
@@ -12,10 +12,12 @@ import {
   type BackofficeDataColumn,
   type InventoryLifecycleStatus,
 } from '@/components/backoffice';
-import { StatusChip, formatVnd } from '@/components/ui';
+import { Button, InlineAlert, StatusChip, formatVnd } from '@/components/ui';
+import boardStyles from '../inventory-data-board.module.css';
 import styles from './inventory-units.module.css';
 
 export interface InventoryUnitListRecord {
+  readonly isFeatured?: boolean;
   readonly activeReservationCount: number;
   readonly batteryHealthPercent: number | null;
   readonly conditionGrade: 'A' | 'B' | 'C' | null;
@@ -62,6 +64,7 @@ export interface InventoryUnitPagination {
 }
 
 export interface InventoryUnitListViewProps {
+  readonly onToggleFeatured?: (unit: InventoryUnitListRecord) => Promise<void>;
   readonly error?: string | null;
   readonly loading?: boolean;
   readonly locations: readonly InventoryUnitLocationOption[];
@@ -90,11 +93,27 @@ export function InventoryUnitListView({
   loading = false,
   locations,
   onQueryChange,
+  onToggleFeatured,
   pagination,
   query,
   units,
 }: InventoryUnitListViewProps) {
   const [search, setSearch] = useState(query.q ?? '');
+  const [featuredPending, setFeaturedPending] = useState<string | null>(null);
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
+
+  async function toggleFeatured(unit: InventoryUnitListRecord) {
+    if (featuredPending !== null || onToggleFeatured === undefined) return;
+    setFeaturedPending(unit.id);
+    setFeaturedError(null);
+    try {
+      await onToggleFeatured(unit);
+    } catch (cause) {
+      setFeaturedError(cause instanceof Error ? cause.message : 'Không thể cập nhật máy nổi bật.');
+    } finally {
+      setFeaturedPending(null);
+    }
+  }
   const protectedSearch = looksLikeProtectedIdentifier(search);
 
   useEffect(() => {
@@ -115,6 +134,31 @@ export function InventoryUnitListView({
   }, [onQueryChange, protectedSearch, query.q, search]);
 
   const columns: readonly BackofficeDataColumn<InventoryUnitListRecord>[] = [
+    {
+      key: 'featured',
+      label: 'Nổi bật',
+      render: (unit) => (
+        <Button
+          aria-label={`${unit.isFeatured === true ? 'Bỏ nổi bật' : 'Chọn nổi bật'} ${unit.inventoryCode}`}
+          aria-pressed={unit.isFeatured === true}
+          disabled={featuredPending !== null || onToggleFeatured === undefined}
+          size="compact"
+          variant={unit.isFeatured === true ? 'primary' : 'secondary'}
+          iconLeading={
+            <StarIcon
+              aria-hidden="true"
+              weight={unit.isFeatured === true ? 'fill' : 'regular'}
+              size={20}
+            />
+          }
+          onClick={() => {
+            void toggleFeatured(unit);
+          }}
+        >
+          {unit.isFeatured === true ? 'Đã chọn' : 'Nổi bật'}
+        </Button>
+      ),
+    },
     {
       key: 'unit',
       label: 'Máy',
@@ -169,6 +213,11 @@ export function InventoryUnitListView({
 
   return (
     <div className={styles.page}>
+      {featuredError === null ? null : (
+        <InlineAlert title="Chưa lưu được lựa chọn" tone="danger">
+          {featuredError}
+        </InlineAlert>
+      )}
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Kho hàng · Máy vật lý</p>
@@ -322,15 +371,17 @@ export function InventoryUnitListView({
           : `${String(pagination.totalItems)} máy phù hợp`}
       </p>
 
-      <BackofficeDataBoard
-        ariaLabel="Danh sách máy vật lý"
-        columns={columns}
-        emptyDescription="Thay đổi bộ lọc hoặc tiếp nhận một máy mới."
-        emptyTitle="Chưa có máy phù hợp"
-        getRowKey={(unit) => unit.id}
-        loading={loading}
-        rows={units}
-      />
+      <div className={boardStyles.board}>
+        <BackofficeDataBoard
+          ariaLabel="Danh sách máy vật lý"
+          columns={columns}
+          emptyDescription="Thay đổi bộ lọc hoặc tiếp nhận một máy mới."
+          emptyTitle="Chưa có máy phù hợp"
+          getRowKey={(unit) => unit.id}
+          loading={loading}
+          rows={units}
+        />
+      </div>
 
       <div
         onClick={(event) => {

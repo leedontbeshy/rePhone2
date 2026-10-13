@@ -14,6 +14,7 @@ export function ActualUnitGallery({ inventoryCode, media, productName }: ActualU
       label={`Ảnh thật · Mã máy ${inventoryCode}`}
       media={media}
       priority
+      variant="unit"
     />
   );
 }

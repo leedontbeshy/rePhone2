@@ -29,9 +29,12 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
+  min-height: var(--control-hit-target);
+  padding-inline: var(--space-2);
+  font-size: var(--font-size-small);
 }
 
 .rowAction:hover {
@@ -77,10 +80,10 @@
   min-width: 0;
   gap: var(--space-1);
   margin: 0;
-  padding: var(--space-4);
+  padding: var(--space-3);
   border: var(--border-default);
-  border-radius: var(--radius-control);
-  background: var(--color-canvas);
+  border-radius: var(--radius-small);
+  background: var(--color-surface-subtle);
 }
 
 .spec[data-wide='true'] {
@@ -107,13 +110,17 @@
   margin-top: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-control);
-  background: var(--color-brand-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-studio-cyan);
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .evidenceCopy {
   display: grid;
   gap: var(--space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .evidenceCopy strong {
@@ -141,14 +148,14 @@
   overflow: auto;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   color: var(--color-ink);
   background: var(--color-surface);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-overlay);
 }
 
 .dialog::backdrop {
-  background: rgb(8 20 34 / 48%);
+  background: var(--color-overlay);
 }
 
 .dialogHeader,
@@ -186,6 +193,7 @@
   justify-content: flex-end;
   gap: var(--space-3);
   border-top: var(--border-default);
+  flex-wrap: wrap;
 }
 
 .fileField {
@@ -247,10 +255,11 @@
 
 .filePicker strong,
 .selectedFile strong {
-  overflow: hidden;
+  overflow: visible;
   color: var(--color-ink);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .filePicker small,
@@ -311,5 +320,33 @@
   .evidenceCard > button,
   .dialogActions > button {
     width: 100%;
+  }
+}
+
+.primaryCell strong,
+.primaryCell small,
+.evidenceCopy strong,
+.evidenceCopy span {
+  overflow-wrap: anywhere;
+}
+
+.dialogHeader > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dialogHeader h2 {
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
+}
+
+@media (forced-colors: active) {
+  .evidenceCard,
+  .spec,
+  .dialog {
+    border: 1px solid CanvasText;
+  }
+  .rowAction:focus-visible {
+    outline-color: Highlight;
   }
 }

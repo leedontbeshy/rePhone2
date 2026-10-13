@@ -1,6 +1,7 @@
 .frame {
   min-inline-size: 0;
-  margin-block-start: calc(var(--space-8) * -1);
+  max-inline-size: 74rem;
+  margin-inline: auto;
 }
 
 .content {
@@ -9,10 +10,6 @@
 }
 
 @media (min-width: 60rem) {
-  .frame {
-    margin-block-start: -1.5rem;
-  }
-
   .content {
     padding-block-start: var(--space-10);
   }

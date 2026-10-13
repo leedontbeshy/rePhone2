@@ -8,38 +8,45 @@
 .landing {
   min-width: 0;
   color: var(--color-ink);
+  display: grid;
+  gap: var(--space-8);
+  container-type: inline-size;
+  container-name: partner-landing;
 }
 .intro {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  gap: 64px;
+  gap: var(--space-8);
   align-items: center;
-  padding-block: 28px 48px;
+  padding: var(--space-10);
+  background: var(--color-studio-cyan);
+  border: var(--border-default);
+  border-radius: var(--radius-media);
 }
 .introCopy {
   min-width: 0;
 }
 .kicker {
   margin: 0 0 16px;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-size: 14px;
   font-weight: 650;
 }
 .intro h1 {
   max-width: 650px;
   margin: 0 0 20px;
-  font-size: clamp(28px, 3.3vw, 42px);
-  line-height: 1.25;
-  letter-spacing: -1.1px;
+  font-size: clamp(2rem, 4cqi, 2.625rem);
+  line-height: 1.2;
+  letter-spacing: -0.04em;
   font-weight: 700;
   text-wrap: balance;
 }
 .description {
   max-width: 57ch;
   margin: 0;
-  color: #52616d;
+  color: var(--color-muted);
   font-size: 16px;
-  line-height: 1.8;
+  line-height: var(--line-height-body);
 }
 .actions {
   display: flex;
@@ -50,7 +57,7 @@
 }
 .intro .note {
   margin: 16px 0 0;
-  color: #65727e;
+  color: var(--color-muted);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -62,7 +69,7 @@ a.primaryLink:visited {
   justify-content: center;
   padding: 11px 18px;
   border: 1px solid var(--color-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: white;
   background: var(--color-primary);
   font-size: 14px;
@@ -76,19 +83,25 @@ a.primaryLink:hover {
   border-color: var(--color-primary-hover);
 }
 a.textLink {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   line-height: 1.7;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-hit-target);
 }
 a.textLink:hover {
   text-decoration: underline;
 }
 .programInfo {
   min-width: 0;
-  padding-left: 32px;
-  border-left: 1px solid #d5dee4;
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-studio-lavender);
 }
 .programInfo h2 {
   font-size: 16px;
@@ -112,8 +125,8 @@ a.textLink:hover {
   padding-top: 0;
 }
 .programInfo dt {
-  color: #606f7a;
-  font-size: 13px;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
   line-height: 1.6;
 }
 .programInfo dd {
@@ -122,17 +135,18 @@ a.textLink:hover {
   font-size: 15px;
   text-align: right;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .programInfo > p {
   margin: 18px 0 10px;
-  color: #65727e;
-  font-size: 12px;
-  line-height: 1.8;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
 }
 .process {
-  padding-block: 36px;
-  border-top: 1px solid #dce4ea;
-  scroll-margin-top: 150px;
+  padding-block: 0;
+  border-top: 0;
+  scroll-margin-top: calc(var(--storefront-header-offset) + var(--space-6));
 }
 .process h2,
 .questions h2 {
@@ -145,7 +159,7 @@ a.textLink:hover {
 .steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px;
+  gap: var(--space-5);
   list-style: none;
   padding: 0;
   margin: 28px 0 0;
@@ -155,10 +169,15 @@ a.textLink:hover {
   grid-template-rows: auto auto 1fr;
   align-content: start;
   gap: 10px;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
 }
 .stepNumber {
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: var(--font-size-small);
   font-weight: 600;
 }
 .steps h3 {
@@ -178,9 +197,9 @@ a.textLink:hover {
 .questions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
-  gap: 48px;
-  padding-block: 36px;
-  border-top: 1px solid #dce4ea;
+  gap: var(--space-8);
+  padding-block: 0;
+  border-top: 0;
 }
 .questionHeading p {
   margin-top: 12px;
@@ -188,17 +207,21 @@ a.textLink:hover {
 }
 .faqs {
   min-width: 0;
+  display: grid;
+  gap: var(--space-3);
 }
 .faqs details {
-  padding-block: 18px;
-  border-bottom: 1px solid #dce4ea;
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
 }
 .faqs details:first-child {
-  padding-top: 0;
+  padding-top: var(--space-5);
 }
 .faqs summary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
   cursor: pointer;
@@ -206,20 +229,10 @@ a.textLink:hover {
   line-height: 1.6;
   font-weight: 600;
   list-style: none;
+  min-height: var(--control-hit-target);
 }
 .faqs summary::-webkit-details-marker {
   display: none;
-}
-.faqs summary::after {
-  content: '+';
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 400;
-  color: #667486;
-  flex-shrink: 0;
-}
-.faqs details[open] summary::after {
-  content: '−';
 }
 .faqs p {
   margin-top: 12px;
@@ -230,8 +243,10 @@ a.textLink:hover {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  padding-block: 26px;
-  border-top: 1px solid #dce4ea;
+  padding: var(--space-6);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 .joinLine p {
   font-size: 16px;
@@ -254,42 +269,24 @@ a.textLink:hover {
   outline: 2px solid var(--color-primary);
   outline-offset: 4px;
 }
-@media (max-width: 1000px) {
-  .intro {
-    gap: 36px;
-  }
-  .programInfo {
-    padding-left: 24px;
-  }
-  .steps {
-    gap: 24px;
-  }
-}
-@media (max-width: 760px) {
+@container partner-landing (max-width: 760px) {
   .intro {
     grid-template-columns: 1fr;
-    gap: 32px;
-    padding-block: 12px 32px;
   }
   .intro h1 {
     max-width: 600px;
-    font-size: 32px;
   }
   .programInfo {
-    border-left: 0;
     border-top: 1px solid #dce4ea;
-    padding: 24px 0 0;
   }
   .programInfo dl > div {
     grid-template-columns: 1fr auto;
   }
   .questions {
     grid-template-columns: 1fr;
-    gap: 24px;
   }
   .steps {
     grid-template-columns: 1fr;
-    gap: 24px;
   }
   .steps li {
     gap: 6px;
@@ -307,13 +304,9 @@ a.textLink:hover {
     gap: 18px;
   }
 }
-@media (max-width: 440px) {
+@container partner-landing (max-width: 440px) {
   .page {
     padding-block: 12px 32px;
-  }
-  .intro h1 {
-    font-size: 29px;
-    letter-spacing: -0.7px;
   }
   .description {
     font-size: 15px;
@@ -327,5 +320,50 @@ a.textLink:hover {
   .process h2,
   .questions h2 {
     font-size: 22px;
+  }
+}
+.faqs summary svg {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+}
+.faqs details[open] summary svg {
+  transform: rotate(180deg);
+}
+@container partner-landing (max-width: 760px) {
+  .intro {
+    padding: var(--space-6);
+  }
+  .process,
+  .questions {
+    padding-block: 0;
+  }
+  .steps li {
+    padding: var(--space-5);
+  }
+}
+@container partner-landing (max-width: 380px) {
+  .intro {
+    padding: var(--space-5);
+  }
+  .programInfo {
+    padding: var(--space-4);
+  }
+  .programInfo dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+  .programInfo dd {
+    text-align: left;
+  }
+  .joinLine {
+    padding: var(--space-5);
+  }
+  .joinLine .primaryLink {
+    width: 100%;
+  }
+}
+@media (max-width: 440px) {
+  .page {
+    padding-block: 12px 32px;
   }
 }

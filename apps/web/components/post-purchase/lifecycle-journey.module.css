@@ -1,13 +1,16 @@
 .panel {
+  min-inline-size: 0;
   padding: var(--space-6);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
 
 .title {
   margin-block-end: var(--space-6);
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
 }
 
 .journey {
@@ -32,8 +35,8 @@
   position: relative;
   z-index: 1;
   display: grid;
-  inline-size: 3.75rem;
-  block-size: 3.75rem;
+  inline-size: 3rem;
+  block-size: 3rem;
   place-items: center;
   border: 2px solid var(--color-border-strong);
   border-radius: 50%;
@@ -42,8 +45,9 @@
 }
 
 .stage[data-state='complete'] .marker {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--color-brand-soft);
+  color: var(--color-primary-hover);
+  background: var(--color-brand-soft);
 }
 
 .stage[data-state='current'] .marker,
@@ -90,9 +94,9 @@
 
 .connector {
   position: absolute;
-  inset-block-start: 1.8rem;
-  inset-inline-start: calc(50% + 2.25rem);
-  inline-size: calc(100% - 4.5rem);
+  inset-block-start: calc(1.5rem - 1px);
+  inset-inline-start: calc(50% + 1.875rem);
+  inline-size: max(0px, calc(100% - 3.75rem));
   block-size: 2px;
   background: var(--color-border-strong);
 }
@@ -124,9 +128,9 @@
   }
 
   .mobileSummary > svg {
-    inline-size: 4rem;
-    block-size: 4rem;
-    padding: var(--space-4);
+    inline-size: 3rem;
+    block-size: 3rem;
+    padding: var(--space-3);
     border-radius: 50%;
     color: var(--color-on-primary);
     background: var(--color-primary);
@@ -136,27 +140,30 @@
     display: block;
     color: var(--color-ink);
     font-size: var(--font-size-card-title);
+    line-height: var(--line-height-card-title);
+    overflow-wrap: anywhere;
   }
 
   .mobileSummary p {
     margin: var(--space-1) 0 0;
     color: var(--color-muted);
+    overflow-wrap: anywhere;
   }
 
   .marker {
-    inline-size: 2.5rem;
-    block-size: 2.5rem;
+    inline-size: 2rem;
+    block-size: 2rem;
   }
 
   .marker svg {
-    inline-size: 1.125rem;
-    block-size: 1.125rem;
+    inline-size: 1rem;
+    block-size: 1rem;
   }
 
   .connector {
-    inset-block-start: 1.2rem;
-    inset-inline-start: calc(50% + 1.5rem);
-    inline-size: calc(100% - 3rem);
+    inset-block-start: calc(1rem - 1px);
+    inset-inline-start: calc(50% + 1.125rem);
+    inline-size: max(0px, calc(100% - 2.25rem));
   }
 
   .stageCopy {

@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   UsersThreeIcon,
   ChartLineUpIcon,
@@ -97,14 +98,14 @@ function AdminContent() {
     }
   };
   return (
-    <div className={styles.workspace}>
+    <div className={[styles.workspace, styles.backofficeWorkspace].join(' ')}>
       <header className={styles.hero}>
         <div>
           <span className={styles.eyebrow}>Kênh tăng trưởng • Một cấp</span>
           <h1>Quản lý cộng tác viên</h1>
           <p>Duyệt đối tác giới thiệu, bảo vệ lợi nhuận và đối chiếu từng khoản hoa hồng.</p>
         </div>
-        <UsersThreeIcon className={styles.heroIcon} weight="duotone" />
+        <UsersThreeIcon className={styles.heroIcon} weight="duotone" aria-hidden />
       </header>
       {policy['environment'] === 'TEST' && (
         <p className={styles.notice}>
@@ -141,6 +142,7 @@ function AdminContent() {
               ] as const
             ).map(([key, label, Icon]) => (
               <button
+                type="button"
                 key={key}
                 aria-pressed={tab === key}
                 onClick={() => {
@@ -280,7 +282,7 @@ function AdminContent() {
                   submit={(d) =>
                     act(() =>
                       api.post(`${base}/policy`, {
-                        enabled: d.get('enabled') === 'on',
+                        enabled: policy['enabled'] === true,
                         rateBps: Math.round(Number(d.get('rate')) * 100),
                         reserveAmount: d.get('reserveAmount'),
                         minimumProfit: d.get('minimumProfit'),
@@ -289,14 +291,9 @@ function AdminContent() {
                     )
                   }
                 >
-                  <label className={styles.check}>
-                    <input
-                      type="checkbox"
-                      name="enabled"
-                      defaultChecked={policy['enabled'] === true}
-                    />
-                    Mở đăng ký và ghi nhận giới thiệu mới
-                  </label>
+                  <Link href="/backoffice/settings#partner-channels-title">
+                    Bật/tắt cộng tác viên trong Cấu hình cửa hàng
+                  </Link>
                   <Field
                     name="rate"
                     label="Hoa hồng chung (%)"

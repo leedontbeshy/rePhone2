@@ -45,6 +45,7 @@ import {
   runSystemAdminMutation,
 } from '../system-admin-mutation-lock';
 import styles from './settings.module.css';
+import { PartnerChannelSettings } from './partner-channel-settings';
 
 export function SettingsView() {
   const { client } = useAuth();
@@ -290,6 +291,7 @@ export function SettingsView() {
           {error}
         </InlineAlert>
       )}
+      <PartnerChannelSettings />
       {notice === undefined ? null : (
         <InlineAlert title="Đã cập nhật" tone="success">
           {notice}

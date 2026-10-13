@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CommerceActions } from '@/app/commerce-actions';
 import { Price } from '@/components/ui';
 import styles from './dossier.module.css';
@@ -18,9 +18,6 @@ export function MobilePurchaseBar({
   price,
   targetId,
 }: MobilePurchaseBarProps) {
-  const hasSeenTarget = useRef(false);
-  const targetVisible = useRef(true);
-  const footerVisible = useRef(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -28,24 +25,33 @@ export function MobilePurchaseBar({
     if (target === null) return;
     const footer = document.querySelector('footer');
 
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === target) {
-          targetVisible.current = entry.isIntersecting;
-          if (entry.isIntersecting || entry.boundingClientRect.bottom <= 0) {
-            hasSeenTarget.current = true;
-          }
-        } else if (entry.target === footer) {
-          footerVisible.current = entry.isIntersecting;
-        }
-      }
+    let frame = 0;
+    const updateVisibility = () => {
+      frame = 0;
+      const footerBounds = footer?.getBoundingClientRect();
+      const footerVisible =
+        footerBounds !== undefined &&
+        footerBounds.top < window.innerHeight &&
+        footerBounds.bottom > 0;
+      setVisible(target.getBoundingClientRect().bottom <= 0 && !footerVisible);
+    };
+    const scheduleUpdate = () => {
+      if (frame === 0) frame = window.requestAnimationFrame(updateVisibility);
+    };
 
-      setVisible(hasSeenTarget.current && !targetVisible.current && !footerVisible.current);
-    });
+    // A jump can move the target from above to below the viewport without an
+    // intersection transition. Read its current position on scroll as well.
+    const observer = new IntersectionObserver(scheduleUpdate);
     observer.observe(target);
     if (footer !== null) observer.observe(footer);
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    scheduleUpdate();
     return () => {
       observer.disconnect();
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.cancelAnimationFrame(frame);
     };
   }, [targetId]);
 

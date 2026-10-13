@@ -72,7 +72,11 @@ export function OrderSummaryBand({ detail }: Readonly<{ detail: BackofficeOrderD
   );
 }
 
-export function OrderFinancialSummary({ detail }: Readonly<{ detail: BackofficeOrderDetail }>) {
+export function OrderFinancialSummary({
+  detail,
+  showCosts = false,
+}: Readonly<{ detail: BackofficeOrderDetail; showCosts?: boolean }>) {
+  const cost = showCosts ? detail.currentCostSummary : undefined;
   return (
     <OperationsPanel className={styles.orderFinancialPanel} title="Tổng quan tài chính">
       <FinancialGroup
@@ -106,6 +110,27 @@ export function OrderFinancialSummary({ detail }: Readonly<{ detail: BackofficeO
         ]}
         title="Dòng tiền"
       />
+      {cost !== undefined && (
+        <>
+          <FinancialGroup
+            title="Giá vốn đang lưu"
+            rows={[
+              ...(cost.missingQuantity > 0
+                ? [{ label: 'Đã ghi nhận', value: formatVnd(cost.knownCost) }]
+                : []),
+              {
+                label: 'Tổng giá vốn',
+                value: cost.totalCost === null ? 'Chưa đủ dữ liệu' : formatVnd(cost.totalCost),
+                emphasis: 'primary',
+              },
+            ]}
+          />
+          {cost.missingQuantity > 0 && (
+            <p className={styles.muted}>{cost.missingQuantity} sản phẩm chưa có giá vốn.</p>
+          )}
+          <p className={styles.muted}>Theo hồ sơ máy hiện tại; có thể khác thời điểm bán.</p>
+        </>
+      )}
     </OperationsPanel>
   );
 }

@@ -1,4 +1,5 @@
 .progress {
+  container: inventory-progress / inline-size;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
@@ -6,7 +7,7 @@
   padding: var(--space-4) var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: var(--color-studio-cyan);
   box-shadow: var(--shadow-raised);
   list-style: none;
 }
@@ -69,7 +70,7 @@
 }
 
 .progress .done {
-  color: var(--color-success);
+  color: var(--color-success-strong);
 }
 
 .progress .done > span:first-child {
@@ -82,21 +83,29 @@
   border-color: var(--color-success);
 }
 
-@media (max-width: 49.999rem) {
-  .progress {
-    display: flex;
-    overflow-x: auto;
-    padding: var(--space-3);
-    scrollbar-width: thin;
+@container inventory-progress (max-width: 37.999rem) {
+  .progress li {
+    gap: var(--space-2);
+    padding-inline: var(--space-1);
   }
 
-  .progress li {
-    flex: 0 0 7.5rem;
+  .progress li > span:first-child {
+    inline-size: 28px;
+    block-size: 28px;
+  }
+
+  .progress li > strong {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: var(--font-size-bo-meta);
+    line-height: var(--line-height-bo-meta);
   }
 
   .progress li:not(:last-child)::after {
-    inset-inline-start: calc(50% + 22px);
-    inline-size: calc(100% - 44px);
+    inset-block-start: 14px;
+    inset-inline-start: calc(50% + 18px);
+    inline-size: calc(100% - 36px);
   }
 }
 

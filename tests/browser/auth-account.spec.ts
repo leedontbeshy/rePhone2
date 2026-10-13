@@ -306,7 +306,7 @@ test.describe('FE-2 authentication and account', () => {
       BROWSER_INVITATION_ACCOUNT.password,
       '/backoffice',
     );
-    await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan vận hành' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Báo cáo tài chính' })).toBeVisible();
 
     let addressRequests = 0;
     page.on('request', (request) => {
@@ -516,6 +516,14 @@ test.describe('FE-2 authentication and account', () => {
       await page.goto(route.path);
       await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible();
       await expectNoHorizontalOverflow(page);
+      const accountNavigation = page.getByRole('navigation', {
+        name: 'Tài khoản của bạn',
+        exact: true,
+      });
+      await expect(accountNavigation.getByRole('link')).toHaveCount(4);
+      for (const link of await accountNavigation.getByRole('link').all()) {
+        await expect(link).toBeInViewport({ ratio: 1 });
+      }
       await expectNoSeriousAccessibilityViolations(page, `${route.path} (390px)`);
     }
 

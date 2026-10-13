@@ -25,6 +25,7 @@ export function PostPurchaseNavigation() {
               <Link
                 className={styles.link}
                 href={item.href}
+                prefetch={false}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon aria-hidden="true" size={22} weight={active ? 'bold' : 'regular'} />

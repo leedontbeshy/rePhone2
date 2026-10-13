@@ -114,8 +114,8 @@ export class BackofficeOrderController {
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], default: 'desc' })
   @ApiOkResponse({ type: BackofficeOrderListResponse })
   @ApiErrorResponses(...BACKOFFICE_ORDER_QUERY_ERRORS)
-  public list(@Query() query: BackofficeOrderListQueryDto) {
-    return this.queries.list(query);
+  public list(@Query() query: BackofficeOrderListQueryDto, @CurrentAuth() auth: AuthContext) {
+    return this.queries.list(query, auth.role);
   }
 
   @Get(':id')
@@ -123,8 +123,8 @@ export class BackofficeOrderController {
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiOkResponse({ type: BackofficeOrderDetailResponse })
   @ApiErrorResponses(...BACKOFFICE_ORDER_QUERY_ERRORS)
-  public detail(@Param() params: BackofficeOrderIdParamsDto) {
-    return this.queries.detail(params.id);
+  public detail(@Param() params: BackofficeOrderIdParamsDto, @CurrentAuth() auth: AuthContext) {
+    return this.queries.detail(params.id, auth.role);
   }
 
   @Patch(':id/internal-note')

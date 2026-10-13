@@ -1,25 +1,43 @@
-# rePhone Web Design System & UX Contract v1.6
+# rePhone Design System & UI Contract v2.1
 
-> Trạng thái tài liệu: **APPROVED**  
-> Phạm vi: **Post-P0 / P1 frontend refinement**  
-> P0 baseline: [plan.md](plan.md)  
-> Backend contract: [docs/readme.md](docs/readme.md)  
-> Frontend implementation plan: [plan-fe.md](plan-fe.md)  
-> Frontend baseline SHA: `801ad26`  
-> Ngày cập nhật: `2026-08-27`
+> Trạng thái thiết kế: **APPROVED — bộ UI được chọn ngày 12/10/2026**
+>
+> Trạng thái triển khai: **DONE — UI 2.1 đã qua nghiệm thu trên source cuối; migration Supabase dev được cho phép, áp dụng và kiểm tra thành công**
+>
+> Phạm vi: storefront, đăng nhập/đăng ký, đặt hàng, backoffice nhân viên/admin và các màn hình kế thừa
+>
+> P0 baseline: [plan.md](plan.md)
+>
+> Backend contract: [docs/readme.md](docs/readme.md)
+>
+> Frontend implementation plan: [plan-fe.md](plan-fe.md)
+>
+> Kế hoạch triển khai UI v2.0 hiện tại: [UI v2.0 rollout plan](docs/planning/2026-10-12-ui-v2-rollout-plan.md)
+>
+> Baseline lịch sử v1.x: `801ad26` (không phải xác nhận triển khai v2.0)
+>
+> Ngày cập nhật: `2026-10-13`
 
-![Reference đã duyệt — Retail Catalog Rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png)
+## Bộ UI đã chốt
 
-> Mockup trên khóa hướng discovery **Retail Catalog Rows**: header gọn, sản phẩm xuất hiện trước, một hàng cho mỗi thế hệ và card model dễ quét. Nó không phải nguồn cho dữ liệu, chính sách hoặc microcopy. Giá, tình trạng máy và model phải đến từ public catalog; các claim minh họa như “36 bước”, “đã gồm VAT”, “2 chi nhánh”, “7 ngày đổi trả”, miễn phí giao hàng hoặc ETA không được đưa vào sản phẩm nếu chưa có contract/settings tương ứng.
+Phản hồi ngày 13/10/2026 trong [kế hoạch tinh chỉnh](docs/planning/2026-10-13-ui-v2-refinement.md) bổ sung và thay thế các phần tương ứng của sáu ảnh gốc: tăng độ nổi, trang chủ ưu tiên máy đang bán, bộ lọc ngang và tổng quan tài chính. Các ảnh selected giữ nguyên để lưu lịch sử; nội dung đã cập nhật dưới đây là chuẩn triển khai hiện tại.
 
-Hai mockup sau là canonical presentation reference cho hai route storefront chi tiết:
+Đây là **nguồn chuẩn về UI cho các lần triển khai tiếp theo**. Ngôn ngữ chung: nền sáng, chữ deep ink, hành động teal, nền ảnh cyan/lavender, ảnh sản phẩm có chiều sâu, khối bo mềm và khoảng trắng rõ ràng. Backoffice dùng sidebar deep ink và vùng làm việc sáng.
 
-| Route pattern                            | Reference đã duyệt                                                                                        |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `/products/[slug]`                       | [Model detail canonical reference](docs/assets/ui/rephone-model-detail-canonical-reference.png)           |
-| `/products/[slug]/units/[inventoryCode]` | [Exact-unit detail canonical reference](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) |
+| Màn hình          | Route/phạm vi                            | Ảnh đã chọn                                                    | Hướng bố cục                                                                                     |
+| ----------------- | ---------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Trang chủ         | `/`                                      | [home.png](docs/assets/ui/selected/home.png)                   | Curated Bento: một ô lớn trái, hai ô nhỏ phải, bộ lọc dòng máy và grid sản phẩm                  |
+| Chi tiết dòng máy | `/products/[slug]`                       | [product-model.png](docs/assets/ui/selected/product-model.png) | Panoramic Studio: banner ngang, dải thông số, thẻ máy nằm ngang trong grid hai cột               |
+| Chi tiết một máy  | `/products/[slug]/units/[inventoryCode]` | [product-unit.png](docs/assets/ui/selected/product-unit.png)   | Soft Studio Purchase: ảnh trái và mua hàng phải trên cùng nền cyan; ba ô tình trạng phía dưới    |
+| Đặt hàng          | `/checkout`                              | [checkout.png](docs/assets/ui/selected/checkout.png)           | Soft Split Review: biểu mẫu trái, tổng đơn phải; khoản đặt trước được tách rõ                    |
+| Đăng nhập/đăng ký | `/login`, `/register`                    | [auth.png](docs/assets/ui/selected/auth.png)                   | Quiet Centered Access: form giữa, ảnh studio và mảng cyan/lavender ở hai rìa                     |
+| Backoffice        | `/backoffice`, `EMPLOYEE` và `ADMIN`     | [backoffice.png](docs/assets/ui/selected/backoffice.png)       | Sidebar tối; nội dung tài chính theo tháng, card chỉ số và biểu đồ/bảng ngày theo phản hồi 13/10 |
 
-Chúng khóa hierarchy, density, layout, typography, surface, gallery, card và action placement; chúng không thay thế backend contract. Text, giá, tình trạng, thông số, chính sách và số lượng kiểm định trong ảnh chỉ được triển khai khi có nguồn authority tương ứng.
+`auth.png` gồm đăng nhập ở nửa trên, đăng ký ở nửa dưới. `backoffice.png` gồm nhân viên ở nửa trên, admin ở nửa dưới. Đây là hai trạng thái/màn hình riêng, **không triển khai cả hai nửa ảnh lên cùng một route**. Nguồn file, ngày chọn và SHA-256 được lưu tại [selections.json](docs/assets/ui/selected/selections.json).
+
+Sáu ảnh trên thay thế authority về presentation của các mockup cũ. Ảnh khóa bố cục, hierarchy, tỷ lệ vùng nội dung, style ảnh, component và vị trí hành động; các mục dưới chuẩn hóa thành token và quy tắc có thể triển khai. Không dùng toàn bộ PNG làm nền trang hoặc cắt ảnh mockup để giả thành UI hoạt động.
+
+Giá, tên máy, ngày, khách hàng, số đếm, chính sách và trạng thái trong ảnh là dữ liệu minh họa. Lấy dữ liệu từ contract hiện hành; sửa lỗi chữ/diacritics của ảnh khi có. Không đưa các claim như “36 bước”, “đã gồm VAT”, miễn phí giao hàng hoặc ETA vào code nếu chưa có nguồn hợp lệ. Không sinh ảnh máy thật từ ảnh minh họa studio.
 
 ## 1. Mục đích và cách sử dụng
 
@@ -44,7 +62,7 @@ Khi triển khai một page:
 
 1. Đọc contract nghiệp vụ liên quan trong `docs`.
 2. Đọc page pattern và component contract trong file này.
-3. Đọc phase/work package tương ứng trong `plan-fe.md`.
+3. Đọc work package tương ứng trong [kế hoạch UI v2.0](docs/planning/2026-10-12-ui-v2-rollout-plan.md); dùng `plan-fe.md` để kiểm tra coverage nghiệp vụ hiện hành.
 4. Dùng generated API client; không tự tạo transport hoặc DTO song song.
 5. Kiểm tra responsive, keyboard, loading, empty, error và conflict trước khi đánh dấu hoàn thành.
 
@@ -64,9 +82,9 @@ Thứ tự ưu tiên khi có khác biệt:
 1. `docs/requirements`, `docs/architecture`, `docs/data-model`, `docs/api` và `docs/quality` theo [source precedence](docs/readme.md#nguồn-sự-thật-khi-có-trùng-nội-dung).
 2. OpenAPI và generated client phải khớp `docs`; nếu lệch, đó là blocker cần sửa đồng bộ.
 3. `design.md` quyết định presentation/interaction khi contract không quy định.
-4. `plan-fe.md` quyết định thứ tự, trạng thái và evidence triển khai.
+4. [Kế hoạch UI v2.0](docs/planning/2026-10-12-ui-v2-rollout-plan.md) quyết định thứ tự, trạng thái và evidence visual migration hiện tại; `plan-fe.md` giữ coverage và lịch sử triển khai nghiệp vụ.
 5. CSS/component hiện hành là implementation; không tự trở thành contract chỉ vì đã tồn tại.
-6. Ba mockup nội bộ đã duyệt trong §25.1 là canonical presentation reference cho đúng surface được ghi; chúng không được override contract ở mục 1–4.
+6. Sáu mockup đã chọn trong bảng đầu tài liệu và §25.1 khóa presentation cho đúng surface; token/page pattern v2.0 chuẩn hóa chi tiết từ ảnh. Ảnh không override nghiệp vụ, security hoặc dữ liệu ở mục 1–2. Token/CSS cũ phải được migrate khi triển khai, không dùng làm lý do để quay lại layout cũ.
 7. Website bên ngoài, mockup lịch sử và reference chưa được duyệt chỉ là inspiration, không phải requirement.
 
 ### 2.1 Contract-source map
@@ -107,9 +125,9 @@ Giao diện phải tạo cảm giác:
 
 Không định vị rePhone như marketplace. Một sản phẩm không có seller card, seller rating hoặc chính sách khác nhau theo người bán.
 
-## 4. Visual direction — Retail Commerce + Technical Evidence
+## 4. Visual direction — Soft Studio Retail + Ink Backoffice
 
-Hướng đã duyệt là **Retail Catalog Rows** cho discovery, kết hợp hierarchy mua hàng retail rõ ràng và **Technical Evidence** cho model/exact unit. Ba surface dùng chung token, header, footer, panel, action và nhịp typography nhưng giải quyết các nhiệm vụ khác nhau:
+Hướng v2.0 được tổng hợp từ sáu lựa chọn của người dùng. Đây là một hệ thống chung với mật độ khác nhau theo nhiệm vụ:
 
 - Home/catalog giúp khách nhận diện và chọn model nhanh như một cửa hàng điện thoại Việt Nam quen thuộc.
 - Model detail giúp khách hiểu model rồi quét nhanh các máy vật lý đang bán.
@@ -121,32 +139,36 @@ Hướng đã duyệt là **Retail Catalog Rows** cho discovery, kết hợp hie
 - Light mode duy nhất trong scope hiện tại.
 - Nền trắng/xám xanh nhạt, chữ deep ink.
 - Cyan/teal dùng tiết chế cho CTA, focus và dữ kiện quan trọng.
-- Border mảnh là phương thức phân cấp mặc định; shadow chỉ dùng khi thực sự nổi lớp.
-- Typography tự nhiên, giá dễ quét và khoảng trắng vừa phải; không dàn trang như manifesto.
+- Tạo chiều sâu bằng ảnh có ánh sáng/contact shadow, nền màu nhạt, khoảng trắng và shadow nhẹ ở các lớp cần nổi. Không làm mọi vùng thành các ô trắng phẳng giống nhau.
+- Dùng cyan cho sân khấu ảnh, lavender/mint cho một số khối bổ trợ. Màu trang trí không mang nghĩa trạng thái.
+- Bo media lớn 28px, card storefront 24px, panel vận hành 20px, control 12px; không tự đặt radius mới cho từng màn hình.
+- Typography tự nhiên, tiêu đề sản phẩm và giá nổi bật, mô tả ngắn; không dàn trang như manifesto.
 - Không vay mượn sự ồn ào của sale badge, rating, countdown hoặc banner khuyến mãi từ website tham khảo.
 
-### 4.1 Home và catalog — Retail Catalog Rows
+### 4.1 Home và catalog — Curated Bento và máy đang bán
 
-- Header gọn, search/account/cart dễ nhận ra; navigation không chiếm phần lớn first viewport.
-- Catalog là nội dung chính ngay sau header. Không đặt hero toàn màn hình trước danh sách máy.
-- Mỗi thế hệ iPhone là một section ngang riêng, title rõ và card model có hierarchy `ảnh → tên → giá/tình trạng`.
-- Desktop hiển thị khoảng bốn card cùng lúc; mobile cuộn ngang từng thế hệ thay vì ép card thành cột dài.
-- Card dùng surface sáng, radius/border nhẹ, ít metadata và không lặp badge trang trí.
-- Chỉ một trust strip ngắn được phép xuất hiện sau catalog; không lặp các khối giải thích `01–04` hoặc slogan ở nhiều section.
+- Header gọn, search/account/cart dễ nhận ra. Bento gồm iPhone 18, 17 và 16, ô lớn trái/hai ô phụ phải; artwork có ánh sáng và bóng tiếp xúc.
+- Sau bento: thanh chọn thế hệ 18…12 và Khác → máy nổi bật → máy đang bán → các nhóm dòng máy 18…14 → trust strip/footer.
+- Thẻ máy ở trang chủ xếp ảnh trên, nội dung dưới; thẻ máy ở trang dòng máy giữ bố cục ngang trên desktop. Không ép thẻ ngang vào cột nhỏ.
+- Border 2px, panel/card bo lớn và shadow hai lớp theo token; không áp bóng riêng cho từng dòng bảng hoặc lặp badge trang trí.
+- Banner quảng bá hai bên dẫn đến ưu đãi và cửa hàng, reflow vào nội dung trên màn hình hẹp. Không tự bịa giảm giá, bảo hành hoặc hàng sẵn có.
+- Bộ lọc catalog nằm ngang, có nút đầy đủ và lựa chọn mở ngay bên dưới; không cần mở cả khung lọc trên mobile.
+- `/products` mặc định xếp **Dòng mới nhất** theo đời iPhone 18 → 17 → 16… và gom các biến thể cùng dòng theo thứ tự của trang chủ. Thứ tự áp dụng trước phân trang; sắp xếp giá tăng/giảm vẫn do khách chọn.
 
-### 4.2 Model detail và exact-unit — canonical retail evidence
+### 4.2 Chi tiết dòng máy và chi tiết một máy
 
-[Model detail mockup](docs/assets/ui/rephone-model-detail-canonical-reference.png) và [exact-unit detail mockup](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) là canonical reference cho hierarchy và visual language của hai route tương ứng.
+[product-model.png](docs/assets/ui/selected/product-model.png) và [product-unit.png](docs/assets/ui/selected/product-unit.png) là target tương ứng; không dùng lại hai mockup canonical v1.x.
 
-- Model detail dùng gallery minh họa, model facts và grid các exact unit đang bán. Model image luôn có nhãn phân biệt với ảnh của máy vật lý.
-- Exact-unit detail dùng gallery ảnh thật, purchase rail, product/unit facts, inspection summary gọn và các máy khác cùng dòng khi public contract cung cấp đủ dữ liệu.
-- Storefront còn lại kế thừa header/footer gọn, canvas sáng, panel trắng, border/shadow nhẹ, teal action, icon outline, giá dễ quét và khoảng cách của hai mockup.
+- Model detail có banner studio ngang: tên/giá/CTA bên trái, ảnh dòng máy bên phải, sau đó một dải thông số và grid exact-unit hai cột với card nằm ngang. Model image có nhãn `Ảnh minh họa dòng máy`.
+- Exact-unit detail có một hero cyan thống nhất: ảnh máy thật bên trái, tên/cấu hình/giá/giao nhận/CTA bên phải. Ba ô `Ngoại hình`, `Pin`, `Lịch sử sửa chữa` nằm **dưới hero**, không nhét lại vào purchase rail như v1.x.
+- Phần dưới exact-unit có hai panel cạnh nhau: cấu hình/kết nối và kiểm tra kỹ thuật gọn; sau đó máy khác cùng dòng nếu có dữ liệu, trust strip và footer.
+- Storefront còn lại kế thừa header/footer trắng gọn, canvas sáng, media bo mềm, teal action, icon outline và nhịp khoảng cách của bộ đã chọn.
 - Mockup là target về presentation, không phải fixture dữ liệu. Thành phần không có authority phải được bỏ, thay bằng dữ kiện hợp lệ hoặc dùng trạng thái trống phù hợp.
 - Storefront chỉ trình bày inspection summary tối đa năm hạng mục để giữ nhịp mua hàng. Checklist đầy đủ, repair note và masked identifier thuộc workflow vận hành/backoffice, không lặp lại thành dossier dài trên trang mua hàng.
 
 - Ảnh exact unit là visual chính của trang mua hàng.
 - Layout rộng nhưng có reading width rõ.
-- Dữ kiện mua hàng được nhóm thành gallery, metrics, fulfillment, CTA và inspection summary.
+- Dữ kiện mua hàng được nhóm thành hero, tình trạng, cấu hình và inspection summary.
 - Inspection summary mang cảm giác bằng chứng đáng tin, không mang thẩm mỹ terminal hoặc sci-fi.
 - Mỗi page có một primary action rõ ràng.
 - Trang exact unit là canonical reference cho các surface cần trình bày evidence, không phải khuôn bắt buộc cho home/catalog.
@@ -154,13 +176,22 @@ Hướng đã duyệt là **Retail Catalog Rows** cho discovery, kết hợp hie
 ### 4.3 Backoffice
 
 - Dùng cùng token, typography và status semantics với storefront.
-- Chỉ kế thừa visual token, component primitive, focus/feedback semantics và authoritative action hierarchy từ hai mockup canonical.
+- [backoffice.png](docs/assets/ui/selected/backoffice.png) giữ chuẩn shell cho cả hai vai trò; nội dung tổng quan tài chính theo phản hồi 13/10/2026 và §16.1. Sidebar deep ink, top bar trắng, main canvas sáng; đây không phải dark mode toàn ứng dụng.
 - Không sao chép gallery mua hàng, purchase card, recommendation rail hoặc grid retail sang queue/detail vận hành.
 - Mật độ cao hơn, ưu tiên scan, filter, queue, timeline và action.
 - Desktop dùng sidebar + top bar + content fluid.
+- Mục có tác vụ chờ xử lý dùng huy hiệu đỏ, số trắng ở cuối hàng; không hiện số 0. Trên 99 hiển thị `99+` nhưng tooltip/tên truy cập giữ số đầy đủ. Dùng cùng huy hiệu ở drawer mobile. Số được lấy theo quyền từ API, làm mới sau thao tác và mỗi 30 giây khi tab hiển thị; không dùng số mẫu. Quy tắc hàng chờ tại [contract tác vụ thanh bên](docs/api/backoffice-pending-tasks.md).
+- Tổng quan là báo cáo tài chính theo tháng: doanh thu, doanh số, hoàn tiền, biểu đồ và bảng ngày. Admin có thêm giá vốn, lãi gộp tạm tính, vốn tồn kho và phải thu.
+- Nghiệp vụ đơn hàng/thanh toán/hỗ trợ vẫn ở các route riêng qua sidebar. API thực thi quyền đọc giá vốn, không chỉ ẩn ở frontend.
 - Table/list không được biến thành hàng chục card trang trí.
 - Detail page ưu tiên summary, status axes, timeline, evidence và authoritative action rail.
 - Mobile vẫn phải hoàn tất được critical command, nhưng màn hình staff được tối ưu trước cho `>= 1024px`.
+
+### 4.4 Auth và đặt hàng
+
+- Auth giữ form ở giữa, hai rìa có ảnh/mảng studio cyan và lavender. Không đặt form lên ảnh, không bọc cả trang trong card nổi, không đưa sidebar backoffice vào trang đăng nhập.
+- Checkout dùng biểu mẫu liên tục ở trái và receipt nổi nhẹ ở phải. Chỉ ảnh máy trong receipt có sân khấu cyan; khoản đặt trước dùng lavender như một nhóm giải thích, không mang nghĩa cảnh báo.
+- Form/auth/checkout dùng cùng control, label, button và spacing; mật độ thay đổi theo số trường, không đổi design language.
 
 ## 5. Content voice và microcopy
 
@@ -210,7 +241,7 @@ Săn deal cực sốc ngay hôm nay!
 | Physical iPhone      | `Máy`, `Chiếc máy`, `Mã máy`               |
 | Product/model        | `Dòng máy`, tên model                      |
 | Inspection           | `Kiểm định`, `Hồ sơ kiểm định`             |
-| Cosmetic grade       | `Grade A/B/C` kèm giải thích quan sát được |
+| Cosmetic grade       | `Ngoại hình A/B/C` kèm mô tả quan sát được |
 | Battery health       | `Pin 91%` hoặc label theo contract         |
 | Repair history       | `Lịch sử sửa chữa`                         |
 | Masked identifiers   | `IMEI/Serial đã che`                       |
@@ -218,7 +249,7 @@ Săn deal cực sốc ngay hôm nay!
 | Exact unit khả dụng  | `Còn hàng`, `Không còn khả dụng`           |
 | Voucher              | `Ưu đãi`, `Mã ưu đãi`                      |
 | Pickup               | `Nhận tại cửa hàng`                        |
-| Checkout             | `Thanh toán`, `Xác nhận đơn`               |
+| Checkout             | `Đặt hàng`, `Xác nhận đơn`                 |
 | Catalog              | `Danh mục sản phẩm`                        |
 | Backoffice operation | Dùng đúng named command của API            |
 
@@ -230,9 +261,10 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 - `Xem hồ sơ kiểm định`
 - `Thêm vào giỏ`
 - `Lưu máy`
-- `Tiếp tục thanh toán`
-- `Tính lại`
-- `Xác nhận đặt hàng`
+- `Tiếp tục đặt hàng`
+- `Kiểm tra đơn hàng` trước khi có preview hợp lệ
+- `Đặt hàng` sau khi đã xem preview hợp lệ
+- `Đăng nhập để lưu` khi khách chưa đăng nhập
 - `Nộp minh chứng`
 - `Yêu cầu bảo hành hoặc hậu mãi`
 - Backoffice dùng named action: `Bắt đầu chuẩn bị`, `Xác minh thanh toán`, `Bàn giao vận chuyển`.
@@ -267,7 +299,7 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 
 - Tất cả public surface.
 - Account, address và security.
-- Header desktop/mobile hiện `Bảo hành`, `Ưa thích`, `Đơn hàng`; wishlist, checkout, orders, warranty và after-sales list/detail tiếp tục theo authorization backend.
+- Menu `Tài khoản`/mobile drawer có `Bảo hành`, `Ưa thích`, `Đơn hàng`; không nhét thêm ba mục vào hàng navigation chính làm lệch header đã chọn. Wishlist, checkout, orders, warranty và after-sales list/detail tiếp tục theo authorization backend.
 
 ### 6.3 EMPLOYEE
 
@@ -283,36 +315,52 @@ Không dịch role/status/entity trong code hoặc log UI nội bộ. Giữ `CUS
 
 ### 6.5 Navigation shells
 
-- `StorefrontHeader`: wordmark, iPhone, Phụ kiện, Cửa hàng, search, account, cart; desktop ưu tiên một header gọn và mobile đưa navigation phụ vào sheet.
+- `StorefrontHeader`: hai tầng trắng gọn; hàng trên wordmark/search/account/cart, hàng dưới `iPhone`, `Phụ kiện`, `Máy đang bán`, `Ưu đãi`, `Liên hệ`. Link phải tới route/query được hỗ trợ, không thêm route chỉ vì có nhãn trong ảnh.
 - `AuthShell`: tối giản, không kéo navigation thương mại vào one-time-token flow.
 - `CustomerShell`: storefront header + account/post-purchase navigation.
-- `BackofficeShell`: sidebar theo capability, top bar actor/session, main content và contextual breadcrumb.
+- `BackofficeShell`: sidebar deep ink theo capability, top bar trắng có `Về cửa hàng`, actor/role, `Đăng xuất`; main content sáng và contextual breadcrumb.
 - Mobile navigation dùng sheet có focus trap, Escape và focus return.
 
 ## 7. Design tokens
 
+Các giá trị v2.0 dưới đây là chuẩn hóa để triển khai nhất quán từ bộ mockup, không phải kết quả đo từng pixel của ảnh AI. `apps/web/styles/tokens.css` là nơi sở hữu executable token khi triển khai; các token mới ở đây **chưa đồng nghĩa stylesheet hiện tại đã được cập nhật**. Giữ tên semantic hiện hữu, bổ sung token còn thiếu và migrate theo concern; không hard-code lại palette/radius/shadow trong từng page.
+
 ### 7.1 Color
 
-| Token                    |                          Giá trị | Dùng cho                   |
-| ------------------------ | -------------------------------: | -------------------------- |
-| `--color-canvas`         |                        `#F7F9FB` | Nền toàn trang             |
-| `--color-surface`        |                        `#FFFFFF` | Panel/card/form            |
-| `--color-surface-subtle` |                        `#F1F5F8` | Nhóm dữ liệu nhẹ           |
-| `--color-brand-soft`     |                        `#E2F5F9` | Highlight inspection/trust |
-| `--color-ink`            |                        `#0C1728` | Heading                    |
-| `--color-body`           |                        `#273548` | Body text                  |
-| `--color-muted`          |                        `#667486` | Metadata/secondary text    |
-| `--color-border`         |                        `#DCE4EA` | Divider/border             |
-| `--color-border-strong`  |                        `#C7D2DC` | Active/structural border   |
-| `--color-primary`        |                        `#007C9F` | Primary action/link        |
-| `--color-primary-hover`  |                        `#006780` | Hover/pressed              |
-| `--color-success`        |                        `#16875B` | Success/pass               |
-| `--color-warning`        |                        `#A96508` | Warning/review             |
-| `--color-danger`         |                        `#B4232D` | Error/destructive          |
-| `--color-info`           |                        `#1769AA` | Informational state        |
-| `--focus-ring`           | `0 0 0 3px rgb(0 124 159 / 22%)` | Keyboard focus             |
+| Token                     |   Giá trị | Dùng cho                   |
+| ------------------------- | --------: | -------------------------- |
+| `--color-canvas`          | `#F7F9FB` | Nền toàn trang             |
+| `--color-surface`         | `#FFFFFF` | Panel/card/form            |
+| `--color-surface-subtle`  | `#F1F5F8` | Nhóm dữ liệu nhẹ           |
+| `--color-brand-soft`      | `#E2F5F9` | Active pill/trust          |
+| `--color-studio-cyan`     | `#EAF6FF` | Nền media/hero cyan        |
+| `--color-studio-lavender` | `#F1EDFF` | Auth, repair/deposit panel |
+| `--color-studio-mint`     | `#EAF8F5` | Panel pin/bổ trợ           |
+| `--color-studio-warm`     | `#F3F1EF` | Ô sản phẩm phụ             |
+| `--color-ink`             | `#0C1728` | Heading                    |
+| `--color-body`            | `#273548` | Body text                  |
+| `--color-muted`           | `#5C6A7C` | Metadata/secondary text    |
+| `--color-border`          | `#CDD9E2` | Divider/border             |
+| `--color-border-strong`   | `#AEBFCD` | Active/structural border   |
+| `--color-primary`         | `#007C9F` | Primary action/link        |
+| `--color-primary-hover`   | `#006780` | Hover/pressed              |
+| `--color-on-brand-soft`   | `#006780` | Link/nhãn nhỏ trên pastel  |
+| `--color-success`         | `#16875B` | Success/pass               |
+| `--color-warning`         | `#9B5B00` | Warning/review             |
+| `--color-danger`          | `#B4232D` | Error/destructive          |
+| `--color-info`            | `#1769AA` | Informational state        |
+| `--color-sidebar`         | `#0C1728` | Sidebar backoffice         |
+| `--color-sidebar-text`    | `#D6E4F0` | Chữ sidebar                |
+| `--color-sidebar-active`  | `#00556B` | Nền mục sidebar đang chọn  |
+| `--color-on-primary`      | `#FFFFFF` | Chữ nút primary            |
 
 Không dùng màu đơn độc để truyền status. Luôn có text và/hoặc icon.
+
+- Trạng thái dùng token semantic hiện hữu và nền soft tương ứng: success `#E8F7F0`, warning `#FFF4DD`, danger `#FFF0F1`, info `#EDF4FF`.
+- Lavender/mint/cyan dùng trang trí không được tự suy diễn thành status. Chip thanh toán/đơn hàng giữ mapping từ presenter; màu trong ảnh minh họa không override state semantics.
+- Focus dùng `outline: 2px solid var(--color-primary)` và `outline-offset: 3px`; `--focus-ring` glow cũ chỉ bổ trợ. Trên sidebar tối dùng outline sáng đủ tương phản.
+- Text trên nền pastel dùng ink/body/muted, không dùng chữ trắng. Primary button dùng nền primary và chữ trắng; hover/active giữ `#006780`/`#00556B`.
+- Link/nhãn nhỏ trên cyan/lavender dùng on-brand-soft thay vì primary nhạt hơn; giá teal lớn vẫn dùng primary. Metadata muted v2.0 được làm đậm hơn v1.x để đọc được trên nền pastel.
 
 ### 7.2 Typography
 
@@ -324,17 +372,22 @@ Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", 
 
 | Style         | Size/line |  Weight | Ghi chú                              |
 | ------------- | --------- | ------: | ------------------------------------ |
-| Display       | `32/40`   |     700 | Hero ngắn                            |
-| Page title    | `24/32`   |     700 | Một `h1` mỗi page                    |
-| Section title | `20/28`   | 650–700 | `h2`                                 |
+| Product hero  | `48/56`   |     700 | Tên model/exact unit desktop         |
+| Auth title    | `40/48`   |     700 | Đăng nhập/đăng ký desktop            |
+| Page title    | `32/40`   |     700 | Home, checkout, backoffice; một `h1` |
+| Section title | `24/32`   |     700 | Storefront `h2`                      |
+| BO section    | `20/28`   |     700 | Panel/bảng backoffice                |
 | Body          | `16/24`   |     400 | Nội dung chính                       |
 | Body small    | `14/20`   | 400–600 | Metadata/action phụ                  |
-| Label/meta    | `12/16`   |     600 | Tracking `0.02em`                    |
-| Price         | `30/36`   |     700 | `font-variant-numeric: tabular-nums` |
+| Label/meta    | `14/20`   | 500–600 | Khách hàng; backoffice meta `12/16`  |
+| Hero price    | `40/48`   |     700 | Giá ở model/exact-unit hero          |
+| Card price    | `24/32`   |     700 | Card model/unit và tổng checkout     |
 
 Không dùng heading storefront cỡ cực lớn làm đẩy thông tin mua hàng xuống dưới fold.
 
-Customer-facing `storefront`, `customer` và `auth` surface dùng readability mode: Body `17/26`, Body small `15/22`, Label/meta `13/18`. Backoffice giữ bảng token gốc để bảo toàn mật độ vận hành; không tăng root font-size toàn ứng dụng.
+Customer-facing body mặc định `16/24`, đoạn dẫn có thể `18/28`; không làm field/help text nhỏ hơn `14px`. Backoffice body/table dùng `14/20`, số liệu `32/40`, title `28–32px`. Tiêu đề hero mobile `32/40`, auth/page `28/36`, giá hero `32/40`. Dùng `clamp()` theo phạm vi này, không tăng root font-size toàn ứng dụng.
+
+Giá, mã đơn và số đếm dùng `font-variant-numeric: tabular-nums`. Weight chỉ 400/500/600/700; không giả weight bằng text shadow. Không viết hoa toàn bộ heading; metadata nhóm sidebar có thể uppercase nhỏ và letter spacing nhẹ.
 
 ### 7.3 Spacing, sizing và grid
 
@@ -347,30 +400,37 @@ Spacing scale:
 - Container storefront tối đa `1440px`.
 - Page gutter: `16px` mobile, `24px` tablet, `40px` desktop.
 - Grid gap: `16px` mobile, `24px` desktop.
-- Control mặc định cao tối thiểu `44px`.
+- Control mặc định `48px`, compact backoffice `44px`; icon-only hit target tối thiểu `44×44px`.
 - Desktop layout dùng 12 cột; reading width không vượt khoảng `760px`.
 - Backoffice dùng fluid content với max width theo page; table có min column strategy rõ.
+- Section gap storefront `32–48px`, panel padding `24–32px`; mobile giảm còn `16–24px`. Backoffice section gap `20–24px`, panel padding `16–24px`.
+- Auth form rộng `440–480px`; vùng chữ vẫn độc lập với ảnh hai rìa.
+- Backoffice sidebar `240px` desktop; top bar `64–72px`; sidebar scroll riêng khi menu dài. Main không bị đẩy rộng hoặc mất thanh thao tác.
 
 ### 7.4 Radius, border và elevation
 
-| Token            | Giá trị |
-| ---------------- | ------: |
-| Small            |   `6px` |
-| Control          |   `8px` |
-| Card/panel/media |  `10px` |
-| Pill             | `999px` |
+| Token              | Giá trị |
+| ------------------ | ------: |
+| `--radius-small`   |   `8px` |
+| `--radius-control` |  `12px` |
+| `--radius-panel`   |  `20px` |
+| `--radius-card`    |  `24px` |
+| `--radius-media`   |  `28px` |
+| `--radius-pill`    | `999px` |
 
-- Base card: border, không shadow.
-- Raised: `0 1px 2px rgb(12 23 40 / 6%)`.
-- Hover: `0 8px 24px rgb(12 23 40 / 8%)`.
-- Overlay: `0 20px 48px rgb(12 23 40 / 14%)`.
+- `--border-default`: `2px solid var(--color-border)`; `--border-strong`: `2px solid var(--color-border-strong)`. Active control dùng primary, lỗi dùng danger. Divider trong bảng có thể giữ 1px.
+- `--shadow-raised`: `0 2px 3px rgb(12 23 40 / 5%), 0 8px 20px rgb(12 23 40 / 7%)`.
+- `--shadow-hover`: `0 4px 6px rgb(12 23 40 / 6%), 0 14px 30px rgb(12 23 40 / 12%)`.
+- `--shadow-floating`: `0 12px 32px rgb(12 23 40 / 8%)`; `--shadow-overlay`: `0 20px 48px rgb(12 23 40 / 14%)`.
+- Panel 20px cho backoffice/nhóm thông tin; card bán lẻ 24px; media/hero 28px. Không áp shadow cho mỗi dòng bảng, field hoặc chip.
+- Generation pills và CTA xem dòng máy dùng pill; submit auth/checkout dùng control radius.
 
 ### 7.5 Motion
 
 - Fast `120ms`, standard `180ms`, panel `240ms`.
 - Easing `cubic-bezier(.2, 0, 0, 1)`.
 - Hover nâng tối đa `translateY(-1px)`; ảnh zoom tối đa `1.01`.
-- Không parallax, spring hoặc animation trang trí liên tục.
+- Không parallax, spring hoặc animation trang trí liên tục. Ngoại lệ được yêu cầu: khu máy nổi bật tự chuyển 4 giây, có dừng/điều hướng; dừng khi hover, focus, tab ẩn hoặc reduced motion.
 - `prefers-reduced-motion` tắt transform/animation không thiết yếu.
 
 ### 7.6 Layering
@@ -389,21 +449,25 @@ Không tạo `z-index` tùy ý trong page module.
 
 ## 8. Responsive system
 
-| Range       | Tên     | Nguyên tắc                                     |
-| ----------- | ------- | ---------------------------------------------- |
-| `<640px`    | Mobile  | Một cột, sticky purchase, drawer/filter sheet  |
-| `640–959px` | Tablet  | 2–3 cột, summary không sticky nếu che nội dung |
-| `>=960px`   | Desktop | Exact-unit 7/5, backoffice sidebar             |
-| `>=1280px`  | Wide    | Product grid 4 cột, dense-data rộng hơn        |
+| Range       | Tên     | Nguyên tắc                                        |
+| ----------- | ------- | ------------------------------------------------- |
+| `<640px`    | Mobile  | Một cột, sticky purchase, bộ lọc ngang xuống dòng |
+| `640–959px` | Tablet  | 2–3 cột, summary không sticky nếu che nội dung    |
+| `>=960px`   | Desktop | Hero/form hai cột nếu đủ chỗ đọc; BO sidebar      |
+| `>=1280px`  | Wide    | Product grid 4 cột, dense-data rộng hơn           |
 
 Responsive không chỉ là thu nhỏ. Thứ tự nội dung phải thay đổi theo nhiệm vụ:
 
 - Header mobile giữ wordmark, search và cart; phần còn lại vào sheet.
 - Product grid thông thường chuyển 4/3/2/1 cột.
-- Riêng `IphoneGenerationShelf` luôn giữ một hàng: mobile dùng native horizontal scroll + scroll snap; desktop hiển thị khoảng bốn card và chỉ có điều khiển cuộn khi thật sự overflow.
-- Shelf không được giấu card sau hover-only control. Keyboard, touchpad, touch và focus tuần tự đều phải tới được mọi model.
+- Home bento desktop khoảng 3:2; tablet/mobile xếp ô lớn trước, rồi hai ô phụ. Ảnh và chữ phải reflow, không co toàn bộ mockup thành ảnh nhỏ.
+- Generation pills cuộn ngang trên mobile; nếu dùng shelf thì native overflow/snap và điều khiển chỉ xuất hiện khi overflow. Không dùng hover-only control.
+- Model hero chuyển từ banner ngang thành tên/giá và ảnh xếp dọc; dải thông số wrap thành lưới hai cột, không làm chữ nhỏ để giữ một hàng.
+- Exact-unit hero hai cột khoảng 3:2 khi đủ rộng; mobile xếp context/tên, ảnh, giá/giao nhận/CTA, tình trạng và nội dung kỹ thuật. Ba ô tình trạng thành một cột.
 - Exact-unit storefront xếp fact matrix thành từng dòng dễ quét; inspection chỉ giữ summary tối đa năm kết quả, không chuyển thành dossier/accordion đầy đủ.
 - Checkout summary nằm trong luồng trên mobile/tablet và có thể bám theo cột phải trên desktop khi không che nội dung hoặc focus.
+- Auth mobile bỏ hoặc giảm ảnh trang trí ở rìa trước khi thu nhỏ form; form full width với gutter 16px, giữ nguyên mọi trường.
+- Backoffice tổng quan xếp bộ chọn tháng → chỉ số → biểu đồ → phân tích → bảng ngày trên mobile; sidebar đổi thành drawer. Vùng bảng cuộn riêng khi cần, không làm trang tràn ngang.
 - Backoffice table chuyển sang stacked row/detail disclosure khi không đủ chiều rộng; không buộc người dùng đọc bảng ngang ở 320px.
 - Sticky element phải có safe-area và `scroll-padding` để không che focus/error.
 
@@ -506,7 +570,7 @@ Route page/layout (orchestration, metadata, server fetch)
 - Mobile giữ header gọn và chuyển navigation phụ vào sheet; nhãn và accessible name dùng tiếng Việt, route hiện tại có `aria-current`.
 - `SearchField`, `Breadcrumbs`, `Pagination`, `Tabs`.
 - `HeaderSessionActions` và `CartBadge` là client islands.
-- `StorefrontFooter` là domain component dùng chung cho mọi route storefront, gồm bốn vùng rõ ràng: giới thiệu thương hiệu, dòng iPhone, khám phá và liên hệ; không dồn toàn bộ link thành một hàng hoặc card soup.
+- `StorefrontFooter` dùng chung, nền trắng và divider nhẹ; mặc định là wordmark/copyright bên trái, link điều hướng gọn bên phải như bộ đã chọn. Contact/store information mở rộng chỉ khi nhiệm vụ của page cần; không bắt mọi trang mang footer tối hoặc bốn cột lớn của v1.x.
 - Nhóm dòng máy chỉ deep-link tới catalog bằng public query contract. Baseline gồm `iPhone X`, `11`, `12`, `13`, `14`, `15`, `16`, `17`; link mở cả family, không giả định một exact unit còn hàng.
 - Tên, số điện thoại và địa chỉ lấy từ public store projection. Provider lỗi không được làm mất navigation footer hoặc khiến route storefront trả lỗi.
 - Email và social profile là public frontend configuration, chỉ render khi hợp lệ. Social URL phải dùng HTTPS, mở tab mới với `noopener noreferrer`; không hard-code credential, private path hoặc URL chưa được xác nhận trong component. Local development được dùng profile demo đã khai báo tập trung; production thiếu config thì ẩn link thay vì dùng demo fallback.
@@ -514,6 +578,9 @@ Route page/layout (orchestration, metadata, server fetch)
 ### 10.4 Product discovery và exact unit
 
 - `IphoneCatalogIndex`: server composition của toàn bộ generation shelf; không tự sở hữu transport.
+- Home compose `FeaturedModelBento`, generation navigation, `FeaturedUnitsCarousel`, grid exact unit và các nhóm model.
+- `FeaturedModelBento` hiển thị campaign iPhone 18/17/16. Model có thật dùng public media/price authority; campaign chưa có model chỉ dẫn đến tìm kiếm, không giả trạng thái còn hàng hay giá.
+- `FeaturedUnitsCarousel` lấy tối đa 10 unit public đủ điều kiện, ưu tiên sao rồi giá giảm dần. Desktop 5 máy/lượt; tablet 2–3 và mobile 1. Tự chuyển 4 giây và có nút Trước/Tiếp/Tạm dừng.
 - `IphoneGenerationShelf`: một `section` có heading, danh sách một hàng và progressive overflow control; không phải carousel tự chạy.
 - `IphoneModelCard`: dùng chung cho home và iPhone catalog, chỉ hiển thị model image, tên và một trong hai trạng thái giá bên dưới.
   - Có authoritative `fromPrice` và model còn máy: `Từ {giá VND}`.
@@ -528,12 +595,12 @@ Route page/layout (orchestration, metadata, server fetch)
   - fallback `Dòng iPhone khác` thay vì làm mất hoặc làm crash một model chưa nhận diện.
 - Model xuất hiện đúng một lần. Không hard-code card `iPhone 5…17` trong JSX và không tạo model giả chỉ để lấp một hàng.
 - `ExactUnitCard`: ảnh thật, mã máy, grade, pin, giá, warranty, availability.
-- `FilterBar`/`FilterDrawer`, `SortControl`, empty search.
+- `CatalogFilterForm`: toolbar ngang, popover giá/RAM/bộ nhớ/khóa mạng, search và hàng sort riêng; empty search rõ ràng.
 - `ActualUnitGallery`, `ActualUnitBadge`, `GradeBadge`, `GradeExplainer`.
-- `MetricRail`: pin, kiểm định, bảo hành.
+- `UnitConditionSummary`: ba ô dưới hero cho ngoại hình, pin và lịch sử sửa chữa; presenter xử lý copy, component chỉ trình bày.
 - `InspectionSummary` hiển thị tối đa năm kết quả public-safe; không có CTA dẫn tới dossier dài trên storefront.
 - `TrustStrip`.
-- `PurchaseSummary`, `FulfillmentPanel`, `StickyMobilePurchaseBar`.
+- `PurchaseSummary`, `FulfillmentPanel`, `StickyMobilePurchaseBar`. Hero model và hero exact-unit là hai pattern riêng, không ép thành một component có nhiều boolean flag.
 
 ### 10.5 Commerce và customer service
 
@@ -551,6 +618,23 @@ Route page/layout (orchestration, metadata, server fetch)
 - `EvidenceViewerLauncher`, `MediaManager`, `InspectionEditor`.
 - `MoneyInput` giữ chuỗi chữ số; `IdentifierReveal` giữ dữ liệu raw trong memory ngắn nhất có thể.
 - `Pagination` luôn server-authoritative với allowlisted filter/sort.
+
+### 10.7 Công thức hiển thị dùng chung
+
+| Thành phần       | Anatomy và style chuẩn                                       | Quy tắc                                                                                       |
+| ---------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Media stage      | Ảnh → nền studio nhẹ → badge/label có nguồn                  | Hero radius-media; ảnh không méo/cắt chi tiết chính; ảnh thật không bị chỉnh mất dấu sử dụng  |
+| Model card       | Ảnh → tên → giá `Từ`/tạm hết → link                          | Radius-card, surface trắng, border nhẹ; toàn card có một đích, không nested button            |
+| Exact-unit card  | Ảnh trái → mã/cấu hình → ngoại hình/pin → giá/bảo hành → CTA | Desktop card ngang, grid hai cột; mobile reflow; giữ đúng identity của máy                    |
+| Condition tile   | Icon circle → tên → giá trị/mô tả                            | Cyan/mint/lavender, ba ô đồng cấp; không biến thiếu dữ liệu thành claim tốt                   |
+| Form field       | Label → control → hint hoặc lỗi                              | Label ngoài field, cao 48px, radius-control; placeholder không thay label                     |
+| Primary button   | Icon tùy chọn → động từ → pending                            | Nền teal/chữ trắng; hover, focus, disabled, loading rõ; không thay đổi kích thước khi pending |
+| Secondary button | Label/icon, nền trắng hoặc brand-soft                        | Border mảnh, không tranh cấp với primary; destructive dùng semantic danger                    |
+| Status chip      | Text + icon tùy chọn + semantic tint                         | Pill, ngắn gọn, không clickable nếu chỉ là status; mapping từ presenter                       |
+| Summary/receipt  | Identity → pricing rows → tổng → giải thích → action         | Radius-panel, shadow-floating khi cần nổi; số tiền căn phải/tabular                           |
+| BO data surface  | Heading/actions → filter nếu có → rows → pagination          | Radius-panel, không shadow từng row; overflow strategy rõ                                     |
+
+Mọi component phải có default/hover/focus/disabled/pending/error khi phù hợp. Không dùng màu placeholder cho dữ liệu đã có giá trị. Đừng tạo carousel, thêm icon, badge hoặc secondary CTA chỉ để lấp khoảng trống trong mockup.
 
 ## 11. State và feedback semantics
 
@@ -578,46 +662,45 @@ Frontend không tự suy diễn state machine, payment summary, available action
 
 ### 12.1 Home
 
-Home là catalog index, không phải landing page quảng cáo. Thứ tự:
+Chuẩn hình ảnh: [home.png](docs/assets/ui/selected/home.png), với nội dung và thứ tự đã chốt ngày 13/10/2026:
 
-1. Header/search gọn.
-2. `h1` ngắn như `Chọn dòng iPhone`; có thể có một câu hướng dẫn, không có manifesto hero.
-3. Toàn bộ model iPhone public đang có trong catalog, nhóm thành generation shelf mới → cũ.
-4. Một trust strip ngắn dẫn sang cách rePhone trình bày ảnh thật/kiểm định.
-5. Store/pickup summary hoặc footer link nếu public store endpoint khả dụng.
+1. Header/search và lời dẫn ngắn.
+2. Bento iPhone 18/17/16, ô lớn trái/hai ô nhỏ phải. Artwork là minh họa, không thay ảnh máy thật.
+3. Thanh dòng iPhone 18, 17, 16, 15, 14, 13, 12 và nút Khác → `/products`; xuống dòng trên mobile, không bắt cuộn ngang tìm dòng.
+4. Máy nổi bật: tối đa 10 máy, desktop 5 máy/lượt, tự chuyển 4 giây; nút có nhãn và pause khi hover/focus/tab ẩn/reduced motion.
+5. iPhone đang bán: tối đa 24 máy có thật, nút Xem thêm máy dẫn đến catalog còn hàng.
+6. Khám phá theo dòng: từ iPhone 18 đến 14; trong mỗi nhóm base/Plus/Air/Pro/Pro Max theo resolver và dữ liệu thực. Nút Thêm dòng iPhone mở `/products`.
+7. Một trust strip ngắn, footer. Banner ưu đãi/cửa hàng nằm hai bên khi đủ rộng, trong luồng khi hẹp.
 
-Data và card contract:
+Data và interaction:
 
-- Home lấy cả model đang có máy và model tạm hết máy; không áp filter chỉ giữ `inStock=true`.
-- “Toàn bộ” nghĩa là toàn bộ active/public Product mà catalog trả về. Nếu response phân trang, server phải đọc đủ page bằng stable ordering; không client-filter một page đầu rồi gọi đó là toàn catalog.
-- Không tạo hard-coded card cho `iPhone 5…17`. Muốn một model tạm hết máy xuất hiện thì model đó phải tồn tại trong catalog với media/fallback hợp lệ.
-- Một model xuất hiện đúng một generation section và dùng `IphoneModelCard` chung.
-- `Từ {giá}` lấy trực tiếp từ authoritative public price projection, vốn đại diện giá thấp nhất của exact unit sellable. Frontend không tự quét unit để tính minimum.
-- Không có authoritative price/exact unit sellable thì hiển thị `Tạm hết máy`.
-- Cả card còn hàng và card tạm hết máy đều mở `/products/[slug]`.
-- Không gọi product sort theo `createdAt` là “máy mới về” nếu contract không chứng minh unit chronology.
-
-Semantic/responsive contract:
-
-- Mỗi generation là `section` có heading riêng và danh sách một hàng.
-- Numeric generation ưu tiên mới → cũ. Special/legacy family và model chưa nhận diện đi qua resolver/fallback đã định nghĩa tại §10.4.
-- Desktop wide thấy khoảng bốn card; nếu nhiều hơn thì shelf overflow có điều khiển truy cập được.
-- Mobile dùng horizontal scroll/snap, card kế tiếp hé một phần để biểu thị còn nội dung; không auto-rotate và không chặn native scroll.
-- Empty toàn catalog và lỗi provider là hai state khác nhau; lỗi không được trình bày như “chưa có sản phẩm”.
+- Homepage dùng query public units có giới hạn; không N+1 gọi detail từng model hoặc unit. Grid dùng `ExactUnitCard` xếp dọc, link đến đúng mã máy.
+- Cờ nổi bật được quản lý ở danh sách kho. Unit đủ điều kiện công khai mới được chọn: AVAILABLE, không giữ chỗ, giá/media/kiểm định hợp lệ và model/variant/location active. Sold/unavailable tự bị loại. Thiếu 10 thì bù bằng giá cao nhất; dữ liệu thiếu thì hiển thị số thực, không lặp máy.
+- Cùng unit có thể có mặt trong khu nổi bật và grid đang bán; DOM id riêng theo vùng. Trong một danh sách không lặp unit.
+- Danh sách dòng máy lấy dữ liệu public thật, gồm dòng tạm hết máy. Không tạo model giả để lấp nhóm 18…14. Giá Từ do API quyết định; thiếu giá sellable hiển thị Tạm hết máy.
+- Chọn generation dẫn đến nhóm tương ứng; generation chưa tồn tại dẫn đến search. Khác luôn dẫn đến catalog.
+- Lỗi catalog và lỗi danh sách máy có thông báo riêng; không biến fetch error thành hết hàng.
+- Responsive 320/390/768/1024/1440: không tràn trang, nội dung/giá/CTA không bị cắt. Track carousel có vùng cuộn riêng; label ẩn phải nằm trong containing block của card.
 
 ### 12.2 Catalog/search
 
-- Product card là model-level.
-- Filter global chỉ dùng field public catalog hỗ trợ.
-- Query nằm trong URL để back/forward/share hoạt động.
-- Không client-filter một page đã pagination rồi gọi đó là full catalog filter.
-- Mobile filter dùng drawer; active filter có summary và clear action.
+- Product card là model-level. Toolbar ngang theo thứ tự Sẵn hàng, Giá, RAM, Bộ nhớ trong, Khóa mạng, Tìm máy; xuống dòng theo chiều rộng.
+- Sẵn hàng là nút bật/tắt một lần. Những nút khác mở các lựa chọn có nhãn; dùng nút đầy đủ, không trigger tam giác đơn lẻ.
+- Giá dùng hai thanh range cho mức thấp nhất/cao nhất, hiển thị tiền đã chọn, Áp dụng và xóa. Không dùng hai ô nhập giá.
+- RAM/bộ nhớ/khóa mạng lấy các giá trị được API hỗ trợ; chọn rồi cập nhật kết quả. Search có label và submit.
+- Hàng dưới dành cho sort Mới nhất/Giá tăng dần/Giá giảm dần và xóa lọc. Mới nhất là năm ra mắt model, không được quảng bá thành máy mới nhập.
+- Query nằm trong URL: back/forward/share/refresh giữ đúng lựa chọn; đổi lọc reset page. Price/storage/SIM/stock phải khớp cùng offer, không ghép từ các máy khác nhau.
+- Escape/nhấn ngoài đóng popover, focus quay lại trigger. Không ẩn toolbar sau filter drawer trên mobile.
+- Không client-filter một page phân trang rồi gọi đó là full catalog filter.
 
 ### 12.3 Model detail
 
-- [Model detail canonical reference](docs/assets/ui/rephone-model-detail-canonical-reference.png) khóa hierarchy desktop, density, gallery, model fact cards và exact-unit card language cho `/products/[slug]`.
-- Model facts tách khỏi danh sách máy vật lý. Known model luôn có bốn card theo thứ tự năm ra mắt, chip, RAM, màn hình và một panel full-width cho màu chính thức; registry source-backed ở §5.4 là data authority khi public projection chưa đủ.
-- Trust note dùng câu `Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.`; section inventory chỉ có một heading `Các máy đang có sẵn`.
+- Target [product-model.png](docs/assets/ui/selected/product-model.png) cho `/products/[slug]`.
+- Thứ tự: breadcrumb → banner studio ngang → dải thông số → danh sách máy đang có → trust strip → footer trắng.
+- Banner khoảng 340–400px cao trên desktop, khoảng 40% cho tên/mô tả/giá `Từ`/CTA bên trái và 60% cho ảnh dòng máy bên phải. Không ép chiều cao này trên mobile hoặc khi copy dài.
+- CTA `Xem máy đang có sẵn` cuộn tới danh sách; không thêm giỏ cho model chung. Ảnh có nhãn `Ảnh minh họa dòng máy`.
+- Dải thông số cố định theo model: năm, chip, RAM, màn hình, màu; bổ sung thời lượng xem video, thời gian sạc 50%, tần số quét, độ phân giải màn hình, camera sau và camera trước. Registry `iphone-technical-specs.ts` có nguồn Apple và ngày kiểm chứng tại [nguồn specs](docs/evidence/ui-v2/iphone-specs-2026-10-13.md). Không suy công suất sạc từ công suất củ sạc; thời lượng công bố khác sức khỏe pin của máy cũ. Bỏ câu “Giá, pin và tình trạng thuộc riêng từng mã máy.”
+- Danh sách có một heading `Chọn chiếc {tên dòng máy} của bạn`, mô tả ngắn và sort được hỗ trợ. Desktop grid hai cột, mỗi card ngang với ảnh bên trái và identity/tình trạng/giá/bảo hành/CTA bên phải.
 - Các `availableUnits` có thể được flatten từ variants thành một grid; mỗi card phải giữ variant context như storage/color và không được xuất hiện hai lần.
 - `availableUnits` có thể filter/sort local theo dữ liệu response hiện có.
 - Không hiển thị sort “Mới nhất” nếu public DTO không có timestamp/field tạo ra ordering đó.
@@ -625,32 +708,32 @@ Semantic/responsive contract:
 - Model tạm hết vẫn có detail page và empty state `Tạm hết máy`; không tự redirect hoặc giả thành `404`.
 - Không N+1 gọi unit detail để bù field thiếu trong list.
 - Gallery model dùng `product.media`; không lấy ảnh exact unit làm ảnh minh họa model nếu backend không gắn media đó ở product boundary.
+- Số card phụ thuộc dữ liệu, không cố định bốn. Màu model không phải selector mua một cấu hình chung; mỗi CTA mở đúng exact unit.
 
 ### 12.4 Exact-unit detail — canonical
 
-[Exact-unit detail canonical reference](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png) khóa hierarchy desktop, gallery/purchase rail, fact matrix, inspection summary và related-unit card language cho `/products/[slug]/units/[inventoryCode]`.
+[product-unit.png](docs/assets/ui/selected/product-unit.png) là target cho `/products/[slug]/units/[inventoryCode]`. Hero có ảnh trái và thông tin mua phải **trên cùng một surface cyan bo 28px**; không tách thành gallery trắng và purchase card trắng rời như mockup v1.x.
 
 Desktop:
 
 ```text
 Breadcrumb
-┌─────────────────────────────┬─────────────────────┐
-│ Actual-unit gallery 7/12    │ Purchase rail 5/12  │
-└─────────────────────────────┴─────────────────────┘
-Authoritative product/unit fact matrix
-Compact inspection summary (maximum five public-safe checks)
-Other available units of the same model, when contract data exists
+Hero cyan: ảnh thật khoảng 60% | tên/cấu hình/giá/giao nhận/CTA khoảng 40%
+Ba ô đồng cấp: Ngoại hình | Pin | Lịch sử sửa chữa
+Hai panel: Cấu hình và kết nối | Máy đã được kiểm tra kỹ thuật
+Máy cùng dòng đang bán, nếu có dữ liệu
+Trust strip và footer trắng
 ```
 
 Mobile order:
 
 1. Context/back link.
 2. Tên, cấu hình và grade.
-3. Gallery 1:1 + horizontal thumbnails.
-4. Giá và metric rail.
-5. Fulfillment/trust.
-6. Inspection summary tối đa năm hạng mục.
-7. Related available units nếu có contract.
+3. Gallery ảnh thật, thumbnail chỉ khi thật sự có nhiều ảnh.
+4. Giá, bảo hành/giao nhận, `Thêm vào giỏ` và `Lưu máy`/`Đăng nhập để lưu`.
+5. Ba ô tình trạng xếp dọc.
+6. Cấu hình/kết nối và inspection summary tối đa năm hạng mục.
+7. Máy cùng dòng nếu có dữ liệu, trust strip và footer.
 
 Sticky purchase bar chỉ xuất hiện sau khi CTA gốc rời viewport và không che focus/content.
 
@@ -660,56 +743,55 @@ Sticky purchase bar chỉ xuất hiện sau khi CTA gốc rời viewport và kh�
 - Nếu cần bổ sung model facts hoặc related units, page có thể đọc `getPublicProduct(slug)` một lần; không gọi detail cho từng unit.
 - Số kiểm định, warranty, fulfillment, giá, pin, condition và specs đều phải lấy từ public projection; các claim minh họa bị cấm ở §5.4 không được dùng để lấp khoảng trống.
 
-#### 12.4.1 Exact-unit condition refinement
+#### 12.4.1 Hero và ba ô tình trạng
 
 Mục tiêu đã xác nhận:
 
-- Giữ gallery ảnh thật lớn làm bằng chứng chính; không thu nhỏ ảnh chỉ để cân chiều cao hai cột.
-- Bổ sung panel `Tình trạng của máy` trong purchase rail để giúp khách ra quyết định và giảm khoảng trống có chủ đích.
-- Panel dùng ngôn ngữ bán lẻ dễ hiểu, không đưa checklist hoặc chi tiết nghiệp vụ kiểm định của nhân viên vào purchase rail.
-- Fact matrix được chia thành `Cấu hình` và `Thông tin riêng của máy` thay vì một danh sách phẳng dễ thưa dữ liệu.
-- Compact inspection summary phía dưới vẫn hiển thị tối đa năm kết quả public-safe nhưng không dùng cách viết `5/18`.
+- Giữ ảnh thật lớn, tỷ lệ ảnh tự nhiên và vùng chữ rõ. Không dựng sân khấu/retouch ảnh thật khiến người mua hiểu sai ngoại hình; nền cyan là UI, không bằng chứng tình trạng.
+- Hero bên phải theo thứ tự: grade nhỏ → tên → dung lượng/màu read-only → giá lớn teal → bảo hành/giao nhận → primary `Thêm vào giỏ` → hành động lưu → ghi chú giá/tồn khi cần.
+- Không lặp ba ô tình trạng trong purchase rail hoặc sticky bar. Chúng nằm ngay dưới hero với nền cyan/mint/lavender, icon circle và mô tả ngắn.
+- Không đưa checklist, số hạng mục, repair note nội bộ hoặc identifier vào các ô này. Inspection summary kỹ thuật nằm riêng phía dưới, không dùng `5/18`.
 
 Desktop anatomy:
 
 ```text
-Purchase rail
-├── Grade, pin, model và configuration
-├── Color navigation
-├── Price, fulfillment và purchase actions
-├── UnitConditionSummary
-│   ├── Ngoại hình
-│   ├── Pin
-│   └── Lịch sử sửa chữa
-└── Price/inventory authority note
+UnitHero
+├── ActualUnitGallery + ActualUnitBadge
+└── PurchaseSummary + FulfillmentPanel + CommerceActions
+UnitConditionSummary (ngoài hero)
+├── Ngoại hình
+├── Pin
+└── Lịch sử sửa chữa
 ```
 
 `UnitConditionSummary` mapping:
 
 | Dòng             | Nguồn public                                                              | Quy tắc trình bày                                               |
 | ---------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Ngoại hình       | `conditionGrade`, `cosmeticNotes?`                                        | Luôn có Grade; chỉ thêm ghi chú khi có nội dung                 |
+| Ngoại hình       | `conditionGrade`, `cosmeticNotes?`                                        | `Ngoại hình {grade}`; chỉ thêm ghi chú khi có nội dung          |
 | Pin              | `batteryHealthPercent?`, `batteryCycleCount?`, `batteryReplacementStatus` | Ghép các giá trị hiện hữu; không suy đoán phần trăm hoặc chu kỳ |
 | Lịch sử sửa chữa | `repairHistoryStatus`                                                     | Dùng label tổng quát; `UNKNOWN` phải thành `Chưa đủ thông tin`  |
 
 Không render `functionalChecks`, số hạng mục, `repairNotes`, `replacedParts`, identifier hoặc dữ liệu nhân viên trong panel này. Panel là Server Component/presentational component, không thêm client state hay API call.
 
-Fact matrix gồm hai nhóm:
+`NONE_KNOWN` phải là `Chưa ghi nhận sửa chữa`, không đổi thành `Chưa từng sửa chữa`. `UNKNOWN` là `Chưa đủ thông tin`. Pin/chu kỳ/original status chỉ ghép khi có giá trị; không suy ra pin nguyên bản từ phần trăm pin.
+
+Panel `Cấu hình và kết nối` nhóm dữ kiện có nguồn:
 
 - `Cấu hình`: năm ra mắt, chip, màn hình, RAM, dung lượng và màu sắc.
 - `Thông tin riêng của máy`: mã máy, mã model, thị trường, cấu hình SIM, khóa mạng, pin/chu kỳ, tình trạng linh kiện pin, Grade, lịch sử sửa chữa và bảo hành.
 
 Field null/blank được bỏ có chủ đích, không hiển thị `—`, placeholder hoặc claim phỏng đoán. `carrierName` chỉ hiện khi có giá trị. `cosmeticNotes` thuộc panel tình trạng và không lặp lại trong matrix. Chip, RAM, màn hình, model number hoặc region còn thiếu phải được bổ sung ở data concern có nguồn; UI không tự dựng.
 
-#### 12.4.2 Exact-unit hero balance và fulfillment copy
+#### 12.4.2 Responsive, giao nhận và bằng chứng
 
 Quyết định presentation đã xác nhận cho hero exact-unit:
 
-- Giữ gallery 1:1 và tỷ lệ cột desktop `7/5`; không thu nhỏ ảnh hoặc kéo giãn gallery để che chênh lệch nội dung.
-- Trên desktop rộng, ba dòng của `UnitConditionSummary` dùng nhịp compact theo hàng `icon | nhãn | giá trị/mô tả`. Mobile và tablet tiếp tục xếp nội dung theo chiều dọc để giữ khả năng đọc.
+- Hero desktop khoảng `3:2` theo ảnh đã chọn; ảnh có `object-fit: contain`/crop hợp lý theo media, không bắt mọi ảnh thành 1:1. Không kéo giãn ảnh để cân hai cột.
+- Ba ô tình trạng có khoảng cách và chiều cao tự nhiên tương đương; mobile/tablet reflow theo khả năng đọc, không làm chữ nhỏ để ép ba cột.
 - Chỉ bật hero hai cột khi viewport đủ rộng cho purchase rail; màn hình trung bình phải trở về một cột trước khi text wrap làm cột phải dài bất thường.
-- Mục tiêu cân bằng là mép dưới gallery và purchase rail gần thẳng hàng bằng mật độ nội dung thật, không dùng `height` cố định hoặc khoảng trắng giả.
-- Exact unit ở location `STORE` trình bày `Sẵn hàng`; unit ở `WAREHOUSE` trình bày `Đang ở kho` và dẫn khách tới `/store` để liên hệ điều chuyển trước khi đến xem. Không dùng `Chưa hỗ trợ` vì pickup vẫn là năng lực của cửa hàng.
+- Mục tiêu cân bằng là cùng một hero có ảnh và CTA dễ nhìn, không dùng height cố định hoặc khoảng trắng giả để ép mép dưới trùng nhau.
+- Chỉ hiện `Sẵn tại cửa hàng`/`Có thể giao hàng` khi projection tương ứng cho phép. Nếu đang ở kho, trình bày vị trí/giới hạn đúng dữ liệu và có thể dẫn `/store` để liên hệ; không hứa đã điều chuyển hoặc đã giữ hàng.
 - UI tuyệt đối không hard-code `Có thể nhận`, tự chuyển location hoặc thay đổi checkout allocation. Khả năng pickup/shipping tiếp tục lấy trực tiếp từ public projection.
 
 Acceptance:
@@ -733,13 +815,14 @@ Component boundary:
 ```text
 UnitDossier
 ├── ActualUnitGallery
-├── PurchaseRail → UnitConditionSummary
+├── PurchaseSummary
+├── UnitConditionSummary
 ├── UnitSpecificationGroups
 ├── PublicInspectionSummary
 └── RelatedUnitOffers
 ```
 
-Normalization nằm trong pure presenter (`buildUnitConditionSummary`, `buildUnitSpecificationGroups`) và có unit test; route/page không chứa mapping enum hoặc fallback copy. Desktop dùng ba cột cho fact matrix, tablet hai cột và mobile một cột. Trên mobile, panel nằm sau purchase actions và trước authority note; mobile purchase bar không lặp lại nội dung tình trạng.
+Normalization nằm trong pure presenter (`buildUnitConditionSummary`, `buildUnitSpecificationGroups`) và có unit test; route/page không chứa mapping enum hoặc fallback copy. Hai panel cấu hình/kiểm tra đặt cạnh nhau desktop và xếp dọc mobile; rows trong panel là `dl/dt/dd` hoặc list semantic, không biến mỗi fact thành card.
 
 Acceptance:
 
@@ -749,12 +832,7 @@ Acceptance:
 - Regression gallery, CTA, cart, wishlist, five-result summary và related units.
 - DOM/log không chứa cost, raw identifier, internal note, repair detail, replaced parts hoặc dữ liệu nhân viên.
 
-Decision log:
-
-- Chọn panel evidence A1 thay vì giảm gallery, metric-card dashboard hoặc disclosure.
-- Panel purchase rail không chứa inspection/checklist; năm kết quả kỹ thuật tiếp tục ở section riêng.
-- Fact matrix chia hai nhóm và chỉ render dữ liệu contract-backed.
-- Không đổi API; enrich product/unit demo metadata là concern dữ liệu riêng.
+Quyết định v2.0 thay thế refinement A1 của v1.x: hero cyan thống nhất, ba ô tình trạng ngoài hero, hai panel cấu hình/kiểm tra bên dưới. Không đổi API; metadata/media còn thiếu là concern dữ liệu riêng, không tự tạo trong UI.
 
 ### 12.5 Store
 
@@ -769,10 +847,26 @@ Decision log:
 
 ### 13.1 Auth
 
-- Form width vừa đọc, một mục tiêu mỗi page.
+Target: [auth.png](docs/assets/ui/selected/auth.png), đăng nhập trên/đăng ký dưới. Hai route dùng cùng composition, không render hai form đồng thời.
+
+- Header tối giản: wordmark trái và `Về trang chủ` phải; footer ngắn. Không mang header thương mại/search/cart vào auth.
+- Desktop form rộng 440–480px ở giữa trên nền sáng; chữ/form không đặt trong card nổi. Rìa trái có lavender/khối studio nhẹ, rìa phải có ảnh điện thoại cyan. Ảnh không che field, link hay focus.
+- Above form có chuyển `Đăng nhập`/`Đăng ký` theo route, active pill brand-soft. Đây là link chuyển route với `returnTo` hợp lệ, không làm mất destination sau auth.
+- Title, subtitle, fields, primary CTA và switch link giữ cùng alignment. Registration dài hơn vẫn giữ helper/CTA trong luồng, không giảm font để ép chiều cao đăng nhập.
+
+| Route       | Field bắt buộc                                    | Field tùy chọn | Action và link                                              |
+| ----------- | ------------------------------------------------- | -------------- | ----------------------------------------------------------- |
+| `/login`    | Email, Mật khẩu                                   | Không          | `Đăng nhập`; `Quên mật khẩu?`; `Chưa có tài khoản? Đăng ký` |
+| `/register` | Họ và tên, Email, Mật khẩu mới, Xác nhận mật khẩu | Số điện thoại  | `Tạo tài khoản`; `Đã có tài khoản? Đăng nhập`               |
+
+- Mật khẩu có nút hiện/ẩn với accessible name. Policy giữ đúng contract: 8–128 ký tự, ít nhất một chữ và một số, không có khoảng trắng đầu/cuối. Không tự thêm yêu cầu ký tự đặc biệt hoặc strength score.
+- Chỉ email/password hiện được hỗ trợ; không thêm Google/Apple/Facebook/OTP, nhớ đăng nhập, CAPTCHA hoặc checkbox điều khoản nếu chưa có flow tương ứng.
+- Mobile bỏ/giảm art ở rìa, giữ form và mọi label/field/CTA. Image trang trí có alt rỗng, không giả là máy đang bán.
+- Loading không đổi width CTA; validation có field error và summary focus; phản hồi login/register giữ anti-enumeration của auth contract. Đăng ký không tự biến thành đăng nhập thành công nếu backend không trả session.
 - Login/register/forgot-password không phô backoffice navigation.
 - Reset/invitation token đi fragment → memory → fragment được xóa trước request.
 - Không query, SSR HTML hoặc localStorage token.
+- Forgot/reset/invitation kế thừa palette/form/header này, nhưng bố cục chi tiết là pattern kế thừa, chưa có mockup riêng được chọn.
 
 ### 13.2 Account
 
@@ -789,11 +883,43 @@ Decision log:
 
 ### 13.4 Checkout
 
-- Hai cột desktop: form và authoritative review.
-- Preview không reserve; mọi thay đổi làm preview cũ mất hiệu lực.
+Target: [checkout.png](docs/assets/ui/selected/checkout.png). Đây là màn hình nhập thông tin và xem lại đơn trước khi tạo đơn, không phải trang thanh toán thành công.
+
+Desktop:
+
+```text
+StorefrontHeader
+Trái khoảng 60%                         Phải khoảng 40%
+Breadcrumb/progress + Hoàn tất đơn hàng Đơn hàng của bạn
+Thông tin liên hệ                      Ảnh + identity đúng máy
+Cách nhận hàng                         Tạm tính / giảm giá / phí
+Địa chỉ giao hàng khi SHIPPING          Tổng thanh toán
+Mã giảm giá + ghi chú                   Đặt trước / còn lại khi nhận
+                                       Trạng thái kiểm tra + CTA
+```
+
+- Biểu mẫu trên base surface, section phân tách bằng spacing/divider; không bọc từng section trong một card. Receipt radius-panel, shadow-floating nhẹ, product stage cyan ở đầu và giải thích đặt trước lavender.
+- Contact gồm họ tên, điện thoại, email. SHIPPING gồm tên/điện thoại người nhận, địa chỉ, phường/xã, quận/huyện, tỉnh/thành phố; mã bưu chính và ghi chú tùy chọn. Địa chỉ đã lưu chỉ cho tài khoản có quyền, dùng để điền đúng payload hiện hành.
+- Hai radio card `Giao tận nơi` và `Nhận tại cửa hàng`; pickup không gửi shipping address. Mã giảm giá có nút áp dụng riêng, không tự hứa đã được giảm trước preview.
+- Giữ ảnh, tên, cấu hình/màu, mã máy, số lượng của từng item. iPhone cố định số lượng 1; không thêm selector biến unit thành model chung.
+- Receipt lấy toàn bộ pricing từ preview: subtotal, discount nếu có, shippingFee, grandTotal, depositRequired, balanceDue. Khoản đặt trước **là một phần của tổng**, không cộng lần hai. Phân biệt tổng đơn, đặt trước và còn lại bằng typography/nhóm nội dung.
+- Không hard-code 22.090.000đ, 30.000đ, 500.000đ, 90 ngày hoặc tên khách trong ảnh. Giá và chính sách có thể thay đổi mà layout vẫn phải đọc được.
+
+Các bước UI bắt buộc:
+
+1. Giỏ hợp lệ → nhập thông tin/cách nhận → CTA `Kiểm tra đơn hàng`.
+2. Preview hợp lệ → hiển thị tổng tiền có thẩm quyền và copy đã kiểm tra → CTA `Đặt hàng`.
+3. Tạo đơn thành công → chuyển đúng `/orders/[orderNumber]` cùng guest transport hiện hành, rồi mới hướng dẫn đặt trước khi có yêu cầu.
+
+Progress là chỉ dẫn hành trình, không tự thay state machine. Không hiển thị “đã đặt” trước khi create thành công.
+
+- Khách vãng lai đặt được theo contract; không ép đăng nhập. SHIPPING có đặt trước theo cấu hình và thanh toán phần còn lại khi nhận hàng; PICKUP thanh toán tại cửa hàng theo snapshot.
+- QR/chuyển khoản/tải minh chứng nằm ở trang đơn được tạo, không thêm vào checkout như một payment selector mới. Không tự dựng số tài khoản hoặc thời hạn giữ hàng trên preview.
+- Preview không reserve; thay đổi giỏ, session, cách nhận hoặc voucher đã áp dụng làm preview cũ mất hiệu lực. Contact/địa chỉ/ghi chú được validate lại khi tạo đơn và snapshot theo giá trị hiện thời; chúng không tham gia pricing preview theo [API contract](docs/api/checkout-and-customer-order-endpoints.md#3-preview). Không tự thay chính sách nghiệp vụ chỉ để đổi presentation.
 - `CHECKOUT_REVIEW_REQUIRED` thay summary và yêu cầu xác nhận lại.
 - Không tự retry create hoặc gửi lại payment/order mutation.
 - Không render payment selector, fee calculator hoặc ETA giả.
+- Desktop receipt chỉ sticky nếu đủ chiều cao và không che focus. Mobile/tablet summary nằm trong flow sau các trường; CTA rõ ràng, không nhân đôi submit cạnh tranh hoặc che lỗi.
 
 ## 14. Page patterns — customer post-purchase
 
@@ -816,10 +942,10 @@ Decision log:
 
 ### 15.2 Inventory
 
-- Inventory queue có filter/pagination và link intake.
+- Inventory queue có filter/pagination và link intake. Mỗi máy có nút sao đầy đủ nhãn Chọn nổi bật/Bỏ nổi bật, lưu qua API và phản ánh kết quả authoritative; không chỉ lưu local.
 - Unit detail tách safe overview, inspection history, lifecycle, media, identifier và admin-only cost.
 - Cost chỉ request sau khi role gate xác nhận `ADMIN`; clear khi session/role đổi.
-- Identifier lookup/reveal yêu cầu reason; raw value không vào URL, cache, log hoặc persisted state.
+- Lookup hỗ trợ thêm mã máy chính xác, không phân biệt hoa/thường. Lookup/reveal identifier giữ reason/audit theo contract; identifier riêng tư không vào URL, cache, log hoặc persisted state.
 - Không generic status dropdown. Mỗi lifecycle dùng named command.
 
 ### 15.3 Inspection
@@ -838,8 +964,26 @@ Decision log:
 
 ## 16. Page patterns — operational backoffice
 
+### 16.1 Tổng quan tài chính cho nhân viên và admin
+
+`/backoffice` và entry sidebar Tài chính. Shell theo [backoffice.png](docs/assets/ui/selected/backoffice.png); nội dung vận hành cũ được thay theo yêu cầu 13/10/2026.
+
+- Header có tháng báo cáo theo múi giờ Việt Nam và Cập nhật. Cards nổi rõ, biểu đồ doanh thu ngày, breakdown, kênh bán và bảng ngày.
+- Doanh thu lấy đơn COMPLETED có completedAt trong tháng: giá trị đơn đã trừ giảm giá, gồm phí giao; doanh thu sau hoàn trừ hoàn tiền lũy kế của nhóm đơn này. Đây không phải báo cáo dòng tiền theo ngày thanh toán.
+- Doanh số hiển thị số đơn hoàn tất và số iPhone bán. Tiền dùng số nguyên VND, tránh cộng double qua nhiều order item.
+- ADMIN có giá vốn đã ghi nhận, lãi gộp tạm tính, vốn tồn kho hiện tại và tiền còn phải thu. Giá vốn dựa chi phí hiện lưu; thiếu giá vốn thì không báo lãi như đã đầy đủ.
+- Lãi gộp tạm tính không phải lãi ròng: chưa trừ hoa hồng, phí, thuế, chi phí vận hành và chưa tự hoàn nhập giá vốn cho hàng trả. Chú thích rõ ngay trên báo cáo.
+- Vốn tồn kho/phải thu là hiện tại, không phải snapshot lịch sử của tháng. Đơn hủy không thuộc phải thu; SOLD/WRITTEN_OFF không thuộc vốn tồn kho.
+- EMPLOYEE không nhận giá vốn/lãi/vốn trong response API; frontend cũng không render. Đổi tài khoản/role xóa quyền xem snapshot cũ.
+- API no-store; lỗi tải không hiển thị số 0 giả. Đổi tháng giữ đúng dữ liệu tháng đã chọn; lỗi refresh cho phép thử lại.
+- Sidebar giữ đủ nghiệp vụ đơn, thanh toán, kho, hậu mãi và các mục admin. Mobile reflow theo thứ tự báo cáo, table có vùng cuộn riêng.
+
+### 16.2 Queue và detail kế thừa
+
+- Các route inventory, order, payment, refund, warranty, after-sales dùng cùng shell/token/table/action language. Chúng chưa có mockup mới riêng; bám chức năng và anatomy dưới đây, không coi ảnh overview là mẫu chi tiết mọi module.
 - Queue page: filters, sort, pagination, deadline/overdue và primary status.
 - Detail page: entity summary, three-axis status nếu có, timeline, finance/evidence và action rail.
+- Đơn hàng: chỉ ADMIN thấy **Giá vốn đang lưu** ở queue và tổng quan tài chính; mỗi sản phẩm có giá nhập, chi phí bổ sung và link hồ sơ máy. Ghi rõ “Theo hồ sơ máy hiện tại; có thể khác thời điểm bán.” theo lựa chọn ngày 13/10/2026. Thiếu dữ liệu hiển thị “Chưa ghi nhận/Chưa đủ dữ liệu”, không đổi thành 0; EMPLOYEE không nhận trường giá vốn từ API và không render cả snapshot cũ.
 - Command form không nhận amount/status/timestamp nếu backend tự tính.
 - Destructive/terminal action hiển thị entity, trạng thái hiện tại, ảnh hưởng và reason field.
 - `409` luôn reload authoritative detail.
@@ -852,12 +996,14 @@ Decision log:
 
 - Employee/customer list dùng server pagination và safe projection.
 - Detail/lifecycle action theo role; frontend hide không thay thế backend guard.
-- Settings form dùng version hiện hành; conflict phải refetch, không auto-merge.
+- Settings form dùng version hiện hành; conflict phải refetch, không auto-merge. Cấu hình cửa hàng chứa phần bật/tắt cổng đại lý và chương trình cộng tác viên; các trang đại lý/affiliate chỉ giữ chính sách/nghiệp vụ và link đến cấu hình. Affiliate chỉ bật khi runtime và chính sách đủ dữ liệu; cập nhật enabled giữ nguyên tỷ lệ/dự phòng/lợi nhuận tối thiểu và expectedVersion.
 - Bank QR upload giữ object lifecycle theo backend; UI không xóa object cũ.
 - Audit list không full-text JSON; detail redacted theo serializer.
 - Health page cho `ADMIN` hiển thị snapshot chẩn đoán hệ thống an toàn: API, database/migration, Storage và SMTP cùng trạng thái/thời lượng kiểm tra. `live`/`ready` public vẫn tối giản; không hiển thị URL provider, host, key, biến môi trường, lỗi SQL hoặc dữ liệu khách hàng.
 
 ## 18. Accessibility standard
+
+Disclosure luôn là nút đầy đủ có nhãn và trạng thái Mở/Đóng; bỏ native triangle marker và nút tam giác đơn lẻ. Giữ hỗ trợ Enter/Space, focus và semantic của `details/summary` nếu dùng.
 
 Target: **WCAG 2.2 AA**.
 
@@ -882,7 +1028,7 @@ Target: **WCAG 2.2 AA**.
 - Không chuyển page SSR thành client page chỉ để dùng một button/gallery.
 - Dùng generated client, không fetch rải rác.
 - Query list phải pagination/batch, không N+1.
-- Home catalog phải đọc đủ page public theo stable ordering trước khi group; không tăng `pageSize` tùy ý rồi giả định dữ liệu sẽ luôn nhỏ hơn giới hạn.
+- Home phải đọc đủ catalog public theo stable ordering trước khi resolve featured/filter/grid; không tăng `pageSize` tùy ý rồi giả định dữ liệu sẽ luôn nhỏ hơn giới hạn.
 - Group/sort iPhone chạy một lần ở server hoặc pure adapter memoizable; không regroup bằng `useEffect` sau hydration.
 - Generation shelf ưu tiên native CSS overflow. Chỉ thêm client control như progressive enhancement và giữ native scroll khi JavaScript lỗi.
 - Public image có kích thước/aspect ratio; LCP image eager, còn lại lazy.
@@ -922,7 +1068,11 @@ Representative mobile targets:
 - CTA cạnh tranh nhau cùng cấp.
 - Cyan xuất hiện ở mọi card/status.
 - Card bo tròn/shadow quá mức.
-- Hero/manifesto chiếm first viewport trước catalog trên home.
+- Hero quảng cáo/manifesto chiếm first viewport, thay thế bento sản phẩm đã chọn hoặc đẩy phần khám phá xuống quá xa.
+- Quay lại radius 10px/panel phẳng mặc định của v1.x trên mọi surface vì stylesheet cũ đang có sẵn.
+- Dùng ảnh studio/model giả làm ảnh thật của một InventoryUnit hoặc chỉnh mất dấu sử dụng trên ảnh thật.
+- Cắt mockup PNG thành UI, dùng PNG làm nền toàn trang, hoặc nhúng form đăng nhập/đăng ký và hai role backoffice vào cùng một page.
+- Tự đổi auth centered thành split card, checkout receipt sang trái, hay sidebar backoffice thành trắng khi chưa có lựa chọn mới.
 - Uppercase eyebrow và block đánh số `01–04` lặp lại chỉ để trang trí.
 - Copy markup/media/price state của model card sang home thay vì tái sử dụng domain component.
 - Hard-code danh sách generation/model trong JSX hoặc parse mỗi nơi một kiểu.
@@ -939,14 +1089,17 @@ Representative mobile targets:
 
 ## 22. Design QA checklist
 
-### Visual
+### Visual — đối chiếu ảnh đã chọn
 
-- [ ] Home/catalog đúng Retail Catalog Rows; exact-unit evidence đúng Technical Editorial.
+- [ ] Mở đúng ảnh trong `docs/assets/ui/selected/` và so ở cùng viewport; không dùng mockup v1.x hoặc snapshot code cũ làm target.
+- [ ] Home đúng bento lớn trái/hai ô phải; model đúng banner ngang và card unit ngang; exact-unit đúng hero cyan và ba ô tình trạng phía dưới.
+- [ ] Checkout form trái/receipt phải; auth form giữa/art hai rìa; backoffice sidebar ink, nội dung tài chính theo tháng theo §16.1.
 - [ ] Token được dùng, không có màu/radius/spacing tùy ý.
+- [ ] Tỷ lệ khối, khoảng cách, type scale, media fit, màu nền và độ nổi được so trực tiếp với ảnh; không chỉ đánh giá “trông ổn”.
 - [ ] Exact-unit photo và model image được phân biệt rõ.
 - [ ] Không có claim vượt contract.
 - [ ] Primary action rõ; secondary action không tranh cấp.
-- [ ] Home đưa generation shelves lên trước trust/brand copy và không có hero chiếm first viewport.
+- [ ] Home có generation pills/grid sau bento, trust strip ngắn và footer trắng; không phục hồi generation shelves v1.x làm layout chính.
 
 ### Responsive
 
@@ -969,7 +1122,7 @@ Representative mobile targets:
 - [ ] `401/403/404/409/422/429/503` không bị gom thành “Lỗi hệ thống”.
 - [ ] Mutation refetch authoritative projection khi cần.
 - [ ] Không rò token, identifier, cost, private path hoặc signed URL.
-- [ ] Mỗi active/public iPhone model xuất hiện đúng một lần; resolver fallback không làm mất model.
+- [ ] Default home có featured + phần model còn lại; mỗi model chỉ một lần trong cùng result list. Filter có chủ đích không làm mất model, fallback không tạo record giả.
 - [ ] Giá `Từ` đến từ public projection; model không có giá sellable hiện `Tạm hết máy` và vẫn mở được detail.
 
 ### Quality
@@ -981,6 +1134,7 @@ Representative mobile targets:
 - [ ] Browser happy path và failure path xanh.
 - [ ] Axe không có serious/critical violation.
 - [ ] Visual snapshot được review ở desktop/mobile.
+- [ ] Cả EMPLOYEE và ADMIN được kiểm tra: cùng shell, đúng khác biệt menu/action/dữ liệu; public/auth không rò admin control.
 - [ ] Performance budget đạt hoặc có debt entry rõ.
 
 ## 23. Governance, deprecation và maintenance
@@ -992,6 +1146,18 @@ Representative mobile targets:
 - Security-sensitive component cần review transport/redaction.
 
 ### 23.2 Change workflow
+
+Quy trình giữ UI không lệch:
+
+1. Đọc `design.md` và mở ảnh route đã chọn trước khi sửa layout. Với `auth.png`/`backoffice.png`, chọn đúng nửa ảnh cần triển khai.
+2. Liệt kê component/token dùng lại và state theo contract. Layout chưa có mockup riêng kế thừa surface tương ứng, không tự tạo theme/icon/card language mới.
+3. Triển khai theo từng feature concern. Migrate token/primitive có kiểm soát, không đổi backend, transport hoặc workflow chỉ để giống dữ liệu minh họa.
+4. Capture UI ở cùng viewport với reference, đặt cạnh ảnh và kiểm tra geometry/typography/media/spacing, rồi kiểm tra mobile và các state ngoài happy path.
+5. Ghi evidence/checks trong concern triển khai; chỉ đánh dấu conformant khi checklist §22 đạt. Test xanh không thay việc so hình.
+
+Các lựa chọn mới về palette, layout chính, shell, vị trí CTA hoặc imagery phải được phản ánh trong tài liệu và ảnh được người dùng chọn. Refinement kỹ thuật/responsive/state để thực hiện đúng chuẩn đã chốt không cần mở thêm vòng chọn lại.
+
+Khi tiếp tục khám phá: mỗi lượt **ba ảnh**, chờ chọn rồi copy ảnh gốc vào `docs/assets/ui/selected/` theo tên màn hình, ghi SHA-256/ngày/route và cập nhật reference ở đây. Giữ file gốc; revision dùng tên có version, không âm thầm ghi đè lựa chọn.
 
 Thay token/component phải cập nhật trong cùng concern:
 
@@ -1033,25 +1199,31 @@ Không dùng design debt để hợp thức hóa security hoặc contract violat
 
 ## 24. Decision log
 
-| Ngày       | Quyết định                                     | Phương án đã loại                                 | Lý do                                                                      |
-| ---------- | ---------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------- |
-| 2026-08-25 | Technical Editorial cho exact-unit evidence    | Premium tối giản; terminal/sci-fi                 | Làm rõ lợi thế exact-unit inspection và vẫn gần gũi                        |
-| 2026-08-25 | Copy gọi khách là “bạn”                        | `anh/chị`; không xưng hô                          | Tự nhiên, hiện đại, ít cảm giác máy móc                                    |
-| 2026-08-25 | Wordmark chữ `rePhone`                         | Thiết kế logo mới trong phase đầu                 | Tập trung nguồn lực vào UX mua hàng                                        |
-| 2026-08-25 | CSS variables + CSS Modules                    | Tailwind/Radix; tiếp tục global CSS               | Migrate dần, ít dependency, hợp một web app                                |
-| 2026-08-25 | Giữ nguyên backend trong redesign              | Mở rộng unit discovery API ngay                   | Hạn chế regression và dùng contract P0 đã ổn định                          |
-| 2026-08-25 | Full 160-operation frontend coverage           | Chỉ redesign 37 route hiện có                     | Loại bỏ các nghiệp vụ còn phụ thuộc Swagger                                |
-| 2026-08-25 | Exact-unit là canonical page                   | Home hoặc generic product card làm chuẩn          | Đây là khác biệt sản phẩm mạnh nhất                                        |
-| 2026-08-25 | Storefront và backoffice dùng hai density mode | Một layout/card language cho mọi surface          | Nhiệm vụ mua hàng và vận hành có mật độ khác nhau                          |
-| 2026-08-25 | Không dark mode/complex animation ở P1         | Làm đầy đủ theme/motion system                    | Không phục vụ critical journey hiện tại                                    |
-| 2026-08-26 | Option 1 — Retail Catalog Rows cho discovery   | Manifesto hero; editorial index; retail quá dày   | Sản phẩm xuất hiện trước, quen với người mua Việt Nam nhưng vẫn bình tĩnh  |
-| 2026-08-26 | Home group model theo generation động          | Flat grid; hard-code iPhone 5–17                  | Phản ánh catalog thật, hỗ trợ model tạm hết và không tạo dữ liệu giả       |
-| 2026-08-26 | Server-first + domain component composition    | Page nguyên khối; generic component nhiều cờ      | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain     |
-| 2026-08-26 | Hai detail mockup là canonical storefront ref  | Giữ layout detail cũ; áp retail card vào BO       | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy  |
-| 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn      | Full checklist, repair và identifier dossier      | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
-| 2026-08-27 | Compact condition rail và copy theo location   | Ép gallery cao; hard-code pickup availability     | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
-| 2026-08-27 | Customer-first Vietnamese + balanced header    | Vá copy từng trang; header một hàng; redesign lớn | Giữ UI dễ hiểu, cân desktop/mobile và hạn chế regression                   |
-| 2026-08-27 | Source-backed model facts + role-aware links   | Mở rộng API; backfill DB; menu sao chép           | Đồng nhất 47 model không thêm request/migration và tránh navigation drift  |
+Các quyết định presentation v1.x bên dưới là lịch sử. Những dòng về Retail Catalog Rows, exact-unit A1 hoặc mockup canonical cũ đã được bộ chọn ngày 12/10/2026 thay thế; quy tắc dữ liệu/security vẫn áp dụng nếu không có contract mới.
+
+| Ngày       | Quyết định                                      | Phương án đã loại                                   | Lý do                                                                      |
+| ---------- | ----------------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| 2026-10-12 | Sáu ảnh chọn làm baseline UI v2.0               | Tiếp tục dùng mockup presentation v1.x              | Một nguồn tham chiếu cho home, model, unit, checkout, auth và backoffice   |
+| 2026-10-12 | Soft Studio Retail + sidebar ink cho backoffice | Toàn bộ panel trắng phẳng hoặc theme rời từng page  | Có chiều sâu nhưng giữ mật độ đúng cho mua hàng và vận hành                |
+| 2026-10-12 | Auth centered, checkout form trái/receipt phải  | Hai bản auth không đồng bộ; tự đổi luồng thanh toán | Giữ lựa chọn rõ ràng và contract nghiệp vụ hiện có                         |
+| 2026-10-12 | Ba mockup mỗi vòng; lựa chọn lưu theo màn hình  | Tự triển khai ngay sau khi người dùng chọn ảnh      | Người dùng đang chốt UI trước khi yêu cầu implementation                   |
+| 2026-08-25 | Technical Editorial cho exact-unit evidence     | Premium tối giản; terminal/sci-fi                   | Làm rõ lợi thế exact-unit inspection và vẫn gần gũi                        |
+| 2026-08-25 | Copy gọi khách là “bạn”                         | `anh/chị`; không xưng hô                            | Tự nhiên, hiện đại, ít cảm giác máy móc                                    |
+| 2026-08-25 | Wordmark chữ `rePhone`                          | Thiết kế logo mới trong phase đầu                   | Tập trung nguồn lực vào UX mua hàng                                        |
+| 2026-08-25 | CSS variables + CSS Modules                     | Tailwind/Radix; tiếp tục global CSS                 | Migrate dần, ít dependency, hợp một web app                                |
+| 2026-08-25 | Giữ nguyên backend trong redesign               | Mở rộng unit discovery API ngay                     | Hạn chế regression và dùng contract P0 đã ổn định                          |
+| 2026-08-25 | Full 160-operation frontend coverage            | Chỉ redesign 37 route hiện có                       | Loại bỏ các nghiệp vụ còn phụ thuộc Swagger                                |
+| 2026-08-25 | Exact-unit là canonical page                    | Home hoặc generic product card làm chuẩn            | Đây là khác biệt sản phẩm mạnh nhất                                        |
+| 2026-08-25 | Storefront và backoffice dùng hai density mode  | Một layout/card language cho mọi surface            | Nhiệm vụ mua hàng và vận hành có mật độ khác nhau                          |
+| 2026-08-25 | Không dark mode/complex animation ở P1          | Làm đầy đủ theme/motion system                      | Không phục vụ critical journey hiện tại                                    |
+| 2026-08-26 | Option 1 — Retail Catalog Rows cho discovery    | Manifesto hero; editorial index; retail quá dày     | Sản phẩm xuất hiện trước, quen với người mua Việt Nam nhưng vẫn bình tĩnh  |
+| 2026-08-26 | Home group model theo generation động           | Flat grid; hard-code iPhone 5–17                    | Phản ánh catalog thật, hỗ trợ model tạm hết và không tạo dữ liệu giả       |
+| 2026-08-26 | Server-first + domain component composition     | Page nguyên khối; generic component nhiều cờ        | Tái sử dụng đúng semantics, giới hạn client bundle và dễ test/maintain     |
+| 2026-08-26 | Hai detail mockup là canonical storefront ref   | Giữ layout detail cũ; áp retail card vào BO         | Khóa hierarchy model/exact-unit; BO chỉ kế thừa token và action hierarchy  |
+| 2026-08-26 | Exact-unit chỉ giữ inspection summary gọn       | Full checklist, repair và identifier dossier        | Giảm độ dài trang mua hàng; dữ liệu vận hành vẫn do backend/backoffice giữ |
+| 2026-08-27 | Compact condition rail và copy theo location    | Ép gallery cao; hard-code pickup availability       | Cân hai cột và phản ánh đúng máy đang ở cửa hàng hay kho                   |
+| 2026-08-27 | Customer-first Vietnamese + balanced header     | Vá copy từng trang; header một hàng; redesign lớn   | Giữ UI dễ hiểu, cân desktop/mobile và hạn chế regression                   |
+| 2026-08-27 | Source-backed model facts + role-aware links    | Mở rộng API; backfill DB; menu sao chép             | Đồng nhất 47 model không thêm request/migration và tránh navigation drift  |
 
 Decision log này chỉ ghi quyết định presentation/interaction. Không sửa hoặc thay thế ADR nghiệp vụ.
 
@@ -1059,11 +1231,17 @@ Decision log này chỉ ghi quyết định presentation/interaction. Không s�
 
 ### 25.1 Approved internal canonical references
 
-- [Retail catalog rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png): canonical hierarchy cho home/catalog discovery.
-- [Model detail](docs/assets/ui/rephone-model-detail-canonical-reference.png): canonical hierarchy và visual language cho `/products/[slug]`.
-- [Exact-unit detail](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png): canonical hierarchy và visual language cho `/products/[slug]/units/[inventoryCode]`.
+- [Home — Curated Bento](docs/assets/ui/selected/home.png).
+- [Model — Panoramic Studio](docs/assets/ui/selected/product-model.png).
+- [Exact unit — Soft Studio Purchase](docs/assets/ui/selected/product-unit.png).
+- [Checkout — Soft Split Review](docs/assets/ui/selected/checkout.png).
+- [Auth — Quiet Centered Access](docs/assets/ui/selected/auth.png): login trên, register dưới.
+- [Backoffice — Ink Navigation and Clear Workspace](docs/assets/ui/selected/backoffice.png): employee trên, admin dưới.
+- [Registry đã chọn](docs/assets/ui/selected/selections.json): provenance/hash; `design.md` là nguồn quy tắc đọc chính, registry không phải một design system song song.
 
-Các ảnh này có authority về presentation trong phạm vi route được ghi, sau `docs`, OpenAPI/generated client và quy tắc security. Nội dung minh họa bên trong ảnh không tự trở thành product/API contract. [Technical Editorial reference cũ](docs/assets/ui/rephone-technical-editorial-reference.png) chỉ còn là historical context cho evidence tone, không quyết định layout detail hiện hành.
+Các ảnh này có authority về presentation trong phạm vi route được ghi, sau contract nghiệp vụ/security. Không suy diễn trang cart, order detail, account, inventory detail hoặc mọi admin module đã có mockup mới riêng: chúng kế thừa ngôn ngữ/token, nhiệm vụ và action contract, rồi được kiểm tra theo §22.
+
+Mockup cũ [Retail Catalog Rows](docs/assets/ui/rephone-retail-catalog-rows-reference.png), [model v1.x](docs/assets/ui/rephone-model-detail-canonical-reference.png), [exact unit v1.x](docs/assets/ui/rephone-exact-unit-detail-canonical-reference.png), [Technical Editorial](docs/assets/ui/rephone-technical-editorial-reference.png) và các ảnh trong `fe-*` chỉ còn là lịch sử/bằng chứng implementation trước đây, không là target cho UI mới.
 
 ### 25.2 External references — non-authoritative
 
@@ -1086,13 +1264,15 @@ Product facts bất biến không lấy từ các visual reference trên. Chúng
 
 ## 26. Changelog
 
-| Version | Ngày       | Thay đổi                                                                                                   |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `1.7`   | 2026-08-27 | Khóa source-backed facts cho 47 model, readability mode và customer navigation theo role                   |
-| `1.6`   | 2026-08-27 | Khóa tiếng Việt cho surface khách hàng, store information hierarchy và storefront header cân giữa          |
-| `1.5`   | 2026-08-27 | Khóa hero balance responsive và fulfillment copy cho exact-unit                                            |
-| `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                          |
-| `1.3`   | 2026-08-26 | Rút exact-unit storefront về inspection summary; bỏ full checklist, repair và identifier dossier           |
-| `1.2`   | 2026-08-26 | Khóa model/exact-unit mockup canonical, storefront visual language, backoffice boundary và claim guardrail |
-| `1.1`   | 2026-08-26 | Chọn Retail Catalog Rows cho home/catalog; khóa generation shelf, sold-out state và component architecture |
-| `1.0`   | 2026-08-25 | Khóa Technical Editorial, full web scope, tokens, patterns, accessibility, security và governance          |
+| Version | Ngày       | Thay đổi                                                                                                                                                                                          |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `2.1`   | 2026-10-13 | Chốt phản hồi: tăng border/radius/elevation; home 18/17/16, máy nổi bật và đang bán, quảng bá hai bên, toolbar lọc, specs Apple, tài chính, cấu hình đối tác, lookup mã máy và disclosure có nhãn |
+| `2.0`   | 2026-10-12 | Tổng hợp sáu mockup đã chọn; khóa Soft Studio Retail/Ink Backoffice, token, page pattern và quy trình chống lệch UI; chưa triển khai application code                                             |
+| `1.7`   | 2026-08-27 | Khóa source-backed facts cho 47 model, readability mode và customer navigation theo role                                                                                                          |
+| `1.6`   | 2026-08-27 | Khóa tiếng Việt cho surface khách hàng, store information hierarchy và storefront header cân giữa                                                                                                 |
+| `1.5`   | 2026-08-27 | Khóa hero balance responsive và fulfillment copy cho exact-unit                                                                                                                                   |
+| `1.4`   | 2026-08-27 | Khóa exact-unit condition panel, grouped facts và customer-facing inspection copy                                                                                                                 |
+| `1.3`   | 2026-08-26 | Rút exact-unit storefront về inspection summary; bỏ full checklist, repair và identifier dossier                                                                                                  |
+| `1.2`   | 2026-08-26 | Khóa model/exact-unit mockup canonical, storefront visual language, backoffice boundary và claim guardrail                                                                                        |
+| `1.1`   | 2026-08-26 | Chọn Retail Catalog Rows cho home/catalog; khóa generation shelf, sold-out state và component architecture                                                                                        |
+| `1.0`   | 2026-08-25 | Khóa Technical Editorial, full web scope, tokens, patterns, accessibility, security và governance                                                                                                 |

@@ -15,6 +15,7 @@ import {
 import {
   listInventoryLocations,
   listInventoryUnits,
+  updateInventoryUnit,
   type InventoryLocation,
   type InventoryUnitListItem,
 } from '@/lib/backoffice-inventory-api';
@@ -139,6 +140,16 @@ export default function InventoryUnitsPage() {
         query={query}
         units={units}
         onQueryChange={updateQuery}
+        onToggleFeatured={async (unit) => {
+          const updated = await updateInventoryUnit(client, unit.id, {
+            isFeatured: unit.isFeatured !== true,
+          });
+          setUnits((current) =>
+            current.map((item) =>
+              item.id === unit.id ? { ...item, isFeatured: updated.isFeatured } : item,
+            ),
+          );
+        }}
       />
     </InventoryShell>
   );
@@ -217,6 +228,7 @@ function toViewRecord(unit: InventoryUnitListItem): InventoryUnitListRecord {
     id: unit.id,
     inspectionResult: unit.currentInspection?.overallResult ?? null,
     inventoryCode: unit.inventoryCode,
+    isFeatured: unit.isFeatured,
     lifecycleStatus: unit.lifecycleStatus,
     locationName: unit.location.name,
     maskedIdentifierSummary:

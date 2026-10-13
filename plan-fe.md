@@ -1,5 +1,7 @@
 # Kế hoạch triển khai frontend Post-P0 / P1
 
+> **Chương trình UI hiện tại:** [UI v2.1](docs/planning/2026-10-12-ui-v2-rollout-plan.md), **UI2-13 DONE; local QA và kích hoạt Supabase dev đã đạt**. Contract hiện tại: **64 route, 255 operation**, gồm [số tác vụ thanh bên](docs/api/backoffice-pending-tasks.md). [Refinement report](docs/evidence/ui-v2/refinement-2026-10-13.md) ghi hai lượt release tương đương, Chromium 101/101 và performance tại thời điểm 254 operation. Các bảng FE-* bên dưới giữ lịch sử; ba operation bổ sung có ledger riêng cuối tài liệu.
+
 > Trạng thái tài liệu: **APPROVED**  
 > Phạm vi: **Post-P0 / P1 frontend refinement**  
 > P0 baseline: [plan.md](plan.md)  
@@ -816,3 +818,13 @@ Browser owner chỉ xác định suite chịu trách nhiệm; không có nghĩa 
 | 250 | `AffiliateAdminController_policy`       | `GET /api/v1/backoffice/affiliates/policy`                   | Admin Bearer    | `/backoffice/affiliates` | `Đọc dữ liệu; loading, empty, error, permission`   | FE-11 | `browser:affiliate-flow` | DONE   |
 | 251 | `AffiliateAdminController_savePolicy`   | `POST /api/v1/backoffice/affiliates/policy`                  | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
 | 252 | `AffiliateAdminController_reconcile`    | `POST /api/v1/backoffice/affiliates/reconcile`               | Admin Bearer    | `/backoffice/affiliates` | `Thao tác; validation, pending, success, conflict` | FE-11 | `browser:affiliate-flow` | DONE   |
+
+### Phạm vi UI bổ sung ngày 13/10/2026
+
+Ba operation mới được người dùng yêu cầu cho máy nổi bật, tài chính và số tác vụ thanh bên; baseline cũ vẫn được giữ trong các phần lịch sử bên trên.
+
+| #   | Operation                      | HTTP                                        | Access                     | Route         | Action                                                | Phase | Browser owner                  | Status |
+| --- | ------------------------------ | ------------------------------------------- | -------------------------- | ------------- | ----------------------------------------------------- | ----- | ------------------------------ | ------ |
+| 253 | `listPublicInventoryUnits`     | `GET /api/v1/products/units`                | Public                     | `/`           | Máy đang bán và nổi bật; loading, empty, error        | FE-1  | `browser:storefront-discovery` | DONE   |
+| 254 | `getBackofficeFinancialReport` | `GET /api/v1/backoffice/overview/financial` | EMPLOYEE hoặc ADMIN Bearer | `/backoffice` | Báo cáo tháng; doanh thu, doanh số, giá vốn chỉ admin | FE-8  | `browser:system-admin-health`  | DONE   |
+| 255 | `getBackofficePendingTasks` | `GET /api/v1/backoffice/overview/pending-tasks` | EMPLOYEE hoặc ADMIN Bearer | `/backoffice` | Huy hiệu tác vụ chờ xử lý; theo quyền, tự làm mới, ẩn khi rỗng hoặc lỗi | FE-8 | `browser:system-admin-health` | DONE |

@@ -7,10 +7,14 @@ export function AuthSwitchLink({
   destination,
   children,
   standalone = false,
+  current = false,
+  className,
 }: {
   destination: '/login' | '/register';
   children: ReactNode;
   standalone?: boolean;
+  current?: boolean;
+  className?: string | undefined;
 }) {
   const [href, setHref] = useState<string>(destination);
   useEffect(() => {
@@ -21,7 +25,13 @@ export function AuthSwitchLink({
     setHref(next ? `${destination}?returnTo=${encodeURIComponent(next)}` : destination);
   }, [destination]);
   return (
-    <Link href={href} standalone={standalone}>
+    <Link
+      href={href}
+      prefetch={false}
+      standalone={standalone}
+      aria-current={current ? 'page' : undefined}
+      className={className}
+    >
       {children}
     </Link>
   );

@@ -24,7 +24,7 @@ describe('FE-07 operations navigation', () => {
     expect(
       groups.flatMap((group) => group.items).map(({ href, label }) => ({ href, label })),
     ).toEqual([
-      { href: '/backoffice', label: 'Tổng quan' },
+      { href: '/backoffice', label: 'Tài chính' },
       { href: '/backoffice/catalog/products', label: 'Danh mục' },
       { href: '/backoffice/vouchers', label: 'Mã ưu đãi' },
       { href: '/backoffice/inventory/units', label: 'Máy vật lý' },

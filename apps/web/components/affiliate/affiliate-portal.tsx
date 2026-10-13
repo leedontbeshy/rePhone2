@@ -180,7 +180,7 @@ function Portal() {
               Bạn giới thiệu, rePhone tư vấn và giao hàng. Theo dõi hoa hồng minh bạch ngay tại đây.
             </p>
           </div>
-          <UsersThreeIcon className={styles.heroIcon} weight="duotone" />
+          <UsersThreeIcon className={styles.heroIcon} weight="duotone" aria-hidden />
         </header>
       )}
       {config['environment'] === 'TEST' && (
@@ -191,7 +191,11 @@ function Portal() {
       {error && (
         <InlineAlert title="Chưa thể hoàn tất" tone="danger" role="alert">
           {error}
-          <Button variant="ghost" onClick={() => void act(load, 'Đã tải lại dữ liệu.')}>
+          <Button
+            className={styles.retryAction}
+            variant="ghost"
+            onClick={() => void act(load, 'Đã tải lại dữ liệu.')}
+          >
             Thử tải lại
           </Button>
         </InlineAlert>
@@ -295,6 +299,7 @@ function Portal() {
               <nav className={styles.tabs} aria-label="Khu vực cộng tác viên">
                 {tabs.map(([key, label, Icon]) => (
                   <button
+                    type="button"
                     key={key}
                     aria-pressed={tab === key}
                     onClick={() => {
@@ -302,7 +307,7 @@ function Portal() {
                       setPage(1);
                     }}
                   >
-                    <Icon size={19} />
+                    <Icon size={19} aria-hidden />
                     {label}
                   </button>
                 ))}

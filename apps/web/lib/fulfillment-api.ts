@@ -1,5 +1,9 @@
 import { apiError } from './order-access';
 import { safeHttpsUrl } from './safe-https-url';
+import type { components } from '@rephone/api-client';
+
+export type BackofficeOrderCostSummary = components['schemas']['BackofficeOrderCostSummaryDto'];
+export type BackofficeOrderItemCost = components['schemas']['BackofficeOrderItemCostDto'];
 
 export type BackofficeOrderStatus =
   'PLACED' | 'CONFIRMED' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
@@ -45,6 +49,7 @@ export interface PickupWarrantySummary {
 }
 
 export interface BackofficeOrderListItem {
+  currentCostSummary?: BackofficeOrderCostSummary;
   id: string;
   orderNumber: string;
   status: BackofficeOrderStatus;
@@ -66,6 +71,7 @@ export interface BackofficeOrderListItem {
 }
 
 export interface BackofficeOrderItem {
+  currentCost?: BackofficeOrderItemCost;
   id: string;
   productName: string;
   variantName: string;
@@ -122,6 +128,7 @@ export interface BackofficeOrderShipment {
 }
 
 export interface BackofficeOrderDetail {
+  currentCostSummary?: BackofficeOrderCostSummary;
   hasAffiliateCommission?: boolean;
   id: string;
   channel?: 'STOREFRONT' | 'DEALER';
@@ -461,6 +468,7 @@ function parseListItem(value: unknown): BackofficeOrderListItem {
   const items = Array.isArray(input['items']) ? input['items'].map(recordOrEmpty) : [];
   const firstItem = items[0];
   return {
+    ...parseOptionalCostSummary(input['currentCostSummary']),
     id: stringOr(input['id']),
     orderNumber: stringOr(input['orderNumber']),
     status: orderStatus(input['status']),
@@ -518,6 +526,7 @@ function parseDetail(value: unknown): BackofficeOrderDetail {
     if (orderItemId !== null) warrantyByOrderItem.set(orderItemId, warranty);
   }
   return {
+    ...parseOptionalCostSummary(input['currentCostSummary']),
     id: stringOr(input['id']),
     orderNumber: stringOr(input['orderNumber']),
     status: orderStatus(input['status']),
@@ -670,6 +679,9 @@ function parseOrderItem(value: unknown): BackofficeOrderItem {
   const warranty = recordOrEmpty(item['warranty']);
   const warrantyCode = stringOrNull(warranty['warrantyCode']);
   return {
+    ...(item['currentCost'] === undefined
+      ? {}
+      : { currentCost: parseItemCost(item['currentCost']) }),
     id: stringOr(item['id']),
     productName: stringOr(item['productName']),
     variantName: stringOr(item['variantName']),
@@ -689,6 +701,45 @@ function parseOrderItem(value: unknown): BackofficeOrderItem {
             endAt: stringOr(warranty['endAt']),
           },
   };
+}
+
+function parseOptionalCostSummary(
+  value: unknown,
+): Pick<BackofficeOrderDetail, 'currentCostSummary'> {
+  if (value === undefined) return {};
+  const cost = recordOrThrow(value, 'Dữ liệu giá vốn không hợp lệ.');
+  const missingQuantity = cost['missingQuantity'];
+  if (
+    cost['source'] !== 'CURRENT_INVENTORY' ||
+    typeof missingQuantity !== 'number' ||
+    !Number.isSafeInteger(missingQuantity) ||
+    missingQuantity < 0
+  ) {
+    throw new Error('Nguồn hoặc số lượng thiếu giá vốn không hợp lệ.');
+  }
+  return {
+    currentCostSummary: {
+      source: 'CURRENT_INVENTORY',
+      knownCost: requiredMoney(cost['knownCost'], 'Giá vốn đã ghi nhận'),
+      totalCost: nullableCost(cost['totalCost']),
+      missingQuantity,
+    },
+  };
+}
+
+function parseItemCost(value: unknown): BackofficeOrderItemCost {
+  const cost = recordOrThrow(value, 'Dữ liệu giá vốn sản phẩm không hợp lệ.');
+  return {
+    inventoryUnitId: stringOrNull(cost['inventoryUnitId']),
+    acquisitionCost: nullableCost(cost['acquisitionCost']),
+    additionalCost: nullableCost(cost['additionalCost']),
+    unitCost: nullableCost(cost['unitCost']),
+    lineCost: nullableCost(cost['lineCost']),
+  };
+}
+
+function nullableCost(value: unknown): string | null {
+  return value === null ? null : requiredMoney(value, 'Giá vốn');
 }
 
 function parsePayment(value: unknown): BackofficeOrderPayment {

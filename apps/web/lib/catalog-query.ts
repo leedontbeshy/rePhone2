@@ -4,11 +4,13 @@ export type CatalogSearchParams = Record<string, string | string[] | undefined>;
 export type CatalogListQuery = NonNullable<paths['/api/v1/products']['get']['parameters']['query']>;
 
 export function toCatalogListQuery(searchParams: CatalogSearchParams): CatalogListQuery {
-  const query: CatalogListQuery = {};
+  const query: CatalogListQuery = { sortBy: 'generation', sortOrder: 'desc' };
   assignString(query, 'q', singleValue(searchParams['q']));
   assignString(query, 'productType', singleValue(searchParams['productType']));
   assignNumber(query, 'releaseYear', singleValue(searchParams['releaseYear']));
   assignNumber(query, 'storageCapacityGb', singleValue(searchParams['storageCapacityGb']));
+  assignNumber(query, 'ramGb', singleValue(searchParams['ramGb']));
+  assignString(query, 'simLockStatus', singleValue(searchParams['simLockStatus']));
   assignString(query, 'colorName', singleValue(searchParams['colorName']));
   assignString(query, 'minPrice', singleValue(searchParams['minPrice']));
   assignString(query, 'maxPrice', singleValue(searchParams['maxPrice']));

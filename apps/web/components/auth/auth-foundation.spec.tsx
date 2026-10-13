@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorSummary } from '@/components/ui';
 import { AuthActionError } from '@/app/auth-provider';
 import {
@@ -15,7 +15,14 @@ import {
   withoutAuthFieldIssue,
 } from './index';
 
+const navigation = vi.hoisted(() => ({ pathname: '/login' }));
+vi.mock('next/navigation', () => ({ usePathname: () => navigation.pathname }));
+
 describe('auth UI foundation', () => {
+  beforeEach(() => {
+    navigation.pathname = '/login';
+  });
+
   it('renders the quiet auth shell with labelled password controls and an error live region', () => {
     const html = renderToStaticMarkup(
       <AuthPage title="Đặt mật khẩu" description="Mô tả an toàn">
@@ -35,6 +42,51 @@ describe('auth UI foundation', () => {
     expect(html).toContain('aria-controls="password"');
     expect(html).toContain('role="alert"');
     expect(html).toContain('noValidate=""');
+    expect(html).toContain('href="/"');
+    expect(html).toContain('Về trang chủ');
+    expect(html).toContain('alt=""');
+    expect(html).toContain('auth-studio.webp');
+    expect(html.match(/<main\b/g)).toHaveLength(1);
+  });
+
+  it('uses route links with a current page for login and register, without showing both forms', () => {
+    for (const pathname of ['/login', '/register']) {
+      navigation.pathname = pathname;
+      const html = renderToStaticMarkup(
+        <AuthPage title="Tài khoản">
+          <AuthForm>
+            <input name="email" />
+          </AuthForm>
+        </AuthPage>,
+      );
+      expect(html).toContain('aria-label="Đăng nhập hoặc tạo tài khoản"');
+      expect(html).toMatch(
+        new RegExp(
+          '<a[^>]*(?:aria-current="page"[^>]*href="' +
+            pathname +
+            '"|href="' +
+            pathname +
+            '"[^>]*aria-current="page")',
+        ),
+      );
+      expect(html.match(/aria-current="page"/g)).toHaveLength(1);
+      expect(html.match(/<form\b/g)).toHaveLength(1);
+      expect(html).not.toContain('role="tab"');
+    }
+  });
+
+  it('keeps recovery and invitation screens free of an active login/register destination', () => {
+    for (const pathname of ['/forgot-password', '/reset-password', '/accept-invitation']) {
+      navigation.pathname = pathname;
+      const html = renderToStaticMarkup(
+        <AuthPage title="Khôi phục tài khoản">
+          <AuthPending>Đang chuẩn bị…</AuthPending>
+        </AuthPage>,
+      );
+      expect(html).not.toContain('aria-label="Đăng nhập hoặc tạo tài khoản"');
+      expect(html).not.toContain('aria-current="page"');
+      expect(html).not.toContain('<input');
+    }
   });
 
   it('keeps the pending auth form stable without exposing placeholder content', () => {

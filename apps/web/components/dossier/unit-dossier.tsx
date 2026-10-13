@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { CommerceActions } from '@/app/commerce-actions';
 import { ProductBreadcrumbs } from '@/components/catalog/product-detail-components';
+import { CatalogTrustStrip } from '@/components/storefront/catalog-trust-strip';
 import { Badge, Price, formatVnd } from '@/components/ui';
 import type { ProductDetail, UsedIphoneDetail } from '@/lib/catalog-api';
 import { ActualUnitGallery } from './actual-unit-gallery';
@@ -67,6 +68,7 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
         <aside className={styles.purchaseRail} aria-label="Tóm tắt mua hàng">
           <UnitColorOptions
             currentVariantId={variant.id}
+            currentColorName={variant.colorName}
             offers={colors}
             productSlug={product.slug}
           />
@@ -109,7 +111,6 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
               available={canPurchase}
             />
           </div>
-          <UnitConditionSummary unit={unit} />
           <InventoryAuthorityNote
             pickup={unit.fulfillmentAvailability.pickup}
             shipping={unit.fulfillmentAvailability.shipping}
@@ -117,11 +118,24 @@ export function UnitDossier({ detail, product }: UnitDossierProps) {
         </aside>
       </section>
 
-      <UnitSpecificationGroups detail={detail} product={product} />
+      <UnitConditionSummary unit={unit} />
 
-      <PublicInspectionSummary checks={unit.functionalChecks} inventoryCode={unit.inventoryCode} />
+      <div className={styles.detailsGrid}>
+        <UnitSpecificationGroups detail={detail} product={product} />
+        <PublicInspectionSummary
+          checks={unit.functionalChecks}
+          inventoryCode={unit.inventoryCode}
+        />
+      </div>
 
-      <RelatedUnitOffers offers={related} productName={product.name} productSlug={product.slug} />
+      <RelatedUnitOffers
+        offers={related}
+        productName={product.name}
+        productSlug={product.slug}
+        productRamGb={product.ramGb}
+      />
+
+      <CatalogTrustStrip />
 
       <MobilePurchaseBar
         available={canPurchase}

@@ -102,6 +102,87 @@ describe('Slice 08 pickup fulfillment HTTP contract', () => {
     }
   });
 
+  it('shows current inventory costs on old orders only to admins, with missing and zero distinguished', async () => {
+    const fixture = await createCustomerIphonePickupOrder(server, prisma);
+    const admin = await login(server, 'ADMIN');
+    const employee = await login(server, 'EMPLOYEE');
+    await advancePickupToReady(server, fixture.orderId, employee);
+    await request(server)
+      .post(`/api/v1/backoffice/orders/${fixture.orderId}/complete-pickup`)
+      .set(bearer(employee))
+      .send({ confirmCashCollected: true })
+      .expect(200);
+    await prisma.inventoryUnit.update({
+      where: { id: fixture.inventoryUnitId },
+      data: { acquisitionCost: '5000000', additionalCost: '200000' },
+    });
+
+    const adminDetail = await request(server)
+      .get(`/api/v1/backoffice/orders/${fixture.orderId}`)
+      .set(bearer(admin))
+      .expect(200);
+    expectNoStore(adminDetail);
+    expect(successRecord(adminDetail)).toMatchObject({
+      status: 'COMPLETED',
+      currentCostSummary: {
+        source: 'CURRENT_INVENTORY',
+        knownCost: '5200000',
+        totalCost: '5200000',
+        missingQuantity: 0,
+      },
+      items: [
+        expect.objectContaining({
+          currentCost: {
+            inventoryUnitId: fixture.inventoryUnitId,
+            acquisitionCost: '5000000',
+            additionalCost: '200000',
+            unitCost: '5200000',
+            lineCost: '5200000',
+          },
+        }),
+      ],
+    });
+    const adminList = await request(server)
+      .get('/api/v1/backoffice/orders')
+      .set(bearer(admin))
+      .expect(200);
+    expectNoStore(adminList);
+    expect(successArray(adminList)[0]).toMatchObject({
+      currentCostSummary: { totalCost: '5200000' },
+    });
+    for (const route of [
+      '/api/v1/backoffice/orders',
+      `/api/v1/backoffice/orders/${fixture.orderId}`,
+    ]) {
+      const response = await request(server).get(route).set(bearer(employee)).expect(200);
+      for (const key of ['currentCost', 'acquisitionCost', 'additionalCost', 'knownCost'])
+        expect(response.text).not.toContain(key);
+    }
+
+    await prisma.inventoryUnit.update({
+      where: { id: fixture.inventoryUnitId },
+      data: { acquisitionCost: null },
+    });
+    const missing = await request(server)
+      .get(`/api/v1/backoffice/orders/${fixture.orderId}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(successRecord(missing)).toMatchObject({
+      currentCostSummary: { knownCost: '0', totalCost: null, missingQuantity: 1 },
+    });
+    await prisma.inventoryUnit.update({
+      where: { id: fixture.inventoryUnitId },
+      data: { acquisitionCost: '0', additionalCost: '0' },
+    });
+    const zero = await request(server)
+      .get(`/api/v1/backoffice/orders/${fixture.orderId}`)
+      .set(bearer(admin))
+      .expect(200);
+    expect(successRecord(zero)).toMatchObject({
+      currentCostSummary: { totalCost: '0', missingQuantity: 0 },
+    });
+  });
+
   it('covers all eight operations through confirm, extend, prepare, ready and cash completion', async () => {
     const fixture = await createCustomerPickupOrder(server, prisma);
     const employee = await login(server, 'EMPLOYEE');

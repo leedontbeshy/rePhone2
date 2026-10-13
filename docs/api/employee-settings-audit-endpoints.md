@@ -1,5 +1,7 @@
 # User management, Settings và Audit endpoints
 
+Bổ sung ngày 13/10/2026: [báo cáo tài chính và cấu hình đối tác](ui-refinement-2026-10-13.md). Báo cáo hỗ trợ EMPLOYEE/ADMIN; số liệu chi phí/lãi/vốn chỉ trả cho ADMIN.
+
 Tài liệu này khóa các API quản trị user/system P0. Employee management, customer lifecycle, settings và audit được ghi quyền rõ theo section; employee tự sửa profile/password qua `/account`.
 
 ## 1. Employee management

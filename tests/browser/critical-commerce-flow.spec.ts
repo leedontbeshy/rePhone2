@@ -1,10 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { BROWSER_COMMERCE_ACCOUNT } from '../../apps/api/test/browser/auth-fixtures';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
-const CUSTOMER = {
-  email: 'customer@rephone.local',
-  password: 'CustomerDemo123',
-};
+// Separate from the repeatedly authenticated demo customer in other journeys.
+const CUSTOMER = BROWSER_COMMERCE_ACCOUNT;
 const EMPLOYEE = {
   email: 'employee@rephone.local',
   password: 'EmployeeDemo123',

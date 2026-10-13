@@ -121,6 +121,13 @@ export class InventoryRepository {
     });
   }
 
+  public findByInventoryCode(inventoryCode: string, client: DbClient = this.prisma) {
+    return client.inventoryUnit.findFirst({
+      where: { inventoryCode: { equals: inventoryCode, mode: 'insensitive' } },
+      include: unitListInclude,
+    });
+  }
+
   public createUnit(data: Prisma.InventoryUnitUncheckedCreateInput, client: DbClient) {
     return client.inventoryUnit.create({ data, include: unitDetailInclude });
   }

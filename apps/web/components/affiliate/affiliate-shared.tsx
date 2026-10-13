@@ -139,18 +139,19 @@ export function Stats({ dashboard }: { dashboard: Row }) {
   );
 }
 export function CommissionTable({ dashboard }: { dashboard: Row }) {
+  const headingId = useId();
   return (
     <section className={styles.card}>
-      <h2>Hoa hồng theo đơn</h2>
+      <h2 id={headingId}>Hoa hồng theo đơn</h2>
       <p>Số tiền được chốt khi đặt hàng. Đơn hoàn tiền có thể làm giảm hoa hồng chưa chi trả.</p>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
+      <div className={styles.tableWrap} role="region" aria-labelledby={headingId} tabIndex={0}>
+        <table className={styles.table} aria-labelledby={headingId}>
           <thead>
             <tr>
-              <th>Đơn hàng / sản phẩm</th>
-              <th>Hoa hồng</th>
-              <th>Trạng thái</th>
-              <th>Ngày dự kiến khả dụng</th>
+              <th scope="col">Đơn hàng / sản phẩm</th>
+              <th scope="col">Hoa hồng</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Ngày dự kiến khả dụng</th>
             </tr>
           </thead>
           <tbody>

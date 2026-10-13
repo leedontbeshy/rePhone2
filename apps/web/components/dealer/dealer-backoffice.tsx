@@ -38,7 +38,7 @@ import {
   DealerAfterSalesOperations,
 } from './dealer-operations-extras';
 import { DealerProfileAdmin } from './dealer-profile-admin';
-import { DealerChannelControl } from './dealer-channel-control';
+import Link from 'next/link';
 
 const base = 'backoffice/dealers';
 const reason: DealerField = {
@@ -169,7 +169,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       await select(dealerText(selected['id']));
   }
   return (
-    <div className={styles.page}>
+    <div className={[styles.page, styles.backofficePage].join(' ')}>
       <DealerWorkspaceHeader
         title="Quản lý đại lý"
         description="Vận hành đối tác, dòng tiền và đơn hàng tại một nơi."
@@ -187,18 +187,13 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
           Làm mới
         </Button>
       </DealerWorkspaceHeader>
-      {tab === 'profiles' && !selected && (
-        <DealerChannelControl
-          api={api}
-          configuration={configuration}
-          admin={admin}
-          done={changed}
-          openPricing={() => {
-            setTab('pricing');
-            setSelected(null);
-            setPage(1);
-          }}
-        />
+      {admin && (
+        <Link href="/backoffice/settings#partner-channels-title">
+          Bật/tắt đại lý trong Cấu hình cửa hàng
+        </Link>
+      )}
+      {configuration['enabled'] === false && (
+        <InlineAlert tone="info">Kênh đại lý chưa sẵn sàng hoạt động.</InlineAlert>
       )}
       <nav className={styles.tabs} aria-label="Quản lý đại lý">
         {tabs
@@ -327,14 +322,16 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
             />
           )}
           <section className={styles.card}>
-            <div className={styles.scroll}>
-              <table className={styles.table}>
+            <div className={styles.scroll} role="region" aria-label="Đơn hàng đại lý" tabIndex={0}>
+              <table className={styles.table} aria-label="Đơn hàng đại lý">
                 <thead>
                   <tr>
-                    <th>Đơn / mã đại lý</th>
-                    <th>Tình trạng</th>
-                    <th>Tổng / đã nhận</th>
-                    <th />
+                    <th scope="col">Đơn / mã đại lý</th>
+                    <th scope="col">Tình trạng</th>
+                    <th scope="col">Tổng / đã nhận</th>
+                    <th scope="col">
+                      <span className="rp-visually-hidden">Thao tác</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

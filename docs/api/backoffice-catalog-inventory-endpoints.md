@@ -1,5 +1,7 @@
 # Backoffice Catalog và Inventory endpoints
 
+Bổ sung ngày 13/10/2026: [cờ máy nổi bật và lookup mã máy](ui-refinement-2026-10-13.md), sử dụng quyền cập nhật inventory hiện có.
+
 Tài liệu này là contract P0 để staff/admin tạo catalog, nhập và kiểm định iPhone, quản lý tồn phụ kiện và media. Public projection nằm tại [Public catalog endpoints](public-catalog-endpoints.md).
 
 ## 1. Quyền và nguyên tắc

@@ -14,7 +14,13 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export const PRODUCT_TYPES = ['IPHONE', 'ACCESSORY'] as const;
-export const PRODUCT_SORT_FIELDS = ['createdAt', 'name', 'fromPrice', 'releaseYear'] as const;
+export const PRODUCT_SORT_FIELDS = [
+  'createdAt',
+  'name',
+  'fromPrice',
+  'releaseYear',
+  'generation',
+] as const;
 export const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export type ProductSortField = (typeof PRODUCT_SORT_FIELDS)[number];
@@ -54,6 +60,19 @@ const strictBoolean = ({ value }: { value: unknown }): unknown => {
 };
 
 export class ProductListQueryDto {
+  @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 64 })
+  @Transform(strictInteger)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(64)
+  public ramGb?: number;
+
+  @ApiPropertyOptional({ enum: ['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN'] })
+  @IsOptional()
+  @IsIn(['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN'])
+  public simLockStatus?: 'UNLOCKED' | 'CARRIER_LOCKED' | 'UNKNOWN';
+
   @ApiPropertyOptional({ type: String, maxLength: 100 })
   @Transform(normalizeSearch)
   @IsOptional()
@@ -137,6 +156,20 @@ export class ProductSlugParamsDto {
   @Length(1, 180)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
   public slug!: string;
+}
+
+export class PublicUnitListQueryDto {
+  @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 30, default: 24 })
+  @Transform(strictInteger)
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  public limit = 24;
+
+  @ApiPropertyOptional({ type: Boolean, default: false })
+  @Transform(strictBoolean)
+  @IsBoolean()
+  public featuredFirst = false;
 }
 
 export class UsedIphoneParamsDto extends ProductSlugParamsDto {

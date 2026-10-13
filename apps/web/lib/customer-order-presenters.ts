@@ -237,29 +237,62 @@ export function orderJourney(order: GeneratedOrder): LifecycleStage[] {
     ];
   }
   const points = [
-    { id: 'placed', label: 'Đã đặt hàng', icon: 'order' as const, at: order.placedAt },
-    { id: 'confirmed', label: 'Đã xác nhận', icon: 'confirmed' as const, at: order.confirmedAt },
+    {
+      id: 'placed',
+      label: 'Đã đặt hàng',
+      pendingLabel: 'Chờ ghi nhận đơn',
+      icon: 'order' as const,
+      at: order.placedAt,
+    },
+    {
+      id: 'confirmed',
+      label: 'Đã xác nhận',
+      pendingLabel: 'Chờ xác nhận',
+      icon: 'confirmed' as const,
+      at: order.confirmedAt,
+    },
     shipping
       ? {
           id: 'transit',
           label: 'Đang giao hàng',
+          pendingLabel: 'Chờ giao hàng',
           icon: 'shipping' as const,
           at: order.shipment?.shippedAt,
         }
-      : { id: 'ready', label: 'Sẵn sàng nhận', icon: 'pickup' as const, at: order.pickupReadyAt },
+      : {
+          id: 'ready',
+          label: 'Sẵn sàng nhận',
+          pendingLabel: 'Chờ chuẩn bị nhận',
+          icon: 'pickup' as const,
+          at: order.pickupReadyAt,
+        },
     shipping
       ? {
           id: 'delivered',
           label: 'Đã giao hàng',
+          pendingLabel: 'Chờ giao thành công',
           icon: 'received' as const,
           at: order.shipment?.deliveredAt,
         }
-      : { id: 'picked-up', label: 'Đã nhận hàng', icon: 'received' as const, at: order.pickedUpAt },
-    { id: 'complete', label: 'Hoàn tất', icon: 'complete' as const, at: order.completedAt },
+      : {
+          id: 'picked-up',
+          label: 'Đã nhận hàng',
+          pendingLabel: 'Chờ nhận hàng',
+          icon: 'received' as const,
+          at: order.pickedUpAt,
+        },
+    {
+      id: 'complete',
+      label: 'Hoàn tất',
+      pendingLabel: 'Chờ hoàn tất',
+      icon: 'complete' as const,
+      at: order.completedAt,
+    },
   ];
   const firstMissing = points.findIndex((point) => !point.at);
-  return points.map((point, index) => ({
+  return points.map(({ pendingLabel, ...point }, index) => ({
     ...point,
+    label: point.at ? point.label : pendingLabel,
     at: point.at ? formatCustomerDateTime(point.at) : null,
     state: point.at ? 'complete' : index === firstMissing ? 'current' : 'upcoming',
     tone: point.at ? 'success' : index === firstMissing ? 'info' : 'neutral',

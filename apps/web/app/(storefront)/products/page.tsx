@@ -6,7 +6,6 @@ import {
   toCatalogListQuery,
   type CatalogSearchParams,
 } from '@/lib/catalog-query';
-import { CatalogFilterDialog } from '@/components/catalog/catalog-filter-dialog';
 import { CatalogFilterForm } from '@/components/catalog/catalog-filter-form';
 import { AccessoryProductCard } from '@/components/catalog/accessory-product-card';
 import { IphoneModelCard } from '@/components/catalog/iphone-model-card';
@@ -27,6 +26,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       'productType',
       'releaseYear',
       'storageCapacityGb',
+      'ramGb',
+      'simLockStatus',
       'colorName',
       'minPrice',
       'maxPrice',
@@ -36,23 +37,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       <div className={styles.page}>
         <section className={styles.hero}>
           <h1>Tìm iPhone và phụ kiện</h1>
-          <p>Lọc theo dòng máy, dung lượng, màu sắc, giá và tình trạng còn hàng.</p>
+          <p>Chọn cấu hình và khoảng giá bạn muốn tìm.</p>
         </section>
 
-        <CatalogFilterDialog>
-          <CatalogFilterForm
-            current={current}
-            idPrefix="mobile-catalog"
-            pageSize={pagination.pageSize}
-          />
-        </CatalogFilterDialog>
-        <div className={styles.desktopFilters}>
-          <CatalogFilterForm
-            current={current}
-            idPrefix="desktop-catalog"
-            pageSize={pagination.pageSize}
-          />
-        </div>
+        <CatalogFilterForm current={current} idPrefix="catalog" pageSize={pagination.pageSize} />
 
         <div className={styles.summaryRow} aria-live="polite">
           <strong>{pagination.totalItems} sản phẩm</strong>

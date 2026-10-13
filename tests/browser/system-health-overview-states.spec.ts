@@ -1,3 +1,4 @@
+import { financialReportFixture } from './support/financial-report';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -147,79 +148,75 @@ test(
     const adminProbe = await installSystemFixture(page, 'ADMIN', {
       overview: [{ body: initial }, { body: refreshed }, { status: 503 }],
     });
-
     await page.goto('/backoffice');
     await expect(
-      page.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+      page.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
     ).toBeVisible();
-    await expect(page.getByLabel('Đơn đang xử lý: 12. Mở danh sách')).toBeVisible();
-    await expect(page.getByText('Thanh toán chờ duyệt quá lâu', { exact: true })).toBeVisible();
-    await expect(page.getByText('5 việc', { exact: true })).toBeVisible();
-    await expect(page.getByText('RPH-20260902-0001', { exact: true })).toBeVisible();
+    const orders = page.getByRole('heading', { name: 'Đơn hoàn tất', exact: true }).locator('..');
+    await expect(orders.getByText('12', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Lãi gộp tạm tính', exact: true }),
+    ).toBeVisible();
     await expectAdminQuickLinks(page, true);
-
     const routeBeforeRefresh = page.url();
     const pendingRefresh = adminProbe.holdNextOverview();
     try {
-      const refreshRequest = page.waitForRequest((request) => {
-        return (
+      const request = page.waitForRequest(
+        (request) =>
           request.method() === 'GET' &&
-          new URL(request.url()).pathname === '/api/v1/backoffice/overview'
-        );
-      });
+          new URL(request.url()).pathname === '/api/v1/backoffice/overview/financial',
+      );
       await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
-      await refreshRequest;
+      await request;
       await expect.poll(() => pendingRefresh.state()).toBe('started');
-      const dashboard = page
-        .locator('[aria-busy="true"]')
-        .filter({ hasText: 'Tình hình vận hành' });
-      await expect(dashboard).toContainText('thông tin hiện tại vẫn có thể sử dụng');
-      await expect(page.getByLabel('Đơn đang xử lý: 12. Mở danh sách')).toBeVisible();
+      await expect(
+        page.locator('[aria-busy="true"]').filter({ hasText: 'Doanh thu sau hoàn' }),
+      ).toBeVisible();
+      await expect(orders.getByText('12', { exact: true })).toBeVisible();
     } finally {
       pendingRefresh.release();
     }
     await expect.poll(() => pendingRefresh.state()).toBe('completed');
-    await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
+    await expect(orders.getByText('14', { exact: true })).toBeVisible();
     expect(page.url()).toBe(routeBeforeRefresh);
-
     const pendingFailure = adminProbe.holdNextOverview();
     try {
-      const failureRequest = page.waitForRequest((request) => {
-        return (
+      const request = page.waitForRequest(
+        (request) =>
           request.method() === 'GET' &&
-          new URL(request.url()).pathname === '/api/v1/backoffice/overview'
-        );
-      });
+          new URL(request.url()).pathname === '/api/v1/backoffice/overview/financial',
+      );
       await page.getByRole('button', { name: 'Cập nhật', exact: true }).click();
-      await failureRequest;
+      await request;
       await expect.poll(() => pendingFailure.state()).toBe('started');
-      await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
+      await expect(orders.getByText('14', { exact: true })).toBeVisible();
     } finally {
       pendingFailure.release();
     }
     await expect.poll(() => pendingFailure.state()).toBe('completed');
-    await expect(page.getByLabel('Đơn đang xử lý: 14. Mở danh sách')).toBeVisible();
-    await expect(
-      page.getByText('Dữ liệu có thể chưa phải mới nhất', { exact: true }),
-    ).toBeVisible();
-    await expect(page.getByLabel('Đang tải tổng quan vận hành')).toHaveCount(0);
-    await expect(page.getByText('RPH-20260902-0001', { exact: true })).toBeVisible();
+    await expect(orders.getByText('14', { exact: true })).toBeVisible();
+    await expect(page.getByText('Chưa cập nhật được báo cáo', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Đang tải báo cáo')).toHaveCount(0);
     expect(page.url()).toBe(routeBeforeRefresh);
     expect(adminProbe.overviewReads).toBe(3);
-
     const employeePage = await context.newPage();
     const employeeProbe = await installSystemFixture(employeePage, 'EMPLOYEE', {
       overview: [{ body: initial }],
     });
     await employeePage.goto('/backoffice');
     await expect(
-      employeePage.getByRole('heading', { name: 'Tổng quan vận hành', exact: true }),
+      employeePage.getByRole('heading', { name: 'Báo cáo tài chính', exact: true }),
     ).toBeVisible();
-    const employeeQuickLinks = employeePage.getByRole('navigation', {
-      name: 'Lối tắt công việc',
-    });
-    await expect(employeeQuickLinks.getByRole('link', { name: /Xử lý đơn hàng/ })).toBeVisible();
-    await expect(employeeQuickLinks.getByRole('link', { name: /Duyệt thanh toán/ })).toBeVisible();
+    await expect(
+      employeePage.getByRole('heading', { name: 'Lãi gộp tạm tính', exact: true }),
+    ).toHaveCount(0);
+    const navigation = employeePage.getByRole('navigation', { name: 'Các khu vực vận hành' });
+    await expect(
+      navigation.getByRole('link', { name: 'Danh sách đơn hàng', exact: true }),
+    ).toBeVisible();
+    await expect(
+      navigation.getByRole('link', { name: 'Duyệt thanh toán', exact: true }),
+    ).toBeVisible();
     await expectAdminQuickLinks(employeePage, false);
     expect(employeeProbe.overviewReads).toBe(1);
     await employeePage.close();
@@ -231,7 +228,7 @@ function dependencyRow(page: Page, label: string) {
 }
 
 async function expectAdminQuickLinks(page: Page, visible: boolean): Promise<void> {
-  const quickLinks = page.getByRole('navigation', { name: 'Lối tắt công việc' });
+  const quickLinks = page.getByRole('navigation', { name: 'Các khu vực vận hành' });
   for (const name of [
     'Mã ưu đãi',
     'Cấu hình cửa hàng',
@@ -293,7 +290,7 @@ async function installSystemFixture(
       }
       return respond(route, response);
     }
-    if (request.method() === 'GET' && path === '/api/v1/backoffice/overview') {
+    if (request.method() === 'GET' && path === '/api/v1/backoffice/overview/financial') {
       const response = responseAt(responses.overview, probe.overviewReads);
       probe.overviewReads += 1;
       const overviewGate = nextOverview;
@@ -361,41 +358,23 @@ function dependencyProbe(state: string, reason: string, latencyMs: number) {
   return { latencyMs, reason, state };
 }
 
-function overviewSnapshot(activeOrders: number, generatedAt: string) {
+function overviewSnapshot(orderCount: number, generatedAt: string) {
+  const month = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 7);
+  const base = financialReportFixture(month);
+  const sales = { ...base.sales, orderCount, unitsSold: orderCount };
   return {
+    ...base,
     generatedAt,
-    metrics: {
-      activeOrders,
-      lowStockLevels: 2,
-      openAfterSales: 4,
-      paymentsUnderReview: 3,
+    sales,
+    daily: [{ date: month + '-01', ...sales }],
+    channels: [{ channel: 'STOREFRONT' as const, ...sales }],
+    costs: {
+      knownCost: '8000000',
+      missingCostItems: 0,
+      estimatedGrossProfit: '3000000',
+      stockCapitalKnown: '40000000',
+      stockCostMissing: 0,
     },
-    priorities: [
-      {
-        count: 3,
-        href: '/backoffice/payments',
-        key: 'PAYMENT_REVIEW_OVERDUE',
-        oldestAt: '2026-09-01T02:00:00.000Z',
-      },
-      {
-        count: 2,
-        href: '/backoffice/refunds',
-        key: 'REFUND_REQUESTED',
-        oldestAt: '2026-09-01T03:00:00.000Z',
-      },
-    ],
-    recentOrders: [
-      {
-        customerName: 'Khách hàng Tổng quan',
-        fulfillmentStatus: 'IN_TRANSIT',
-        grandTotal: '24500000',
-        id: '0199d010-0000-7000-8000-000000000021',
-        orderNumber: 'RPH-20260902-0001',
-        paymentStatus: 'PARTIALLY_PAID',
-        placedAt: '2026-09-02T01:30:00.000Z',
-        status: 'PROCESSING',
-      },
-    ],
   };
 }
 
