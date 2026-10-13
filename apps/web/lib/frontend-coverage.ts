@@ -1,36 +1,3 @@
-export type FrontendPhase =
-  | 'FE-0'
-  | 'FE-1'
-  | 'FE-2'
-  | 'FE-3'
-  | 'FE-4'
-  | 'FE-5'
-  | 'FE-6'
-  | 'FE-7'
-  | 'FE-8'
-  | 'FE-9'
-  | 'FE-10'
-  | 'FE-11';
-
-export type FrontendBusinessPhase = Exclude<FrontendPhase, 'FE-0' | 'FE-9'>;
-
-export type FrontendCoverageStatus = 'NOT STARTED' | 'IN PROGRESS' | 'DONE';
-
-export const FRONTEND_PHASE_STATUS = {
-  'FE-0': 'DONE',
-  'FE-1': 'DONE',
-  'FE-2': 'DONE',
-  'FE-3': 'DONE',
-  'FE-4': 'DONE',
-  'FE-5': 'DONE',
-  'FE-6': 'DONE',
-  'FE-7': 'DONE',
-  'FE-8': 'DONE',
-  'FE-9': 'DONE',
-  'FE-10': 'DONE',
-  'FE-11': 'DONE',
-} as const satisfies Record<FrontendPhase, FrontendCoverageStatus>;
-
 export type FrontendOperationCoverage = readonly [
   operationId: string,
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -38,24 +5,12 @@ export type FrontendOperationCoverage = readonly [
   accessMode: string,
   targetRoute: string,
   actionState: string,
-  phase: FrontendBusinessPhase,
   browserOwner: `browser:${string}`,
-  status: FrontendCoverageStatus,
 ];
 
-export type FrontendRouteCoverage = readonly [
-  route: string,
-  kind: 'EXISTING' | 'PLANNED',
-  phase: FrontendBusinessPhase,
-];
+export type FrontendRouteCoverage = readonly [route: string];
 
-/**
- * Executable counterpart of the storefront, dealer and affiliate ledgers in plan-fe.md.
- *
- * Operation status progresses with its owning phase. Ownership alone never
- * counts as implemented UI and the plan ledger must move atomically with this
- * executable manifest.
- */
+/** Maps API operations to routes and browser suites. */
 export const FRONTEND_OPERATION_COVERAGE = [
   [
     'getAccount',
@@ -64,9 +19,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Authenticated Bearer',
     '/account',
     'Đọc detail; loading, 404/permission, error',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'updateAccount',
@@ -75,9 +28,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Authenticated Bearer',
     '/account',
     'Chỉnh sửa bằng updateAccount; dirty, validation, pending, conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'listAccountAddresses',
@@ -86,9 +37,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/account/addresses',
     'Đọc collection; loading, empty, error',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'createAccountAddress',
@@ -97,9 +46,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/account/addresses',
     'Tạo bằng createAccountAddress; validation, pending, success, conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'archiveAccountAddress',
@@ -108,9 +55,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/account/addresses',
     'Action archiveAccountAddress; confirm, pending, success, replay/conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'updateAccountAddress',
@@ -119,9 +64,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/account/addresses',
     'Chỉnh sửa bằng updateAccountAddress; dirty, validation, pending, conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'changePassword',
@@ -130,9 +73,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Authenticated Bearer',
     '/account/security',
     'Chỉnh sửa bằng changePassword; dirty, validation, pending, conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'listCustomerAfterSalesRequests',
@@ -141,9 +82,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/after-sales',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'createAfterSalesRequest',
@@ -152,9 +91,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/after-sales/new',
     'Tạo bằng createAfterSalesRequest; validation, pending, success, conflict',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'getAfterSalesRequest',
@@ -163,9 +100,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/after-sales/[requestNumber]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'uploadAfterSalesAttachment',
@@ -174,9 +109,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/after-sales/[requestNumber]',
     'Upload; select, validate, progress, success, 413/415/503',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'getAfterSalesAttachmentUrl',
@@ -185,9 +118,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/after-sales/[requestNumber]',
     'Mở signed URL; pending, expired, forbidden, provider error',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'cancelAfterSalesRequest',
@@ -196,9 +127,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/after-sales/[requestNumber]',
     'Action cancelAfterSalesRequest; confirm/reason, pending, success, replay/conflict',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'acceptEmployeeInvitation',
@@ -207,9 +136,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous + one-time fragment token',
     '/accept-invitation',
     'Command acceptEmployeeInvitation; pending, authoritative success, replay/conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'forgotPassword',
@@ -218,9 +145,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous',
     '/forgot-password',
     'Command forgotPassword; pending, authoritative success, replay/conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'login',
@@ -229,9 +154,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous',
     '/login',
     'Command login; pending, authoritative success, replay/conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'logout',
@@ -240,9 +163,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Phiên đã xác thực',
     'Storefront/customer shell',
     'Đăng xuất; pending, success, provider error',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'refreshSession',
@@ -251,9 +172,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Refresh HttpOnly cookie',
     'Toàn web — AuthProvider',
     'Bootstrap/refresh phiên; loading, success, anonymous fallback',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'registerAccount',
@@ -262,9 +181,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous',
     '/register',
     'Tạo bằng registerAccount; validation, pending, success, phản hồi chung khi trùng',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'resetPassword',
@@ -273,9 +190,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous + one-time fragment token',
     '/reset-password',
     'Command resetPassword; pending, authoritative success, replay/conflict',
-    'FE-2',
     'browser:auth-account',
-    'DONE',
   ],
   [
     'listBackofficeAfterSalesRequests',
@@ -284,9 +199,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeAfterSalesRequest',
@@ -295,9 +208,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'approveAfterSalesRequest',
@@ -306,9 +217,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command approveAfterSalesRequest; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'assignAfterSalesRequest',
@@ -317,9 +226,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command assignAfterSalesRequest; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeAfterSalesAttachmentUrl',
@@ -328,9 +235,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Mở signed URL; pending, expired, forbidden, provider error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'receiveAfterSalesRequest',
@@ -339,9 +244,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command receiveAfterSalesRequest; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'recordAfterSalesInspectionSummary',
@@ -350,9 +253,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command recordAfterSalesInspectionSummary; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'rejectAfterSalesRequest',
@@ -361,9 +262,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Action rejectAfterSalesRequest; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'resolveAfterSalesOther',
@@ -372,9 +271,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command resolveAfterSalesOther; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'resolveAfterSalesRefunded',
@@ -383,9 +280,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command resolveAfterSalesRefunded; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'resolveAfterSalesRepaired',
@@ -394,9 +289,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command resolveAfterSalesRepaired; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'resolveAfterSalesReplaced',
@@ -405,9 +298,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command resolveAfterSalesReplaced; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'resolveAfterSalesReturnedUnchanged',
@@ -416,9 +307,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command resolveAfterSalesReturnedUnchanged; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'startAfterSalesInspection',
@@ -427,9 +316,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/after-sales/[id]',
     'Command startAfterSalesInspection; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'listBackofficeAuditLogs',
@@ -438,9 +325,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/audit-logs',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeAuditLog',
@@ -449,9 +334,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/audit-logs/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'listBackofficeCustomers',
@@ -460,9 +343,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/customers',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeCustomer',
@@ -471,9 +352,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/customers',
     'Đọc detail; loading, 404/permission, error',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'activateCustomer',
@@ -482,9 +361,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/customers',
     'Command activateCustomer; pending, authoritative success, replay/conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'suspendCustomer',
@@ -493,9 +370,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/customers',
     'Command suspendCustomer; pending, authoritative success, replay/conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'listBackofficeEmployees',
@@ -504,9 +379,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'createBackofficeEmployee',
@@ -515,9 +388,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Tạo bằng createBackofficeEmployee; validation, pending, success, conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeEmployee',
@@ -526,9 +397,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Đọc detail; loading, 404/permission, error',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'updateBackofficeEmployee',
@@ -537,9 +406,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Chỉnh sửa bằng updateBackofficeEmployee; dirty, validation, pending, conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'disableEmployee',
@@ -548,9 +415,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Action disableEmployee; confirm/reason, pending, success, replay/conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'enableEmployee',
@@ -559,9 +424,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Command enableEmployee; pending, authoritative success, replay/conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'resendEmployeeInvitation',
@@ -570,9 +433,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/employees',
     'Command resendEmployeeInvitation; pending, authoritative success, replay/conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeInventoryInspection',
@@ -581,9 +442,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/inspections/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'updateBackofficeInventoryInspection',
@@ -592,9 +451,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/inspections/[id]',
     'Chỉnh sửa bằng updateBackofficeInventoryInspection; dirty, validation, pending, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'completeBackofficeInventoryInspection',
@@ -603,9 +460,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/inspections/[id]',
     'Command completeBackofficeInventoryInspection; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'listBackofficeInventoryLocations',
@@ -614,9 +469,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/locations',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'listBackofficeInventoryUnits',
@@ -625,9 +478,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'intakeBackofficeInventoryUnit',
@@ -636,9 +487,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/intake',
     'Tạo bằng intakeBackofficeInventoryUnit; validation, pending, success, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'getBackofficeInventoryUnit',
@@ -647,9 +496,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'updateBackofficeInventoryUnit',
@@ -658,9 +505,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Chỉnh sửa bằng updateBackofficeInventoryUnit; dirty, validation, pending, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'getBackofficeInventoryCost',
@@ -669,9 +514,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'updateBackofficeInventoryCost',
@@ -680,9 +523,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Chỉnh sửa bằng updateBackofficeInventoryCost; dirty, validation, pending, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'listBackofficeInventoryInspections',
@@ -691,9 +532,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'createBackofficeInventoryInspection',
@@ -702,9 +541,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Tạo bằng createBackofficeInventoryInspection; validation, pending, success, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'makeBackofficeInventoryUnitAvailable',
@@ -713,9 +550,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command makeBackofficeInventoryUnitAvailable; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'uploadBackofficeInventoryUnitMedia',
@@ -724,9 +559,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Upload; select, validate, progress, success, 413/415/503',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'quarantineBackofficeInventoryUnit',
@@ -735,9 +568,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command quarantineBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'revealBackofficeInventoryIdentifiers',
@@ -746,9 +577,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command revealBackofficeInventoryIdentifiers; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'sendBackofficeInventoryUnitToRepair',
@@ -757,9 +586,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command sendBackofficeInventoryUnitToRepair; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'transferBackofficeInventoryUnit',
@@ -768,9 +595,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command transferBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'writeOffBackofficeInventoryUnit',
@@ -779,9 +604,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/units/[id]',
     'Command writeOffBackofficeInventoryUnit; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'lookupBackofficeInventoryIdentifier',
@@ -790,9 +613,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/lookup',
     'Command lookupBackofficeInventoryIdentifier; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'listBackofficeOrders',
@@ -801,9 +622,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeOrder',
@@ -812,9 +631,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'cancelBackofficeOrder',
@@ -823,9 +640,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Action cancelBackofficeOrder; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'completePickup',
@@ -834,9 +649,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command completePickup; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'confirmPickupOrder',
@@ -845,9 +658,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command confirmPickupOrder; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'extendPickupHold',
@@ -856,9 +667,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command extendPickupHold; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'updateBackofficeOrderInternalNote',
@@ -867,9 +676,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Chỉnh sửa bằng updateBackofficeOrderInternalNote; dirty, validation, pending, conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'markPickupReady',
@@ -878,9 +685,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command markPickupReady; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'overrideShippingFee',
@@ -889,9 +694,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command overrideShippingFee; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'createRefund',
@@ -900,9 +703,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Tạo bằng createRefund; validation, pending, success, conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'createShipment',
@@ -911,9 +712,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Tạo bằng createShipment; validation, pending, success, conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'startPreparingOrder',
@@ -922,9 +721,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command startPreparingOrder; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'listBackofficePayments',
@@ -933,9 +730,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/payments',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficePayment',
@@ -944,9 +739,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/payments/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getPaymentEvidenceUrl',
@@ -955,9 +748,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/payments/[id]',
     'Mở signed URL; pending, expired, forbidden, provider error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'rejectPayment',
@@ -966,9 +757,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/payments/[id]',
     'Action rejectPayment; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'verifyPayment',
@@ -977,9 +766,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/payments/[id]',
     'Command verifyPayment; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'deleteBackofficeProductMedia',
@@ -988,9 +775,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Action deleteBackofficeProductMedia; confirm/reason, pending, success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'updateBackofficeProductMedia',
@@ -999,9 +784,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Chỉnh sửa bằng updateBackofficeProductMedia; dirty, validation, pending, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'listBackofficeProducts',
@@ -1010,9 +793,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'createBackofficeProduct',
@@ -1021,9 +802,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/new',
     'Tạo bằng createBackofficeProduct; validation, pending, success, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'getBackofficeProduct',
@@ -1032,9 +811,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'updateBackofficeProduct',
@@ -1043,9 +820,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Chỉnh sửa bằng updateBackofficeProduct; dirty, validation, pending, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'archiveBackofficeProduct',
@@ -1054,9 +829,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Action archiveBackofficeProduct; confirm/reason, pending, success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'uploadBackofficeProductMedia',
@@ -1065,9 +838,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Upload; select, validate, progress, success, 413/415/503',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'publishBackofficeProduct',
@@ -1076,9 +847,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Command publishBackofficeProduct; pending, authoritative success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'createBackofficeVariant',
@@ -1087,9 +856,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Tạo bằng createBackofficeVariant; validation, pending, success, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'listBackofficeRefunds',
@@ -1098,9 +865,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeRefund',
@@ -1109,9 +874,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'cancelRefund',
@@ -1120,9 +883,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Action cancelRefund; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'completeBankTransferRefund',
@@ -1131,9 +892,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Command completeBankTransferRefund; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'completeCashRefund',
@@ -1142,9 +901,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Command completeCashRefund; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getRefundEvidenceUrl',
@@ -1153,9 +910,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Mở signed URL; pending, expired, forbidden, provider error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'rejectRefund',
@@ -1164,9 +919,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Action rejectRefund; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'startRefundProcessing',
@@ -1175,9 +928,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/refunds/[id]',
     'Command startRefundProcessing; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeSettings',
@@ -1186,9 +937,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/settings',
     'Đọc detail; loading, 404/permission, error',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'updateBackofficeSettings',
@@ -1197,9 +946,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/settings',
     'Chỉnh sửa bằng updateBackofficeSettings; dirty, validation, pending, conflict',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'uploadBackofficeBankQr',
@@ -1208,9 +955,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/settings',
     'Upload; select, validate, progress, success, 413/415/503',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'handOverShipment',
@@ -1219,9 +964,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command handOverShipment; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'markShipmentDelivered',
@@ -1230,9 +973,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command markShipmentDelivered; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'markShipmentFailed',
@@ -1241,9 +982,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command markShipmentFailed; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'markShipmentReturned',
@@ -1252,9 +991,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/orders/[id]',
     'Command markShipmentReturned; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'listBackofficeStockLevels',
@@ -1263,9 +1000,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'listBackofficeStockMovements',
@@ -1274,9 +1009,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock/movements',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'adjustBackofficeStock',
@@ -1285,9 +1018,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock',
     'Chỉnh sửa bằng adjustBackofficeStock; dirty, validation, pending, conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'receiveBackofficeStock',
@@ -1296,9 +1027,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock',
     'Command receiveBackofficeStock; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'returnBackofficeStock',
@@ -1307,9 +1036,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock',
     'Command returnBackofficeStock; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'transferBackofficeStock',
@@ -1318,9 +1045,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/inventory/stock',
     'Command transferBackofficeStock; pending, authoritative success, replay/conflict',
-    'FE-6',
     'browser:inventory-stock',
-    'DONE',
   ],
   [
     'updateBackofficeVariant',
@@ -1329,9 +1054,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Chỉnh sửa bằng updateBackofficeVariant; dirty, validation, pending, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'activateBackofficeVariant',
@@ -1340,9 +1063,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Command activateBackofficeVariant; pending, authoritative success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'archiveBackofficeVariant',
@@ -1351,9 +1072,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Action archiveBackofficeVariant; confirm/reason, pending, success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'uploadBackofficeVariantMedia',
@@ -1362,9 +1081,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/catalog/products/[id]',
     'Upload; select, validate, progress, success, 413/415/503',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'listBackofficeVouchers',
@@ -1373,9 +1090,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'createVoucher',
@@ -1384,9 +1099,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/new',
     'Tạo bằng createVoucher; validation, pending, success, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'getBackofficeVoucher',
@@ -1395,9 +1108,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'updateVoucher',
@@ -1406,9 +1117,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Chỉnh sửa bằng updateVoucher; dirty, validation, pending, conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'activateVoucher',
@@ -1417,9 +1126,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Command activateVoucher; pending, authoritative success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'archiveVoucher',
@@ -1428,9 +1135,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Action archiveVoucher; confirm/reason, pending, success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'pauseVoucher',
@@ -1439,9 +1144,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Command pauseVoucher; pending, authoritative success, replay/conflict',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'listVoucherUsages',
@@ -1450,9 +1153,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/vouchers/[id]',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-5',
     'browser:catalog-voucher-admin',
-    'DONE',
   ],
   [
     'listBackofficeWarranties',
@@ -1461,9 +1162,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/warranties',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeWarranty',
@@ -1472,9 +1171,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/warranties/[id]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'voidWarranty',
@@ -1483,9 +1180,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranties/[id]',
     'Action voidWarranty; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'listBackofficeWarrantyPolicies',
@@ -1494,9 +1189,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'createWarrantyPolicy',
@@ -1505,9 +1198,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Tạo bằng createWarrantyPolicy; validation, pending, success, conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getBackofficeWarrantyPolicy',
@@ -1516,9 +1207,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Đọc detail; loading, 404/permission, error',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'updateWarrantyPolicy',
@@ -1527,9 +1216,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Chỉnh sửa bằng updateWarrantyPolicy; dirty, validation, pending, conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'activateWarrantyPolicy',
@@ -1538,9 +1225,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Command activateWarrantyPolicy; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'archiveWarrantyPolicy',
@@ -1549,9 +1234,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Action archiveWarrantyPolicy; confirm/reason, pending, success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'deactivateWarrantyPolicy',
@@ -1560,9 +1243,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/warranty-policies',
     'Command deactivateWarrantyPolicy; pending, authoritative success, replay/conflict',
-    'FE-7',
     'browser:operations-lifecycle',
-    'DONE',
   ],
   [
     'getCart',
@@ -1571,9 +1252,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Anonymous/guest cookie hoặc CUSTOMER Bearer',
     '/cart',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'addCartItem',
@@ -1582,9 +1261,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'GUEST cookie/CSRF hoặc CUSTOMER Bearer',
     '/products/[slug]/units/[inventoryCode] hoặc /products/[slug]',
     'Tạo bằng addCartItem; validation, pending, success, conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'removeCartItem',
@@ -1593,9 +1270,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'GUEST cookie/CSRF hoặc CUSTOMER Bearer',
     '/cart',
     'Action removeCartItem; confirm/reason, pending, success, replay/conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'updateCartItem',
@@ -1604,9 +1279,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'GUEST cookie/CSRF hoặc CUSTOMER Bearer',
     '/cart',
     'Chỉnh sửa bằng updateCartItem; dirty, validation, pending, conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'mergeCart',
@@ -1615,9 +1288,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer + guest cookie',
     'Toàn web — CommerceProvider sau login',
     'Command mergeCart; pending, authoritative success, replay/conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'createCheckout',
@@ -1626,9 +1297,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'GUEST cookie/CSRF hoặc CUSTOMER Bearer',
     '/checkout',
     'Tạo bằng createCheckout; validation, pending, success, conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'previewCheckout',
@@ -1637,9 +1306,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'GUEST cookie/CSRF hoặc CUSTOMER Bearer',
     '/checkout',
     'Command previewCheckout; pending, authoritative success, replay/conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'listCustomerOrders',
@@ -1648,9 +1315,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/orders',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'getCustomerOrder',
@@ -1659,9 +1324,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/orders/[orderNumber]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'cancelCustomerOrder',
@@ -1670,9 +1333,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/orders/[orderNumber]',
     'Action cancelCustomerOrder; confirm/reason, pending, success, replay/conflict',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'submitPaymentProof',
@@ -1681,9 +1342,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/orders/[orderNumber]',
     'Command submitPaymentProof; pending, authoritative success, replay/conflict',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'listProducts',
@@ -1692,9 +1351,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/products',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'getProductBySlug',
@@ -1703,9 +1360,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/products/[slug]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'getUsedIphoneByInventoryCode',
@@ -1714,9 +1369,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/products/[slug]/units/[inventoryCode]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'getPublicStore',
@@ -1725,9 +1378,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/store',
     'Đọc detail; loading, 404/permission, error',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'listPublicVouchers',
@@ -1736,9 +1387,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public; CUSTOMER Bearer optional',
     '/vouchers',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'listCustomerWarranties',
@@ -1747,9 +1396,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/warranties',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'getCustomerWarranty',
@@ -1758,9 +1405,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer hoặc guest order credential',
     '/warranties/[warrantyCode]',
     'Đọc detail; loading, 404/permission, error',
-    'FE-4',
     'browser:customer-post-purchase',
-    'DONE',
   ],
   [
     'getWishlist',
@@ -1769,9 +1414,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/wishlist',
     'Đọc collection; loading, empty, error, filter/pagination',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'addWishlistItem',
@@ -1780,9 +1423,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/products/[slug]/units/[inventoryCode] hoặc /products/[slug]',
     'Tạo bằng addWishlistItem; validation, pending, success, conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'removeWishlistItem',
@@ -1791,9 +1432,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/wishlist',
     'Action removeWishlistItem; confirm/reason, pending, success, replay/conflict',
-    'FE-3',
     'browser:cart-checkout',
-    'DONE',
   ],
   [
     'getLiveness',
@@ -1802,9 +1441,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public machine probe; ADMIN quan sát',
     '/backoffice/system/health',
     'Hiển thị healthy/degraded/unavailable; retry thủ công',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getReadiness',
@@ -1813,9 +1450,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public machine probe; ADMIN quan sát',
     '/backoffice/system/health',
     'Hiển thị healthy/degraded/unavailable; retry thủ công',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeOperationsOverview',
@@ -1824,9 +1459,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice',
     'Đọc tổng quan vận hành; loading, stale refresh, error, shortcut điều hướng',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficeSystemHealth',
@@ -1835,9 +1468,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'ADMIN Bearer',
     '/backoffice/system/health',
     'Đọc chi tiết API, database, lưu trữ và email; loading, unavailable, retry thủ công',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'DealerBackofficeController_list',
@@ -1846,9 +1477,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_profile',
@@ -1857,9 +1486,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_risk',
@@ -1868,9 +1495,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_transition',
@@ -1879,9 +1504,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_cases',
@@ -1890,9 +1513,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_assessCase',
@@ -1901,9 +1522,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_backupIntake',
@@ -1912,9 +1531,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_reverseAllocation',
@@ -1923,9 +1540,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_bankDetails',
@@ -1934,9 +1549,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_disableBank',
@@ -1945,9 +1558,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_verifyBank',
@@ -1956,9 +1567,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_configuration',
@@ -1967,9 +1576,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_override',
@@ -1978,9 +1585,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerConfigurationController_update',
@@ -1989,9 +1594,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Mở/đóng cổng; validation, permission, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_inventoryPricing',
@@ -2000,9 +1603,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/inventory/units/[id]',
     'Giá tự tính, giá sàn và giá riêng; loading, empty, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_orderList',
@@ -2011,9 +1612,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_order',
@@ -2022,9 +1621,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_cancel',
@@ -2033,9 +1630,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_releaseReconciliation',
@@ -2044,9 +1639,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_settleReturn',
@@ -2055,9 +1648,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_pricing',
@@ -2066,9 +1657,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_updatePricing',
@@ -2077,9 +1666,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_proofs',
@@ -2088,9 +1675,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_proofUrl',
@@ -2099,9 +1684,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_rejectProof',
@@ -2110,9 +1693,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_receipts',
@@ -2121,9 +1702,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_receipt',
@@ -2132,9 +1711,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_assign',
@@ -2143,9 +1720,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_correction',
@@ -2154,9 +1729,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_reconciliationList',
@@ -2165,9 +1738,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_resolveReconciliation',
@@ -2176,9 +1747,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_refundList',
@@ -2187,9 +1756,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_refund',
@@ -2198,9 +1765,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_refundAction',
@@ -2209,9 +1774,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_complete',
@@ -2220,9 +1783,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_destination',
@@ -2231,9 +1792,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_rebindRefund',
@@ -2242,9 +1801,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerBackofficeController_quote',
@@ -2253,9 +1810,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Staff Bearer',
     '/backoffice/dealers',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_createKey',
@@ -2264,9 +1819,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_revokeKey',
@@ -2275,9 +1828,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_apply',
@@ -2286,9 +1837,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_requestBank',
@@ -2297,9 +1846,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_confirmBank',
@@ -2308,9 +1855,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_configuration',
@@ -2319,9 +1864,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_profile',
@@ -2330,9 +1873,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_replayWebhook',
@@ -2341,9 +1882,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_webhookHistory',
@@ -2352,9 +1891,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_configureWebhook',
@@ -2363,9 +1900,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_disableWebhook',
@@ -2374,9 +1909,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerPortalController_webhookTest',
@@ -2385,9 +1918,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_listCases',
@@ -2396,9 +1927,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_createCase',
@@ -2407,9 +1936,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_getCase',
@@ -2418,9 +1945,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_attachCase',
@@ -2429,9 +1954,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_attachment',
@@ -2440,9 +1963,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_cancelCase',
@@ -2451,9 +1972,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_listCatalog',
@@ -2462,9 +1981,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_listOrders',
@@ -2473,9 +1990,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_create',
@@ -2484,9 +1999,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_order',
@@ -2495,9 +2008,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_cancel',
@@ -2506,9 +2017,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_paymentRequests',
@@ -2517,9 +2026,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerAfterSalesController_warranties',
@@ -2528,9 +2035,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_preview',
@@ -2539,9 +2044,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_submit',
@@ -2550,9 +2053,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'DealerController_refundList',
@@ -2561,9 +2062,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Dealer API key or CUSTOMER Bearer',
     '/dealer',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
 
   [
@@ -2573,9 +2072,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'CUSTOMER Bearer',
     '/dealer',
     'Thao tác; validation, pending, success, conflict',
-    'FE-10',
     'browser:dealer-flow',
-    'DONE',
   ],
   [
     'AffiliatePublicController_config',
@@ -2584,9 +2081,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/affiliate',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePublicController_refer',
@@ -2595,9 +2090,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/r/[code]',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_apply',
@@ -2606,9 +2099,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_bank',
@@ -2617,9 +2108,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_confirm',
@@ -2628,9 +2117,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_dashboard',
@@ -2639,9 +2126,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_offers',
@@ -2650,9 +2135,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_withdraw',
@@ -2661,9 +2144,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliatePortalController_profile',
@@ -2672,9 +2153,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Customer Bearer',
     '/affiliate',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_bankDetails',
@@ -2683,9 +2162,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_verify',
@@ -2694,9 +2171,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_dashboard',
@@ -2705,9 +2180,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_members',
@@ -2716,9 +2189,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_transition',
@@ -2727,9 +2198,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_offers',
@@ -2738,9 +2207,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_override',
@@ -2749,9 +2216,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_payoutAction',
@@ -2760,9 +2225,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_complete',
@@ -2771,9 +2234,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_destination',
@@ -2782,9 +2243,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_evidence',
@@ -2793,9 +2252,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_policy',
@@ -2804,9 +2261,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Đọc dữ liệu; loading, empty, error, permission',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_savePolicy',
@@ -2815,9 +2270,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'AffiliateAdminController_reconcile',
@@ -2826,9 +2279,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Admin Bearer',
     '/backoffice/affiliates',
     'Thao tác; validation, pending, success, conflict',
-    'FE-11',
     'browser:affiliate-flow',
-    'DONE',
   ],
   [
     'listPublicInventoryUnits',
@@ -2837,9 +2288,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'Public',
     '/',
     'Máy đang bán và nổi bật; loading, empty, error',
-    'FE-1',
     'browser:storefront-discovery',
-    'DONE',
   ],
   [
     'getBackofficeFinancialReport',
@@ -2848,9 +2297,7 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice',
     'Báo cáo tháng; doanh thu, doanh số, giá vốn chỉ admin',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
   [
     'getBackofficePendingTasks',
@@ -2859,78 +2306,76 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'EMPLOYEE hoặc ADMIN Bearer',
     '/backoffice',
     'Huy hiệu tác vụ chờ xử lý; theo quyền, tự làm mới, ẩn khi rỗng hoặc lỗi',
-    'FE-8',
     'browser:system-admin-health',
-    'DONE',
   ],
 ] as const satisfies readonly FrontendOperationCoverage[];
 
 /** Route ownership: storefront, backoffice, dealer and affiliate URLs. */
 export const FRONTEND_ROUTE_COVERAGE: readonly FrontendRouteCoverage[] = [
-  ['/', 'EXISTING', 'FE-1'],
-  ['/login', 'EXISTING', 'FE-2'],
-  ['/register', 'EXISTING', 'FE-2'],
-  ['/forgot-password', 'EXISTING', 'FE-2'],
-  ['/reset-password', 'EXISTING', 'FE-2'],
-  ['/accept-invitation', 'EXISTING', 'FE-2'],
-  ['/products', 'EXISTING', 'FE-1'],
-  ['/products/[slug]', 'EXISTING', 'FE-1'],
-  ['/products/[slug]/units/[inventoryCode]', 'EXISTING', 'FE-1'],
-  ['/vouchers', 'EXISTING', 'FE-1'],
-  ['/cart', 'EXISTING', 'FE-3'],
-  ['/wishlist', 'EXISTING', 'FE-3'],
-  ['/checkout', 'EXISTING', 'FE-3'],
-  ['/orders', 'EXISTING', 'FE-4'],
-  ['/orders/[orderNumber]', 'EXISTING', 'FE-4'],
-  ['/warranties', 'EXISTING', 'FE-4'],
-  ['/warranties/[warrantyCode]', 'EXISTING', 'FE-4'],
-  ['/after-sales', 'EXISTING', 'FE-4'],
-  ['/after-sales/new', 'EXISTING', 'FE-4'],
-  ['/after-sales/[requestNumber]', 'EXISTING', 'FE-4'],
-  ['/backoffice/inventory/intake', 'EXISTING', 'FE-6'],
-  ['/backoffice/orders', 'EXISTING', 'FE-7'],
-  ['/backoffice/orders/[id]', 'EXISTING', 'FE-7'],
-  ['/backoffice/payments', 'EXISTING', 'FE-7'],
-  ['/backoffice/payments/[id]', 'EXISTING', 'FE-7'],
-  ['/backoffice/refunds', 'EXISTING', 'FE-7'],
-  ['/backoffice/refunds/[id]', 'EXISTING', 'FE-7'],
-  ['/backoffice/after-sales', 'EXISTING', 'FE-7'],
-  ['/backoffice/after-sales/[id]', 'EXISTING', 'FE-7'],
-  ['/backoffice/warranties', 'EXISTING', 'FE-7'],
-  ['/backoffice/warranties/[id]', 'EXISTING', 'FE-7'],
-  ['/backoffice/warranty-policies', 'EXISTING', 'FE-7'],
-  ['/backoffice/employees', 'EXISTING', 'FE-8'],
-  ['/backoffice/customers', 'EXISTING', 'FE-8'],
-  ['/backoffice/settings', 'EXISTING', 'FE-8'],
-  ['/backoffice/audit-logs', 'EXISTING', 'FE-8'],
-  ['/backoffice/audit-logs/[id]', 'EXISTING', 'FE-8'],
-  ['/store', 'EXISTING', 'FE-1'],
-  ['/account', 'EXISTING', 'FE-2'],
-  ['/account/addresses', 'EXISTING', 'FE-2'],
-  ['/account/security', 'EXISTING', 'FE-2'],
-  ['/backoffice/catalog/products', 'EXISTING', 'FE-5'],
-  ['/backoffice/catalog/products/new', 'EXISTING', 'FE-5'],
-  ['/backoffice/catalog/products/[id]', 'EXISTING', 'FE-5'],
-  ['/backoffice/vouchers', 'EXISTING', 'FE-5'],
-  ['/backoffice/vouchers/new', 'EXISTING', 'FE-5'],
-  ['/backoffice/vouchers/[id]', 'EXISTING', 'FE-5'],
-  ['/backoffice/inventory/units', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/units/[id]', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/lookup', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/inspections/[id]', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/locations', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/stock', 'EXISTING', 'FE-6'],
-  ['/backoffice/inventory/stock/movements', 'EXISTING', 'FE-6'],
-  ['/backoffice', 'EXISTING', 'FE-6'],
-  ['/backoffice/system/health', 'EXISTING', 'FE-8'],
-  ['/dealer', 'EXISTING', 'FE-10'],
-  ['/dealer/terms', 'EXISTING', 'FE-10'],
-  ['/dealer/api-guide', 'EXISTING', 'FE-10'],
-  ['/backoffice/dealers', 'EXISTING', 'FE-10'],
-  ['/affiliate', 'EXISTING', 'FE-11'],
-  ['/affiliate/terms', 'EXISTING', 'FE-11'],
-  ['/r/[code]', 'EXISTING', 'FE-11'],
-  ['/backoffice/affiliates', 'EXISTING', 'FE-11'],
+  ['/'],
+  ['/login'],
+  ['/register'],
+  ['/forgot-password'],
+  ['/reset-password'],
+  ['/accept-invitation'],
+  ['/products'],
+  ['/products/[slug]'],
+  ['/products/[slug]/units/[inventoryCode]'],
+  ['/vouchers'],
+  ['/cart'],
+  ['/wishlist'],
+  ['/checkout'],
+  ['/orders'],
+  ['/orders/[orderNumber]'],
+  ['/warranties'],
+  ['/warranties/[warrantyCode]'],
+  ['/after-sales'],
+  ['/after-sales/new'],
+  ['/after-sales/[requestNumber]'],
+  ['/backoffice/inventory/intake'],
+  ['/backoffice/orders'],
+  ['/backoffice/orders/[id]'],
+  ['/backoffice/payments'],
+  ['/backoffice/payments/[id]'],
+  ['/backoffice/refunds'],
+  ['/backoffice/refunds/[id]'],
+  ['/backoffice/after-sales'],
+  ['/backoffice/after-sales/[id]'],
+  ['/backoffice/warranties'],
+  ['/backoffice/warranties/[id]'],
+  ['/backoffice/warranty-policies'],
+  ['/backoffice/employees'],
+  ['/backoffice/customers'],
+  ['/backoffice/settings'],
+  ['/backoffice/audit-logs'],
+  ['/backoffice/audit-logs/[id]'],
+  ['/store'],
+  ['/account'],
+  ['/account/addresses'],
+  ['/account/security'],
+  ['/backoffice/catalog/products'],
+  ['/backoffice/catalog/products/new'],
+  ['/backoffice/catalog/products/[id]'],
+  ['/backoffice/vouchers'],
+  ['/backoffice/vouchers/new'],
+  ['/backoffice/vouchers/[id]'],
+  ['/backoffice/inventory/units'],
+  ['/backoffice/inventory/units/[id]'],
+  ['/backoffice/inventory/lookup'],
+  ['/backoffice/inventory/inspections/[id]'],
+  ['/backoffice/inventory/locations'],
+  ['/backoffice/inventory/stock'],
+  ['/backoffice/inventory/stock/movements'],
+  ['/backoffice'],
+  ['/backoffice/system/health'],
+  ['/dealer'],
+  ['/dealer/terms'],
+  ['/dealer/api-guide'],
+  ['/backoffice/dealers'],
+  ['/affiliate'],
+  ['/affiliate/terms'],
+  ['/r/[code]'],
+  ['/backoffice/affiliates'],
 ];
 
 export const FRONTEND_REQUIRED_STATES = [

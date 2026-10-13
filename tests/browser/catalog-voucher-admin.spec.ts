@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
@@ -633,6 +634,7 @@ async function installFe05Api(
   });
 
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     if (route.request().method() === 'OPTIONS') {
       await fulfillPreflight(route);
       return;

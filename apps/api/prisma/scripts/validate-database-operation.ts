@@ -1,3 +1,4 @@
+import { databaseTargetIssue } from '../../src/config/database-target.js';
 import { databaseUrlSecurityIssue } from '../../src/config/database-url-security.js';
 import { loadWorkspaceEnvironment } from '../../src/config/load-environment.js';
 
@@ -5,10 +6,15 @@ loadWorkspaceEnvironment();
 
 const connectionString = requiredEnvironment('DIRECT_URL');
 const securityIssue = databaseUrlSecurityIssue(connectionString, {
-  allowUnencryptedLoopback: true,
-  allowUnencryptedHostnames: process.env.NODE_ENV === 'test' ? ['postgres-test'] : [],
+  allowUnencryptedLoopback: process.env.NODE_ENV !== 'production',
+  allowUnencryptedHostnames:
+    process.env.NODE_ENV === 'production'
+      ? []
+      : [process.env.NODE_ENV === 'test' ? 'postgres-test' : 'postgres-dev'],
   requireCertificateVerification: process.env.NODE_ENV === 'production',
 });
+if (databaseTargetIssue(connectionString, process.env.NODE_ENV ?? 'development'))
+  throw new Error('Database does not belong to the selected environment');
 if (securityIssue !== undefined) {
   throw new Error(`DIRECT_URL ${securityIssue}; database operation did not connect`);
 }

@@ -10,6 +10,7 @@ import {
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 import { financialReportFixture } from './support/financial-report';
+import { installPendingTasksFixture, PENDING_TASKS_PATH } from './support/pending-tasks';
 
 const PROTECTED_OVERVIEW_HEADING = 'Báo cáo tài chính';
 
@@ -115,6 +116,7 @@ test.describe('Backoffice access boundary', () => {
   });
 
   test(bt('browser:backoffice-access', 'network-error-retry'), async ({ page }, testInfo) => {
+    await installPendingTasksFixture(page);
     let refreshAttempts = 0;
     const overview = deferred<undefined>();
     const overviewStarted = deferred<undefined>();
@@ -168,7 +170,10 @@ test.describe('Backoffice access boundary', () => {
       'page',
     );
     expect(refreshAttempts).toBe(2);
-    expect(protectedRequests).toEqual(['/api/v1/backoffice/overview/financial']);
+    expect([...protectedRequests].sort()).toEqual([
+      '/api/v1/backoffice/overview/financial',
+      PENDING_TASKS_PATH,
+    ]);
     await expectNoHorizontalOverflow(page);
     await expectNoSeriousAccessibilityViolations(page);
     await capture(page, testInfo, 'backoffice-overview-desktop.png');

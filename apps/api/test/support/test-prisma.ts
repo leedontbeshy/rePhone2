@@ -1,9 +1,12 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client.js';
+import { databaseTargetIssue } from '../../src/config/database-target.js';
 
 export function createTestPrisma(): PrismaClient {
   const connectionString =
-    process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5433/rephone_test';
+    process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5434/rephone_test';
+  const issue = databaseTargetIssue(connectionString, 'test');
+  if (issue) throw new Error(`Refusing integration test: ${issue}`);
   const databaseName = new URL(connectionString).pathname.replace(/^\//, '');
   if (!databaseName.endsWith('_test')) {
     throw new Error(`Refusing integration test against non-test database ${databaseName}`);

@@ -1,7 +1,7 @@
 // This probe runs inside the internal-only Compose network. It intentionally
 // prints only named PASS results and never response bodies or credentials.
-const api = 'http://api:4000';
-const web = 'http://web:3000';
+const api = 'http://smoke-api:4000';
+const web = 'http://smoke-web:3000';
 
 await expectStatus('API live', `${api}/health/live`, 200);
 await expectStatus('API ready', `${api}/health/ready`, 200);

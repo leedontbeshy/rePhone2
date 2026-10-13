@@ -4,10 +4,15 @@ import { resolve } from 'node:path';
 
 // Host development shares the root configuration with the API. Container
 // environment variables and Next's app-local configuration take precedence.
-const workspaceEnv = resolve(process.cwd(), '../../.env');
+const workspaceEnv = resolve(
+  process.cwd(),
+  '../..',
+  process.env.REPHONE_ENV_FILE ??
+    (process.env.NODE_ENV === 'production' ? '.env.production' : '.env'),
+);
 if (
-  process.env.NODE_ENV === 'development' &&
-  process.env.REPHONE_SANDBOX_WEB !== 'true' &&
+  process.env.NODE_ENV !== 'test' &&
+  process.env.REPHONE_SKIP_ENV_FILE !== 'true' &&
   existsSync(workspaceEnv)
 ) {
   process.loadEnvFile(workspaceEnv);
@@ -21,12 +26,7 @@ const nextConfig: NextConfig = {
     DEALER_SANDBOX_API_URL: process.env.DEALER_SANDBOX_API_URL ?? '',
     API_PUBLIC_URL: process.env.API_PUBLIC_URL ?? '',
   },
-  distDir:
-    process.env.REPHONE_AFFILIATE_TEST === 'true'
-      ? '.next-affiliate-test'
-      : process.env.REPHONE_SANDBOX_WEB === 'true'
-        ? '.next-dealer-sandbox'
-        : '.next',
+  distDir: process.env.REPHONE_WEB_DIST_DIR ?? '.next',
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,

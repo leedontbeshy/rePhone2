@@ -42,6 +42,8 @@ export default defineConfig({
         ? 'pnpm --filter @rephone/web exec next start -p 3001'
         : 'pnpm --filter @rephone/web exec next dev -p 3001',
       env: {
+        REPHONE_SKIP_ENV_FILE: 'true',
+        REPHONE_WEB_DIST_DIR: process.env.REPHONE_WEB_DIST_DIR ?? '.next-test',
         NODE_ENV: useProductionWebServer ? 'production' : 'development',
         NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
         API_INTERNAL_BASE_URL: apiBaseUrl,

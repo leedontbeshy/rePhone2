@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { expect, test, type Page, type Response, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -296,6 +297,7 @@ async function installFixture(page: Page, options: FixtureOptions): Promise<Fixt
     json(route, { data: { accessToken: `fe09-after-sales-${role}`, user } }),
   );
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     const apiPath = url.pathname;

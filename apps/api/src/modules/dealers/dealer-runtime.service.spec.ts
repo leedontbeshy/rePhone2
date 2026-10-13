@@ -35,7 +35,7 @@ describe('Dealer environment isolation', () => {
           },
           prisma,
         ),
-    ).toThrow('isolated database');
+    ).toThrow('local dev or test database');
   });
   it('requires a mail sink and labelled storage for TEST', () => {
     const input = config();

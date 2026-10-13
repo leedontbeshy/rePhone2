@@ -9,8 +9,7 @@
 .env
 .env.*
 !.env.example
-!.env.test.example
-!.env.docker.example
+!.env.production.example
 
 node_modules
 **/node_modules
@@ -19,6 +18,7 @@ node_modules
 **/.sandbox-dist
 **/.turbo
 **/dist
+**/.test-dist
 **/coverage
 **/*.tsbuildinfo
 apps/api/src/generated/prisma
@@ -34,6 +34,9 @@ plan.md
 plan-fe.md
 docs
 uml
+apps/web/app/fonts/provenance.json
+apps/web/public/ui-studio/provenance.json
+apps/web/public/ui-studio/auth-studio.provenance.json
 
 Dockerfile*
 compose*.yaml

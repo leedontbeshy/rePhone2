@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -219,6 +220,7 @@ async function auditFixture(page: Page): Promise<AuditProbe> {
     json(route, { data: { accessToken: 'fe09-audit-admin', user: admin() } }),
   );
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;

@@ -10,14 +10,16 @@ ENV PATH=${PNPM_HOME}:${PATH}
 WORKDIR /workspace
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends openssl \
+    && apt-get install --yes --no-install-recommends openssl git \
     && rm -rf /var/lib/apt/lists/* \
     && npm install --global pnpm@10.18.3
 
 COPY --chown=node:node . .
 
 RUN --mount=type=cache,id=rephone-pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile \
+    && chown node:node /workspace \
+    && chown -R node:node apps/api/src/generated packages/api-client/dist
 
 
 FROM workspace AS web-development

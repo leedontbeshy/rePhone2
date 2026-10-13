@@ -9,5 +9,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next-dealer-sandbox"]
+  "exclude": ["node_modules", ".next*/standalone/**", ".next*/cache/**"]
 }

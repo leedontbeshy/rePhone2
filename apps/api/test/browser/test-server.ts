@@ -15,15 +15,26 @@ Object.assign(process.env, {
 });
 
 const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url));
-run(['test:db:prepare']);
+run(['--filter', '@rephone/api', 'exec', 'tsx', 'prisma/scripts/prepare-test-database.ts']);
 run(['--filter', '@rephone/api', 'exec', 'tsx', 'test/browser/seed.ts']);
 if (process.env.DEALER_ENABLED === 'true' && process.env.DEALER_ENVIRONMENT === 'TEST') {
-  run(['dealer:sandbox:seed']);
+  run(['--filter', '@rephone/api', 'exec', 'tsx', 'test/support/seed-dealer.ts']);
 }
-run(['--filter', '@rephone/api', 'build']);
+run([
+  '--filter',
+  '@rephone/api',
+  'exec',
+  'tsc',
+  '-p',
+  'tsconfig.build.json',
+  '--outDir',
+  '.test-dist',
+  '--tsBuildInfoFile',
+  '.test-dist/build.tsbuildinfo',
+]);
 
 const compiledModule: unknown = await import(
-  new URL('../../dist/application.js', import.meta.url).href
+  new URL('../../.test-dist/application.js', import.meta.url).href
 );
 if (!isCompiledApplicationModule(compiledModule)) {
   throw new Error('Compiled API application entrypoint is invalid');

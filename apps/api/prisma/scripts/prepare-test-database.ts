@@ -1,39 +1,25 @@
 import { spawnSync } from 'node:child_process';
 import { Client } from 'pg';
+import { databaseTargetIssue } from '../../src/config/database-target.js';
 
-const defaultTestUrl = 'postgresql://rephone:rephone@localhost:5433/rephone_test';
+const defaultTestUrl = 'postgresql://rephone:rephone@localhost:5434/rephone_test';
 const databaseUrl = process.env.TEST_DATABASE_URL ?? defaultTestUrl;
 const target = new URL(databaseUrl);
-const databaseName = target.pathname.replace(/^\//, '');
-if (!databaseName.endsWith('_test')) {
-  throw new Error(`Refusing test migration for non-test database ${databaseName || '<empty>'}`);
-}
-const normalizedHostname = target.hostname.replace(/^\[|\]$/g, '').toLowerCase();
-const isLocalTestHost =
-  normalizedHostname === 'localhost' ||
-  normalizedHostname === '::1' ||
-  normalizedHostname === 'postgres-test' ||
-  /^127(?:\.\d{1,3}){3}$/.test(normalizedHostname);
-if (!isLocalTestHost) {
-  throw new Error(
-    `Refusing destructive test migration for remote database host ${target.hostname}`,
-  );
-}
+const targetIssue = databaseTargetIssue(databaseUrl, 'test');
+if (targetIssue) throw new Error(`Refusing destructive test migration: ${targetIssue}`);
 
-if (process.env.TEST_DATABASE_URL === undefined) {
-  const compose = spawnSync(
-    'docker',
-    ['compose', '--profile', 'test', 'up', '-d', '--wait', 'postgres-test'],
-    { stdio: 'inherit', cwd: new URL('../../../../', import.meta.url) },
+if (process.env.TEST_DATABASE_URL === undefined)
+  throw new Error(
+    'Run a test suite through the root test runner to prepare its isolated database.',
   );
-  if (compose.status !== 0) {
-    process.exit(compose.status ?? 1);
-  }
-}
 
 const client = new Client({ connectionString: databaseUrl });
 await client.connect();
 try {
+  const actual = await client.query<{ name: string }>('SELECT current_database() AS name');
+  if (actual.rows[0]?.name !== decodeURIComponent(target.pathname.slice(1))) {
+    throw new Error('Refusing test reset: the connected database differs from the isolated target');
+  }
   await client.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public');
 } finally {
   await client.end();

@@ -1,11 +1,11 @@
-import type { FrontendBusinessPhase, FrontendRequiredState } from './frontend-coverage';
+import type { FrontendRequiredState } from './frontend-coverage';
 
 /**
  * Structural ownership registry for browser work.
  *
  * A registered owner proves that its suite and stable test declaration exist;
  * it does not prove that every owned API operation or UI state executed. Runtime
- * request/state assertions remain acceptance criteria for the owning surface WP.
+ * request/state assertions remain acceptance criteria for each surface.
  */
 
 export interface FrontendBrowserTestDefinition {
@@ -19,14 +19,12 @@ export interface FrontendBrowserTestDefinition {
 
 export interface FrontendBrowserSuiteDefinition {
   readonly specFile: string;
-  readonly phase: FrontendBusinessPhase | null;
   readonly tests: Readonly<Record<string, FrontendBrowserTestDefinition>>;
 }
 
 export const FRONTEND_BROWSER_SUITES = {
   'browser:affiliate-flow': {
     specFile: 'affiliate-flow.spec.ts',
-    phase: 'FE-11',
     tests: {
       'public-program-and-terms': {
         title: 'opens the affiliate program and terms and preserves the sign-in destination',
@@ -50,7 +48,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:dealer-flow': {
     specFile: 'dealer-flow.spec.ts',
-    phase: 'FE-10',
     tests: {
       'purchase-delivery-warranty': {
         title:
@@ -69,7 +66,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:frontend-foundation': {
     specFile: 'frontend-foundation.spec.ts',
-    phase: null,
     tests: {
       'exact-unit-visual': {
         title: 'captures the representative exact-unit surface at desktop and mobile',
@@ -87,7 +83,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:storefront-discovery': {
     specFile: 'storefront-discovery.spec.ts',
-    phase: 'FE-1',
     tests: {
       'homepage-and-toolbar-refinement': {
         title:
@@ -231,7 +226,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:auth-account': {
     specFile: 'auth-account.spec.ts',
-    phase: 'FE-2',
     tests: {
       'reset-password-fragment': {
         title: 'consumes a reset token from the fragment before submitting it',
@@ -297,7 +291,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:backoffice-access': {
     specFile: 'backoffice-access.spec.ts',
-    phase: null,
     tests: {
       'anonymous-fail-closed': {
         title:
@@ -323,7 +316,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:cart-checkout': {
     specFile: 'cart-checkout.spec.ts',
-    phase: 'FE-3',
     tests: {
       'guest-shipping-order': {
         title: 'guest creates a shipping order and hands off the one-time order link',
@@ -410,7 +402,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:catalog-voucher-admin': {
     specFile: 'catalog-voucher-admin.spec.ts',
-    phase: 'FE-5',
     tests: {
       'employee-boundary': {
         title: 'lets an employee use all catalog screens while keeping voucher management private',
@@ -447,7 +438,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:critical-commerce-flow': {
     specFile: 'critical-commerce-flow.spec.ts',
-    phase: null,
     tests: {
       'catalog-to-completed-shipping': {
         title: 'catalog to completed shipping order through customer and staff portals',
@@ -468,7 +458,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:customer-post-purchase': {
     specFile: 'customer-post-purchase.spec.ts',
-    phase: 'FE-4',
     tests: {
       'customer-order-lifecycle': {
         title: 'covers the customer order list, detail journey, cancellation and URL allowlist',
@@ -504,7 +493,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:inventory-stock': {
     specFile: 'inventory-stock.spec.ts',
-    phase: 'FE-6',
     tests: {
       'featured-and-code-lookup': {
         title: 'persists a featured star and finds the exact inventory code',
@@ -582,7 +570,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:operations-lifecycle': {
     specFile: 'operations-lifecycle.spec.ts',
-    phase: 'FE-7',
     tests: {
       'staff-route-state-matrix': {
         title: 'keeps all eleven operations routes inside the authenticated staff workspace',
@@ -683,7 +670,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:system-admin-health': {
     specFile: 'system-admin-health.spec.ts',
-    phase: 'FE-8',
     tests: {
       'financial-and-partner-settings': {
         title: 'shows monthly finance with role-safe costs and partner switches in store settings',
@@ -828,7 +814,6 @@ export const FRONTEND_BROWSER_SUITES = {
   },
   'browser:release-matrix': {
     specFile: 'release-matrix.spec.ts',
-    phase: null,
     tests: {
       'skip-links-and-axe': {
         title: 'keeps representative storefront, auth, customer and backoffice shells skippable',

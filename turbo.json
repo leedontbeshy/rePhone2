@@ -2,6 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [".env", ".env.*", ".env.example"],
   "globalEnv": [
+    "REPHONE_SKIP_ENV_FILE",
+    "REPHONE_ENV_FILE",
+    "REPHONE_WEB_DIST_DIR",
     "NODE_ENV",
     "DATABASE_URL",
     "DIRECT_URL",

@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
@@ -275,6 +276,7 @@ async function installMatrixFixture(page: Page, role: MatrixRole): Promise<Matri
   });
   await page.route('**/api/v1/cart**', (route) => json(route, emptyCart()));
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     const requestPath = url.pathname;

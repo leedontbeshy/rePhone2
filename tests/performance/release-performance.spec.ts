@@ -18,9 +18,10 @@ import { installDeterministicPublicMedia } from '../browser/support/deterministi
 
 const API_BASE_URL = 'http://localhost:4001/api/v1';
 const WEB_ORIGIN = 'http://localhost:3001';
-const REPORT_TYPE = reportTypeFrom(process.env.WP12_REPORT_TYPE);
+const REPORT_TYPE = reportTypeFrom(process.env.PERFORMANCE_REPORT_TYPE);
 const REPORT_PATH =
-  process.env.WP12_REPORT_PATH?.trim() || `.local/release-performance/wp12-${REPORT_TYPE}.json`;
+  process.env.PERFORMANCE_REPORT_PATH?.trim() ||
+  `.local/release-performance/performance-${REPORT_TYPE}.json`;
 const SAMPLE_COUNT = 3;
 const WARMUP_COUNT = 1;
 const VIEWPORT = { width: 390, height: 844 } as const;
@@ -923,7 +924,7 @@ function orderNumberFrom(rawUrl: string): string {
 function reportTypeFrom(value: string | undefined): ReportType {
   const normalized = value?.trim().toLowerCase() || 'baseline';
   if (normalized === 'baseline' || normalized === 'after') return normalized;
-  throw new Error('WP12_REPORT_TYPE must be either "baseline" or "after".');
+  throw new Error('PERFORMANCE_REPORT_TYPE must be either "baseline" or "after".');
 }
 
 function round(value: number, digits: number): number {

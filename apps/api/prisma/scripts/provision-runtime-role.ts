@@ -351,7 +351,7 @@ function isPostgresError(error: unknown): error is { code: string } {
 
 function assertSecureProvisioningUrl(name: string, connectionString: string): void {
   const issue = databaseUrlSecurityIssue(connectionString, {
-    allowUnencryptedLoopback: true,
+    allowUnencryptedLoopback: process.env.NODE_ENV !== 'production',
     allowUnencryptedHostnames: process.env.NODE_ENV === 'test' ? ['postgres-test'] : [],
     requireCertificateVerification: process.env.NODE_ENV === 'production',
   });

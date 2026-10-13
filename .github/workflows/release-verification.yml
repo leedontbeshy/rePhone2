@@ -1,8 +1,9 @@
 name: Release verification
-
-on:
+'on':
   pull_request:
-    types: [labeled, synchronize]
+    types:
+      - labeled
+      - synchronize
   push:
     branches:
       - main
@@ -12,18 +13,15 @@ on:
         description: Generate deterministic Windows baseline PNGs for review
         type: boolean
         default: false
-
 permissions:
   contents: read
-
 concurrency:
   group: release-verification-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 env:
   CI: 'true'
   NEXT_TELEMETRY_DISABLED: '1'
-  NODE_OPTIONS: --max-old-space-size=4096
+  NODE_OPTIONS: '--max-old-space-size=4096'
   NODE_ENV: test
   TURBO_TELEMETRY_DISABLED: '1'
   API_PORT: '4001'
@@ -47,8 +45,22 @@ env:
   SCHEDULER_ENABLED: 'false'
   NEXT_PUBLIC_API_BASE_URL: http://localhost:4001/api/v1
   API_INTERNAL_BASE_URL: http://localhost:4001/api/v1
-
+  REPHONE_SKIP_ENV_FILE: 'true'
 jobs:
+  production-images:
+    name: Production images and isolated smoke
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+      - name: Build and probe production images
+        run: node scripts/infra/production-smoke.mjs
   fast-gates:
     name: Fast gates (${{ matrix.os }})
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
@@ -60,23 +72,19 @@ jobs:
         os:
           - ubuntu-24.04
           - windows-2025
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Restore Turbo cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -85,39 +93,25 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             turbo-${{ runner.os }}-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - id: format
         name: Check formatting
         run: pnpm format:check
-
       - id: lint
         name: Check lint rules
         run: pnpm lint
-
       - id: typecheck
         name: Check types
         run: pnpm typecheck
-
       - id: unit_tests
         name: Run unit tests
         run: pnpm test
-
-      - id: frontend_contracts
-        name: Check frontend coverage and accessibility contracts
-        run: |
-          pnpm fe:coverage
-          pnpm fe:a11y
-
       - id: generated_drift
         name: Check generated OpenAPI and API client drift
         run: |
-          pnpm api:openapi
-          pnpm api:client
-          pnpm verify:generated
-
+          pnpm api:generate
+          git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts
       - name: Rehearse rejection of generated artifact drift
         if: runner.os == 'Linux'
         shell: bash
@@ -130,18 +124,16 @@ jobs:
           cp apps/api/openapi/openapi.json "$backup"
           trap restore_generated EXIT
           printf '\n' >> apps/api/openapi/openapi.json
-          if pnpm verify:generated; then
+          if git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts; then
             echo "The generated artifact drift guard accepted a tracked change"
             exit 1
           fi
           restore_generated
           trap - EXIT
-          pnpm verify:generated
-
+          git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts
       - id: build
         name: Build production packages
         run: pnpm build
-
       - name: Write sanitized fast-gate summary
         if: always()
         shell: bash
@@ -150,7 +142,6 @@ jobs:
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
           UNIT_TESTS_OUTCOME: ${{ steps.unit_tests.outcome }}
-          FRONTEND_CONTRACTS_OUTCOME: ${{ steps.frontend_contracts.outcome }}
           GENERATED_DRIFT_OUTCOME: ${{ steps.generated_drift.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
         run: |
@@ -162,11 +153,9 @@ jobs:
             echo "lint=${LINT_OUTCOME}"
             echo "typecheck=${TYPECHECK_OUTCOME}"
             echo "unit_tests=${UNIT_TESTS_OUTCOME}"
-            echo "frontend_contracts=${FRONTEND_CONTRACTS_OUTCOME}"
             echo "generated_drift=${GENERATED_DRIFT_OUTCOME}"
             echo "build=${BUILD_OUTCOME}"
           } > ".local/ci-summary/fast-${RUNNER_OS}.txt"
-
       - name: Upload fast-gate summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -176,7 +165,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
-
   database-gates:
     name: Database integration and coverage
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
@@ -194,29 +182,23 @@ jobs:
           POSTGRES_USER: rephone
           POSTGRES_PASSWORD: rephone
         ports:
-          - 5432:5432
+          - '5432:5432'
         options: >-
-          --health-cmd "pg_isready -U rephone -d rephone_test"
-          --health-interval 3s
-          --health-timeout 3s
+          --health-cmd "pg_isready -U rephone -d rephone_test" --health-interval 3s --health-timeout 3s
           --health-retries 20
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Restore Turbo cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -225,57 +207,48 @@ jobs:
           restore-keys: |
             turbo-Linux-${{ hashFiles('pnpm-lock.yaml') }}-
             turbo-Linux-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Verify isolated test database target
-        run: |
-          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
-
+        run: >
+          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !==
+          'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local
+          *_test database')"
       - name: Rehearse rejection of a non-test database target
         env:
           TEST_DATABASE_URL: postgresql://rephone:rephone@localhost:5432/rephone_ci
         run: |
-          if pnpm test:db:prepare; then
+          if pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts; then
             echo "The database safety guard accepted a non-test database name"
             exit 1
           fi
           echo "The database safety guard rejected the non-test target as expected"
-
       - name: Rehearse rejection of a remote test database target
         env:
           TEST_DATABASE_URL: postgresql://rephone:rephone@db.example.com:5432/rephone_test
         run: |
-          if pnpm test:db:prepare; then
+          if pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts; then
             echo "The database safety guard accepted a remote destructive target"
             exit 1
           fi
           echo "The database safety guard rejected the remote target as expected"
-
       - id: prepare
         name: Prepare clean test database
-        run: pnpm test:db:prepare
-
+        run: pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts
       - id: preflight
         name: Check release migration state
-        run: pnpm preflight:release
-
+        run: pnpm db:check
       - id: integration
         name: Run database integration tests
         run: pnpm test:integration
-
       - id: e2e
         name: Run API end-to-end tests
         run: pnpm test:e2e
-
       - name: Reset database before coverage
-        run: pnpm test:db:prepare
-
+        run: pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts
       - id: coverage
         name: Run API release coverage
         run: pnpm test:coverage
-
       - name: Write sanitized database-gate summary
         if: always()
         env:
@@ -295,7 +268,6 @@ jobs:
             echo "e2e=${E2E_OUTCOME}"
             echo "coverage=${COVERAGE_OUTCOME}"
           } > .local/ci-summary/database-gates.txt
-
       - name: Upload coverage and database-gate summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -307,7 +279,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
-
   browser-gate:
     name: Browser release suite (Windows)
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
@@ -319,23 +290,19 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
       PLAYWRIGHT_WEB_SERVER: production
       PLAYWRIGHT_SHARED_REPORT: 'true'
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Restore Turbo cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -344,18 +311,21 @@ jobs:
           restore-keys: |
             turbo-Windows-${{ hashFiles('pnpm-lock.yaml') }}-
             turbo-Windows-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Start isolated PostgreSQL 17 database
         shell: pwsh
-        run: |
+        run: >
           Set-Service -Name postgresql-x64-17 -StartupType Manual
+
           Start-Service -Name postgresql-x64-17
+
           $env:Path = "${env:PGBIN};${env:Path}"
+
           $env:PGPASSWORD = 'root'
+
           $ready = $false
+
           for ($attempt = 1; $attempt -le 30; $attempt++) {
             & "${env:PGBIN}\pg_isready.exe" -h localhost -p 5432 -U postgres
             if ($LASTEXITCODE -eq 0) {
@@ -364,27 +334,27 @@ jobs:
             }
             Start-Sleep -Seconds 2
           }
+
           if (-not $ready) {
             throw 'PostgreSQL 17 did not become ready in time'
           }
-          $databaseExists = & "${env:PGBIN}\psql.exe" -h localhost -p 5432 -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'rephone_test'"
+
+          $databaseExists = & "${env:PGBIN}\psql.exe" -h localhost -p 5432 -U postgres -tAc "SELECT 1 FROM
+          pg_database WHERE datname = 'rephone_test'"
+
           if ($databaseExists -ne '1') {
             & "${env:PGBIN}\createdb.exe" -h localhost -p 5432 -U postgres rephone_test
             if ($LASTEXITCODE -ne 0) {
               throw 'Could not create the isolated browser test database'
             }
           }
-
       - name: Verify isolated test database target
-        run: |
-          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
-
-      - name: Build production web app
-        run: pnpm test:browser:build
-
+        run: >
+          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !==
+          'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local
+          *_test database')"
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium firefox webkit
-
       - id: browser
         name: Run deterministic browser suite
         env:
@@ -395,7 +365,6 @@ jobs:
           } else {
             pnpm test:browser
           }
-
       - name: Upload deterministic baseline candidates for review
         if: always() && github.event_name == 'workflow_dispatch' && inputs.refresh_visual_baselines
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -404,15 +373,16 @@ jobs:
           path: tests/browser/*-snapshots/*-win32.png
           if-no-files-found: error
           retention-days: 3
-
       - id: cross-browser
         name: Run Firefox and WebKit critical smoke
-        run: pnpm test:browser:cross-browser-smoke
-
+        run: >-
+          pnpm test:browser tests/browser/release-matrix.spec.ts -g skip-links-and-axe --config
+          playwright.cross-browser.config.ts
       - id: artifact_redaction
         name: Verify shared browser reports are sanitized
-        run: pnpm verify:browser-artifacts
-
+        run: >-
+          node scripts/verify-playwright-shared-report.mjs .local/playwright-report
+          .local/playwright-cross-browser-report
       - name: Write sanitized browser-gate summary
         if: always()
         shell: bash
@@ -429,7 +399,6 @@ jobs:
             echo "cross_browser=${CROSS_BROWSER_OUTCOME}"
             echo "artifact_redaction=${ARTIFACT_REDACTION_OUTCOME}"
           } > .local/ci-summary/browser-gate.txt
-
       - name: Upload browser report and summary
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -443,7 +412,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
-
   performance-gate:
     name: Production performance gate (Windows)
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci')
@@ -453,23 +421,19 @@ jobs:
       DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
       DIRECT_URL: postgresql://postgres:root@localhost:5432/rephone_test
       TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Restore Turbo cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -478,18 +442,21 @@ jobs:
           restore-keys: |
             turbo-Windows-${{ hashFiles('pnpm-lock.yaml') }}-
             turbo-Windows-
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Start isolated PostgreSQL 17 database
         shell: pwsh
-        run: |
+        run: >
           Set-Service -Name postgresql-x64-17 -StartupType Manual
+
           Start-Service -Name postgresql-x64-17
+
           $env:Path = "${env:PGBIN};${env:Path}"
+
           $env:PGPASSWORD = 'root'
+
           $ready = $false
+
           for ($attempt = 1; $attempt -le 30; $attempt++) {
             & "${env:PGBIN}\pg_isready.exe" -h localhost -p 5432 -U postgres
             if ($LASTEXITCODE -eq 0) {
@@ -498,39 +465,41 @@ jobs:
             }
             Start-Sleep -Seconds 2
           }
+
           if (-not $ready) {
             throw 'PostgreSQL 17 did not become ready in time'
           }
-          $databaseExists = & "${env:PGBIN}\psql.exe" -h localhost -p 5432 -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'rephone_test'"
+
+          $databaseExists = & "${env:PGBIN}\psql.exe" -h localhost -p 5432 -U postgres -tAc "SELECT 1 FROM
+          pg_database WHERE datname = 'rephone_test'"
+
           if ($databaseExists -ne '1') {
             & "${env:PGBIN}\createdb.exe" -h localhost -p 5432 -U postgres rephone_test
             if ($LASTEXITCODE -ne 0) {
               throw 'Could not create the isolated performance test database'
             }
           }
-
       - name: Verify isolated test database target
-        run: |
-          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
-
+        run: >
+          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !==
+          'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local
+          *_test database')"
       - name: Install Chromium
         run: pnpm exec playwright install chromium
-
       - id: prepare
         name: Prepare clean performance database
-        run: pnpm test:db:prepare
-
+        run: pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts
       - id: client_media
         name: Audit client boundaries and media
-        run: pnpm performance:audit-client-media --output .local/release-performance/wp12-client-media-ci.json
-
+        run: >-
+          node scripts/audit-client-media.mjs --output
+          .local/release-performance/performance-client-media-ci.json
       - id: performance
         name: Measure representative production routes
         env:
-          WP12_REPORT_TYPE: after
-          WP12_REPORT_PATH: .local/release-performance/wp12-ci-after.json
-        run: pnpm performance:release
-
+          PERFORMANCE_REPORT_TYPE: after
+          PERFORMANCE_REPORT_PATH: .local/release-performance/performance-ci-after.json
+        run: pnpm test:performance tests/performance/release-performance.spec.ts
       - name: Write sanitized performance-gate summary
         if: always()
         shell: pwsh
@@ -547,7 +516,6 @@ jobs:
             "client_media=${env:CLIENT_MEDIA_OUTCOME}"
             "performance=${env:PERFORMANCE_OUTCOME}"
           ) | Set-Content -Encoding utf8 .local/ci-summary/performance-gate.txt
-
       - name: Upload sanitized performance evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

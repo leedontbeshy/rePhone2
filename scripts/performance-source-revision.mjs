@@ -72,11 +72,11 @@ export function isPerformanceSourceInput(file) {
 
 export function currentPerformanceRevision({
   cwd = PERFORMANCE_REPOSITORY_ROOT,
-  sourceMode = process.env.WP12_SOURCE_MODE,
+  sourceMode = process.env.PERFORMANCE_SOURCE_MODE,
 } = {}) {
   const mode = sourceMode?.trim() || 'commit';
   if (mode !== 'commit' && mode !== 'working-tree') {
-    throw new Error('WP12_SOURCE_MODE must be commit or working-tree.');
+    throw new Error('PERFORMANCE_SOURCE_MODE must be commit or working-tree.');
   }
   const root = realpathSync(cwd);
   const git = (args) =>
@@ -140,7 +140,7 @@ export function currentPerformanceRevision({
 export function assertPerformanceRevisionAllowed(revision) {
   if (!revision.clean && revision.sourceMode !== 'working-tree') {
     throw new Error(
-      'Performance measurement requires a clean commit or explicit WP12_SOURCE_MODE=working-tree.',
+      'Performance measurement requires a clean commit or explicit PERFORMANCE_SOURCE_MODE=working-tree.',
     );
   }
 }
@@ -175,9 +175,7 @@ export function validatePerformanceBuildProvenance(input, expected) {
     typeof input.buildId !== 'string' ||
     !BUILD_ID_PATTERN.test(input.buildId)
   ) {
-    throw new Error(
-      'Invalid performance build provenance. Rebuild using performance:storefront:build.',
-    );
+    throw new Error('Invalid performance build provenance. Rebuild using pnpm test:performance.');
   }
   for (const field of [
     'commitSha',
@@ -218,9 +216,7 @@ export function performanceRuntimeFingerprint({ cwd = PERFORMANCE_REPOSITORY_ROO
   // Next resolves this workspace package through its dist exports, not its src files.
   const output = join(cwd, 'packages/api-client/dist');
   if (!existsSync(join(output, 'index.js'))) {
-    throw new Error(
-      'Missing performance runtime artifact. Run performance:storefront:build first.',
-    );
+    throw new Error('Missing performance runtime artifact. Run pnpm test:performance first.');
   }
   const files = [];
   const visit = (directory) => {
@@ -244,17 +240,16 @@ export function performanceRuntimeFingerprint({ cwd = PERFORMANCE_REPOSITORY_ROO
 export function readPerformanceBuildProvenance({
   cwd = PERFORMANCE_REPOSITORY_ROOT,
   revision,
+  distDir = process.env.REPHONE_WEB_DIST_DIR ?? '.next',
 } = {}) {
   let input;
   let buildId;
   try {
-    const output = join(cwd, 'apps/web/.next');
+    const output = join(cwd, 'apps/web', distDir);
     input = JSON.parse(readFileSync(join(output, PERFORMANCE_BUILD_MANIFEST), 'utf8'));
     buildId = readFileSync(join(output, 'BUILD_ID'), 'utf8').trim();
   } catch {
-    throw new Error(
-      'Missing performance build provenance. Run performance:storefront:build first.',
-    );
+    throw new Error('Missing performance build provenance. Run pnpm test:performance first.');
   }
   return validatePerformanceBuildProvenance(input, {
     buildId,

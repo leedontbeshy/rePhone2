@@ -11,6 +11,7 @@ vi.mock('@/app/auth-provider', () => ({
 }));
 
 import { BackofficeAccessGate } from './backoffice-access-gate';
+import BackofficeLayout from '@/app/backoffice/layout';
 
 describe('BackofficeAccessGate', () => {
   let childRenderCount = 0;
@@ -32,6 +33,18 @@ describe('BackofficeAccessGate', () => {
 
     expect(markup).toContain('aria-label="Đang kiểm tra quyền truy cập"');
     expect(markup).not.toContain('data-shell="backoffice"');
+    expect(markup).not.toContain('Dữ liệu vận hành bí mật');
+    expect(childRenderCount).toBe(0);
+  });
+
+  it('keeps the route layout behind the access gate before authentication', () => {
+    mockUseAuth.mockReturnValue(authState('loading'));
+    const markup = renderToStaticMarkup(
+      <BackofficeLayout>
+        <ProtectedContent />
+      </BackofficeLayout>,
+    );
+    expect(markup).toContain('aria-label="Đang kiểm tra quyền truy cập"');
     expect(markup).not.toContain('Dữ liệu vận hành bí mật');
     expect(childRenderCount).toBe(0);
   });

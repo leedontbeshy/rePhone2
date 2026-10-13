@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:cr
 import { Inject, Injectable } from '@nestjs/common';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
+import { databaseTargetIssue } from '../../config/database-target.js';
 import { ApiError } from '../../common/errors/api-error.js';
 
 @Injectable()
@@ -14,13 +15,16 @@ export class AffiliateRuntime {
     this.mode = mode === 'LIVE' ? 'LIVE' : 'TEST';
     if (!['TEST', 'LIVE'].includes(mode)) throw new Error('Invalid AFFILIATE_ENVIRONMENT');
     if (this.enabled && mode === 'TEST') {
-      const url = new URL(config.database.url);
       if (
-        !['localhost', '127.0.0.1', '[::1]', 'postgres-test'].includes(url.hostname) ||
-        !url.pathname.endsWith('_test')
+        config.environment === 'production' ||
+        databaseTargetIssue(config.database.url, config.environment)
       )
-        throw new Error('Affiliate TEST requires a local database ending _test');
-      if (!['localhost', '127.0.0.1', '::1', 'mailpit', 'mailhog'].includes(config.mail.host))
+        throw new Error('Affiliate TEST requires the local dev or test database');
+      if (
+        !['localhost', '127.0.0.1', '::1', 'mailpit', 'mailpit-dev', 'mailhog'].includes(
+          config.mail.host,
+        )
+      )
         throw new Error('Affiliate TEST requires a local mail sink');
     }
     const secret = process.env['AFFILIATE_ENCRYPTION_KEY']?.trim() || undefined;

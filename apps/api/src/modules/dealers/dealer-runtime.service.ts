@@ -3,6 +3,7 @@ import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { ApiError } from '../../common/errors/api-error.js';
 import { APP_CONFIG } from '../../config/app-config.module.js';
 import type { AppConfig } from '../../config/app-config.js';
+import { databaseTargetIssue } from '../../config/database-target.js';
 import { PrismaService } from '../../database/prisma.service.js';
 
 @Injectable()
@@ -25,16 +26,23 @@ export class DealerRuntime implements OnModuleInit {
     this.enabled = enabled === 'true';
     this.mode = mode as 'TEST' | 'LIVE';
     if (this.enabled && this.mode === 'TEST') {
-      if (!/_(test|sandbox)$/.test(new URL(config.database.url).pathname))
-        throw new Error('TEST dealers require an isolated database ending _test or _sandbox');
-      if (!['localhost', '127.0.0.1', '::1', 'mailpit', 'mailhog'].includes(config.mail.host))
+      if (
+        config.environment === 'production' ||
+        databaseTargetIssue(config.database.url, config.environment)
+      )
+        throw new Error('TEST dealers require the local dev or test database');
+      if (
+        !['localhost', '127.0.0.1', '::1', 'mailpit', 'mailpit-dev', 'mailhog'].includes(
+          config.mail.host,
+        )
+      )
         throw new Error('TEST dealers require a local mail sink');
       if (
         ![
           config.storage.publicBucket,
           config.storage.privateBucket,
           config.storage.storeBucket,
-        ].every((bucket) => /test|sandbox/.test(bucket))
+        ].every((bucket) => /test|sandbox|-dev$/.test(bucket))
       )
         throw new Error('TEST dealer storage buckets must be labelled test or sandbox');
     }

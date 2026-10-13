@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { expect, test, type BrowserContext, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -169,6 +170,7 @@ async function installFinanceFixture(
     }),
   );
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
     if (method === 'OPTIONS') return route.fulfill({ status: 204 });

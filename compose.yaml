@@ -1,44 +1,944 @@
+# One Compose file: local dev, production and isolated test jobs.
 name: rephone
-
+x-dev-environment: &dev-environment
+  NODE_ENV: development
+  API_PORT: '4000'
+  API_PUBLIC_URL: http://localhost:${DEV_API_PORT:-4000}
+  WEB_PUBLIC_URL: http://localhost:${DEV_WEB_PORT:-3000}
+  WEB_ORIGIN: http://localhost:${DEV_WEB_PORT:-3000}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-rephone}:${POSTGRES_PASSWORD:-rephone}@postgres-dev:5432/rephone_dev
+  DB_POOL_MAX: ${DB_POOL_MAX:-5}
+  DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-5000}
+  DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-10000}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+  JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+  JWT_ISSUER: ${JWT_ISSUER:-rephone-api}
+  JWT_AUDIENCE: ${JWT_AUDIENCE:-rephone-web}
+  AUTH_REFRESH_TTL_DAYS: ${AUTH_REFRESH_TTL_DAYS:-7}
+  ARGON2_MEMORY_KIB: ${ARGON2_MEMORY_KIB:-65536}
+  ARGON2_TIME_COST: ${ARGON2_TIME_COST:-3}
+  ARGON2_PARALLELISM: ${ARGON2_PARALLELISM:-1}
+  PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-30}
+  EMPLOYEE_INVITE_TTL_HOURS: ${EMPLOYEE_INVITE_TTL_HOURS:-24}
+  GUEST_CART_TTL_DAYS: ${GUEST_CART_TTL_DAYS:-30}
+  IDENTIFIER_ENCRYPTION_KEY: ${IDENTIFIER_ENCRYPTION_KEY:-}
+  IDENTIFIER_HMAC_KEY: ${IDENTIFIER_HMAC_KEY:-}
+  DEALER_ENABLED: ${DEALER_ENABLED:-true}
+  DEALER_ENVIRONMENT: TEST
+  DEALER_WORKER_ENABLED: ${DEALER_WORKER_ENABLED:-true}
+  DEALER_ENCRYPTION_KEY: ${DEALER_ENCRYPTION_KEY:-}
+  DEALER_SANDBOX_WEB_URL: http://localhost:${DEV_WEB_PORT:-3000}
+  DEALER_SANDBOX_API_URL: http://localhost:${DEV_API_PORT:-4000}/api/v1
+  DEALER_LIVE_WEB_URL: ''
+  AFFILIATE_ENABLED: ${AFFILIATE_ENABLED:-true}
+  AFFILIATE_ENVIRONMENT: TEST
+  AFFILIATE_ENCRYPTION_KEY: ${AFFILIATE_ENCRYPTION_KEY:-}
+  SUPABASE_URL: ${SUPABASE_URL:-}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+  SUPABASE_PUBLIC_BUCKET: ${SUPABASE_PUBLIC_BUCKET:-rephone-public-dev}
+  SUPABASE_PRIVATE_BUCKET: ${SUPABASE_PRIVATE_BUCKET:-rephone-private-dev}
+  SUPABASE_STORE_BUCKET: ${SUPABASE_STORE_BUCKET:-rephone-store-assets-dev}
+  SIGNED_URL_TTL_SECONDS: ${SIGNED_URL_TTL_SECONDS:-300}
+  SMTP_HOST: mailpit-dev
+  SMTP_PORT: '1025'
+  SMTP_SECURE: 'false'
+  SMTP_REQUIRE_TLS: 'false'
+  SMTP_USER: ''
+  SMTP_PASSWORD: ''
+  MAIL_FROM: ${MAIL_FROM:-}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  SCHEDULER_ENABLED: 'true'
+  SCHEDULER_BATCH_SIZE: ${SCHEDULER_BATCH_SIZE:-100}
+  SCHEDULER_GUEST_CART_BATCH_SIZE: ${SCHEDULER_GUEST_CART_BATCH_SIZE:-200}
+  SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: ${SCHEDULER_AUTH_CLEANUP_BATCH_SIZE:-500}
+  REQUEST_BODY_LIMIT: ${REQUEST_BODY_LIMIT:-1mb}
+  TRUST_PROXY: 'false'
+  APP_VERSION: ${APP_VERSION:-latest}
+  REPHONE_SKIP_ENV_FILE: 'true'
+x-smoke-operation: &smoke-operation
+  image: ${SMOKE_OPS_IMAGE:-rephone-smoke-ops:local}
+  build:
+    context: .
+    dockerfile: infra/docker/api.Dockerfile
+    target: api-operations
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
+  pull_policy: never
+  networks:
+    - smoke
+  labels:
+    com.rephone.production-smoke: ${SMOKE_NONCE:-}
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: 'no'
+  profiles:
+    - test
 services:
+  postgres-dev:
+    image: postgres:17.6-alpine
+    profiles:
+      - dev
+    environment:
+      POSTGRES_DB: rephone_dev
+      POSTGRES_USER: ${POSTGRES_USER:-rephone}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rephone}
+    ports:
+      - 127.0.0.1:${POSTGRES_DEV_HOST_PORT:-5433}:5432
+    volumes:
+      - dev_database:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d rephone_dev
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    networks:
+      - dev
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  mailpit-dev:
+    image: axllent/mailpit:v1.30.6
+    profiles:
+      - dev
+    ports:
+      - 127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025
+      - 127.0.0.1:${MAILPIT_HTTP_PORT:-8025}:8025
+    healthcheck:
+      test:
+        - CMD
+        - /mailpit
+        - readyz
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - dev
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  dev-init:
+    profiles:
+      - dev
+    image: rephone-api-dev:local
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-development
+    environment:
+      <<: *dev-environment
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_EMPLOYEE_EMAIL: ${SEED_EMPLOYEE_EMAIL:-}
+      SEED_EMPLOYEE_PASSWORD: ${SEED_EMPLOYEE_PASSWORD:-}
+      SEED_CUSTOMER_EMAIL: ${SEED_CUSTOMER_EMAIL:-}
+      SEED_CUSTOMER_PASSWORD: ${SEED_CUSTOMER_PASSWORD:-}
+      SEED_DEMO_PHONE: ${SEED_DEMO_PHONE:-}
+      SEED_BANK_ACCOUNT_HOLDER: ${SEED_BANK_ACCOUNT_HOLDER:-}
+      SEED_BANK_ACCOUNT_NUMBER: ${SEED_BANK_ACCOUNT_NUMBER:-}
+      SEED_BANK_NAME: ${SEED_BANK_NAME:-}
+      SEED_STORE_ADDRESS: ${SEED_STORE_ADDRESS:-}
+      SEED_STORE_PHONE: ${SEED_STORE_PHONE:-}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-rephone}:${POSTGRES_PASSWORD:-rephone}@postgres-dev:5432/rephone_dev
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+      mailpit-dev:
+        condition: service_healthy
+    command:
+      - sh
+      - '-ec'
+      - pnpm db:deploy && pnpm db:seed
+    networks:
+      - dev
+    restart: 'no'
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  api-dev:
+    profiles:
+      - dev
+    image: rephone-api-dev:local
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-development
+    environment: *dev-environment
+    ports:
+      - 127.0.0.1:${DEV_API_PORT:-4000}:4000
+    depends_on:
+      dev-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - >-
+          fetch('http://127.0.0.1:4000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    networks:
+      - dev
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/api/src
+          target: /workspace/apps/api/src
+          ignore:
+            - generated/
+        - action: rebuild
+          path: ./apps/api/prisma
+        - action: rebuild
+          path: ./pnpm-lock.yaml
+        - action: rebuild
+          path: ./scripts
+  web-dev:
+    profiles:
+      - dev
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: web-development
+    environment:
+      NODE_ENV: development
+      REPHONE_SKIP_ENV_FILE: 'true'
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:${DEV_API_PORT:-4000}/api/v1
+      API_PUBLIC_URL: http://localhost:${DEV_API_PORT:-4000}
+      API_INTERNAL_BASE_URL: http://api-dev:4000/api/v1
+      DEALER_ENVIRONMENT: TEST
+      DEALER_SANDBOX_WEB_URL: http://localhost:${DEV_WEB_PORT:-3000}
+      DEALER_SANDBOX_API_URL: http://localhost:${DEV_API_PORT:-4000}/api/v1
+    ports:
+      - 127.0.0.1:${DEV_WEB_PORT:-3000}:3000
+    depends_on:
+      api-dev:
+        condition: service_healthy
+    networks:
+      - dev
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/web
+          target: /workspace/apps/web
+          ignore:
+            - node_modules/
+            - .next/
+            - .next-test/
+            - .next-performance/
+        - action: rebuild
+          path: ./packages
+        - action: rebuild
+          path: ./pnpm-lock.yaml
+  schema-check:
+    image: ${API_OPS_IMAGE:-rephone-api-ops:prod}
+    pull_policy: build
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:check
+    volumes:
+      - ./secrets:/run/secrets:ro
+    restart: 'no'
+    networks:
+      - backend
+      - egress
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    profiles:
+      - prod
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-operations
+  migrate:
+    image: ${API_OPS_IMAGE:-rephone-api-ops:prod}
+    pull_policy: build
+    profiles:
+      - prod
+    environment:
+      NODE_ENV: production
+      DIRECT_URL: ${DIRECT_URL:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:deploy
+    volumes:
+      - ./secrets:/run/secrets:ro
+    restart: 'no'
+    networks:
+      - backend
+      - egress
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    scale: 0
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-operations
+  provision-runtime:
+    image: ${API_OPS_IMAGE:-rephone-api-ops:prod}
+    pull_policy: build
+    profiles:
+      - prod
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-}
+      DIRECT_URL: ${DIRECT_URL:-}
+      REPHONE_RUNTIME_DB_PASSWORD: ${REPHONE_RUNTIME_DB_PASSWORD:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:provision-runtime
+    volumes:
+      - ./secrets:/run/secrets:ro
+    restart: 'no'
+    networks:
+      - backend
+      - egress
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    scale: 0
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-operations
+  api:
+    image: ${API_IMAGE:-rephone-api:prod}
+    pull_policy: build
+    environment:
+      NODE_ENV: production
+      API_PORT: '4000'
+      API_PUBLIC_URL: https://${SITE_DOMAIN:-}
+      WEB_PUBLIC_URL: https://${SITE_DOMAIN:-}
+      WEB_ORIGIN: https://${SITE_DOMAIN:-}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DB_POOL_MAX: ${DB_POOL_MAX:-5}
+      DB_CONNECTION_TIMEOUT_MS: ${DB_CONNECTION_TIMEOUT_MS:-5000}
+      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-10000}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      JWT_ISSUER: ${JWT_ISSUER:-rephone-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-rephone-web}
+      AUTH_REFRESH_TTL_DAYS: ${AUTH_REFRESH_TTL_DAYS:-7}
+      ARGON2_MEMORY_KIB: ${ARGON2_MEMORY_KIB:-65536}
+      ARGON2_TIME_COST: ${ARGON2_TIME_COST:-3}
+      ARGON2_PARALLELISM: ${ARGON2_PARALLELISM:-1}
+      PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-30}
+      EMPLOYEE_INVITE_TTL_HOURS: ${EMPLOYEE_INVITE_TTL_HOURS:-24}
+      GUEST_CART_TTL_DAYS: ${GUEST_CART_TTL_DAYS:-30}
+      IDENTIFIER_ENCRYPTION_KEY: ${IDENTIFIER_ENCRYPTION_KEY:-}
+      IDENTIFIER_HMAC_KEY: ${IDENTIFIER_HMAC_KEY:-}
+      DEALER_ENABLED: ${DEALER_ENABLED:-false}
+      DEALER_ENVIRONMENT: LIVE
+      DEALER_WORKER_ENABLED: ${DEALER_WORKER_ENABLED:-true}
+      DEALER_ENCRYPTION_KEY: ${DEALER_ENCRYPTION_KEY:-}
+      DEALER_SANDBOX_WEB_URL: ${DEALER_SANDBOX_WEB_URL:-}
+      DEALER_SANDBOX_API_URL: ${DEALER_SANDBOX_API_URL:-}
+      DEALER_LIVE_WEB_URL: https://${SITE_DOMAIN:-}
+      AFFILIATE_ENABLED: ${AFFILIATE_ENABLED:-false}
+      AFFILIATE_ENVIRONMENT: LIVE
+      AFFILIATE_ENCRYPTION_KEY: ${AFFILIATE_ENCRYPTION_KEY:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_PUBLIC_BUCKET: ${SUPABASE_PUBLIC_BUCKET:-rephone-public}
+      SUPABASE_PRIVATE_BUCKET: ${SUPABASE_PRIVATE_BUCKET:-rephone-private}
+      SUPABASE_STORE_BUCKET: ${SUPABASE_STORE_BUCKET:-rephone-store-assets}
+      SIGNED_URL_TTL_SECONDS: ${SIGNED_URL_TTL_SECONDS:-300}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SCHEDULER_ENABLED: 'true'
+      SCHEDULER_BATCH_SIZE: ${SCHEDULER_BATCH_SIZE:-100}
+      SCHEDULER_GUEST_CART_BATCH_SIZE: ${SCHEDULER_GUEST_CART_BATCH_SIZE:-200}
+      SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: ${SCHEDULER_AUTH_CLEANUP_BATCH_SIZE:-500}
+      REQUEST_BODY_LIMIT: ${REQUEST_BODY_LIMIT:-1mb}
+      TRUST_PROXY: 'true'
+      APP_VERSION: ${APP_VERSION:-latest}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    depends_on:
+      schema-check:
+        condition: service_completed_successfully
+    expose:
+      - '4000'
+    volumes:
+      - ./secrets:/run/secrets:ro
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - >-
+          fetch('http://127.0.0.1:4000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    networks:
+      - backend
+      - egress
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: ${API_MEMORY_LIMIT:-1G}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    profiles:
+      - prod
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-runtime
+  web:
+    image: ${WEB_IMAGE:-rephone-web:prod}
+    pull_policy: build
+    environment:
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_BASE_URL: http://api:4000/api/v1
+      REPHONE_SKIP_ENV_FILE: 'true'
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - '3000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - >-
+          fetch('http://127.0.0.1:3000/api/health').then(r=>{if(r.status!==204)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: ${WEB_MEMORY_LIMIT:-768M}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    profiles:
+      - prod
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: web-runtime
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+        API_PUBLIC_URL: https://${SITE_DOMAIN:-localhost}
+        DEALER_ENVIRONMENT: LIVE
+  gateway:
+    image: caddy:2.10.2-alpine
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-}
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    ports:
+      - '80:80'
+      - '443:443'
+      - 443:443/udp
+    volumes:
+      - ./infra/docker/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '-q'
+        - '-O'
+        - /dev/null
+        - http://127.0.0.1:2019/config/
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+    networks:
+      - frontend
+      - backend
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+    profiles:
+      - prod
   postgres-test:
     image: postgres:17.6-alpine
-    profiles: [test]
+    profiles:
+      - test
     environment:
       POSTGRES_DB: rephone_test
       POSTGRES_USER: rephone
       POSTGRES_PASSWORD: rephone
-      TZ: UTC
     ports:
-      - target: 5432
-        published: '${POSTGRES_TEST_HOST_PORT:-5433}'
-        host_ip: 127.0.0.1
-        protocol: tcp
-    volumes:
-      - rephone_pgtestdata17:/var/lib/postgresql/data
+      - 127.0.0.1:${POSTGRES_TEST_HOST_PORT:-5434}:5432
+    tmpfs:
+      - /var/lib/postgresql/data
     healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U rephone -d rephone_test']
-      interval: 3s
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -U rephone -d rephone_test
+      interval: 2s
       timeout: 3s
-      retries: 20
-      start_period: 5s
-    restart: unless-stopped
-    stop_grace_period: 30s
-    # Docker Desktop cannot publish a port from a container attached only to an
-    # internal network. The second bridge is used solely for host test access.
-    networks: [backend, egress]
+      retries: 30
+    networks:
+      - test
     logging:
+      driver: json-file
       options:
         max-size: 10m
         max-file: '3'
-
+  api-test:
+    profiles:
+      - test
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-operations
+    environment:
+      NODE_ENV: test
+      REPHONE_SKIP_ENV_FILE: 'true'
+      TEST_DATABASE_URL: postgresql://rephone:rephone@postgres-test:5432/rephone_test
+    command:
+      - pnpm
+      - exec
+      - node
+      - scripts/test.mjs
+      - container
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    networks:
+      - test
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  smoke-cert-init:
+    <<: *smoke-operation
+    user: root
+    volumes:
+      - smoke-db-certs:/certs
+    command:
+      - /bin/sh
+      - '-ec'
+      - |
+        umask 077
+        openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+          -subj '/CN=smoke-database' \
+          -addext 'subjectAltName=DNS:smoke-database' \
+          -keyout /certs/server.key -out /certs/server.crt >/dev/null 2>&1
+        cp /certs/server.crt /certs/ca.crt
+        chmod 600 /certs/server.key
+        chmod 644 /certs/server.crt /certs/ca.crt
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+  smoke-database:
+    image: postgres:17.6-alpine
+    pull_policy: missing
+    environment:
+      POSTGRES_DB: rephone_test
+      POSTGRES_USER: smoke_owner
+      POSTGRES_PASSWORD: ${SMOKE_DB_PASSWORD:-}
+      TZ: UTC
+      REPHONE_SKIP_ENV_FILE: 'true'
+    entrypoint:
+      - /bin/sh
+      - '-ec'
+      - |
+        chown -R postgres:postgres /certs
+        exec docker-entrypoint.sh postgres \
+          -c ssl=on \
+          -c ssl_cert_file=/certs/server.crt \
+          -c ssl_key_file=/certs/server.key
+    depends_on:
+      smoke-cert-init:
+        condition: service_completed_successfully
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - smoke-db-certs:/certs
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U smoke_owner -d rephone_test
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    networks:
+      - smoke
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
+    security_opt:
+      - no-new-privileges:true
+    restart: 'no'
+    profiles:
+      - test
+  smoke-migrate:
+    <<: *smoke-operation
+    environment:
+      NODE_ENV: production
+      DIRECT_URL: ${SMOKE_DIRECT_URL:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      smoke-database:
+        condition: service_healthy
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:deploy
+  smoke-seed:
+    <<: *smoke-operation
+    environment:
+      NODE_ENV: production
+      DIRECT_URL: ${SMOKE_DIRECT_URL:-}
+      DATABASE_URL: ${SMOKE_DIRECT_URL:-}
+      SEED_ADMIN_EMAIL: ${SMOKE_ADMIN_EMAIL:-}
+      SEED_ADMIN_PASSWORD: ${SMOKE_ADMIN_PASSWORD:-}
+      SEED_DEMO_PHONE: '0900000000'
+      REPHONE_SKIP_ENV_FILE: 'true'
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      smoke-migrate:
+        condition: service_completed_successfully
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:seed
+  smoke-provision-runtime:
+    <<: *smoke-operation
+    environment:
+      NODE_ENV: production
+      DIRECT_URL: ${SMOKE_DIRECT_URL:-}
+      DATABASE_URL: ${SMOKE_RUNTIME_URL:-}
+      REPHONE_RUNTIME_DB_PASSWORD: ${SMOKE_RUNTIME_DB_PASSWORD:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      smoke-seed:
+        condition: service_completed_successfully
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:provision-runtime
+  smoke-schema-check:
+    <<: *smoke-operation
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${SMOKE_RUNTIME_URL:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      smoke-provision-runtime:
+        condition: service_completed_successfully
+    command:
+      - pnpm
+      - '--filter'
+      - '@rephone/api'
+      - db:check
+  smoke-api:
+    image: ${SMOKE_API_IMAGE:-rephone-smoke-api:local}
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: api-runtime
+      labels:
+        com.rephone.production-smoke: ${SMOKE_NONCE:-}
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      API_PORT: '4000'
+      API_PUBLIC_URL: https://api.example.invalid
+      WEB_PUBLIC_URL: https://web.example.invalid
+      WEB_ORIGIN: https://web.example.invalid
+      DATABASE_URL: ${SMOKE_RUNTIME_URL:-}
+      DB_POOL_MAX: '5'
+      DB_CONNECTION_TIMEOUT_MS: '5000'
+      DB_IDLE_TIMEOUT_MS: '10000'
+      JWT_ACCESS_SECRET: ${SMOKE_JWT_SECRET:-}
+      JWT_ACCESS_TTL_SECONDS: '900'
+      JWT_ISSUER: rephone-production-smoke
+      JWT_AUDIENCE: rephone-production-smoke-web
+      AUTH_REFRESH_TTL_DAYS: '1'
+      ARGON2_MEMORY_KIB: '8192'
+      ARGON2_TIME_COST: '1'
+      ARGON2_PARALLELISM: '1'
+      PASSWORD_RESET_TTL_MINUTES: '5'
+      EMPLOYEE_INVITE_TTL_HOURS: '1'
+      GUEST_CART_TTL_DAYS: '1'
+      IDENTIFIER_ENCRYPTION_KEY: ${SMOKE_IDENTIFIER_ENCRYPTION_KEY:-}
+      IDENTIFIER_HMAC_KEY: ${SMOKE_IDENTIFIER_HMAC_KEY:-}
+      SUPABASE_URL: https://storage.example.invalid
+      SUPABASE_SERVICE_ROLE_KEY: ${SMOKE_STORAGE_KEY:-}
+      SUPABASE_PUBLIC_BUCKET: smoke-public
+      SUPABASE_PRIVATE_BUCKET: smoke-private
+      SUPABASE_STORE_BUCKET: smoke-store
+      SIGNED_URL_TTL_SECONDS: '60'
+      SMTP_HOST: smtp.example.invalid
+      SMTP_PORT: '587'
+      SMTP_SECURE: 'false'
+      SMTP_REQUIRE_TLS: 'false'
+      MAIL_FROM: rePhone Smoke <no-reply@example.invalid>
+      LOG_LEVEL: warn
+      SCHEDULER_ENABLED: 'false'
+      SCHEDULER_BATCH_SIZE: '1'
+      SCHEDULER_GUEST_CART_BATCH_SIZE: '1'
+      SCHEDULER_AUTH_CLEANUP_BATCH_SIZE: '1'
+      REQUEST_BODY_LIMIT: 1mb
+      TRUST_PROXY: 'false'
+      APP_VERSION: ${SMOKE_RELEASE_SHA:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    volumes:
+      - smoke-db-certs:/certs:ro
+    depends_on:
+      smoke-schema-check:
+        condition: service_completed_successfully
+    expose:
+      - '4000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - >-
+          fetch('http://127.0.0.1:4000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    networks:
+      - smoke
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+    profiles:
+      - test
+  smoke-web:
+    image: ${SMOKE_WEB_IMAGE:-rephone-smoke-web:local}
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: web-runtime
+      labels:
+        com.rephone.production-smoke: ${SMOKE_NONCE:-}
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+        NEXT_PUBLIC_STORE_EMAIL: hello@example.invalid
+        NEXT_PUBLIC_SOCIAL_FACEBOOK_URL: https://social.example.invalid/facebook
+        NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL: https://social.example.invalid/instagram
+        NEXT_PUBLIC_SOCIAL_TIKTOK_URL: https://social.example.invalid/tiktok
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: 0.0.0.0
+      API_INTERNAL_BASE_URL: http://smoke-api:4000/api/v1
+      REPHONE_SKIP_ENV_FILE: 'true'
+    depends_on:
+      smoke-api:
+        condition: service_healthy
+    expose:
+      - '3000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - '-e'
+        - >-
+          fetch('http://127.0.0.1:3000/api/health').then(r=>{if(r.status!==204)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - smoke
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
+    profiles:
+      - test
+  smoke-probe:
+    image: ${SMOKE_OPS_IMAGE:-rephone-smoke-ops:local}
+    pull_policy: never
+    profiles:
+      - test
+    environment:
+      SMOKE_ADMIN_EMAIL: ${SMOKE_ADMIN_EMAIL:-}
+      SMOKE_ADMIN_PASSWORD: ${SMOKE_ADMIN_PASSWORD:-}
+      SMOKE_CUSTOMER_EMAIL: ${SMOKE_CUSTOMER_EMAIL:-}
+      SMOKE_CUSTOMER_PASSWORD: ${SMOKE_CUSTOMER_PASSWORD:-}
+      SMOKE_RELEASE_SHA: ${SMOKE_RELEASE_SHA:-}
+      REPHONE_SKIP_ENV_FILE: 'true'
+    command:
+      - node
+      - scripts/infra/production-smoke-probe.mjs
+    depends_on:
+      smoke-api:
+        condition: service_healthy
+      smoke-web:
+        condition: service_healthy
+    networks:
+      - smoke
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: 'no'
 networks:
-  frontend:
+  dev: {}
+  test: {}
   backend:
     internal: true
-  egress:
-
+  egress: {}
+  frontend: {}
+  smoke:
+    internal: true
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
 volumes:
-  rephone_pgtestdata17:
-  caddy_data:
-  caddy_config:
+  dev_database: {}
+  caddy_data: {}
+  caddy_config: {}
+  smoke-db-certs:
+    labels:
+      com.rephone.production-smoke: ${SMOKE_NONCE:-}
