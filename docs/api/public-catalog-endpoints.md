@@ -1,5 +1,7 @@
 # Public catalog endpoints
 
+Bổ sung được yêu cầu ngày 13/10/2026: [public units và lọc RAM/khóa mạng](ui-refinement-2026-10-13.md). Nội dung bổ sung có ưu tiên cho các query/endpoint mới; quy tắc public-safe dưới đây tiếp tục áp dụng.
+
 - Trạng thái: Accepted tại ADR-0057.
 - Phạm vi: public read projection cho product, variant và iPhone unit đang bán được.
 
@@ -27,10 +29,12 @@ Không có public create/update và không có collection `/used-iphones` trong 
 | `minPrice`, `maxPrice` | Money optional | Product có ít nhất một public offer trong range; min không lớn hơn max |
 | `inStock` | boolean optional | `true`: có offer đang bán được; `false`: active nhưng không có offer |
 | `page`, `pageSize` | `1`, `20` | Theo pagination baseline, pageSize tối đa 100 |
-| `sortBy` | `createdAt` | Allowlist: `createdAt`, `name`, `fromPrice`, `releaseYear` |
+| `sortBy` | `createdAt` | Allowlist: `createdAt`, `name`, `fromPrice`, `releaseYear`, `generation` |
 | `sortOrder` | `desc` | `asc` hoặc `desc`; luôn thêm `id` tie-breaker |
 
 Mọi filter kết hợp bằng `AND`. Filter variant/price chỉ dùng để xác định product phù hợp; response vẫn là một card cho mỗi product. Khi sort `fromPrice`, giá null nằm cuối ở cả hai hướng.
+
+Trang `/products` mặc định gửi `sortBy=generation&sortOrder=desc` (nút **Dòng mới nhất**): iPhone 18 → 17 → 16…; các biến thể được giữ cùng dòng theo thứ tự như trang chủ (bản thường, mini/e/Plus/Air nếu có, Pro, Pro Max). iPhone Air thuộc nhóm 17; X/XR/XS nằm giữa 11 và 8; SE 3 → 2 → 1 sau các dòng đánh số, tiếp đến tên iPhone chưa nhận diện và phụ kiện. Sắp xếp ở database trước khi phân trang, luôn có tie-breaker để các trang ổn định. `asc` đảo thứ tự các nhóm, giữ thứ tự biến thể; tên chưa nhận diện/phụ kiện vẫn ở cuối. Các kiểu sort hiện có giữ nguyên ý nghĩa.
 
 ### `ProductListItemDto`
 

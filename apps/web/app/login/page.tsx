@@ -106,7 +106,9 @@ export default function LoginPage() {
             Đăng nhập
           </Button>
           <AuthFormFooter>
-            <Link href="/forgot-password">Quên mật khẩu?</Link>
+            <Link href="/forgot-password" prefetch={false}>
+              Quên mật khẩu?
+            </Link>
           </AuthFormFooter>
           <AuthFormFooter>
             Chưa có tài khoản? <AuthSwitchLink destination="/register">Đăng ký</AuthSwitchLink>

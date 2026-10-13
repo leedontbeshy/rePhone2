@@ -23,6 +23,7 @@ import {
   targetTypeLabel,
 } from './order-presenter';
 import styles from './orders.module.css';
+import { OrderItemCost } from './order-item-cost';
 
 export function OrderDetailMain({
   detail,
@@ -31,6 +32,7 @@ export function OrderDetailMain({
   onSaveNote,
   setInternalNote,
   writesDisabled,
+  showCosts = false,
 }: Readonly<{
   detail: BackofficeOrderDetail;
   internalNote: string;
@@ -38,6 +40,7 @@ export function OrderDetailMain({
   onSaveNote: (event: SyntheticEvent<HTMLFormElement>) => void;
   setInternalNote: (value: string) => void;
   writesDisabled: boolean;
+  showCosts?: boolean;
 }>) {
   return (
     <div className={styles.detailSections}>
@@ -68,6 +71,7 @@ export function OrderDetailMain({
                 </span>
                 <strong>{formatVnd(item.lineTotal)}</strong>
               </div>
+              {showCosts && <OrderItemCost item={item} />}
             </article>
           ))}
         </div>

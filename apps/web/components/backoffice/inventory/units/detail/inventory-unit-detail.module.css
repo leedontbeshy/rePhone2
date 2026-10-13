@@ -10,6 +10,7 @@
 }
 
 .page {
+  container: unit-dossier / inline-size;
   min-width: 0;
   gap: var(--space-5);
 }
@@ -36,7 +37,7 @@
   color: var(--color-primary) !important;
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -50,9 +51,9 @@
 .titleLine h1 {
   margin: var(--space-1) 0 var(--space-2);
   color: var(--color-ink);
-  font-size: clamp(1.9rem, 3vw, 2.45rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.75rem, 2.2vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -0.03em;
 }
 
 .header > div > p:last-child,
@@ -72,7 +73,7 @@
 
 .headerFacts {
   display: grid;
-  min-width: min(100%, 30rem);
+  min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
   overflow: hidden;
@@ -83,7 +84,7 @@
 
 .headerAside {
   display: grid;
-  min-width: min(100%, 30rem);
+  min-width: 0;
   justify-items: end;
   gap: var(--space-3);
 }
@@ -123,7 +124,7 @@
 .workspace {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  grid-template-columns: minmax(0, 1fr) 18rem;
   align-items: start;
   gap: var(--space-5);
 }
@@ -136,7 +137,7 @@
 
 .sideColumn {
   position: sticky;
-  inset-block-start: calc(var(--header-height) + var(--space-4));
+  inset-block-start: calc(var(--backoffice-topbar-height, 72px) + var(--space-4));
 }
 
 .card {
@@ -239,7 +240,7 @@
 }
 
 .uploadForm {
-  grid-template-columns: minmax(14rem, 1.4fr) minmax(12rem, 1fr) minmax(7rem, 0.45fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(5rem, 0.45fr);
   align-items: start;
 }
 
@@ -340,7 +341,7 @@
 
 .inspectionItem {
   display: grid;
-  grid-template-columns: minmax(12rem, 1.5fr) minmax(14rem, 1fr) minmax(9rem, auto) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4);
@@ -411,8 +412,13 @@
 }
 
 .adminCostCard {
+  container: inventory-cost / inline-size;
   border-color: var(--color-warning);
-  background: linear-gradient(180deg, var(--color-warning-soft), var(--color-surface) 10rem);
+  background: var(--color-warning-soft);
+}
+
+.adminCostCard .eyebrow {
+  color: var(--color-warning) !important;
 }
 
 .costSummary {
@@ -504,7 +510,7 @@
   border-top: var(--border-default);
 }
 
-@media (max-width: 74rem) {
+@container unit-dossier (max-width: 61.999rem) {
   .header {
     display: grid;
     align-items: start;
@@ -529,16 +535,15 @@
 
   .sideColumn {
     position: static;
-    grid-row: 1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inspectionItem {
-    grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
-@media (max-width: 48rem) {
+@container unit-dossier (max-width: 37.999rem) {
   .headerFacts,
   .sideColumn,
   .formGrid,
@@ -579,7 +584,7 @@
   }
 }
 
-@media (max-width: 30rem) {
+@container unit-dossier (max-width: 28rem) {
   .card {
     padding: var(--space-4);
   }
@@ -592,5 +597,70 @@
   .formFooter > button,
   .formAction > button {
     width: 100%;
+  }
+}
+
+.header > div,
+.headerAside,
+.formGrid > *,
+.uploadForm > *,
+.inspectionItem > * {
+  min-inline-size: 0;
+}
+
+.header h1,
+.sectionHeading h2,
+.inspectionItem,
+.emptyCopy,
+.costSummary dd {
+  overflow-wrap: anywhere;
+}
+
+.mediaStage {
+  min-block-size: 0;
+  block-size: clamp(18rem, 30cqi, 24rem);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-subtle);
+}
+
+.page .mediaStage > img {
+  max-inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+}
+
+.headerFacts {
+  background: var(--color-studio-cyan);
+}
+
+.card,
+.loadingState,
+.loadState {
+  border-radius: var(--radius-panel);
+}
+
+.costSummary dd {
+  font-variant-numeric: tabular-nums;
+}
+
+@container inventory-cost (max-width: 37.999rem) {
+  .costSummary,
+  .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formFooter > button {
+    width: 100%;
+  }
+}
+
+@container unit-dossier (max-width: 45rem) {
+  .sideColumn,
+  .uploadForm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sectionHeadingRow {
+    flex-wrap: wrap;
   }
 }

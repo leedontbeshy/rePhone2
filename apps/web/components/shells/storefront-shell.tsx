@@ -9,6 +9,7 @@ interface StorefrontShellProps extends SharedShellProps {
   readonly primaryNavigation?: ReactNode;
   readonly mobileNavigation?: ReactNode;
   readonly headerActions?: ReactNode;
+  readonly mobileSearch?: ReactNode;
   readonly footer?: ReactNode;
 }
 
@@ -19,6 +20,7 @@ export function StorefrontShell({
   primaryNavigation,
   mobileNavigation,
   headerActions,
+  mobileSearch,
   footer,
   mainId = DEFAULT_MAIN_ID,
   mainClassName,
@@ -44,6 +46,9 @@ export function StorefrontShell({
             )}
           </div>
         </div>
+        {mobileSearch === undefined ? null : (
+          <div className={styles.mobileSearch}>{mobileSearch}</div>
+        )}
         {navigation.length === 0 && primaryNavigation === undefined ? null : (
           <div className={styles.categoryRow}>
             <nav className={styles.primaryNavigation} aria-label="Điều hướng chính">

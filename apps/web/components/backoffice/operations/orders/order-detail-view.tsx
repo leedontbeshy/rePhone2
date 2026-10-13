@@ -119,7 +119,7 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
     return () => {
       active = false;
     };
-  }, [applyProjection, client, isStaff, orderId, status]);
+  }, [applyProjection, client, isStaff, orderId, status, user?.role]);
 
   useEffect(() => {
     if (
@@ -525,18 +525,6 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
           <>
             <OrderSummaryBand detail={detail} />
             <div className={styles.orderDetailLayout}>
-              <div className={styles.orderDetailMain}>
-                <OrderDetailMain
-                  notePending={busy === 'INTERNAL_NOTE'}
-                  writesDisabled={busy !== null}
-                  detail={detail}
-                  internalNote={internalNote}
-                  setInternalNote={setInternalNote}
-                  onSaveNote={(event) => {
-                    void saveInternalNote(event);
-                  }}
-                />
-              </div>
               <aside className={styles.orderDetailRail}>
                 <div className={styles.railStack}>
                   <OrderActionPanel
@@ -587,7 +575,10 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                     onSelect={setSelectedAction}
                     onSubmit={submitAction}
                   />
-                  <OrderFinancialSummary detail={detail} />
+                  <OrderFinancialSummary
+                    detail={detail}
+                    showCosts={status === 'authenticated' && user?.role === 'ADMIN'}
+                  />
                   {detail.cancelReason === null ? null : (
                     <p className={styles.dangerBox}>
                       <strong>Lý do hủy</strong>
@@ -596,6 +587,19 @@ export function OrderDetailView({ orderId }: Readonly<{ orderId: string }>) {
                   )}
                 </div>
               </aside>
+              <div className={styles.orderDetailMain}>
+                <OrderDetailMain
+                  showCosts={status === 'authenticated' && user?.role === 'ADMIN'}
+                  notePending={busy === 'INTERNAL_NOTE'}
+                  writesDisabled={busy !== null}
+                  detail={detail}
+                  internalNote={internalNote}
+                  setInternalNote={setInternalNote}
+                  onSaveNote={(event) => {
+                    void saveInternalNote(event);
+                  }}
+                />
+              </div>
             </div>
           </>
         )}

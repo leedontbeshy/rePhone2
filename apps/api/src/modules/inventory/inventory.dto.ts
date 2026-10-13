@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   Allow,
+  IsBoolean,
   IsIn,
   IsInt,
   IsObject,
@@ -12,6 +13,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -34,7 +36,7 @@ const LIFECYCLE_STATUSES = [
   'WRITTEN_OFF',
 ] as const;
 const CONDITION_GRADES = ['A', 'B', 'C'] as const;
-const IDENTIFIER_TYPES = ['IMEI', 'SERIAL', 'EID'] as const;
+const IDENTIFIER_TYPES = ['IMEI', 'SERIAL', 'EID', 'INVENTORY_CODE'] as const;
 const SORT_FIELDS = ['receivedAt', 'updatedAt', 'inventoryCode', 'salePrice'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
@@ -187,6 +189,11 @@ export class IntakeInventoryUnitDto {
 }
 
 export class UpdateInventoryUnitDto {
+  @ApiPropertyOptional({ type: Boolean })
+  @ValidateIf((_object: unknown, value: unknown) => value !== undefined)
+  @IsBoolean()
+  public isFeatured?: boolean;
+
   @ApiPropertyOptional({ type: String, maxLength: 255 })
   @IsOptional()
   @Transform(optionalTrim)

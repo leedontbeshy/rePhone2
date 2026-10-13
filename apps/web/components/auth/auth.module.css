@@ -1,3 +1,30 @@
+.routeNavigation {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-block-end: var(--space-6);
+}
+
+.routeLink {
+  display: inline-flex;
+  min-block-size: var(--control-hit-target);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
+  text-decoration: none;
+}
+
+.routeLink[aria-current='page'],
+.routeLink:hover {
+  color: var(--color-on-brand-soft);
+  background: var(--color-brand-soft);
+}
+
 .form {
   display: grid;
   gap: var(--space-5);
@@ -24,6 +51,11 @@
 
 .primaryAction {
   width: 100%;
+  min-block-size: var(--control-height);
+  margin-block-start: var(--space-1);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-small);
 }
 
 .footerCopy {
@@ -31,18 +63,19 @@
 }
 
 .footerCopy + .footerCopy {
-  margin-block-start: var(--space-2);
+  margin-block-start: var(--space-3);
+  padding-block-start: var(--space-6);
+  border-block-start: var(--border-default);
 }
 
 .securityNote {
-  padding-block-start: var(--space-4);
-  border-block-start: var(--border-default);
+  text-align: center;
 }
 
 .shellFooter {
   inline-size: min(100%, 42rem);
   margin: 0 auto;
-  padding: var(--space-4) var(--page-gutter);
+  padding: var(--space-5) var(--page-gutter) var(--space-6);
   text-align: center;
 }
 
@@ -86,7 +119,8 @@
 
 .terminalState:focus-visible {
   box-shadow: var(--focus-ring);
-  outline: 2px solid transparent;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 @media (max-width: 30rem) {

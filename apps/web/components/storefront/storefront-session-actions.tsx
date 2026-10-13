@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  CaretDownIcon,
   HeartIcon,
   ReceiptIcon,
   ShieldCheckIcon,
@@ -34,6 +33,7 @@ export function StorefrontSessionActions() {
         <Link
           className={styles.sessionAction}
           href={status === 'anonymous' ? '/login' : '/backoffice'}
+          prefetch={false}
         >
           <UserCircleIcon aria-hidden="true" size={22} weight="regular" />
           <span>{status === 'anonymous' ? 'Tài khoản' : 'Quản trị'}</span>
@@ -44,6 +44,7 @@ export function StorefrontSessionActions() {
         <Link
           className={styles.cartAction}
           href="/cart"
+          prefetch={false}
           aria-label={`Giỏ hàng, ${String(totalQuantity)} sản phẩm`}
         >
           <ShoppingCartSimpleIcon aria-hidden="true" size={22} weight="regular" />
@@ -120,12 +121,7 @@ function CustomerAccountMenu() {
       >
         <UserCircleIcon aria-hidden="true" size={22} weight="regular" />
         <span>Tài khoản</span>
-        <CaretDownIcon
-          className={styles.accountMenuCaret}
-          aria-hidden="true"
-          size={14}
-          weight="bold"
-        />
+        <span aria-hidden="true">{open ? '−' : '+'}</span>
       </button>
 
       {open ? (
@@ -136,6 +132,7 @@ function CustomerAccountMenu() {
               return (
                 <li key={item.href}>
                   <Link
+                    prefetch={false}
                     ref={index === 0 ? firstLinkRef : undefined}
                     className={styles.accountMenuLink}
                     href={item.href}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowRightIcon, ArrowUpRightIcon } from '@phosphor-icons/react';
 import styles from './partner.module.css';
 
 export function PartnerLanding({
@@ -116,7 +117,7 @@ export function PartnerLanding({
               href={affiliate ? '#cach-tham-gia' : '/dealer/api-guide'}
             >
               {affiliate ? 'Cách tham gia' : 'Tìm hiểu kết nối API'}{' '}
-              <span aria-hidden="true">→</span>
+              <ArrowRightIcon size={18} aria-hidden />
             </Link>
           </div>
           <p className={styles.note}>
@@ -141,7 +142,7 @@ export function PartnerLanding({
               : 'Đại lý thanh toán cho rePhone theo từng đơn. Phần chênh lệch giá bán là doanh thu của bạn trước chi phí.'}
           </p>
           <Link className={styles.textLink} href={`${destination}/terms`}>
-            Xem điều khoản chương trình <span aria-hidden="true">↗</span>
+            Xem điều khoản chương trình <ArrowUpRightIcon size={18} aria-hidden />
           </Link>
         </section>
       </header>

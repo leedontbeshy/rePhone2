@@ -5,7 +5,12 @@ import { IphoneModelDetail } from '@/components/catalog/iphone-model-detail';
 import { ProductBreadcrumbs } from '@/components/catalog/product-detail-components';
 import { PublicMediaImage } from '@/components/catalog/public-media';
 import { Price, StatusChip } from '@/components/ui';
-import { CatalogApiError, getPublicProduct, isIphoneVariant } from '@/lib/catalog-api';
+import {
+  CatalogApiError,
+  getPublicProduct,
+  getPublicProductSummary,
+  isIphoneVariant,
+} from '@/lib/catalog-api';
 import { fulfillmentSummary } from '@/lib/catalog-presenters';
 import { toModelUnitOfferSort } from '@/lib/model-unit-offers';
 import styles from './model.module.css';
@@ -20,8 +25,14 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   try {
     const product = await getPublicProduct(slug);
     if (product.productType === 'IPHONE') {
-      const query = await searchParams;
-      return <IphoneModelDetail product={product} sort={toModelUnitOfferSort(query['unitSort'])} />;
+      const [query, summary] = await Promise.all([searchParams, getPublicProductSummary(product)]);
+      return (
+        <IphoneModelDetail
+          product={product}
+          sort={toModelUnitOfferSort(query['unitSort'])}
+          summary={summary}
+        />
+      );
     }
 
     return (

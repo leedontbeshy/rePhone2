@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { validatePerformanceBuildProvenance } from './performance-source-revision.mjs';
 
 export const PERFORMANCE_COMPARISON_EXIT_CODES = Object.freeze({
   pass: 0,
@@ -130,6 +131,14 @@ export function comparePerformanceReports(baselineInput, afterInput) {
   return {
     afterCommitSha: after.commitSha,
     baselineCommitSha: baseline.commitSha,
+    afterSourceMode: after.sourceMode,
+    baselineSourceMode: baseline.sourceMode,
+    afterSourceFingerprint: after.sourceFingerprint,
+    baselineSourceFingerprint: baseline.sourceFingerprint,
+    afterBuildId: after.buildProvenance?.buildId ?? null,
+    baselineBuildId: baseline.buildProvenance?.buildId ?? null,
+    afterRuntimeFingerprint: after.buildProvenance?.runtimeFingerprint ?? null,
+    baselineRuntimeFingerprint: baseline.buildProvenance?.runtimeFingerprint ?? null,
     baselineBudgetFindings,
     comparisonSchemaVersion: 1,
     failures,
@@ -148,6 +157,12 @@ export function formatPerformanceComparisonMarkdown(comparison) {
     `- Kết quả: **${comparison.status === 'pass' ? 'ĐẠT' : 'KHÔNG ĐẠT'}**`,
     `- Baseline: \`${comparison.baselineCommitSha}\``,
     `- After: \`${comparison.afterCommitSha}\``,
+    `- Nguồn baseline (${comparison.baselineSourceMode}): \`${comparison.baselineSourceFingerprint ?? 'legacy clean commit'}\``,
+    `- Nguồn after (${comparison.afterSourceMode}): \`${comparison.afterSourceFingerprint ?? 'legacy clean commit'}\``,
+    `- Build baseline: \`${comparison.baselineBuildId ?? 'legacy report'}\``,
+    `- Build after: \`${comparison.afterBuildId ?? 'legacy report'}\``,
+    `- Runtime baseline: \`${comparison.baselineRuntimeFingerprint ?? 'legacy report'}\``,
+    `- Runtime after: \`${comparison.afterRuntimeFingerprint ?? 'legacy report'}\``,
     `- Profile: \`${comparison.profileFingerprint}\``,
     `- Ngưỡng hồi quy: > ${String(comparison.regressionLimitPercent)}%`,
     '',
@@ -202,6 +217,7 @@ function normalizeReport(input, label) {
   const report = requirePlainObject(input, label, 'REPORT_INVALID', 'report');
   const schemaVersion = requirePositiveInteger(report.schemaVersion, label, 'schemaVersion');
   const commitSha = requireSafeSha(report.commitSha, label);
+  const provenance = normalizeProvenance(report, label, commitSha);
   const thresholds = normalizeThresholds(report.thresholds, label);
   const profile = normalizeProfile(report, label);
   const routeEntries = requireArray(report.routes, label, 'routes');
@@ -243,12 +259,55 @@ function normalizeReport(input, label) {
   return {
     clientJsSourceKey,
     commitSha,
+    ...provenance,
     metricShape: metricShape ?? '',
     profileCanonical: canonicalJson(profile),
     routeNames: [...routes.keys()].sort(),
     routes,
     schemaVersion,
     thresholdsCanonical: canonicalJson(thresholds),
+  };
+}
+
+function normalizeProvenance(report, label, commitSha) {
+  const hasMetadata = [
+    'sourceMode',
+    'sourceFingerprint',
+    'sourceFileCount',
+    'buildProvenance',
+  ].some((field) => report[field] !== undefined);
+  if (!hasMetadata && (report.workingTreeClean === undefined || report.workingTreeClean === true)) {
+    // Older clean-commit reports predate build manifests. Do not invent their fingerprint.
+    return { sourceMode: 'commit', sourceFingerprint: null, buildProvenance: null };
+  }
+  if (
+    !['commit', 'working-tree'].includes(report.sourceMode) ||
+    typeof report.workingTreeClean !== 'boolean' ||
+    (report.sourceMode === 'commit' && !report.workingTreeClean) ||
+    typeof report.sourceFingerprint !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(report.sourceFingerprint) ||
+    !Number.isSafeInteger(report.sourceFileCount) ||
+    report.sourceFileCount <= 0
+  ) {
+    throw inputError('PROVENANCE_INVALID', `${label} report has invalid source provenance.`);
+  }
+  let buildProvenance;
+  try {
+    buildProvenance = validatePerformanceBuildProvenance(report.buildProvenance, {
+      commitSha,
+      sourceFingerprint: report.sourceFingerprint,
+      sourceFileCount: report.sourceFileCount,
+    });
+  } catch {
+    throw inputError(
+      'PROVENANCE_INVALID',
+      `${label} report must identify a production build matching its source provenance.`,
+    );
+  }
+  return {
+    sourceMode: report.sourceMode,
+    sourceFingerprint: report.sourceFingerprint,
+    buildProvenance,
   };
 }
 

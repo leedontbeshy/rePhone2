@@ -72,7 +72,7 @@
     "test:browser:release-matrix": "playwright test tests/browser/release-matrix.spec.ts",
     "test:browser:cross-browser-smoke": "playwright test tests/browser/release-matrix.spec.ts -g skip-links-and-axe --config playwright.cross-browser.config.ts",
     "verify:browser-artifacts": "node scripts/verify-playwright-shared-report.mjs .local/playwright-report .local/playwright-cross-browser-report",
-    "performance:storefront:build": "pnpm test:browser:build",
+    "performance:storefront:build": "node scripts/build-performance-web.mjs",
     "performance:storefront": "pnpm performance:storefront:build && playwright test tests/performance/storefront-performance.spec.ts --config playwright.performance.config.ts",
     "performance:release": "pnpm performance:storefront:build && playwright test tests/performance/release-performance.spec.ts --config playwright.performance.config.ts",
     "performance:audit-client-media": "node scripts/fe09-client-media-audit.mjs",

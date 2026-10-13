@@ -1,3 +1,4 @@
+import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -122,7 +123,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expectSingleMainAndNoOverflow(page);
 
     await page.goto('/backoffice', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { level: 1, name: 'Tổng quan vận hành' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Báo cáo tài chính' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Cấu hình cửa hàng' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Trạng thái hệ thống' })).toHaveCount(0);
     await expectAccessible(page);
@@ -486,9 +487,9 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await installFe06Api(page, 'ADMIN');
     const screens = [
       {
-        heading: 'Tổng quan vận hành',
+        heading: 'Báo cáo tài chính',
         path: '/backoffice',
-        ready: 'Tình hình vận hành',
+        ready: 'Doanh thu theo ngày',
         slug: 'overview',
       },
       {
@@ -530,7 +531,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
         slug: 'movements',
       },
     ] as const;
-    const mobileCaptures = new Set(['overview', 'units', 'unit-detail', 'inspection', 'stock']);
+    const mobileCaptures = new Set(screens.map((screen) => screen.slug));
 
     for (const viewport of [
       { width: 1440, height: 900 },
@@ -560,22 +561,33 @@ test.describe('FE-06 inventory and stock workspace', () => {
         await expectSingleMainAndNoOverflow(page);
         await expectAccessible(page);
         if (viewport.width === 390) {
-          const currentNavigationItem = page
+          const menuTrigger = page.getByRole('button', { name: 'Mở điều hướng vận hành' });
+          await menuTrigger.click();
+          const drawer = page.getByRole('dialog', { name: 'Điều hướng vận hành' });
+          await expect(drawer).toBeVisible();
+          const currentNavigationItem = drawer
             .getByRole('navigation', { name: 'Các khu vực vận hành' })
             .locator('a[aria-current="page"]');
+          await expect(currentNavigationItem).toHaveCount(1);
+          await expect(currentNavigationItem).toBeVisible();
           await expect
             .poll(() =>
               currentNavigationItem.evaluate((element) => {
                 const item = element.getBoundingClientRect();
-                const navigation = element.closest('nav')?.getBoundingClientRect();
+                const navigation = element.closest('aside')?.getBoundingClientRect();
                 return (
                   navigation !== undefined &&
                   item.left >= navigation.left &&
-                  item.right <= navigation.right
+                  item.right <= navigation.right &&
+                  item.top >= navigation.top - 1 &&
+                  item.bottom <= navigation.bottom + 1
                 );
               }),
             )
             .toBe(true);
+          await page.keyboard.press('Escape');
+          await expect(drawer).not.toBeVisible();
+          await expect(menuTrigger).toBeFocused();
         }
         if (
           process.env['FE09_CAPTURE_SCREENSHOTS'] === '1' &&
@@ -690,8 +702,12 @@ async function installFe06Api(
       await fulfillJson(route, { data: inventoryLocations() });
       return;
     }
-    if (pathname.endsWith('/backoffice/overview') && method === 'GET') {
-      await fulfillJson(route, { data: overviewSnapshot() });
+    if (pathname.endsWith('/backoffice/overview/financial') && method === 'GET') {
+      await fulfillJson(route, {
+        data: overviewSnapshot(
+          new URL(route.request().url()).searchParams.get('month') ?? '2026-10',
+        ),
+      });
       return;
     }
     if (pathname.endsWith('/backoffice/inventory-units/lookup-identifier') && method === 'POST') {
@@ -1085,25 +1101,8 @@ function stockMovement(movement: MovementFixture) {
   };
 }
 
-function overviewSnapshot() {
-  return {
-    generatedAt: '2026-09-02T03:00:00.000Z',
-    metrics: {
-      activeOrders: 4,
-      lowStockLevels: 1,
-      openAfterSales: 2,
-      paymentsUnderReview: 1,
-    },
-    priorities: [
-      {
-        count: 1,
-        href: '/backoffice/payments?status=UNDER_REVIEW',
-        key: 'PAYMENT_REVIEW_OVERDUE',
-        oldestAt: '2026-09-01T03:00:00.000Z',
-      },
-    ],
-    recentOrders: [],
-  } as const;
+function overviewSnapshot(month: string) {
+  return financialReportFixture(month);
 }
 
 function paged(data: readonly unknown[], pageSize: number, totalItems: number = data.length) {

@@ -158,22 +158,6 @@ export function CatalogProductForm({
             <h1>Thêm sản phẩm</h1>
             <p>Tạo thông tin chung trước, sau đó bổ sung biến thể và hình ảnh.</p>
           </div>
-          <div className={styles.headerActions}>
-            <button
-              className={styles.secondaryLink}
-              disabled={pending}
-              type="button"
-              onClick={() => {
-                if (dirty) setConfirmDiscard(true);
-                else onCancel();
-              }}
-            >
-              Hủy
-            </button>
-            <button className={styles.primaryLink} disabled={pending} type="submit">
-              {pending ? 'Đang lưu…' : submitLabel}
-            </button>
-          </div>
         </header>
 
         {error === null && errors.length === 0 ? null : (
@@ -507,6 +491,22 @@ export function CatalogProductForm({
             </section>
           </aside>
         </div>
+        <footer className={styles.formActions} aria-label="Thao tác sản phẩm">
+          <button
+            className={styles.secondaryLink}
+            disabled={pending}
+            type="button"
+            onClick={() => {
+              if (dirty) setConfirmDiscard(true);
+              else onCancel();
+            }}
+          >
+            Hủy
+          </button>
+          <button className={styles.primaryLink} disabled={pending} type="submit">
+            {pending ? 'Đang lưu…' : submitLabel}
+          </button>
+        </footer>
       </form>
       <BackofficeActionDialog
         cancelLabel="Tiếp tục chỉnh sửa"

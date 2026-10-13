@@ -20,10 +20,13 @@
 
 .form h2 {
   margin-block-end: var(--space-2);
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
 }
 
 .form p {
   margin: 0;
+  overflow-wrap: anywhere;
   color: var(--color-muted);
 }
 
@@ -36,6 +39,8 @@
 
 .reasonField textarea {
   resize: vertical;
+  min-inline-size: 0;
+  inline-size: 100%;
   min-block-size: 7rem;
   padding: var(--space-3);
   border: var(--border-strong);
@@ -55,12 +60,13 @@
   text-align: end;
 }
 
-.error {
-  color: var(--color-danger) !important;
+.form .error {
+  color: var(--color-danger);
 }
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-3);
 }

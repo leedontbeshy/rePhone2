@@ -327,14 +327,16 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
 
       const layout = await fallback.evaluate((element) => {
         const article = element.closest('article');
-        const copy = element.nextElementSibling;
+        const frame = element.closest('[data-checkout-media]');
+        const copy = article?.querySelector('[data-checkout-identity]');
         const label = element.querySelector('span');
-        if (article === null || copy === null || label === null) {
+        if (article === null || frame === null || copy == null || label === null) {
           throw new Error('Expected the checkout fallback, copy and article layout');
         }
         const fallbackBox = element.getBoundingClientRect();
         const articleBox = article.getBoundingClientRect();
         const copyBox = copy.getBoundingClientRect();
+        const frameBox = frame.getBoundingClientRect();
         return {
           articleBottom: articleBox.bottom,
           articleRight: articleBox.right,
@@ -347,6 +349,12 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
           fallbackRight: fallbackBox.right,
           fallbackScrollHeight: element.scrollHeight,
           fallbackScrollWidth: element.scrollWidth,
+          frameRight: frameBox.right,
+          frameBottom: frameBox.bottom,
+          frameClientWidth: frame.clientWidth,
+          frameScrollWidth: frame.scrollWidth,
+          frameClientHeight: frame.clientHeight,
+          frameScrollHeight: frame.scrollHeight,
           labelDisplay: window.getComputedStyle(label).display,
           viewportWidth: window.innerWidth,
         };
@@ -367,8 +375,12 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
       ).toBeLessThanOrEqual(layout.fallbackClientHeight);
       expect(layout.fallbackRight).toBeLessThanOrEqual(layout.articleRight + 1);
       expect(layout.fallbackBottom).toBeLessThanOrEqual(layout.articleBottom + 1);
-      expect(layout.copyLeft).toBeGreaterThanOrEqual(layout.fallbackRight - 1);
-      expect(layout.labelDisplay).toBe('none');
+      expect(layout.fallbackRight).toBeLessThanOrEqual(layout.frameRight + 1);
+      expect(layout.fallbackBottom).toBeLessThanOrEqual(layout.frameBottom + 1);
+      expect(layout.frameScrollWidth).toBeLessThanOrEqual(layout.frameClientWidth);
+      expect(layout.frameScrollHeight).toBeLessThanOrEqual(layout.frameClientHeight);
+      expect(layout.copyLeft).toBeGreaterThanOrEqual(layout.frameRight - 1);
+      expect(layout.labelDisplay).not.toBe('none');
     }
   });
 
@@ -625,6 +637,18 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
   test(bt('browser:cart-checkout', 'checkout-validation-preview-authority'), async ({ page }) => {
     await addUnitToCart(page, GUEST_UNIT);
     await page.goto('/checkout');
+    await expect(page.locator('form h2')).toHaveText([
+      'Thông tin liên hệ',
+      'Cách nhận hàng',
+      'Địa chỉ giao hàng',
+      'Ưu đãi và ghi chú',
+    ]);
+    const progress = page.getByRole('list', { name: 'Tiến trình đặt hàng' });
+    await expect(progress.locator('[aria-current="step"]')).toContainText('Thông tin nhận hàng');
+    await expect(
+      page.getByText('Giá và tình trạng sản phẩm đã được kiểm tra', { exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByText('Tổng thanh toán', { exact: true })).toHaveCount(0);
     let previewRequests = 0;
     page.on('request', (request) => {
       if (
@@ -655,6 +679,10 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     const previewResponse = await previewResponsePromise;
     expect(previewResponse.status()).toBe(200);
     expect(previewRequests).toBe(1);
+    await expect(progress.locator('[aria-current="step"]')).toContainText('Xác nhận đơn');
+    await expect(
+      page.getByText('Giá và tình trạng sản phẩm đã được kiểm tra', { exact: true }),
+    ).toBeVisible();
     const preview = checkoutPreviewEnvelope(await previewResponse.json()).data;
     const pricing = recordProperty(preview, 'pricing');
     const voucher = recordProperty(preview, 'voucher');
@@ -671,6 +699,8 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     await expectSummaryPrice(summary, 'Giảm giá', stringProperty(pricing, 'voucherDiscountAmount'));
     await expectSummaryPrice(summary, 'Phí giao hàng', stringProperty(pricing, 'shippingFee'));
     await expectSummaryPrice(summary, 'Đặt cọc', stringProperty(pricing, 'depositRequired'));
+    await expectSummaryPrice(summary, 'Số tiền còn lại', stringProperty(pricing, 'balanceDue'));
+    await expect(summary.locator('img[src*="/ui-studio/"]')).toHaveCount(0);
     await expectSummaryPrice(summary, 'Tổng thanh toán', stringProperty(pricing, 'grandTotal'));
     await expect(
       summary.getByText(`Nhận tại ${stringProperty(pickupStore, 'name')}`, { exact: true }),
@@ -855,12 +885,12 @@ test.describe('FE-03 cart, wishlist and checkout', () => {
     for (const viewport of COMMERCE_VIEWPORTS) {
       await checkoutPage.setViewportSize(viewport);
       await checkoutPage.goto('/checkout');
-      await fillContact(checkoutPage, 'Khách ảnh FE-09', 'visual-fe09@rephone.local');
-      await checkoutPage.getByLabel('Nhận tại cửa hàng').check();
+      await fillShippingCheckout(checkoutPage);
       await checkoutPage.locator('#checkout-voucher').fill('WELCOME100');
       await checkoutPage.getByRole('button', { name: 'Áp dụng', exact: true }).click();
       await requestCheckoutPreview(checkoutPage);
       await expect(checkoutPage.getByLabel('Giỏ hàng, 1 sản phẩm')).toBeVisible();
+      await expectCheckoutComposition(checkoutPage, viewport.width);
       await prepareVisualSnapshot(checkoutPage);
       commerceViolations.push(
         ...(await inspectCommerceSurface(checkoutPage, `checkout preview ${viewport.name}`)),
@@ -1082,6 +1112,35 @@ async function inspectCommerceSurface(page: Page, label: string): Promise<string
     violations.push(`${label}: ${violation.id} (${violation.impact}) at ${targets}`);
   }
   return violations;
+}
+
+async function expectCheckoutComposition(page: Page, viewportWidth: number): Promise<void> {
+  const form = page.locator('form').filter({ has: page.locator('#checkout-fullName') });
+  const summary = page.getByRole('complementary', { name: 'Đơn hàng của bạn' });
+  const [formBox, summaryBox, nameBox, phoneBox, emailBox] = await Promise.all([
+    requiredBox(form),
+    requiredBox(summary),
+    requiredBox(page.locator('#checkout-fullName')),
+    requiredBox(page.locator('#checkout-phone')),
+    requiredBox(page.locator('#checkout-email')),
+  ]);
+  // A long receipt remains in flow until a fit-aware sticky implementation is available.
+  expect(await summary.evaluate((element) => window.getComputedStyle(element).position)).toBe(
+    'static',
+  );
+  if (viewportWidth >= 960) {
+    expect(summaryBox.x).toBeGreaterThanOrEqual(formBox.x + formBox.width);
+    expect(formBox.width / (formBox.width + summaryBox.width)).toBeCloseTo(0.6, 1);
+  } else {
+    expect(summaryBox.y).toBeGreaterThanOrEqual(formBox.y + formBox.height - 1);
+  }
+  if (viewportWidth >= 640) {
+    expect(Math.abs(emailBox.x - nameBox.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(emailBox.x + emailBox.width - phoneBox.x - phoneBox.width)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(emailBox.width).toBeGreaterThan(nameBox.width * 1.8);
+  }
 }
 
 async function prepareVisualSnapshot(page: Page): Promise<void> {

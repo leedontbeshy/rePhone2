@@ -5,6 +5,8 @@ export interface ShellNavigationItem {
   readonly label: string;
   readonly isCurrent?: boolean;
   readonly badgeCount?: number;
+  readonly badgeLabel?: string;
+  readonly badgeTone?: 'danger';
   readonly icon?:
     | 'overview'
     | 'catalog'

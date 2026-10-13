@@ -158,8 +158,8 @@ export function OperationsDetailLayout({
 }: Readonly<{ main: ReactNode; rail: ReactNode }>) {
   return (
     <div className={styles.detailLayout}>
-      <div className={styles.detailMain}>{main}</div>
       <aside className={styles.detailRail}>{rail}</aside>
+      <div className={styles.detailMain}>{main}</div>
     </div>
   );
 }

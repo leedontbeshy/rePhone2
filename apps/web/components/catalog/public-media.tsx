@@ -30,16 +30,36 @@ export function PublicMediaImage({
     if (media === undefined || loadedUrl === media.url || failedUrl === media.url) return;
     // An SSR image may finish loading before hydration attaches onLoad.
     if (imageRef.current?.complete && imageRef.current.naturalWidth > 0) return;
-    const timeout = window.setTimeout(() => {
-      const image = imageRef.current;
-      if (image !== null && (!image.complete || image.naturalWidth === 0)) {
-        setFailedUrl(media.url);
-      }
-    }, MEDIA_LOAD_TIMEOUT_MS);
-    return () => {
-      window.clearTimeout(timeout);
+    const image = imageRef.current;
+    if (image === null) return;
+    let timeout: number | undefined;
+    const startTimeout = () => {
+      if (timeout !== undefined || (image.complete && image.naturalWidth > 0)) return;
+      timeout = window.setTimeout(() => {
+        if (!image.complete || image.naturalWidth === 0) setFailedUrl(media.url);
+      }, MEDIA_LOAD_TIMEOUT_MS);
     };
-  }, [failedUrl, loadedUrl, media]);
+    // Native lazy loading may defer a distant image indefinitely. Its load budget
+    // starts only when it approaches the viewport, rather than at page hydration.
+    let observer: IntersectionObserver | undefined;
+    if (priority || typeof IntersectionObserver === 'undefined') {
+      startTimeout();
+    } else {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer?.disconnect();
+          startTimeout();
+        },
+        { rootMargin: '300px' },
+      );
+      observer.observe(image);
+    }
+    return () => {
+      if (timeout !== undefined) window.clearTimeout(timeout);
+      observer?.disconnect();
+    };
+  }, [failedUrl, loadedUrl, media, priority]);
 
   if (media === undefined || failedUrl === media.url) {
     return (

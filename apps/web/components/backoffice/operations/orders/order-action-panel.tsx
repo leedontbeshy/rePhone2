@@ -1,4 +1,3 @@
-import { CaretDownIcon } from '@phosphor-icons/react';
 import type { SyntheticEvent } from 'react';
 import { Button } from '@/components/ui';
 import type {
@@ -50,7 +49,6 @@ export function OrderActionPanel({
             <details className={styles.actionDisclosure} key={selectedAction}>
               <summary>
                 <span>Chi tiết {orderActionLabel(selectedAction).toLocaleLowerCase('vi-VN')}</span>
-                <CaretDownIcon aria-hidden="true" size={18} weight="bold" />
               </summary>
               <form
                 aria-busy={busy !== null || undefined}

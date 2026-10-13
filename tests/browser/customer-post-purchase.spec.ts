@@ -455,7 +455,20 @@ test.describe('FE-04 customer post-purchase', () => {
       await page.goto(`/orders/${ORDER_NUMBER}`);
       await expect(page.getByRole('heading', { level: 1, name: ORDER_NUMBER })).toBeVisible();
       await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
+      await expect(page.getByText(/^Hiện tại: Chờ xác nhận\./)).toHaveCount(1);
       await expectSingleMainAndNoOverflow(page);
+
+      if (viewport.name === 'mobile-390') {
+        const paymentJump = page.getByRole('link', { name: 'Xem thanh toán', exact: true });
+        await expect(paymentJump).toBeInViewport({ ratio: 1 });
+        await paymentJump.click();
+        await expect(page.locator('#order-payment')).toBeFocused();
+        await expect(
+          page.getByRole('heading', { level: 2, name: 'Thanh toán', exact: true }),
+        ).toBeInViewport();
+        await page.goto(`/orders/${ORDER_NUMBER}`);
+        await expect(page.getByText('Minh chứng thanh toán', { exact: true })).toBeVisible();
+      }
 
       if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
         await expectAccessible(page);
@@ -495,6 +508,19 @@ test.describe('FE-04 customer post-purchase', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Tạo yêu cầu hỗ trợ' })).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
     await expectAccessible(page);
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const requestChoices = page.getByRole('group', { name: 'Bạn cần hỗ trợ về việc gì?' });
+    await expect(requestChoices.getByRole('radio')).toHaveCount(3);
+    for (const label of await requestChoices.locator('label > span').all()) {
+      const lines = await label.evaluate((element) => {
+        const lineHeight = Number.parseFloat(window.getComputedStyle(element).lineHeight);
+        return element.getBoundingClientRect().height / lineHeight;
+      });
+      expect(lines).toBeLessThanOrEqual(2.1);
+    }
+    await expectSingleMainAndNoOverflow(page);
+    await page.setViewportSize({ width: 390, height: 844 });
 
     await page.goto(`/after-sales/${REQUEST_NUMBER}?orderNumber=${ORDER_NUMBER}`);
     await expect(page.getByText(REQUEST_NUMBER, { exact: true })).toBeVisible();

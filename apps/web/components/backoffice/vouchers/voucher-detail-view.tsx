@@ -265,27 +265,7 @@ export function VoucherDetailView() {
                 </div>
               </div>
               <div className={styles.headerActions}>
-                {editing ? (
-                  <>
-                    <Button
-                      disabled={busy}
-                      variant="secondary"
-                      onClick={() => {
-                        setEditing(false);
-                      }}
-                    >
-                      Hủy chỉnh sửa
-                    </Button>
-                    <Button
-                      form={EDIT_FORM_ID}
-                      loading={busy}
-                      loadingLabel="Đang lưu thay đổi"
-                      type="submit"
-                    >
-                      Lưu thay đổi
-                    </Button>
-                  </>
-                ) : (
+                {editing ? null : (
                   <>
                     {voucher.status !== 'ARCHIVED' ? (
                       <Button
@@ -323,13 +303,34 @@ export function VoucherDetailView() {
             </header>
 
             {editing ? (
-              <VoucherEditor
-                endDateOnly={voucherAllowsOnlyEndDateUpdate(voucher)}
-                formId={EDIT_FORM_ID}
-                initialVoucher={voucher}
-                pending={busy}
-                onSubmit={save}
-              />
+              <>
+                <VoucherEditor
+                  endDateOnly={voucherAllowsOnlyEndDateUpdate(voucher)}
+                  formId={EDIT_FORM_ID}
+                  initialVoucher={voucher}
+                  pending={busy}
+                  onSubmit={save}
+                />
+                <footer className={styles.formActions} aria-label="Thao tác chỉnh sửa mã ưu đãi">
+                  <Button
+                    disabled={busy}
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(false);
+                    }}
+                  >
+                    Hủy chỉnh sửa
+                  </Button>
+                  <Button
+                    form={EDIT_FORM_ID}
+                    loading={busy}
+                    loadingLabel="Đang lưu thay đổi"
+                    type="submit"
+                  >
+                    Lưu thay đổi
+                  </Button>
+                </footer>
+              </>
             ) : (
               <VoucherSummary
                 usageError={usageError}
@@ -563,24 +564,24 @@ export function VoucherSummary({
                 ) : (
                   usages.map((usage) => (
                     <tr key={usage.id}>
-                      <td>
+                      <td data-label="Đơn hàng" data-mobile-role="primary">
                         <Link href={`/backoffice/orders/${encodeURIComponent(usage.orderId)}`}>
                           {usage.orderNumber}
                         </Link>
                       </td>
-                      <td>
+                      <td data-label="Khách hàng">
                         <span className={styles.usageCustomer}>
                           <strong>{usage.customerName}</strong>
                           {usage.customerEmail === null ? null : <span>{usage.customerEmail}</span>}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Trạng thái">
                         <CatalogVoucherStatusChip
                           label={voucherUsageStatusLabel(usage.status)}
                           status={usage.status}
                         />
                       </td>
-                      <td>{formatVoucherDateTime(usageTime(usage))}</td>
+                      <td data-label="Thời gian">{formatVoucherDateTime(usageTime(usage))}</td>
                     </tr>
                   ))
                 )}

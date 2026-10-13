@@ -14,10 +14,11 @@ const catalogClient = createApiClient({ baseUrl: browserApiBaseUrl });
 interface StorefrontSearchProps {
   readonly id: string;
   readonly onNavigate?: (() => void) | undefined;
-  readonly variant: 'desktop' | 'mobile';
+  readonly variant: 'desktop' | 'mobile' | 'compact';
 }
 
 export function StorefrontSearch({ id, onNavigate, variant }: StorefrontSearchProps) {
+  const compact = variant !== 'mobile';
   const listId = useId();
   const requestId = useRef(0);
   const optionRefs = useRef<Array<HTMLAnchorElement | null>>([]);
@@ -111,8 +112,9 @@ export function StorefrontSearch({ id, onNavigate, variant }: StorefrontSearchPr
         if (normalizedQuery.length >= 2) setOpen(true);
       }}
       role="search"
+      aria-label={variant === 'mobile' ? 'Tìm trong danh mục' : 'Tìm kiếm sản phẩm'}
     >
-      <label className={variant === 'desktop' ? styles.visuallyHidden : styles.label} htmlFor={id}>
+      <label className={compact ? styles.visuallyHidden : styles.label} htmlFor={id}>
         Tìm iPhone hoặc phụ kiện
       </label>
       <div className={styles.control}>
@@ -133,17 +135,13 @@ export function StorefrontSearch({ id, onNavigate, variant }: StorefrontSearchPr
             setOpen(nextQuery.trim().length >= 2);
           }}
           onKeyDown={handleKeyDown}
-          placeholder={variant === 'desktop' ? 'Tìm iPhone hoặc phụ kiện' : 'Nhập tên sản phẩm'}
+          placeholder={compact ? 'Tìm iPhone hoặc phụ kiện' : 'Nhập tên sản phẩm'}
           role="combobox"
           type="search"
           value={query}
         />
-        <button type="submit" aria-label={variant === 'desktop' ? 'Tìm kiếm' : undefined}>
-          {variant === 'desktop' ? (
-            <MagnifyingGlassIcon aria-hidden="true" size={20} weight="bold" />
-          ) : (
-            'Tìm'
-          )}
+        <button type="submit" aria-label={compact ? 'Tìm kiếm' : undefined}>
+          {compact ? <MagnifyingGlassIcon aria-hidden="true" size={20} weight="bold" /> : 'Tìm'}
         </button>
       </div>
 

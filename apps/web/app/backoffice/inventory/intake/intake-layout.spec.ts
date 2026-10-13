@@ -9,7 +9,7 @@ describe('inventory intake form layout', () => {
 
     expect(stylesheet).toContain(`.intakeWorkbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem);`);
+  grid-template-columns: minmax(0, 1fr) 18rem;`);
     expect(stylesheet).toContain(`.sectionFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

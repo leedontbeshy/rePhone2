@@ -1,58 +1,29 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { StorefrontFooter } from './storefront-footer';
+import { STOREFRONT_NAVIGATION } from './storefront-navigation';
 
-const config = {
-  email: 'hello@rephone.vn',
-  socialLinks: [
-    {
-      href: 'https://www.facebook.com/rephone.vn',
-      label: 'Facebook',
-      platform: 'FACEBOOK',
-    },
-    {
-      href: 'https://www.instagram.com/rephone.vn',
-      label: 'Instagram',
-      platform: 'INSTAGRAM',
-    },
-  ],
-} as const;
-
-const store = {
-  storeAddress: '123 Nguyễn Văn A, TP. Hồ Chí Minh',
-  storeName: 'rePhone Quận 1',
-  storePhone: '(028) 1234 5678',
-} as const;
-
-describe('storefront footer', () => {
-  it('renders generation discovery, public contact and safe external links', () => {
-    const markup = renderToStaticMarkup(<StorefrontFooter config={config} store={store} />);
-
-    for (const generation of ['X', '11', '12', '13', '14', '15', '16', '17']) {
-      expect(markup).toContain(`q=iPhone+${generation}`);
-      expect(markup).toContain(`>iPhone ${generation}</a>`);
+describe('storefront footer v2', () => {
+  it('keeps the five public destinations in a compact server-rendered footer', () => {
+    const markup = renderToStaticMarkup(<StorefrontFooter />);
+    expect(markup).toContain('aria-label="Điều hướng chân trang"');
+    for (const item of STOREFRONT_NAVIGATION) {
+      expect(markup).toContain(`>${item.label}</a>`);
+      expect(markup).toContain(`href="${item.href.replaceAll('&', '&amp;')}"`);
     }
-    expect(markup.match(/q=iPhone\+(?:X|1[1-7])/g)).toHaveLength(8);
-    expect(markup).toContain('href="tel:02812345678"');
-    expect(markup).toContain('href="mailto:hello@rephone.vn"');
-    expect(markup).toContain('query=123+Nguy%E1%BB%85n+V%C4%83n+A%2C+TP.+H%E1%BB%93+Ch%C3%AD+Minh');
-    expect(markup).toContain('target="_blank"');
-    expect(markup).toContain('rel="noopener noreferrer"');
-    expect(markup).not.toContain('objectPath');
+    expect(markup).toContain('rePhone');
+    expect(markup).toContain('Tất cả quyền được bảo lưu.');
+    expect(markup).not.toContain('footer-contact-heading');
     expect(markup).not.toContain('bankAccountNumber');
+    expect(markup).not.toContain('objectPath');
   });
 
-  it('keeps core navigation and a store fallback when contact providers are unavailable', () => {
-    const markup = renderToStaticMarkup(
-      <StorefrontFooter config={{ email: null, socialLinks: [] }} store={null} />,
-    );
-
-    expect(markup).toContain('Dòng iPhone');
-    expect(markup).toContain('Máy đang bán');
-    expect(markup).toContain('Ưu đãi');
-    expect(markup).not.toContain('Voucher');
+  it('keeps public contact reachable without a contact provider or session', () => {
+    const markup = renderToStaticMarkup(<StorefrontFooter />);
     expect(markup).toContain('href="/store"');
-    expect(markup).toContain('Xem địa chỉ cửa hàng');
+    expect(markup).toContain('>Liên hệ</a>');
+    expect(markup).toContain('href="/vouchers"');
     expect(markup).not.toContain('mailto:');
+    expect(markup).not.toContain('tel:');
   });
 });

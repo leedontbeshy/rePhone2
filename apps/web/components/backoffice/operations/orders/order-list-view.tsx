@@ -137,7 +137,7 @@ export function OrderListView() {
     return () => {
       if (isCurrentQueueRequest(request, listRequestRef.current)) listRequestRef.current += 1;
     };
-  }, [client, isStaff, query, queryKey, reloadKey, router, status]);
+  }, [client, isStaff, query, queryKey, reloadKey, router, status, user?.role]);
 
   function navigate(next: BackofficeOrderListQuery) {
     rememberQueueFocus();
@@ -229,7 +229,13 @@ export function OrderListView() {
             </Button>
           </section>
         ) : null}
-        {hasLoaded && orders.length > 0 ? <OrderQueue orders={orders} updating={updating} /> : null}
+        {hasLoaded && orders.length > 0 ? (
+          <OrderQueue
+            orders={orders}
+            updating={updating}
+            showCosts={status === 'authenticated' && user?.role === 'ADMIN'}
+          />
+        ) : null}
 
         {hasLoaded && pagination.totalPages > 1 ? (
           <nav className={styles.pagination} aria-label="Phân trang đơn hàng">
@@ -462,7 +468,12 @@ function OrderFilters({
 export function OrderQueue({
   orders,
   updating = false,
-}: Readonly<{ orders: readonly BackofficeOrderListItem[]; updating?: boolean }>) {
+  showCosts = false,
+}: Readonly<{
+  orders: readonly BackofficeOrderListItem[];
+  updating?: boolean;
+  showCosts?: boolean;
+}>) {
   return (
     <section
       aria-busy={updating}
@@ -470,6 +481,11 @@ export function OrderQueue({
       data-updating={updating || undefined}
       aria-label="Danh sách đơn hàng"
     >
+      {showCosts && (
+        <p className={styles.costSource}>
+          Giá vốn theo hồ sơ máy hiện tại; có thể khác thời điểm bán.
+        </p>
+      )}
       <div className={styles.queueHeader} aria-hidden="true">
         <span>Đơn hàng và khách</span>
         <span>Giao nhận</span>
@@ -513,6 +529,20 @@ export function OrderQueue({
                 <span className="rp-visually-hidden">Tài chính: </span>
                 <strong>{formatVnd(order.grandTotal)}</strong>
                 <span>Còn thu {formatVnd(order.balanceDue)}</span>
+                {showCosts && order.currentCostSummary !== undefined && (
+                  <span className={styles.queueCost}>
+                    Giá vốn đang lưu:{' '}
+                    {order.currentCostSummary.totalCost === null
+                      ? 'Chưa đủ dữ liệu'
+                      : formatVnd(order.currentCostSummary.totalCost)}
+                    {order.currentCostSummary.missingQuantity > 0 && (
+                      <small>
+                        Đã ghi nhận {formatVnd(order.currentCostSummary.knownCost)} · thiếu{' '}
+                        {order.currentCostSummary.missingQuantity} sản phẩm
+                      </small>
+                    )}
+                  </span>
+                )}
               </div>
               <div className={styles.rowStatuses}>
                 <span className="rp-visually-hidden">Trạng thái đơn hàng: </span>

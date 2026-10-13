@@ -9,5 +9,5 @@ export function joinClassNames(...values: ReadonlyArray<string | undefined>): st
 export function navigationAccessibleLabel(item: ShellNavigationItem): string | undefined {
   return item.badgeCount === undefined
     ? undefined
-    : `${item.label}, ${String(item.badgeCount)} mục`;
+    : `${item.label}, ${String(item.badgeCount)} ${item.badgeLabel ?? 'mục'}`;
 }

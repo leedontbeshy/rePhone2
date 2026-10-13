@@ -1,10 +1,19 @@
 import type { Metadata } from 'next';
+import localFont from 'next/font/local';
 import type { ReactNode } from 'react';
 import '../styles/base.css';
 import './globals.css';
 import { AuthProvider } from './auth-provider';
 import { CommerceProvider } from './commerce-provider';
 import { AffiliateMembershipProvider } from '@/components/affiliate/affiliate-membership';
+
+const inter = localFont({
+  src: './fonts/inter-latin-vietnamese.woff2',
+  variable: '--font-inter',
+  weight: '400 700',
+  style: 'normal',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'rePhone',
@@ -13,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html data-scroll-behavior="smooth" lang="vi">
+    <html className={inter.variable} data-scroll-behavior="smooth" lang="vi">
       <body>
         <AuthProvider>
           <AffiliateMembershipProvider>

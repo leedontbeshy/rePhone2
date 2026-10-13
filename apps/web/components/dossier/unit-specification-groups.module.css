@@ -3,7 +3,7 @@
   gap: var(--space-5);
   padding: var(--space-6);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -11,7 +11,8 @@
 .section > h2 {
   margin: 0;
   color: var(--color-ink);
-  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
   letter-spacing: -0.025em;
 }
 
@@ -86,7 +87,7 @@
   margin: 0;
   color: var(--color-ink);
   font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-small);
   overflow-wrap: anywhere;
 }
@@ -115,7 +116,7 @@
   }
 
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .item {
@@ -126,5 +127,11 @@
 @media (forced-colors: active) {
   .section {
     border-color: CanvasText;
+  }
+}
+
+@media (min-width: 60rem) and (max-width: 74.999rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

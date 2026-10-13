@@ -703,6 +703,7 @@ model InventoryUnit {
   variantId             String                      @map("variant_id") @db.Uuid
   locationId            String                      @map("location_id") @db.Uuid
   inventoryCode         String                      @unique @map("inventory_code") @db.VarChar(64)
+  isFeatured            Boolean                     @default(false) @map("is_featured")
   modelNumber           String?                     @map("model_number") @db.VarChar(255)
   regionCode            String?                     @map("region_code") @db.VarChar(255)
   simLockStatus         SimLockStatus               @default(UNKNOWN) @map("sim_lock_status")

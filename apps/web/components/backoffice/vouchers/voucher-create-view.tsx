@@ -46,14 +46,6 @@ export function VoucherCreateView() {
             <h1>Tạo mã ưu đãi</h1>
             <p>Thiết lập điều kiện rõ ràng trước khi áp dụng cho khách hàng.</p>
           </div>
-          <div className={`${styles.headerActions ?? ''} ${styles.editorHeaderActions ?? ''}`}>
-            <Link className={styles.secondaryLink} href={VOUCHERS_ROOT}>
-              Hủy
-            </Link>
-            <Button form={FORM_ID} loading={pending} loadingLabel="Đang lưu bản nháp" type="submit">
-              Lưu bản nháp
-            </Button>
-          </div>
         </header>
 
         {error === null ? null : (
@@ -63,6 +55,14 @@ export function VoucherCreateView() {
         )}
 
         <VoucherEditor formId={FORM_ID} pending={pending} onSubmit={submit} />
+        <footer className={styles.formActions} aria-label="Thao tác tạo mã ưu đãi">
+          <Link className={styles.secondaryLink} href={VOUCHERS_ROOT}>
+            Hủy
+          </Link>
+          <Button form={FORM_ID} loading={pending} loadingLabel="Đang lưu bản nháp" type="submit">
+            Lưu bản nháp
+          </Button>
+        </footer>
       </div>
     </CatalogVoucherShell>
   );

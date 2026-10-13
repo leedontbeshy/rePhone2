@@ -61,7 +61,7 @@ describe('FE-05 backoffice navigation', () => {
 
     expect(rootOverview).toEqual({
       href: '/backoffice',
-      label: 'Tổng quan',
+      label: 'Tài chính',
       icon: 'overview',
       isCurrent: true,
     });

@@ -1,7 +1,12 @@
 .surface {
   display: grid;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  container: operations-workspace / inline-size;
+}
+
+.surface > form:has(input[type='datetime-local']) > div:first-child {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
 }
 
 .actor {
@@ -49,10 +54,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-6);
+  flex-wrap: wrap;
 }
 
 .pageHeading {
   min-width: 0;
+  flex: 1 1 20rem;
 }
 
 .pageHeading h1,
@@ -62,14 +69,15 @@
 
 .pageHeading h1 {
   color: var(--color-ink);
-  font-size: clamp(var(--font-size-page-title), 2vw, 1.875rem);
+  font-size: var(--font-size-page-title);
   line-height: var(--line-height-page-title);
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
-  margin-bottom: var(--space-2) !important;
-  color: var(--color-primary);
+  margin-bottom: var(--space-2);
+  color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
@@ -98,10 +106,12 @@
 
 .pageActions {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .statusAxes {
@@ -134,13 +144,13 @@
 
 .statusAxisIcon {
   display: inline-grid;
-  width: 48px;
-  height: 48px;
+  width: 2.5rem;
+  height: 2.5rem;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
-  color: var(--color-primary);
-  background: var(--color-brand-soft);
+  color: var(--color-primary-hover);
+  background: var(--color-studio-cyan);
 }
 
 .statusAxisCopy {
@@ -162,6 +172,7 @@
   grid-template-columns: minmax(0, 2fr) minmax(18rem, 0.78fr);
   align-items: start;
   gap: var(--space-6);
+  grid-template-areas: 'main rail';
 }
 
 .detailMain,
@@ -173,18 +184,19 @@
 
 .detailRail {
   position: sticky;
-  inset-block-start: calc(var(--backoffice-topbar-height, 76px) + var(--space-6));
+  inset-block-start: calc(var(--backoffice-topbar-height, 72px) + var(--space-5));
+  grid-area: rail;
 }
 
 .detailRail .panel {
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-raised);
 }
 
 .panel {
   min-width: 0;
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -195,9 +207,10 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: var(--space-5);
-  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: var(--border-default);
+  flex-wrap: wrap;
 }
 
 .panelHeader h2,
@@ -323,6 +336,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .timelineHeading strong {
@@ -406,11 +420,14 @@
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-semibold);
   text-align: end;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .moneyRows [data-emphasis='strong'] dd {
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-card-title);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-card-title);
 }
 
 .moneyRows [data-emphasis='primary'] dd {
@@ -424,6 +441,7 @@
 @media (max-width: 63.999rem) {
   .detailLayout {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'rail' 'main';
   }
 
   .detailRail {
@@ -437,6 +455,10 @@
   .timelineHeading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .pageHeading {
+    flex: 0 1 auto;
   }
 
   .pageActions,
@@ -492,5 +514,44 @@
 @media (max-width: 22rem) {
   .statusAxis {
     padding-inline: var(--space-4);
+  }
+}
+
+.detailMain {
+  grid-area: main;
+}
+
+.pageHeading .eyebrow {
+  margin-bottom: var(--space-2);
+}
+
+.pageDescription,
+.pageMeta,
+.actionDescription,
+.timelineDescription {
+  overflow-wrap: anywhere;
+}
+
+.panelHeader > div:first-child,
+.moneyRows dt {
+  min-width: 0;
+}
+
+.timeline li[data-state='complete'] .timelineMarker {
+  background: var(--color-brand-soft);
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .statusAxes,
+  .accessState {
+    border-color: CanvasText;
+  }
+  .timelineMarker,
+  .timeline li[data-state='current'] .timelineMarker,
+  .timeline li[data-state='danger'] .timelineMarker {
+    border-color: CanvasText;
+    color: CanvasText;
+    background: Canvas;
   }
 }

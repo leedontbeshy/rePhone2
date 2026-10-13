@@ -44,6 +44,44 @@ describe('customer order presenters', () => {
     expect(stages.at(-1)).toMatchObject({ id: 'cancelled', state: 'terminal', tone: 'danger' });
   });
 
+  it('describes an unconfirmed placed order as waiting instead of already confirmed', () => {
+    const stages = orderJourney({
+      status: 'PLACED',
+      fulfillmentType: 'PICKUP',
+      fulfillmentStatus: 'PENDING',
+      placedAt: '2026-08-20T10:00:00.000Z',
+    } as Parameters<typeof orderJourney>[0]);
+    expect(stages[0]).toMatchObject({ label: 'Đã đặt hàng', state: 'complete' });
+    expect(stages.find((stage) => stage.state === 'current')).toMatchObject({
+      id: 'confirmed',
+      label: 'Chờ xác nhận',
+      at: null,
+    });
+    expect(
+      stages.filter((stage) => stage.at === null).every((stage) => stage.label.startsWith('Chờ')),
+    ).toBe(true);
+  });
+
+  it('does not announce delivery before its recorded timestamp', () => {
+    const stages = orderJourney({
+      status: 'PROCESSING',
+      fulfillmentType: 'SHIPPING',
+      fulfillmentStatus: 'IN_TRANSIT',
+      placedAt: '2026-08-20T10:00:00.000Z',
+      confirmedAt: '2026-08-20T11:00:00.000Z',
+      shipment: { shippedAt: '2026-08-20T12:00:00.000Z' },
+    } as Parameters<typeof orderJourney>[0]);
+    expect(stages.find((stage) => stage.state === 'current')).toMatchObject({
+      id: 'delivered',
+      label: 'Chờ giao thành công',
+      at: null,
+    });
+    expect(stages.find((stage) => stage.id === 'confirmed')).toMatchObject({
+      label: 'Đã xác nhận',
+      state: 'complete',
+    });
+  });
+
   it.each([
     ['FAILED', 'failed', 'Giao hàng không thành công'],
     ['RETURNED', 'returned', 'Hàng đã hoàn về'],

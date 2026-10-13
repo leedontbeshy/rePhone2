@@ -1,6 +1,10 @@
 .page {
   display: grid;
+  min-inline-size: 0;
   gap: var(--space-6);
+}
+.page > header {
+  margin-block-end: 0;
 }
 .count {
   color: var(--color-muted);
@@ -35,18 +39,23 @@
 }
 .breadcrumbs a:focus-visible {
   box-shadow: var(--focus-ring);
-  outline: 2px solid transparent;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: minmax(13rem, 1.4fr) minmax(10rem, 1fr) minmax(15rem, 1.2fr) auto;
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, auto);
   gap: var(--space-5);
   align-items: center;
   padding: var(--space-5) var(--space-6);
   border-block-end: var(--border-default);
 }
 
+.row > * {
+  min-inline-size: 0;
+}
 .row:last-child {
   border-block-end: 0;
 }
@@ -83,7 +92,8 @@
 .boundaries dd,
 .specifications dd {
   margin: 0;
-  font-weight: 650;
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
 }
 .rowAction {
   display: grid;
@@ -92,37 +102,41 @@
 }
 .rowAction a,
 .primaryAction {
-  min-block-size: 2.75rem;
+  min-block-size: var(--control-height);
+  max-inline-size: 100%;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--color-primary-hover);
-  font-weight: 700;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
   text-decoration: none;
 }
-.primaryAction,
-.primaryAction:link,
-.primaryAction:visited,
-.primaryAction:active {
+.primaryAction {
   padding-inline: var(--space-5);
   border: 1px solid var(--color-primary);
-  border-radius: var(--radius-control);
-  color: var(--color-on-primary) !important;
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
   background: var(--color-primary);
 }
 .primaryAction:hover {
   border-color: var(--color-primary-hover);
-  color: var(--color-on-primary) !important;
+  color: var(--color-on-primary);
   background: var(--color-primary-hover);
 }
 .rowAction a:focus-visible,
 .primaryAction:focus-visible {
   box-shadow: var(--focus-ring);
-  outline: 2px solid transparent;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
 .primaryAction:focus-visible {
   border-color: var(--color-primary);
-  color: var(--color-on-primary) !important;
+  color: var(--color-on-primary);
   background: var(--color-primary);
 }
 .specifications {
@@ -135,6 +149,7 @@
 .terms {
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .supportNote {
   color: var(--color-muted);
@@ -143,7 +158,7 @@
 
 @media (max-width: 63.999rem) {
   .row {
-    grid-template-columns: minmax(0, 1fr) minmax(10rem, auto);
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
   }
   .boundaries {
     grid-column: 1;
@@ -172,5 +187,22 @@
   }
   .specifications {
     grid-template-columns: 1fr;
+  }
+}
+
+.rowAction a:hover {
+  background: var(--color-brand-soft);
+}
+
+@media (forced-colors: active) {
+  .rowAction a,
+  .primaryAction {
+    border-color: ButtonText;
+  }
+
+  .breadcrumbs a:focus-visible,
+  .rowAction a:focus-visible,
+  .primaryAction:focus-visible {
+    outline-color: Highlight;
   }
 }

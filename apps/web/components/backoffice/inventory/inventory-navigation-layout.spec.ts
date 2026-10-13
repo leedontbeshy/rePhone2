@@ -8,13 +8,13 @@ describe('FE-06 inventory navigation layout', () => {
       new URL('./inventory.module.css', import.meta.url),
     );
     const shellStylesheetPath = fileURLToPath(
-      new URL('../../shells/shells.module.css', import.meta.url),
+      new URL('../../shells/backoffice-shell.module.css', import.meta.url),
     );
     const inventoryStylesheet = readFileSync(inventoryStylesheetPath, 'utf8');
     const shellStylesheet = readFileSync(shellStylesheetPath, 'utf8');
 
     expect(inventoryStylesheet).not.toContain('.workspaceNavigation');
-    expect(shellStylesheet).toContain('.backofficeSidebarWithLabels .navigationGroupLabel');
+    expect(shellStylesheet).toContain('.sidebarWithLabels .navigationGroupLabel');
     expect(shellStylesheet).toContain('text-transform: uppercase;');
   });
 });

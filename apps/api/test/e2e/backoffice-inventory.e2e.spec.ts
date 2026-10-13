@@ -41,6 +41,46 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
     await app.close();
   });
 
+  it('persists featured selection and looks up an exact inventory code with masked identifiers', async () => {
+    const employee = await login(server, 'EMPLOYEE');
+    const unit = await prisma.inventoryUnit.findUniqueOrThrow({
+      where: { inventoryCode: 'IP13-MID-001' },
+    });
+    const update = await request(server)
+      .patch(`/api/v1/backoffice/inventory-units/${unit.id}`)
+      .set(bearer(employee))
+      .send({ isFeatured: true })
+      .expect(200);
+    expect(successData(update)['isFeatured']).toBe(true);
+    expect(
+      (await prisma.inventoryUnit.findUniqueOrThrow({ where: { id: unit.id } })).isFeatured,
+    ).toBe(true);
+    const found = await request(server)
+      .post('/api/v1/backoffice/inventory-units/lookup-identifier')
+      .set(bearer(employee))
+      .send({ type: 'INVENTORY_CODE', value: ' ip13-mid-001 ' })
+      .expect(200);
+    expect(successData(found)).toMatchObject({
+      id: unit.id,
+      inventoryCode: unit.inventoryCode,
+      isFeatured: true,
+    });
+    expect(JSON.stringify(found.body)).not.toMatch(/Encrypted|Hmac|acquisitionCost|additionalCost/);
+    await request(server)
+      .post('/api/v1/backoffice/inventory-units/lookup-identifier')
+      .set(bearer(employee))
+      .send({ type: 'INVENTORY_CODE', value: 'IP13' })
+      .expect(404);
+    await request(server)
+      .patch(`/api/v1/backoffice/inventory-units/${unit.id}`)
+      .set(bearer(employee))
+      .send({ isFeatured: false })
+      .expect(200);
+    expect(
+      (await prisma.inventoryUnit.findUniqueOrThrow({ where: { id: unit.id } })).isFeatured,
+    ).toBe(false);
+  });
+
   it('blocks anonymous/customer access and keeps cost out of employee projections', async () => {
     await request(server).get('/api/v1/backoffice/products').expect(401);
     const customer = await login(server, 'CUSTOMER');

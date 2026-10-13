@@ -14,18 +14,22 @@ import type {
   BackofficeOrderListItemDto,
 } from './fulfillment-response.dto.js';
 import { FulfillmentClock } from './fulfillment-clock.service.js';
+import type { AuthContext } from '../auth/auth-context.js';
+import { BackofficeOrderCostReader } from './backoffice-order-cost.reader.js';
 
 @Injectable()
 export class FulfillmentQueryService {
   public constructor(
     @Inject(FulfillmentOrderGateway) private readonly orders: FulfillmentOrderGateway,
     @Inject(FulfillmentClock) private readonly clock: FulfillmentClock,
+    @Inject(BackofficeOrderCostReader) private readonly costs: BackofficeOrderCostReader,
     @Optional() @Inject(AffiliateRuntime) private readonly affiliateRuntime?: AffiliateRuntime,
     @Optional() @Inject(PrismaService) private readonly prisma?: PrismaService,
   ) {}
 
   public async list(
     query: BackofficeOrderListQueryDto,
+    role: AuthContext['role'],
   ): Promise<PaginatedApiResult<BackofficeOrderListItemDto>> {
     const placedFrom = query.placedFrom === undefined ? undefined : new Date(query.placedFrom);
     const placedTo = query.placedTo === undefined ? undefined : new Date(query.placedTo);
@@ -57,8 +61,17 @@ export class FulfillmentQueryService {
       sortOrder: query.sortOrder,
       now,
     });
+    const costs = await this.costs.read(
+      page.orders.map((order) => order.id),
+      role,
+    );
     return new PaginatedApiResult(
-      page.orders.map((order) => projectBackofficeOrderListItem(order, now)),
+      page.orders.map((order) => {
+        const result = projectBackofficeOrderListItem(order, now);
+        const cost = costs.get(order.id);
+        if (cost !== undefined) result.currentCostSummary = cost.summary;
+        return result;
+      }),
       {
         page: query.page,
         pageSize: query.pageSize,
@@ -68,10 +81,18 @@ export class FulfillmentQueryService {
     );
   }
 
-  public async detail(id: string): Promise<BackofficeOrderDetailDto> {
+  public async detail(id: string, role: AuthContext['role']): Promise<BackofficeOrderDetailDto> {
     const order = await this.orders.findById(id);
     if (order === null) throw new ApiError('RESOURCE_NOT_FOUND');
     const result = projectBackofficeOrderDetail(order, this.clock.now());
+    const costs = (await this.costs.read([id], role)).get(id);
+    if (costs !== undefined) {
+      result.currentCostSummary = costs.summary;
+      for (const item of result.items) {
+        const cost = costs.items.get(item.id);
+        if (cost !== undefined) item.currentCost = cost;
+      }
+    }
     if (this.affiliateRuntime?.enabled && this.prisma)
       result.hasAffiliateCommission = Boolean(
         await this.prisma.affiliateAttribution.findUnique({

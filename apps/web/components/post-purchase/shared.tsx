@@ -72,14 +72,22 @@ export function CollectionSurface({
 export function DetailPanel({
   children,
   className,
+  id,
+  tabIndex,
   title,
 }: Readonly<{
   children: ReactNode;
   className?: string | undefined;
+  id?: string | undefined;
+  tabIndex?: -1 | 0 | undefined;
   title?: ReactNode | undefined;
 }>) {
   return (
-    <section className={[styles.detailPanel, className].filter(Boolean).join(' ')}>
+    <section
+      className={[styles.detailPanel, className].filter(Boolean).join(' ')}
+      id={id}
+      tabIndex={tabIndex}
+    >
       {title ? <h2>{title}</h2> : null}
       {children}
     </section>

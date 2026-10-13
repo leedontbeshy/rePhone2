@@ -95,15 +95,15 @@ test.describe('FE-1 storefront discovery', () => {
     });
 
     await expect(currentStoreLink).toHaveAttribute('aria-current', 'page');
-    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '18px');
+    await expect(desktopNavigation.getByRole('link').first()).toHaveCSS('font-size', '16px');
 
     const [primaryRowBox, navigationBox, navigationListBox] = await Promise.all([
       primaryRow.boundingBox(),
       desktopNavigation.boundingBox(),
       navigationList.boundingBox(),
     ]);
-    expect(primaryRowBox?.height).toBeGreaterThanOrEqual(80);
-    expect(navigationBox?.height).toBeGreaterThanOrEqual(56);
+    expect(primaryRowBox?.height).toBeGreaterThanOrEqual(72);
+    expect(navigationBox?.height).toBeGreaterThanOrEqual(48);
     expect(navigationBox).not.toBeNull();
     expect(navigationListBox).not.toBeNull();
     if (navigationBox === null || navigationListBox === null) {
@@ -229,14 +229,14 @@ test.describe('FE-1 storefront discovery', () => {
 
     await page.goto('/products');
     const filterTrigger = page.getByRole('button', {
-      name: 'Bộ lọc và sắp xếp',
+      name: 'Giá',
       exact: true,
     });
     await filterTrigger.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('dialog[open]')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Lọc Giá' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Lọc Giá' })).toHaveCount(0);
     await expect(filterTrigger).toBeFocused();
 
     await page.goto(EXACT_UNIT_PATH);
@@ -300,10 +300,12 @@ test.describe('FE-1 storefront discovery', () => {
       '/products?productType=IPHONE&storageCapacityGb=128&pageSize=1&sortBy=name&sortOrder=asc',
     );
 
-    const filterForm = page.locator('form:has(#desktop-catalog-type)');
+    const filterForm = page
+      .locator('main')
+      .getByRole('button', { name: 'Bộ nhớ trong: 128 GB', exact: true });
     await expect(filterForm).toHaveCount(1);
-    await expect(filterForm.locator('select[name="productType"]')).toHaveValue('IPHONE');
-    await expect(filterForm.locator('select[name="storageCapacityGb"]')).toHaveValue('128');
+    expect(new URL(page.url()).searchParams.get('productType')).toBe('IPHONE');
+    await expect(filterForm).toHaveAttribute('data-active', 'true');
 
     const nextPage = page.locator('nav[aria-label="Phân trang danh mục sản phẩm"] a').filter({
       has: page.getByText('Trang sau', { exact: true }),
@@ -314,8 +316,8 @@ test.describe('FE-1 storefront discovery', () => {
 
     await page.goBack();
     await expect(page).not.toHaveURL(/page=2/);
-    await expect(filterForm.locator('select[name="productType"]')).toHaveValue('IPHONE');
-    await expect(filterForm.locator('select[name="storageCapacityGb"]')).toHaveValue('128');
+    expect(new URL(page.url()).searchParams.get('productType')).toBe('IPHONE');
+    await expect(filterForm).toHaveAttribute('data-active', 'true');
 
     await page.goForward();
     await expect(page).toHaveURL(/page=2/);
@@ -385,10 +387,10 @@ test.describe('FE-1 storefront discovery', () => {
     }
 
     await page.goto('/products');
-    const filterTrigger = page.getByRole('button', { name: 'Bộ lọc và sắp xếp', exact: true });
+    const filterTrigger = page.getByRole('button', { name: 'Giá', exact: true });
     await filterTrigger.click();
-    await expect(page.locator('dialog[open]')).toBeVisible();
-    await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+    await expect(page.getByRole('group', { name: 'Lọc Giá' })).toBeVisible();
+    await page.keyboard.press('Escape');
     await expect(filterTrigger).toBeFocused();
 
     await page.goto(EXACT_UNIT_PATH);
@@ -442,46 +444,88 @@ test.describe('FE-1 storefront discovery', () => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto('/');
 
-    const shelf = page.getByLabel('Các dòng máy thuộc iPhone 15', { exact: true });
-    await expect(shelf).toBeVisible();
+    // A real catalog image below the long mobile grid must survive a late scroll.
+    // Waiting beyond the media load budget catches premature lazy-image fallback.
+    const distantImage = page.locator('main a[href="/products/iphone-14-pro"] img');
+    await page.waitForTimeout(4_500);
+    await expect(distantImage).toHaveCount(1);
+    await distantImage.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => distantImage.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
 
-    const initialDimensions = await shelf.evaluate((element) => ({
+    const generations = page.getByRole('navigation', { name: 'Chọn thế hệ iPhone' });
+    const pills = generations.locator('ul');
+    await expect(generations).toBeVisible();
+    const initialDimensions = await pills.evaluate((element) => ({
       clientWidth: element.clientWidth,
       scrollWidth: element.scrollWidth,
     }));
-    expect(initialDimensions.scrollWidth).toBeGreaterThan(initialDimensions.clientWidth);
+    expect(initialDimensions.scrollWidth).toBeLessThanOrEqual(initialDimensions.clientWidth);
+    await expect(generations.getByRole('link')).toHaveCount(8);
+    await expect(generations.getByRole('link', { name: 'Khác', exact: true })).toHaveAttribute(
+      'href',
+      '/products',
+    );
 
-    await shelf.evaluate((element) => {
-      element.scrollLeft = element.scrollWidth;
-    });
-    expect(await shelf.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
-
+    await generations.getByRole('link', { name: 'iPhone 15', exact: true }).click();
+    await expect(page).toHaveURL('/?generation=iphone-15#iphone-models');
+    await expect(generations.getByRole('link', { name: 'iPhone 15', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    const models = page.getByRole('region', { name: 'iPhone 15', exact: true }).getByRole('list');
+    const names = await models.getByRole('heading', { level: 3 }).allTextContents();
+    expect(names.length).toBeGreaterThan(0);
+    expect(names.every((name) => name.startsWith('iPhone 15'))).toBe(true);
+    const rows = await models.locator(':scope > li').evaluateAll((items) =>
+      items.map((item) => ({
+        left: item.getBoundingClientRect().left,
+        width: item.getBoundingClientRect().width,
+      })),
+    );
+    const firstRow = rows[0];
+    expect(firstRow).toBeDefined();
+    expect(
+      rows.every((row) => row.width <= 288 && Math.abs(row.left - (firstRow?.left ?? 0)) <= 1),
+    ).toBe(true);
     const documentDimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
     }));
     expect(documentDimensions.scrollWidth).toBeLessThanOrEqual(documentDimensions.clientWidth);
+    await page.goBack();
+    await expect(generations.locator('[aria-current="page"]')).toHaveCount(0);
   });
 
   test(bt('browser:storefront-discovery', 'footer-links'), async ({ page }) => {
     await page.goto('/');
     const footer = page.locator('footer');
-
-    for (const generation of ['X', '11', '12', '13', '14', '15', '16', '17']) {
-      const label = `iPhone ${generation}`;
-      await expect(footer.getByRole('link', { name: label, exact: true })).toHaveAttribute(
+    const navigation = footer.getByRole('navigation', { name: 'Điều hướng chân trang' });
+    const destinations = [
+      ['iPhone', '/'],
+      ['Phụ kiện', '/products?productType=ACCESSORY&inStock=true'],
+      ['Máy đang bán', '/products?productType=IPHONE&inStock=true'],
+      ['Ưu đãi', '/vouchers'],
+      ['Liên hệ', '/store'],
+    ] as const;
+    await expect(navigation.getByRole('link')).toHaveCount(destinations.length);
+    for (const [label, href] of destinations) {
+      await expect(navigation.getByRole('link', { name: label, exact: true })).toHaveAttribute(
         'href',
-        `/products?productType=IPHONE&q=${label.replace(' ', '+')}`,
+        href,
       );
     }
-
-    await expect(footer.getByRole('link', { name: '0900000000', exact: true })).toHaveAttribute(
+    await expect(
+      footer.getByText('Chọn máy bạn thích. Hỗ trợ khi bạn cần.', { exact: true }),
+    ).toBeVisible();
+    await navigation.getByRole('link', { name: 'Liên hệ', exact: true }).click();
+    await expect(page).toHaveURL('/store');
+    await expect(page.getByRole('link', { name: 'Gọi cửa hàng', exact: true })).toHaveAttribute(
       'href',
       'tel:0900000000',
     );
-    await expect(
-      footer.getByText('123 Đường Demo, TP. Hồ Chí Minh', { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText('123 Đường Demo, TP. Hồ Chí Minh', { exact: true })).toBeVisible();
   });
 
   test(bt('browser:storefront-discovery', 'skip-navigation'), async ({ page }) => {
@@ -523,6 +567,12 @@ test.describe('FE-1 storefront discovery', () => {
     await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toBeVisible();
 
     await page.locator('footer').scrollIntoViewIfNeeded();
+    await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toHaveCount(0);
+
+    await page.evaluate(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+    await expect(page.getByRole('heading', { level: 1 })).toBeInViewport();
     await expect(page.getByRole('complementary', { name: 'Mua máy này' })).toHaveCount(0);
   });
 

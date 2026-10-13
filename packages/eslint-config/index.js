@@ -22,7 +22,7 @@ export function createConfig({ tsconfigRootDir }) {
     eslint.configs.recommended,
     ...tseslint.configs.strictTypeChecked,
     {
-      files: ['**/*.ts', '**/*.tsx'],
+      files: ['**/*.ts', '**/*.tsx', '**/*.mts'],
       languageOptions: {
         parserOptions: {
           projectService: true,

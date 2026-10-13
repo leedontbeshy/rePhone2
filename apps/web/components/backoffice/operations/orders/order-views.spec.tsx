@@ -175,6 +175,45 @@ describe('order operations views', () => {
     expect(markup).toContain('Còn phải thu');
     expect(markup).toContain('Còn có thể hoàn');
   });
+
+  it('shows current costs with their source to admins but hides retained cost data for employees', () => {
+    const detail = orderDetail();
+    detail.currentCostSummary = {
+      source: 'CURRENT_INVENTORY',
+      knownCost: '9187500',
+      totalCost: '9187500',
+      missingQuantity: 0,
+    };
+    const rows = [order({ currentCostSummary: detail.currentCostSummary })];
+    const adminList = renderToStaticMarkup(<OrderQueue orders={rows} showCosts />);
+    const adminDetail = renderToStaticMarkup(<OrderFinancialSummary detail={detail} showCosts />);
+    expect(adminList).toContain('Giá vốn đang lưu');
+    expect(adminList).toContain('9.187.500');
+    expect(adminDetail).toContain('9.187.500');
+    for (const markup of [adminList, adminDetail])
+      expect(markup).toContain('có thể khác thời điểm bán');
+    for (const markup of [
+      renderToStaticMarkup(<OrderQueue orders={rows} />),
+      renderToStaticMarkup(<OrderFinancialSummary detail={detail} />),
+    ]) {
+      expect(markup).not.toContain('9.187.500');
+      expect(markup).not.toContain('Giá vốn đang lưu');
+    }
+  });
+
+  it('labels partial costs as incomplete without replacing the missing total with zero', () => {
+    const detail = orderDetail();
+    detail.currentCostSummary = {
+      source: 'CURRENT_INVENTORY',
+      knownCost: '9187500',
+      totalCost: null,
+      missingQuantity: 2,
+    };
+    const markup = renderToStaticMarkup(<OrderFinancialSummary detail={detail} showCosts />);
+    expect(markup).toContain('Chưa đủ dữ liệu');
+    expect(markup).toContain('9.187.500');
+    expect(markup).toContain('2 sản phẩm chưa có giá vốn');
+  });
 });
 
 function actionSetters(): OrderActionSetters {

@@ -6,9 +6,14 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import {
+  assertPerformanceRevisionAllowed,
+  assertSamePerformanceRevision,
+  currentPerformanceRevision,
+  readPerformanceBuildProvenance,
+} from '../../scripts/performance-source-revision.mjs';
 import { installDeterministicPublicMedia } from '../browser/support/deterministic-public-media';
 
 const API_BASE_URL = 'http://localhost:4001/api/v1';
@@ -312,11 +317,9 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
   expect(ROUTES).toHaveLength(12);
   expect(SAMPLE_COUNT).toBeGreaterThanOrEqual(3);
 
-  const revision = currentRevision();
-  expect(
-    revision.clean,
-    `WP-12 performance measurement must run from a clean commit so the report SHA is reproducible.\n${revision.changes}`,
-  ).toBe(true);
+  const revision = currentPerformanceRevision();
+  assertPerformanceRevisionAllowed(revision);
+  const buildProvenance = readPerformanceBuildProvenance({ revision });
 
   const customer = await createAuthenticatedContext(browser, CUSTOMER, '/account', {
     waitForCustomerCart: true,
@@ -359,6 +362,13 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
       });
     }
 
+    const finalRevision = currentPerformanceRevision();
+    assertSamePerformanceRevision(revision, finalRevision);
+    expect(
+      readPerformanceBuildProvenance({ revision: finalRevision }),
+      'Production build changed during the measurement',
+    ).toEqual(buildProvenance);
+
     const report = {
       schema: 'rephone.release-performance.wp12',
       schemaVersion: 2,
@@ -366,6 +376,10 @@ test('WP-12 production release performance matrix', async ({ browser }) => {
       measuredAt: new Date().toISOString(),
       commitSha: revision.sha,
       workingTreeClean: revision.clean,
+      sourceMode: revision.sourceMode,
+      sourceFingerprint: revision.sourceFingerprint,
+      sourceFileCount: revision.sourceFileCount,
+      buildProvenance,
       productionBuild: true,
       routeCount: ROUTES.length,
       runCount: SAMPLE_COUNT,
@@ -910,12 +924,6 @@ function reportTypeFrom(value: string | undefined): ReportType {
   const normalized = value?.trim().toLowerCase() || 'baseline';
   if (normalized === 'baseline' || normalized === 'after') return normalized;
   throw new Error('WP12_REPORT_TYPE must be either "baseline" or "after".');
-}
-
-function currentRevision(): { sha: string; clean: boolean; changes: string } {
-  const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  const status = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim();
-  return { sha, clean: status.length === 0, changes: status };
 }
 
 function round(value: number, digits: number): number {

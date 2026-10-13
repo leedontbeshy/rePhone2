@@ -24,18 +24,25 @@ export function toModelUnitOfferSort(
 }
 
 export function toModelUnitOffers(product: ProductDetail): readonly ModelUnitOffer[] {
+  const seenCodes = new Set<string>();
   return product.variants.flatMap((variant) => {
     if (!isIphoneVariant(variant)) return [];
 
-    return variant.availableUnits.map((unit) => ({
-      colorHex: variant.colorHex,
-      colorName: variant.colorName,
-      productRamGb: product.ramGb,
-      storageCapacityGb: variant.storageCapacityGb,
-      unit,
-      variantDisplayName: variant.displayName,
-      variantId: variant.id,
-    }));
+    return variant.availableUnits
+      .filter((unit) => {
+        if (seenCodes.has(unit.inventoryCode)) return false;
+        seenCodes.add(unit.inventoryCode);
+        return true;
+      })
+      .map((unit) => ({
+        colorHex: variant.colorHex,
+        colorName: variant.colorName,
+        productRamGb: product.ramGb,
+        storageCapacityGb: variant.storageCapacityGb,
+        unit,
+        variantDisplayName: variant.displayName,
+        variantId: variant.id,
+      }));
   });
 }
 

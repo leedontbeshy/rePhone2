@@ -1,26 +1,3 @@
-import {
-  ArrowCounterClockwiseIcon,
-  ArrowsLeftRightIcon,
-  ClockCounterClockwiseIcon,
-  CreditCardIcon,
-  CubeIcon,
-  DeviceMobileIcon,
-  FileTextIcon,
-  GearIcon,
-  HeadsetIcon,
-  HeartbeatIcon,
-  HouseIcon,
-  IdentificationBadgeIcon,
-  MapPinIcon,
-  PackageIcon,
-  PlusIcon,
-  ScanIcon,
-  ShoppingBagIcon,
-  ShieldCheckIcon,
-  TagIcon,
-  TicketIcon,
-  UsersIcon,
-} from '@phosphor-icons/react/ssr';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { joinClassNames, navigationAccessibleLabel } from './shell-utils';
@@ -41,7 +18,12 @@ export function Wordmark({ brand }: Readonly<{ brand?: ShellBrand | undefined }>
   const label = brand?.label ?? 'rePhone';
 
   return (
-    <Link className={styles.wordmark} href={brand?.href ?? '/'} aria-label={`${label} — Trang chủ`}>
+    <Link
+      className={styles.wordmark}
+      href={brand?.href ?? '/'}
+      prefetch={false}
+      aria-label={`${label} — Trang chủ`}
+    >
       {label}
     </Link>
   );
@@ -50,24 +32,34 @@ export function Wordmark({ brand }: Readonly<{ brand?: ShellBrand | undefined }>
 export function NavigationList({
   items,
   className,
+  renderIcon,
 }: Readonly<{
   items: readonly ShellNavigationItem[];
   className?: string | undefined;
+  /** The owning surface supplies icons so text navigation does not load them. */
+  renderIcon?: (name: NonNullable<ShellNavigationItem['icon']>) => ReactNode;
 }>) {
   return (
     <ul className={joinClassNames(styles.navigationList, className)}>
       {items.map((item) => {
         const content = (
           <>
-            {item.icon === undefined ? null : (
+            {item.icon === undefined || renderIcon === undefined ? null : (
               <span className={styles.navigationIcon} aria-hidden="true">
-                <NavigationIcon name={item.icon} />
+                {renderIcon(item.icon)}
               </span>
             )}
             <span className={styles.navigationLabel}>{item.label}</span>
             {item.badgeCount === undefined ? null : (
-              <span className={styles.navigationBadge} aria-hidden="true">
-                {item.badgeCount}
+              <span
+                className={joinClassNames(
+                  styles.navigationBadge,
+                  item.badgeTone === 'danger' ? styles.navigationBadgeDanger : undefined,
+                )}
+                aria-hidden="true"
+                title={`${String(item.badgeCount)} ${item.badgeLabel ?? 'mục'}`}
+              >
+                {item.badgeTone === 'danger' && item.badgeCount > 99 ? '99+' : item.badgeCount}
               </span>
             )}
           </>
@@ -86,6 +78,7 @@ export function NavigationList({
               <Link
                 className={styles.navigationLink}
                 href={item.href}
+                prefetch={false}
                 aria-current={item.isCurrent ? 'page' : undefined}
                 aria-label={navigationAccessibleLabel(item)}
               >
@@ -97,37 +90,6 @@ export function NavigationList({
       })}
     </ul>
   );
-}
-
-type NavigationIconName = NonNullable<ShellNavigationItem['icon']>;
-
-const NAVIGATION_ICONS = {
-  overview: HouseIcon,
-  catalog: TagIcon,
-  inventory: CubeIcon,
-  orders: ShoppingBagIcon,
-  vouchers: TicketIcon,
-  devices: DeviceMobileIcon,
-  intake: PlusIcon,
-  lookup: ScanIcon,
-  stock: PackageIcon,
-  movements: ArrowsLeftRightIcon,
-  locations: MapPinIcon,
-  payments: CreditCardIcon,
-  refunds: ArrowCounterClockwiseIcon,
-  'after-sales': HeadsetIcon,
-  warranties: ShieldCheckIcon,
-  'warranty-policies': FileTextIcon,
-  employees: IdentificationBadgeIcon,
-  customers: UsersIcon,
-  settings: GearIcon,
-  'audit-logs': ClockCounterClockwiseIcon,
-  'system-health': HeartbeatIcon,
-} satisfies Record<NavigationIconName, typeof HouseIcon>;
-
-function NavigationIcon({ name }: Readonly<{ name: NavigationIconName }>) {
-  const Icon = NAVIGATION_ICONS[name];
-  return <Icon size={22} weight="regular" />;
 }
 
 export function MainLandmark({

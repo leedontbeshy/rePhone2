@@ -8,7 +8,8 @@ export default mergeConfig(sharedVitestConfig, {
     environment: 'node',
     fileParallelism: false,
     testTimeout: 20_000,
-    hookTimeout: 20_000,
+    // Instrumented cold imports need the same bounded setup as integration/E2E.
+    hookTimeout: 60_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],

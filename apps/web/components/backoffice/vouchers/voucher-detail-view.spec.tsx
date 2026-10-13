@@ -65,6 +65,11 @@ describe('voucher usage history boundary', () => {
     expect(markup).toContain('Chưa tải được lịch sử sử dụng');
     expect(markup).toContain('Kết nối lịch sử sử dụng bị gián đoạn.');
     expect(markup).toContain('RPH-001');
+    expect(markup).toContain('data-label="Đơn hàng" data-mobile-role="primary"');
+    expect(markup).toContain('data-label="Khách hàng"');
+    expect(markup).toContain('data-label="Trạng thái"');
+    expect(markup).toContain('data-label="Thời gian"');
+    expect(markup).toContain('href="/backoffice/orders/order-1"');
     expect(markup).toContain('Thử lại');
   });
 });

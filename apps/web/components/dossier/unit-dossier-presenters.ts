@@ -42,10 +42,16 @@ export function relatedUnitOffers(
   currentInventoryCode: string,
   limit = 4,
 ): readonly RelatedUnitOffer[] {
+  const seenCodes = new Set<string>();
   return product.variants
     .filter(isIphoneVariant)
     .flatMap((variant) => variant.availableUnits.map((unit) => ({ unit, variant })))
-    .filter(({ unit }) => unit.inventoryCode !== currentInventoryCode)
+    .filter(({ unit }) => {
+      if (unit.inventoryCode === currentInventoryCode || seenCodes.has(unit.inventoryCode))
+        return false;
+      seenCodes.add(unit.inventoryCode);
+      return true;
+    })
     .slice(0, limit);
 }
 

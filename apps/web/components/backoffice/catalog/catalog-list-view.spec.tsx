@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CatalogListView, clampCatalogPage, nextSuggestionIndex } from './catalog-list-view';
 
 describe('bảng danh mục sản phẩm', () => {
-  it('hiển thị board hai cột với nội dung tiếng Việt và liên kết chi tiết', () => {
+  it('hiển thị danh sách gọn với nội dung tiếng Việt và liên kết chi tiết', () => {
     const markup = renderToStaticMarkup(
       <CatalogListView
         counts={{ ACTIVE: 1, ARCHIVED: 0, DRAFT: 0, total: 1 }}

@@ -5,6 +5,7 @@
 .pageHeader {
   display: grid;
   max-width: 46rem;
+  margin-block-end: var(--space-2);
   gap: var(--space-2);
   padding-block: var(--space-2);
 }
@@ -26,8 +27,9 @@
 }
 .pageHeader h1 {
   color: var(--color-ink);
-  font-size: clamp(var(--font-size-display), 4vw, 2.75rem);
-  line-height: 1.12;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-page-title);
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.035em;
 }
 .pageHeader > p:last-child {
@@ -117,9 +119,9 @@
   display: grid;
   min-width: 0;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -130,9 +132,9 @@
 .wishlistMediaLink {
   display: block;
   overflow: hidden;
-  border-radius: var(--radius-small);
+  border-radius: var(--radius-control);
   color: inherit;
-  background: var(--color-surface-subtle);
+  background: var(--color-studio-cyan);
   text-decoration: none;
 }
 .cartMedia {
@@ -141,7 +143,7 @@
   min-height: 11rem;
   object-fit: contain;
   padding: var(--space-3);
-  background: var(--color-surface-subtle);
+  background: var(--color-studio-cyan);
 }
 .cartRowBody,
 .identity,
@@ -266,9 +268,9 @@
   gap: var(--space-4);
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-floating);
 }
 .summaryLine {
   display: flex;
@@ -287,7 +289,7 @@
 .primaryLink,
 .disabledCheckout {
   display: inline-flex;
-  min-height: 3rem;
+  min-height: var(--control-height);
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
@@ -380,13 +382,13 @@
   aspect-ratio: 4 / 3;
   object-fit: contain;
   padding: var(--space-5);
-  background: var(--color-surface-subtle);
+  background: var(--color-studio-cyan);
 }
 .wishlistCardBody {
   align-content: start;
   grid-template-rows: auto minmax(5.75rem, auto) auto auto auto;
   gap: var(--space-3);
-  padding: var(--space-4);
+  padding: var(--space-5);
 }
 .wishlistIdentity {
   align-content: start;
@@ -432,12 +434,8 @@
 }
 @media (min-width: 60rem) {
   .cartLayout {
-    grid-template-columns: minmax(0, 1.7fr) minmax(19rem, 0.7fr);
+    grid-template-columns: minmax(0, 2fr) minmax(19rem, 1fr);
     align-items: start;
-  }
-  .cartSummary {
-    position: sticky;
-    inset-block-start: calc(var(--storefront-header-offset) + var(--space-6));
   }
   .wishlistGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -488,5 +486,53 @@
   .primaryLink,
   .disabledCheckout {
     border-color: CanvasText;
+  }
+}
+
+.wishlistCard:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-hover);
+}
+
+.wishlistCard:nth-child(3n + 2) .wishlistMedia {
+  background: var(--color-studio-lavender);
+}
+
+.wishlistCard:nth-child(3n) .wishlistMedia {
+  background: var(--color-studio-mint);
+}
+
+.cartSummary .summaryLine > span:last-child,
+.wishlistPrice > span,
+.itemPrice > span:first-child {
+  color: var(--color-primary-hover);
+}
+
+.identity h3,
+.wishlistIdentity h3,
+.inventoryCode {
+  overflow-wrap: anywhere;
+}
+
+.summaryLine {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 24rem) {
+  .cartRow,
+  .cartSummary,
+  .wishlistCardBody {
+    padding: var(--space-4);
+  }
+
+  .quantityControl input {
+    width: 3.75rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .wishlistCard:focus-within {
+    border-color: Highlight;
+    outline: 1px solid Highlight;
   }
 }

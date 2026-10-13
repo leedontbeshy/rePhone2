@@ -46,10 +46,12 @@ describe('Current OpenAPI artifact', () => {
   );
   const byId = new Map(operations.map((operation) => [operation.operationId, operation]));
 
-  it('retains the 162 storefront operations alongside dealer and affiliate extensions', () => {
+  it('retains existing operations and adds public units and financial reports alongside partner extensions', () => {
     expect(
       operations.filter(({ operationId }) => !/^(Dealer|Affiliate)/.test(operationId ?? '')),
-    ).toHaveLength(162);
+    ).toHaveLength(164);
+    expect(byId.has('listPublicInventoryUnits')).toBe(true);
+    expect(byId.has('getBackofficeFinancialReport')).toBe(true);
     expect(operations.filter(({ operationId }) => operationId?.startsWith('Dealer'))).toHaveLength(
       67,
     );

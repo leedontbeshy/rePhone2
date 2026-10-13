@@ -18,6 +18,16 @@ describe('model unit offers', () => {
     expect(offers.map(({ unit }) => unit.inventoryCode)).toEqual(['UNIT-A', 'UNIT-B']);
   });
 
+  it('renders each inventory code once even if duplicated by a projection', () => {
+    const source = product();
+    const variant = source.variants[0];
+    if (variant === undefined || !('availableUnits' in variant)) throw new Error('Missing fixture');
+    const duplicate = { ...variant, id: 'duplicated-context', displayName: 'Duplicate context' };
+    const offers = toModelUnitOffers({ ...source, variants: [variant, duplicate] });
+    expect(offers.map(code)).toEqual(['UNIT-A', 'UNIT-B']);
+    expect(offers.every(({ variantId }) => variantId === variant.id)).toBe(true);
+  });
+
   it('sorts deterministically by authoritative price or battery without mutating input', () => {
     const offers = toModelUnitOffers(product());
 

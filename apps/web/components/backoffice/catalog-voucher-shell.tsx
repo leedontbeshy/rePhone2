@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells';
+import { BackofficeShell, type ShellBreadcrumb } from '@/components/shells/backoffice-shell';
 import { Button, InlineAlert, Link, Skeleton } from '@/components/ui';
 import { canAccessBackofficeNavigation } from './backoffice-navigation';
 import {

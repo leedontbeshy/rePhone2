@@ -432,3 +432,18 @@ export class UsedIphoneDetailResponse {
   @ApiProperty({ type: () => UsedIphoneDetailDto })
   public data!: UsedIphoneDetailDto;
 }
+
+export class PublicUnitOfferDto {
+  @ApiProperty({ type: String }) public productName!: string;
+  @ApiProperty({ type: String }) public productSlug!: string;
+  @ApiPropertyOptional({ type: Number, nullable: true }) public productRamGb!: number | null;
+  @ApiProperty({ type: String }) public variantDisplayName!: string;
+  @ApiPropertyOptional({ type: Number, nullable: true }) public storageCapacityGb!: number | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) public colorName!: string | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) public colorHex!: string | null;
+  @ApiProperty({ type: () => UsedIphoneCardDto }) public unit!: UsedIphoneCardDto;
+}
+
+export class PublicUnitListResponse {
+  @ApiProperty({ type: () => [PublicUnitOfferDto] }) public data!: PublicUnitOfferDto[];
+}

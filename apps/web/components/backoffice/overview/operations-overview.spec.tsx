@@ -19,6 +19,30 @@ describe('operations overview component', () => {
     expect(markup).toContain('Đã thanh toán một phần');
     expect(markup).not.toContain('PROCESSING');
     expect(markup).toContain('href="/backoffice/settings"');
+    expect(markup).toContain('<table');
+    expect(markup).toContain('<th scope="col">Trạng thái đơn</th>');
+    expect(markup).toContain('<th scope="col">Giao nhận</th>');
+    expect(markup).toContain('<th scope="col">Thanh toán</th>');
+    expect(markup).toContain('href="/backoffice/orders/order-1"');
+    expect(markup).toContain('aria-label="Mở đơn hàng RPH-20260830-0001 của Khách hàng 1"');
+  });
+
+  it('keeps mobile reading order as summary, priorities, orders and role shortcuts', () => {
+    const markup = renderToStaticMarkup(
+      <OverviewDashboard role="EMPLOYEE" snapshot={overviewSnapshot()} />,
+    );
+    const summary = markup.indexOf('aria-labelledby="overview-metrics-title"');
+    const priorities = markup.indexOf('aria-labelledby="overview-priority-title"');
+    const orders = markup.indexOf('aria-labelledby="overview-recent-orders-title"');
+    const shortcuts = markup.indexOf('aria-labelledby="overview-quick-links-title"');
+
+    expect(summary).toBeGreaterThan(-1);
+    expect(priorities).toBeGreaterThan(summary);
+    expect(orders).toBeGreaterThan(priorities);
+    expect(shortcuts).toBeGreaterThan(orders);
+    expect(markup).toContain('aria-label="Dữ liệu tổng quan vận hành"');
+    expect(markup).toContain('aria-label="Lối tắt công việc"');
+    expect(markup).not.toContain('href="/backoffice/settings"');
   });
 
   it('keeps loaded information visible during a nonblocking refresh', () => {
@@ -87,6 +111,26 @@ describe('operations overview component', () => {
     expect(markup).toContain('Chưa có hồ sơ cần ưu tiên');
     expect(markup).toContain('Chưa có đơn hàng gần đây');
     expect(markup).toContain('Không có tồn đọng');
+  });
+
+  it('does not present zero counters or a healthy queue after an initial read failure', () => {
+    const markup = renderToStaticMarkup(
+      <OperationsOverview
+        error="Không thể tải tổng quan vận hành."
+        initialLoading={false}
+        refreshing={false}
+        role="EMPLOYEE"
+        snapshot={null}
+        onRefresh={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain('Chưa tải được tổng quan vận hành');
+    expect(markup).toContain('Không thể tải tổng quan vận hành.');
+    expect(markup).toContain('Thử lại');
+    expect(markup).not.toContain('aria-label="Đơn đang xử lý:');
+    expect(markup).not.toContain('Không có tồn đọng');
+    expect(markup).not.toContain('<table');
   });
 });
 

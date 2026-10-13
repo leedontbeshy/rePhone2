@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import request, { type Response } from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { seedDatabase } from '../../prisma/seed-data.js';
+import { RICH_IPHONE_PRODUCTS } from '../../prisma/rich-catalog-data.js';
 import { IPHONE_CHECKLIST_V1 } from '../../src/modules/catalog/catalog-projection.js';
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import { createTestPrisma, resetTestDatabase } from '../support/test-prisma.js';
@@ -30,6 +31,64 @@ describe('public catalog HTTP contract', () => {
   afterAll(async () => {
     await prisma.$disconnect();
     await app.close();
+  });
+
+  it('prioritizes selected available units, fills by price and removes sold units without exposing private data', async () => {
+    const initial = await request(server)
+      .get('/api/v1/products/units')
+      .query({ limit: 30 })
+      .expect(200);
+    const items = successArray(initial);
+    expect(items.length).toBeGreaterThan(1);
+    const code = String(property(property(items[items.length - 1], 'unit'), 'inventoryCode'));
+    await prisma.inventoryUnit.update({
+      where: { inventoryCode: code },
+      data: { isFeatured: true },
+    });
+    const featured = await request(server)
+      .get('/api/v1/products/units')
+      .query({ limit: 10, featuredFirst: true })
+      .expect(200);
+    expect(property(property(successArray(featured)[0], 'unit'), 'inventoryCode')).toBe(code);
+    expect(successArray(featured).length).toBe(Math.min(items.length, 10));
+    expectNoForbiddenPublicKeys(featured.body as unknown);
+    expect(JSON.stringify(featured.body)).not.toMatch(
+      /isFeatured|acquisitionCost|additionalCost|Encrypted|Hmac|objectPath/,
+    );
+    await prisma.inventoryUnit.update({
+      where: { inventoryCode: code },
+      data: { lifecycleStatus: 'SOLD', soldAt: new Date() },
+    });
+    const sold = await request(server)
+      .get('/api/v1/products/units')
+      .query({ limit: 10, featuredFirst: true })
+      .expect(200);
+    const remaining = successArray(sold);
+    expect(
+      remaining.map((item) => property(property(item, 'unit'), 'inventoryCode')),
+    ).not.toContain(code);
+    const prices = remaining.map((item) =>
+      BigInt(String(property(property(property(item, 'unit'), 'price'), 'salePrice'))),
+    );
+    expect(
+      prices.every((price, index) => index === 0 || price <= (prices[index - 1] ?? price)),
+    ).toBe(true);
+    for (const query of [
+      { limit: 31 },
+      { limit: 0 },
+      { featuredFirst: 'yes' },
+      { ramGb: 0 },
+      { simLockStatus: 'invalid' },
+    ]) {
+      await request(server)
+        .get(
+          'ramGb' in query || 'simLockStatus' in query
+            ? '/api/v1/products'
+            : '/api/v1/products/units',
+        )
+        .query(query)
+        .expect(400);
+    }
   });
 
   it('lists one card per public product with stable pagination and paired prices', async () => {
@@ -94,6 +153,78 @@ describe('public catalog HTTP contract', () => {
     expect(
       property(property(property(emptyPage.body as unknown, 'meta'), 'pagination'), 'totalItems'),
     ).toBe(50);
+  });
+
+  it('keeps iPhone generations together across pages regardless of import and release dates', async () => {
+    await prisma.product.createMany({
+      data: [
+        { slug: 'iphone-18-pro-max', name: 'iPhone 18 Pro Max', releaseYear: 2026 },
+        { slug: 'iphone-18', name: 'iPhone 18', releaseYear: null },
+        { slug: 'iphone-18-pro', name: 'iPhone 18 Pro', releaseYear: 2026 },
+        { slug: 'iphone-prototype', name: 'iPhone Prototype', releaseYear: 2027 },
+      ].map((product) => ({
+        ...product,
+        type: 'IPHONE' as const,
+        status: 'ACTIVE' as const,
+        createdAt: new Date('2010-01-01T00:00:00.000Z'),
+      })),
+    });
+    const expected = [
+      'iphone-18',
+      'iphone-18-pro',
+      'iphone-18-pro-max',
+      ...RICH_IPHONE_PRODUCTS.filter((product) => !product.slug.startsWith('iphone-se-')).map(
+        (product) => product.slug,
+      ),
+      'iphone-se-3rd-generation',
+      'iphone-se-2nd-generation',
+      'iphone-se-1st-generation',
+      'iphone-prototype',
+    ];
+    const query = { sortBy: 'generation', sortOrder: 'desc', productType: 'IPHONE' };
+    const response = await request(server)
+      .get('/api/v1/products')
+      .query({ ...query, pageSize: 100 })
+      .expect(200);
+    expect(successArray(response).map((item) => property(item, 'slug'))).toEqual(expected);
+    const paged: unknown[] = [];
+    for (let page = 1; page <= Math.ceil(expected.length / 7); page += 1) {
+      const result = await request(server)
+        .get('/api/v1/products')
+        .query({ ...query, pageSize: 7, page })
+        .expect(200);
+      paged.push(...successArray(result).map((item) => property(item, 'slug')));
+    }
+    expect(paged).toEqual(expected);
+
+    const mixed = await request(server)
+      .get('/api/v1/products')
+      .query({ sortBy: 'generation', pageSize: 100 })
+      .expect(200);
+    const mixedItems = successArray(mixed);
+    expect(mixedItems.slice(0, expected.length).map((item) => property(item, 'slug'))).toEqual(
+      expected,
+    );
+    expect(
+      mixedItems.slice(expected.length).every((item) => item['productType'] === 'ACCESSORY'),
+    ).toBe(true);
+
+    const ascending = await request(server)
+      .get('/api/v1/products')
+      .query({ ...query, sortOrder: 'asc', pageSize: 100 })
+      .expect(200);
+    const ascendingSlugs = successArray(ascending).map((item) => property(item, 'slug'));
+    expect(ascendingSlugs.slice(0, 3)).toEqual([
+      'iphone-se-3rd-generation',
+      'iphone-se-2nd-generation',
+      'iphone-se-1st-generation',
+    ]);
+    expect(ascendingSlugs.slice(-4)).toEqual([
+      'iphone-18',
+      'iphone-18-pro',
+      'iphone-18-pro-max',
+      'iphone-prototype',
+    ]);
   });
 
   it('rejects invalid catalog query input without coercing it', async () => {

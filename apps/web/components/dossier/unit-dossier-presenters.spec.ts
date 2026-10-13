@@ -43,6 +43,16 @@ describe('unit dossier presenters', () => {
     expect(offers[0]?.variant.id).toBe('variant-natural');
   });
 
+  it('keeps related unit identities unique across repeated projections', () => {
+    const repeated = {
+      ...productFixture,
+      variants: [...productFixture.variants, ...productFixture.variants],
+    };
+    const offers = relatedUnitOffers(repeated, 'UNIT-CURRENT', 100);
+    expect(new Set(offers.map(({ unit }) => unit.inventoryCode)).size).toBe(offers.length);
+    expect(offers.every(({ unit }) => unit.inventoryCode !== 'UNIT-CURRENT')).toBe(true);
+  });
+
   it('keeps one sellable representative per color and sanitizes color values', () => {
     const offers = availableColorOffers(productFixture, 'variant-natural');
     expect(offers.map(({ variant }) => variant.colorName)).toEqual([

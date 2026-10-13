@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  getPublicProductSummary,
   listAllPublicProducts,
   listPublicProducts,
   type CatalogApiError,
@@ -9,6 +10,35 @@ import {
 describe('listAllPublicProducts', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('uses one bounded name search and matches exact identity for the model price', async () => {
+    const target = product('iphone-17');
+    const other = { ...product('iphone-17-pro'), price: { fromPrice: '1' } };
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(catalogResponse([other, target], 1, 3, 250));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getPublicProductSummary(target)).resolves.toEqual(target);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const input = fetchMock.mock.calls[0]?.[0];
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    expect(url.searchParams.get('q')).toBe(target.name);
+    expect(url.searchParams.get('page')).toBe('1');
+    expect(url.searchParams.get('pageSize')).toBe('100');
+    expect(url.searchParams.get('productType')).toBe('IPHONE');
+  });
+
+  it('omits starting-price data if the exact model is absent or the supplemental read fails', async () => {
+    const target = product('iphone-17');
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(catalogResponse([product('iphone-17-pro')], 1, 1, 1))
+      .mockResolvedValueOnce(new Response(null, { status: 400 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getPublicProductSummary(target)).resolves.toBeUndefined();
+    await expect(getPublicProductSummary(target)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('loads every page with a stable query before returning the catalog', async () => {

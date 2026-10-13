@@ -1,14 +1,15 @@
 .page {
   display: grid;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  container: audit-page / inline-size;
 }
 
 .pageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .pageHeader > div {
@@ -37,8 +38,10 @@
 
 .pageHeader h1 {
   color: var(--color-ink);
-  font-size: clamp(var(--font-size-page-title), 2vw, 1.875rem);
+  font-size: var(--font-size-page-title);
   line-height: var(--line-height-page-title);
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .pageHeader > div > p:last-child {
@@ -60,8 +63,9 @@
   gap: var(--space-3);
   padding: var(--space-4);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
+  min-width: 0;
 }
 
 .filterSummary {
@@ -71,11 +75,12 @@
 .filterGrid,
 .advancedGrid {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .filterGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -87,7 +92,7 @@
   display: flex;
   flex-wrap: wrap;
   width: fit-content;
-  min-block-size: 2.5rem;
+  min-block-size: var(--control-height-compact);
   gap: var(--space-2);
   align-items: center;
   padding-block: var(--space-2);
@@ -103,7 +108,7 @@
 }
 
 .advancedGrid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   padding-top: var(--space-2);
 }
 
@@ -116,9 +121,9 @@
 }
 
 .filterActions {
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  padding-block-start: calc(var(--line-height-small) + var(--space-2));
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-block-start: 0;
 }
 
 .alertContent {
@@ -127,16 +132,17 @@
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(20rem, 42fr) minmax(0, 58fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
+  min-width: 0;
 }
 
 .listPanel,
 .detailPanel {
   min-width: 0;
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -148,16 +154,19 @@
 
 .detailPanel {
   display: grid;
-  gap: var(--space-6);
-  padding: var(--space-6);
+  gap: var(--space-5);
+  padding: var(--space-5);
+  position: static;
+  container: audit-detail / inline-size;
+  scroll-margin-block-start: calc(var(--backoffice-topbar-height, 4.5rem) + var(--space-4));
 }
 
 .panelHeading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  min-block-size: 4.5rem;
+  gap: var(--space-3);
+  min-block-size: 3.5rem;
   padding: var(--space-4) var(--space-5);
   border-bottom: var(--border-default);
 }
@@ -195,7 +204,7 @@
 }
 
 .auditList[aria-busy='true'] {
-  opacity: 0.62;
+  opacity: 1;
 }
 
 .auditRow {
@@ -240,7 +249,7 @@
 
 .auditRow:focus-visible {
   z-index: var(--z-raised);
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-primary-hover);
   outline-offset: -2px;
   box-shadow: var(--focus-ring);
 }
@@ -251,7 +260,7 @@
   block-size: 2.75rem;
   place-items: center;
   border-radius: 50%;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   background: var(--color-brand-soft);
   font-weight: var(--font-weight-bold);
 }
@@ -325,10 +334,10 @@
 .detailHeading {
   display: grid;
   gap: var(--space-2);
-  margin: calc(var(--space-6) * -1) calc(var(--space-6) * -1) 0;
-  padding: var(--space-6);
+  margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) 0;
+  padding: var(--space-5);
   border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   background: var(--color-brand-soft);
 }
 
@@ -350,7 +359,7 @@
 }
 
 .detailHeading h2:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-primary-hover);
   outline-offset: var(--space-1);
 }
 
@@ -363,7 +372,7 @@
 }
 
 .detailSummary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -410,8 +419,8 @@
 
 .detailList > div {
   display: grid;
-  grid-template-columns: minmax(8rem, 0.72fr) minmax(0, 1.28fr);
-  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
   padding-block: var(--space-3);
   border-bottom: var(--border-default);
 }
@@ -447,8 +456,8 @@
 
 .payloadFields > div {
   display: grid;
-  grid-template-columns: minmax(8rem, 0.72fr) minmax(0, 1.28fr);
-  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
   padding: var(--space-3) var(--space-4);
 }
 
@@ -467,6 +476,7 @@
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
+  min-block-size: var(--control-height-compact);
 }
 
 .payloadFallback pre {
@@ -500,103 +510,114 @@
   gap: var(--space-2);
 }
 
-@media (min-width: 60rem) {
-  .detailPanel {
-    position: sticky;
-    inset-block-start: calc(var(--backoffice-topbar-height, 4.75rem) + var(--space-6));
-  }
+.detailHeading h2,
+.detailHeading > span,
+.payloadGroup {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 74.99rem) {
+.auditRow:last-child {
+  border-bottom: 0;
+}
+
+@container audit-page (min-width: 40rem) {
   .filterGrid,
   .advancedGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
   .filterActions {
     grid-column: 1 / -1;
-    justify-content: flex-start;
   }
 }
 
-@media (max-width: 59.99rem) {
+@container audit-page (min-width: 62rem) {
   .workspace {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
   }
-
-  .detailPanel {
-    scroll-margin-block-start: calc(var(--backoffice-topbar-height, 4.75rem) + var(--space-4));
+  .filterGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  }
+  .advancedGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .filterActions {
+    grid-column: auto;
+    flex-wrap: nowrap;
+    padding-block-start: calc(var(--line-height-small) + var(--space-2));
   }
 }
 
-@media (max-width: 47.99rem) {
-  .filterGrid,
-  .advancedGrid {
-    grid-template-columns: minmax(0, 1fr);
+@container audit-detail (min-width: 28rem) {
+  .detailList > div,
+  .payloadFields > div {
+    grid-template-columns: minmax(8rem, 0.72fr) minmax(0, 1.28fr);
+    gap: var(--space-4);
   }
+}
 
-  .filters,
-  .detailPanel {
-    padding: var(--space-4);
+@container audit-detail (min-width: 32rem) {
+  .detailSummary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
 
+@container audit-page (max-width: 39.999rem) {
+  .pageHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
   .filterActions > button {
     flex: 1 1 10rem;
   }
-
-  .filterActions {
-    grid-column: auto;
-    padding-block-start: 0;
-  }
-
-  .auditList {
-    display: grid;
-    gap: var(--space-3);
-    padding: var(--space-3);
-  }
-
   .auditRow {
     grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--space-3);
-    padding: var(--space-4);
-    border: var(--border-default);
-    border-radius: var(--radius-control);
+    padding: var(--space-3) var(--space-4);
   }
-
   .auditRow time {
     grid-column: 2;
     max-width: none;
     text-align: start;
   }
-
   .pagination {
     justify-content: center;
+    padding-inline: var(--space-4);
   }
-
   .pagination > span {
     order: -1;
     inline-size: 100%;
     text-align: center;
   }
+}
 
-  .detailSummary {
-    grid-template-columns: minmax(0, 1fr);
+@container audit-page (max-width: 27.999rem) {
+  .detailPanel {
+    padding: var(--space-4);
   }
-
   .detailHeading {
     margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
     padding: var(--space-4);
   }
-
-  .detailList > div,
-  .payloadFields > div {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-1);
+  .pagination > button {
+    flex: 1 1 8rem;
+  }
+  .emptyState {
+    padding: var(--space-5);
   }
 }
 
-@media (max-width: 22rem) {
-  .pagination > button {
-    flex: 1 1 8rem;
+@media (prefers-reduced-motion: reduce) {
+  .auditList {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .auditRow[data-selected='true'] {
+    border-inline-start: 4px solid Highlight;
+  }
+  .auditRow:focus-visible,
+  .detailHeading h2:focus-visible {
+    outline-color: Highlight;
   }
 }

@@ -2,13 +2,14 @@
   display: grid;
   min-inline-size: 0;
   gap: var(--space-5);
+  container: users-page / inline-size;
 }
 
 .pageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .pageHeader h1,
@@ -23,6 +24,8 @@
 .pageHeader h1 {
   font-size: var(--font-size-page-title);
   line-height: var(--line-height-page-title);
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -48,9 +51,14 @@
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(16rem, 19rem) minmax(10rem, 11rem) minmax(10rem, 12rem);
-  max-inline-size: 44rem;
-  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr);
+  max-inline-size: none;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
 }
 
 .searchControl,
@@ -71,7 +79,7 @@
 .searchControl input,
 .selectControl select {
   inline-size: 100%;
-  min-block-size: var(--control-height);
+  min-block-size: var(--control-height-compact);
   border: var(--border-strong);
   border-radius: var(--radius-control);
   color: var(--color-body);
@@ -96,14 +104,16 @@
 .selectControl select:focus-visible,
 .recordButton:focus-visible {
   border-color: var(--color-primary);
-  outline: none;
+  outline: 2px solid var(--color-primary-hover);
   box-shadow: var(--focus-ring);
+  outline-offset: -2px;
 }
 
 .panelHeading h2:focus-visible {
   border-radius: var(--radius-control);
-  outline: none;
+  outline: 2px solid var(--color-primary-hover);
   box-shadow: var(--focus-ring);
+  outline-offset: var(--space-1);
 }
 
 .detailHeading h2:focus {
@@ -114,8 +124,8 @@
 .masterDetail {
   display: grid;
   min-inline-size: 0;
-  grid-template-columns: minmax(21rem, 0.82fr) minmax(28rem, 1.18fr);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: var(--space-4);
 }
 
@@ -123,10 +133,10 @@
 .detailPanel {
   display: flex;
   min-inline-size: 0;
-  min-block-size: 39rem;
+  min-block-size: auto;
   flex-direction: column;
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -163,7 +173,7 @@
   display: grid;
   inline-size: 100%;
   min-block-size: 4.5rem;
-  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
@@ -224,9 +234,10 @@
 }
 
 .avatarLarge {
-  inline-size: 5.25rem;
-  block-size: 5.25rem;
-  font-size: 1.75rem;
+  inline-size: 4rem;
+  block-size: 4rem;
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
 }
 
 .avatar[data-tone='green'],
@@ -294,6 +305,8 @@
 
 .detailPanel {
   scroll-margin-block-start: 6rem;
+  position: static;
+  container: user-detail / inline-size;
 }
 
 .detailBody {
@@ -310,9 +323,9 @@
 
 .detailIdentity {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-5);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-4);
   padding: 0 0 var(--space-5);
 }
 
@@ -325,10 +338,11 @@
 
 .detailIdentityAside {
   display: grid;
-  min-inline-size: 8rem;
-  justify-items: end;
+  min-inline-size: 0;
+  justify-items: start;
   gap: 0.125rem;
-  text-align: end;
+  text-align: start;
+  grid-column: 2;
 }
 
 .detailIdentityAside span {
@@ -349,6 +363,7 @@
 .detailIdentity h3 {
   font-size: var(--font-size-section-title);
   line-height: var(--line-height-section-title);
+  overflow-wrap: anywhere;
 }
 
 .detailIdentity p {
@@ -362,7 +377,7 @@
 
 .detailSummary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   overflow: hidden;
   border: var(--border-default);
@@ -380,7 +395,8 @@
 }
 
 .detailSummaryItem + .detailSummaryItem {
-  border-inline-start: var(--border-default);
+  border-inline-start: 0;
+  border-block-start: var(--border-default);
 }
 
 .detailSummaryIcon {
@@ -444,10 +460,10 @@
 
 .detailField {
   display: grid;
-  min-block-size: 3.75rem;
-  grid-template-columns: minmax(8.5rem, 0.75fr) minmax(0, 1.35fr);
-  align-items: center;
-  gap: var(--space-4);
+  min-block-size: 3.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-1);
   padding: var(--space-3) 0;
   border-block-end: var(--border-default);
 }
@@ -499,7 +515,7 @@
 }
 
 .detailBack {
-  display: none;
+  display: inline-flex;
 }
 
 .staffNote {
@@ -570,7 +586,7 @@
 
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }
 
@@ -591,104 +607,121 @@
   min-inline-size: 8.5rem;
 }
 
-@media (max-width: 74rem) {
-  .masterDetail {
-    grid-template-columns: minmax(0, 1fr);
+@media (prefers-reduced-motion: reduce) {
+  .recordButton {
+    transition: none;
+  }
+}
+
+.recordButton > :last-child {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.detailHeading h2:focus-visible {
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: var(--space-1);
+}
+
+@container users-page (min-width: 40rem) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.65fr);
   }
 
+  .filters:has(select[id='user-admin-sort']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters:has(select[id='user-admin-sort']) .searchControl {
+    grid-column: 1 / -1;
+  }
+}
+
+@container users-page (min-width: 52rem) {
+  .filters:has(select[id='user-admin-sort']) {
+    grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(13rem, 1fr));
+  }
+
+  .filters:has(select[id='user-admin-sort']) .searchControl {
+    grid-column: auto;
+  }
+}
+
+@container users-page (min-width: 62rem) {
+  .masterDetail {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    align-items: stretch;
+  }
   .listPanel,
   .detailPanel {
-    min-block-size: auto;
+    min-block-size: 32rem;
   }
-
   .recordButton {
-    grid-template-columns: 2.75rem minmax(0, 1fr);
+    grid-template-columns: 2.75rem minmax(0, 1fr) auto;
   }
-
   .recordButton > :last-child {
-    grid-column: 2;
-    justify-self: start;
+    grid-column: auto;
+    justify-self: end;
   }
-
   .detailBack {
-    display: inline-flex;
+    display: none;
   }
 }
 
-@media (max-width: 59.999rem) {
-  .detailPanel {
-    position: static;
+@container user-detail (min-width: 28rem) {
+  .detailField {
+    grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.35fr);
+    align-items: center;
+    gap: var(--space-4);
   }
 }
 
-@media (max-width: 44rem) {
+@container user-detail (min-width: 32rem) {
+  .detailSummary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .detailSummaryItem + .detailSummaryItem {
+    border-block-start: 0;
+    border-inline-start: var(--border-default);
+  }
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container user-detail (min-width: 36rem) {
+  .detailIdentity {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .detailIdentityAside {
+    grid-column: auto;
+    justify-items: end;
+    text-align: end;
+  }
+}
+
+@container users-page (max-width: 39.999rem) {
   .pageHeader {
     display: grid;
   }
-
   .pageAction,
   .pageAction > * {
     inline-size: 100%;
   }
-
-  .filters,
-  .formGrid {
-    grid-template-columns: minmax(0, 1fr);
-    max-inline-size: none;
-  }
-
-  .formWide {
-    grid-column: auto;
-  }
-
-  .detailField {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: var(--space-1);
-  }
-
-  .detailIdentity {
-    align-items: flex-start;
-  }
-
-  .detailSummary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .detailSummaryItem + .detailSummaryItem {
-    border-block-start: var(--border-default);
-    border-inline-start: 0;
-  }
 }
 
-@media (max-width: 30rem) {
-  .recordButton {
-    padding-inline: var(--space-3);
-  }
-
+@container user-detail (max-width: 27.999rem) {
   .panelHeading,
   .detailHeading,
   .form {
     padding-inline: var(--space-4);
   }
-
-  .detailIdentity {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--space-3);
-  }
-
-  .detailIdentityAside {
-    grid-column: 2;
-    justify-items: start;
-    text-align: start;
-  }
-
   .detailOverview,
   .detailSections,
   .detailActions {
     padding-inline: var(--space-4);
   }
-
   .detailActions > *,
   .formActions > * {
     inline-size: 100%;
@@ -696,8 +729,25 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@container users-page (max-width: 27.999rem) {
   .recordButton {
-    transition: none;
+    padding-inline: var(--space-3);
+  }
+  .panelHeading,
+  .listFooter {
+    padding-inline: var(--space-4);
+  }
+}
+
+@media (forced-colors: active) {
+  .recordButton[data-selected] {
+    border-inline-start: 4px solid Highlight;
+  }
+  .searchControl input:focus-visible,
+  .selectControl select:focus-visible,
+  .recordButton:focus-visible,
+  .panelHeading h2:focus-visible,
+  .detailHeading h2:focus-visible {
+    outline-color: Highlight;
   }
 }

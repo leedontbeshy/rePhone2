@@ -14,8 +14,15 @@ import {
   UsedIphoneDetailResponse,
   IphoneVariantDto,
   AccessoryVariantDto,
+  PublicUnitListResponse,
 } from './catalog-response.dto.js';
-import { ProductListQueryDto, ProductSlugParamsDto, UsedIphoneParamsDto } from './catalog.dto.js';
+import {
+  PRODUCT_SORT_FIELDS,
+  ProductListQueryDto,
+  ProductSlugParamsDto,
+  UsedIphoneParamsDto,
+  PublicUnitListQueryDto,
+} from './catalog.dto.js';
 import { CatalogService } from './catalog.service.js';
 
 @ApiTags('catalog')
@@ -34,6 +41,22 @@ export class CatalogController {
   )
   public listProducts(@Query() query: ProductListQueryDto) {
     return this.catalogService.listProducts(query);
+  }
+
+  @Get('units')
+  @ApiOperation({
+    operationId: 'listPublicInventoryUnits',
+    summary: 'Available exact units, optionally prioritizing featured units',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, minimum: 1, maximum: 30, default: 24 })
+  @ApiQuery({ name: 'featuredFirst', required: false, type: Boolean, default: false })
+  @ApiOkResponse({ type: PublicUnitListResponse })
+  @ApiErrorResponses(
+    { status: 400, description: 'VALIDATION_FAILED' },
+    { status: 500, description: 'INTERNAL_ERROR' },
+  )
+  public listUnits(@Query() query: PublicUnitListQueryDto) {
+    return this.catalogService.listUnits(query);
   }
 
   @Get(':slug/units/:inventoryCode')
@@ -91,6 +114,12 @@ function ApiProductListQueries() {
       maximum: 2100,
     }),
     ApiQuery({ name: 'storageCapacityGb', required: false, type: Number, minimum: 1 }),
+    ApiQuery({ name: 'ramGb', required: false, type: Number, minimum: 1, maximum: 64 }),
+    ApiQuery({
+      name: 'simLockStatus',
+      required: false,
+      enum: ['UNLOCKED', 'CARRIER_LOCKED', 'UNKNOWN'],
+    }),
     ApiQuery({ name: 'colorName', required: false, type: String, maxLength: 255 }),
     ApiQuery({
       name: 'minPrice',
@@ -119,7 +148,7 @@ function ApiProductListQueries() {
     ApiQuery({
       name: 'sortBy',
       required: false,
-      enum: ['createdAt', 'name', 'fromPrice', 'releaseYear'],
+      enum: PRODUCT_SORT_FIELDS,
       default: 'createdAt',
     }),
     ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], default: 'desc' }),

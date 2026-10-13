@@ -1,4 +1,5 @@
 .workspace {
+  container: inventory-intake / inline-size;
   display: grid;
   min-width: 0;
   gap: var(--space-6);
@@ -11,9 +12,9 @@
 .workspace :global(.wizard-header h1) {
   margin-block: var(--space-2);
   color: var(--color-ink);
-  font-size: clamp(1.9rem, 3vw, 2.45rem);
-  letter-spacing: -0.035em;
-  line-height: 1.08;
+  font-size: clamp(1.75rem, 2.2vw, 2rem);
+  letter-spacing: -0.03em;
+  line-height: 1.25;
 }
 
 .workspace :global(.wizard-header p:last-child) {
@@ -27,7 +28,7 @@
   color: var(--color-primary);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -45,7 +46,7 @@
 
 .intakeWorkbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 20rem);
+  grid-template-columns: minmax(0, 1fr) 18rem;
   gap: var(--space-5);
   align-items: start;
 }
@@ -55,9 +56,9 @@
 .receivedSummary,
 .workflowStage {
   border: var(--border-default);
-  border-radius: calc(var(--radius-card) + 4px);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: 0 12px 32px rgb(12 23 40 / 7%);
+  box-shadow: var(--shadow-raised);
 }
 
 .intakePanel {
@@ -218,7 +219,7 @@
 
 .intakeSummary {
   position: sticky;
-  inset-block-start: calc(var(--backoffice-topbar-height, 76px) + var(--space-5));
+  inset-block-start: calc(var(--backoffice-topbar-height, 72px) + var(--space-5));
   display: grid;
   gap: var(--space-5);
   padding: var(--space-5);
@@ -373,7 +374,7 @@
   justify-items: start;
   padding: var(--space-6);
   border: var(--border-default);
-  border-radius: calc(var(--radius-card) + 4px);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
 }
@@ -455,7 +456,7 @@
 
 .workflowStageCurrent {
   border-color: rgb(0 124 159 / 45%);
-  box-shadow: 0 12px 32px rgb(12 23 40 / 7%);
+  box-shadow: var(--shadow-raised);
 }
 
 .workflowStageCurrent .workflowIcon,
@@ -466,7 +467,7 @@
 
 .workflowStageDone .workflowIcon,
 .workflowStageDone > header > strong {
-  color: var(--color-success);
+  color: var(--color-success-strong);
   background: var(--color-success-soft);
 }
 
@@ -621,7 +622,7 @@
   gap: var(--space-2);
 }
 
-@media (max-width: 79.999rem) {
+@container inventory-intake (max-width: 61.999rem) {
   .intakeWorkbench {
     grid-template-columns: 1fr;
   }
@@ -659,7 +660,7 @@
   }
 }
 
-@media (max-width: 49.999rem) {
+@container inventory-intake (max-width: 37.999rem) {
   .workspace {
     gap: var(--space-5);
   }
@@ -724,7 +725,7 @@
   }
 }
 
-@media (max-width: 35rem) {
+@container inventory-intake (max-width: 27.999rem) {
   .panelHeading,
   .sectionFields,
   .formActions,
@@ -751,5 +752,88 @@
 @media (forced-colors: active) {
   .workflowStageCurrent {
     border: 2px solid CanvasText;
+  }
+}
+
+.intakeSection > header,
+.summaryHero {
+  background: var(--color-studio-cyan);
+}
+
+.panelHeading > div,
+.sectionFields > *,
+.summaryFacts > div,
+.workflowStage > header > div,
+.workflowContent,
+.unitSummary > div {
+  min-inline-size: 0;
+}
+
+.workflowStage h2,
+.panelHeading,
+.unitSummary dd,
+.workflowContent,
+.summaryHero {
+  overflow-wrap: anywhere;
+}
+
+.receivedSummary,
+.workflowStage,
+.intakePanel,
+.intakeSummary,
+.resumeState {
+  border-radius: var(--radius-panel);
+}
+
+.unitSummary {
+  gap: 0;
+}
+
+.unitSummary > div {
+  min-block-size: 5.5rem;
+  border-radius: 0;
+  background: var(--color-studio-cyan);
+}
+
+.filePicker {
+  border-radius: var(--radius-control);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filePicker {
+    transition: none;
+  }
+}
+
+.workspace :global(.button) {
+  min-block-size: var(--control-height-compact);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-strong);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body);
+}
+
+.workspace :global(.button.primary) {
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
+.workspace :global(.button.primary:hover:not(:disabled)) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+}
+
+.workspace :global(.button:disabled) {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@container inventory-intake (max-width: 37.999rem) {
+  .workspace :global(.wizard-header) {
+    display: grid;
+    gap: var(--space-4);
   }
 }

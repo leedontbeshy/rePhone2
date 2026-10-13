@@ -9,7 +9,9 @@ import {
 } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
-const PROTECTED_OVERVIEW_HEADING = 'Tổng quan vận hành';
+import { financialReportFixture } from './support/financial-report';
+
+const PROTECTED_OVERVIEW_HEADING = 'Báo cáo tài chính';
 
 test.describe('Backoffice access boundary', () => {
   test(bt('browser:backoffice-access', 'anonymous-fail-closed'), async ({ page }, testInfo) => {
@@ -128,11 +130,14 @@ test.describe('Backoffice access boundary', () => {
       }
       await fulfillJson(route, sessionResponse('EMPLOYEE'));
     });
-    await page.route('**/api/v1/backoffice/overview', async (route) => {
+    await page.route('**/api/v1/backoffice/overview/financial*', async (route) => {
       if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
       overviewStarted.resolve(undefined);
       await overview.promise;
-      await fulfillJson(route, overviewResponse());
+      await fulfillJson(
+        route,
+        overviewResponse(new URL(route.request().url()).searchParams.get('month') ?? '2026-10'),
+      );
     });
 
     await page.goto('/backoffice', { waitUntil: 'domcontentloaded' });
@@ -142,32 +147,113 @@ test.describe('Backoffice access boundary', () => {
     const retryButton = page.getByRole('button', { name: 'Thử lại', exact: true });
     await expect(unavailableHeading).toBeVisible();
     await expect(unavailableHeading).toBeFocused();
-    await expect(page.getByRole('heading', { name: 'Tổng quan vận hành' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Báo cáo tài chính' })).toHaveCount(0);
     await expect(page.locator('[data-shell="backoffice"]')).toHaveCount(0);
     expect(protectedRequests).toEqual([]);
 
     await page.keyboard.press('Tab');
     await expect(retryButton).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('heading', { name: 'Tổng quan vận hành' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Báo cáo tài chính' })).toBeVisible();
     await expect(page.getByText('Đã xác nhận quyền truy cập.', { exact: true })).toBeAttached();
     await expect(page.locator('[data-shell="backoffice"]')).toHaveCount(1);
     await overviewStarted.promise;
-    await expect(page.getByRole('status', { name: 'Đang tải tổng quan vận hành' })).toBeVisible();
+    await expect(page.getByRole('status', { name: 'Đang tải báo cáo' })).toBeVisible();
     overview.resolve(undefined);
-    await expect(page.getByText('Đơn đang xử lý', { exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Tổng quan', exact: true })).toHaveAttribute(
+    await expect(
+      page.getByRole('heading', { name: 'Doanh thu sau hoàn', exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tài chính', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
     expect(refreshAttempts).toBe(2);
-    expect(protectedRequests).toEqual(['/api/v1/backoffice/overview']);
+    expect(protectedRequests).toEqual(['/api/v1/backoffice/overview/financial']);
     await expectNoHorizontalOverflow(page);
     await expectNoSeriousAccessibilityViolations(page);
     await capture(page, testInfo, 'backoffice-overview-desktop.png');
+    await expectStaffMobileDrawer(page, testInfo);
     expect(runtimeErrors).toEqual([]);
   });
 });
+
+async function expectStaffMobileDrawer(page: Page, testInfo: TestInfo): Promise<void> {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const menu = page.getByRole('button', {
+    name: 'Mở điều hướng vận hành',
+    exact: true,
+    includeHidden: true,
+  });
+  const drawer = page.getByRole('dialog', { name: 'Điều hướng vận hành', exact: true });
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(drawer).not.toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Các khu vực vận hành' })).not.toBeVisible();
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await expectNoHorizontalOverflow(page);
+
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(drawer).toBeVisible();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect.poll(() => drawer.evaluate((element) => element.matches(':modal'))).toBe(true);
+  const close = drawer.getByRole('button', { name: 'Đóng điều hướng vận hành', exact: true });
+  await expect(close).toBeFocused();
+  const navigation = drawer.getByRole('navigation', { name: 'Các khu vực vận hành' });
+  await expect(navigation.getByRole('link', { name: 'Tài chính', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(navigation.getByRole('link', { name: 'Tra cứu mã', exact: true })).toBeAttached();
+  await expect(navigation.getByRole('link', { name: 'Đại lý', exact: true })).toBeAttached();
+  await expect(navigation.getByRole('link', { name: 'Khách hàng', exact: true })).toBeAttached();
+  await expect(
+    navigation.getByRole('link', { name: 'Cấu hình cửa hàng', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    navigation.getByText('Cấu hình cửa hàng', { exact: true }).locator('..'),
+  ).toHaveAttribute('aria-disabled', 'true');
+  for (let index = 0; index < 24; index += 1) {
+    await page.keyboard.press('Tab');
+    await expect
+      .poll(() => drawer.evaluate((element) => element.contains(document.activeElement)))
+      .toBe(true);
+  }
+  const drawerHome = drawer.getByRole('link', { name: 'rePhone — Trang chủ', exact: true });
+  await drawerHome.focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(navigation.getByRole('link', { name: 'Khách hàng', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(drawerHome).toBeFocused();
+  await expectNoSeriousAccessibilityViolations(page);
+  await capture(page, testInfo, 'backoffice-employee-drawer-mobile.png');
+
+  await page.keyboard.press('Escape');
+  await expect(drawer).not.toBeVisible();
+  await expect(menu).toBeFocused();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+
+  await menu.click();
+  await close.click();
+  await expect(drawer).not.toBeVisible();
+  await expect(menu).toBeFocused();
+
+  await menu.click();
+  await navigation.getByRole('link', { name: 'Tài chính', exact: true }).click();
+  await expect(drawer).not.toBeVisible();
+  await expect(page).toHaveURL('/backoffice');
+  await expect(page.getByRole('heading', { name: PROTECTED_OVERVIEW_HEADING })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await capture(page, testInfo, 'backoffice-employee-overview-mobile.png');
+
+  await menu.click();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(drawer).not.toBeVisible();
+  await expect(menu).not.toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Các khu vực vận hành' })).toBeVisible();
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await expectNoHorizontalOverflow(page);
+}
 
 function collectProtectedRequests(page: Page): string[] {
   const requests: string[] = [];
@@ -234,20 +320,8 @@ function emptyCartResponse() {
   } as const;
 }
 
-function overviewResponse() {
-  return {
-    data: {
-      generatedAt: '2026-09-01T10:00:00.000Z',
-      metrics: {
-        activeOrders: 3,
-        lowStockLevels: 1,
-        openAfterSales: 2,
-        paymentsUnderReview: 1,
-      },
-      priorities: [],
-      recentOrders: [],
-    },
-  } as const;
+function overviewResponse(month: string) {
+  return { data: financialReportFixture(month) };
 }
 
 function deferred<T>() {

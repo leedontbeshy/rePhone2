@@ -257,6 +257,13 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
           <PostPurchasePageHeader
             title={order.orderNumber}
             description={`Đặt lúc ${formatCustomerDateTime(order.placedAt)}`}
+            action={
+              proofPayment ? (
+                <Link className={styles.paymentJump} href="#order-payment">
+                  Xem thanh toán
+                </Link>
+              ) : undefined
+            }
             status={
               <StatusPill tone={statusTone(order.status)}>
                 {orderStatusLabel(order.status)}
@@ -376,7 +383,12 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
                 </dl>
               </DetailPanel>
               {order.paymentAttempts.length ? (
-                <DetailPanel title="Thanh toán">
+                <DetailPanel
+                  title="Thanh toán"
+                  className={styles.paymentPanel}
+                  id="order-payment"
+                  tabIndex={-1}
+                >
                   <div className={styles.panelRows}>
                     {order.paymentAttempts.map((payment) => (
                       <article className={styles.payment} key={payment.id}>
@@ -494,7 +506,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
               ) : null}
             </div>
             <aside className={styles.actions}>
-              <DetailPanel title="Tổng thanh toán">
+              <DetailPanel className={styles.receipt} title="Tổng thanh toán">
                 <dl className={styles.facts}>
                   <div>
                     <dt>Tạm tính</dt>
@@ -508,7 +520,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
                     <dt>Phí giao hàng</dt>
                     <dd>{formatCustomerMoney(order.pricing.shippingFee)} ₫</dd>
                   </div>
-                  <div>
+                  <div className={styles.total}>
                     <dt>Tổng cộng</dt>
                     <dd>{formatCustomerMoney(order.pricing.grandTotal)} ₫</dd>
                   </div>

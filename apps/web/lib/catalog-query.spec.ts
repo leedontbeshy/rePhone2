@@ -3,6 +3,7 @@ import { catalogPageHref, toCatalogListQuery } from './catalog-query';
 
 describe('catalog URL query mapping', () => {
   it('maps supported query parameters to generated-client types', () => {
+    expect(toCatalogListQuery({})).toEqual({ sortBy: 'generation', sortOrder: 'desc' });
     expect(
       toCatalogListQuery({
         q: 'iphone 13',
@@ -28,6 +29,8 @@ describe('catalog URL query mapping', () => {
     expect(toCatalogListQuery({ page: 'not-a-number', inStock: '1' })).toEqual({
       page: 'not-a-number',
       inStock: '1',
+      sortBy: 'generation',
+      sortOrder: 'desc',
     });
   });
 

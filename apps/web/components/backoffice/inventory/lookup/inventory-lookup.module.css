@@ -1,5 +1,7 @@
 .page {
+  container: inventory-lookup / inline-size;
   display: grid;
+  min-inline-size: 0;
   gap: var(--space-6);
 }
 
@@ -20,8 +22,8 @@
 
 .header h1 {
   color: var(--color-ink);
-  font-size: clamp(1.9rem, 3vw, 2.45rem);
-  letter-spacing: -0.035em;
+  font-size: clamp(1.75rem, 2.2vw, 2rem);
+  letter-spacing: -0.03em;
   margin-block: var(--space-2);
 }
 
@@ -37,7 +39,7 @@
   color: var(--color-primary);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -182,7 +184,7 @@
   text-decoration: none;
 }
 
-@media (max-width: 900px) {
+@container inventory-lookup (max-width: 55.999rem) {
   .layout {
     grid-template-columns: 1fr;
   }
@@ -198,7 +200,7 @@
   }
 }
 
-@media (max-width: 620px) {
+@container inventory-lookup (max-width: 35.999rem) {
   .fieldGrid,
   .resultFacts,
   .securityCard {
@@ -219,4 +221,32 @@
   .formActions p {
     text-align: left;
   }
+}
+
+.formCard,
+.securityCard,
+.resultCard {
+  min-inline-size: 0;
+  border-radius: var(--radius-panel);
+}
+
+.securityCard {
+  background: var(--color-studio-cyan);
+}
+
+.fieldGrid > *,
+.cardHeading > div,
+.resultHeading > div {
+  min-inline-size: 0;
+}
+
+.resultFacts dd,
+.securityCard,
+.resultHeading,
+.formActions {
+  overflow-wrap: anywhere;
+}
+
+.detailLink {
+  min-block-size: var(--control-height-compact);
 }

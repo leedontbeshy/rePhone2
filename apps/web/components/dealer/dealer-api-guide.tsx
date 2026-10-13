@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   BookOpenIcon as BookOpen,
+  ArrowLeftIcon,
   ArrowRightIcon as ArrowRight,
   ShieldCheckIcon as ShieldCheck,
 } from '@phosphor-icons/react';
@@ -50,7 +51,7 @@ export function DealerApiGuide({
         test={sandbox}
       >
         <Link href="/dealer" className={styles.secondaryLink}>
-          ← Cổng đại lý
+          <ArrowLeftIcon size={18} aria-hidden /> Cổng đại lý
         </Link>
       </DealerWorkspaceHeader>
       <div className={styles.guideLayout}>
@@ -176,12 +177,17 @@ export function DealerApiGuide({
               và lưu khóa an toàn trước khi rời trang.
             </p>
             <DealerCode label="Header bắt buộc" code={`X-Dealer-Api-Key: ${prefix}<key của bạn>`} />
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div
+              className={styles.tableWrap}
+              role="region"
+              aria-label="Quyền truy cập API"
+              tabIndex={0}
+            >
+              <table className={styles.table} aria-label="Quyền truy cập API">
                 <thead>
                   <tr>
-                    <th>Quyền truy cập (scope)</th>
-                    <th>Dùng để</th>
+                    <th scope="col">Quyền truy cập (scope)</th>
+                    <th scope="col">Dùng để</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -305,12 +311,17 @@ const idempotencyKey = randomUUID();
 const { order, replayed } = await rephone('/dealer/orders', command, idempotencyKey);
 // Timeout: đọc command/key đã lưu và gọi lại đúng yêu cầu đó.`}
             />
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div
+              className={styles.tableWrap}
+              role="region"
+              aria-label="Tình huống đặt hàng"
+              tabIndex={0}
+            >
+              <table className={styles.table} aria-label="Tình huống đặt hàng">
                 <thead>
                   <tr>
-                    <th>Tình huống</th>
-                    <th>Cách xử lý</th>
+                    <th scope="col">Tình huống</th>
+                    <th scope="col">Cách xử lý</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -351,12 +362,17 @@ const { order, replayed } = await rephone('/dealer/orders', command, idempotency
               <code>file</code>. Đơn được tiếp tục xử lý sau khi rePhone đối chiếu và xác nhận đã
               nhận đủ tiền; việc gửi ảnh chứng từ chưa phải xác nhận thanh toán thành công.
             </p>
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div
+              className={styles.tableWrap}
+              role="region"
+              aria-label="Thanh toán và hậu mãi"
+              tabIndex={0}
+            >
+              <table className={styles.table} aria-label="Thanh toán và hậu mãi">
                 <thead>
                   <tr>
-                    <th>Thao tác</th>
-                    <th>Endpoint</th>
+                    <th scope="col">Thao tác</th>
+                    <th scope="col">Endpoint</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -495,12 +511,17 @@ export function validWebhook(rawBody, headers, secretsByKeyId) {
                 2,
               )}
             />
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div
+              className={styles.tableWrap}
+              role="region"
+              aria-label="Xử lý lỗi kết nối"
+              tabIndex={0}
+            >
+              <table className={styles.table} aria-label="Xử lý lỗi kết nối">
                 <thead>
                   <tr>
-                    <th>HTTP</th>
-                    <th>Cần làm gì</th>
+                    <th scope="col">HTTP</th>
+                    <th scope="col">Cần làm gì</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -34,6 +34,7 @@ import {
   type StockLevelQueryOverrides,
   type StockLevelQueryState,
 } from './stock-model';
+import boardStyles from '../inventory-data-board.module.css';
 import styles from './inventory-stock.module.css';
 
 export interface InventoryStockPagination {
@@ -261,15 +262,17 @@ export function InventoryStockView({
           : `${String(pagination.totalItems)} dòng tồn phù hợp`}
       </p>
 
-      <BackofficeDataBoard
-        ariaLabel="Danh sách tồn phụ kiện"
-        columns={columns}
-        emptyDescription="Thay đổi bộ lọc hoặc dùng thao tác nhận hàng để ghi nhận lô mới."
-        emptyTitle="Chưa có dòng tồn phù hợp"
-        getRowKey={(level) => level.id}
-        loading={loading}
-        rows={levels}
-      />
+      <div className={boardStyles.board}>
+        <BackofficeDataBoard
+          ariaLabel="Danh sách tồn phụ kiện"
+          columns={columns}
+          emptyDescription="Thay đổi bộ lọc hoặc dùng thao tác nhận hàng để ghi nhận lô mới."
+          emptyTitle="Chưa có dòng tồn phù hợp"
+          getRowKey={(level) => level.id}
+          loading={loading}
+          rows={levels}
+        />
+      </div>
 
       <div
         onClick={(event) => {

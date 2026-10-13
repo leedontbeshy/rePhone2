@@ -222,6 +222,7 @@ export class InventoryService {
         const updated = await this.repository.updateUnit(
           id,
           {
+            ...(input.isFeatured === undefined ? {} : { isFeatured: input.isFeatured }),
             ...(input.modelNumber === undefined
               ? {}
               : { modelNumber: normalizeUpper(input.modelNumber) }),
@@ -270,14 +271,21 @@ export class InventoryService {
     input: IdentifierLookupDto,
     actor: AuditActorContext,
   ): Promise<InventoryUnitListItemDto> {
-    let hmac: string;
+    let hmac = '';
     try {
-      hmac = this.identifiers.lookupHmac(input.type, input.value);
+      if (input.type === 'INVENTORY_CODE') {
+        if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(input.value.trim())) {
+          throw validation('value', 'INVALID_INVENTORY_CODE');
+        }
+      } else hmac = this.identifiers.lookupHmac(input.type, input.value);
     } catch (error) {
       mapIdentifierError(error, 'value');
     }
     const unit = await this.transactions.run('inventory.identifier.lookup', async (transaction) => {
-      const found = await this.repository.findByIdentifier(input.type, hmac, transaction);
+      const found =
+        input.type === 'INVENTORY_CODE'
+          ? await this.repository.findByInventoryCode(input.value.trim(), transaction)
+          : await this.repository.findByIdentifier(input.type, hmac, transaction);
       await this.audit.write(transaction, actor, {
         action: 'inventory.identifier.lookup',
         resourceType: 'InventoryUnit',
@@ -617,6 +625,7 @@ function toListItem(unit: InventoryUnitListRecord | InventoryUnitRecord): Invent
   return {
     id: unit.id,
     inventoryCode: unit.inventoryCode,
+    isFeatured: unit.isFeatured,
     lifecycleStatus: unit.lifecycleStatus,
     product: {
       id: unit.variant.product.id,
@@ -669,6 +678,7 @@ function toDetail(
   return {
     id: listItem.id,
     inventoryCode: listItem.inventoryCode,
+    isFeatured: listItem.isFeatured,
     lifecycleStatus: listItem.lifecycleStatus,
     product: listItem.product,
     variant: listItem.variant,
@@ -857,6 +867,7 @@ function decryptNullable(
 
 function safeUnitDelta(unit: InventoryUnitRecord): Prisma.InputJsonObject {
   return {
+    isFeatured: unit.isFeatured,
     lifecycleStatus: unit.lifecycleStatus,
     locationId: unit.locationId,
     salePrice: unit.salePrice?.toString() ?? null,

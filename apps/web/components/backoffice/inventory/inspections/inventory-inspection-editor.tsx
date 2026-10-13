@@ -132,6 +132,20 @@ export function InventoryInspectionEditor({
     }
   }
 
+  function selectAllPassed() {
+    if (readonly || busyAction !== null) return;
+    setDraft((current) => {
+      const checks = { ...current.checks };
+      for (const { key } of INSPECTION_CHECKS) {
+        checks[key] = { ...checks[key], status: 'PASS' };
+      }
+      return { ...current, checks };
+    });
+    setErrors((current) =>
+      Object.fromEntries(Object.entries(current).filter(([field]) => !field.startsWith('checks.'))),
+    );
+  }
+
   function clearError(field: string) {
     setErrors((current) => {
       if (current[field] === undefined) return current;
@@ -381,6 +395,15 @@ export function InventoryInspectionEditor({
                 <p>Có thể lưu phiếu chưa đủ mục; kết quả chưa đạt chuẩn cần ghi rõ tình trạng.</p>
               </div>
               <div className={styles.progress}>
+                <Button
+                  disabled={busyAction !== null}
+                  onClick={selectAllPassed}
+                  size="compact"
+                  type="button"
+                  variant="secondary"
+                >
+                  Chọn đạt tất cả
+                </Button>
                 <strong>
                   {String(progress.completed)}/{String(progress.total)} mục
                 </strong>

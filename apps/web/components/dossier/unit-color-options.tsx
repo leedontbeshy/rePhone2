@@ -5,23 +5,30 @@ import styles from './dossier.module.css';
 
 interface UnitColorOptionsProps {
   readonly currentVariantId: string;
+  readonly currentColorName?: string | null | undefined;
   readonly offers: readonly RelatedUnitOffer[];
   readonly productSlug: string;
 }
 
-export function UnitColorOptions({ currentVariantId, offers, productSlug }: UnitColorOptionsProps) {
-  if (offers.length === 0) return null;
+export function UnitColorOptions({
+  currentVariantId,
+  currentColorName,
+  offers,
+  productSlug,
+}: UnitColorOptionsProps) {
+  if (offers.length === 0 && !currentColorName) return null;
 
   return (
     <div className={styles.colorOptions}>
       <p>
         Màu sắc:{' '}
         <strong>
-          {offers.find(({ variant }) => variant.id === currentVariantId)?.variant.colorName ??
+          {currentColorName ??
+            offers.find(({ variant }) => variant.id === currentVariantId)?.variant.colorName ??
             'Theo máy'}
         </strong>
       </p>
-      <div aria-label="Các màu đang có máy bán" className={styles.colorOptionList}>
+      <div aria-label="Xem máy khác theo màu" className={styles.colorOptionList}>
         {offers.map(({ unit, variant }) => {
           const current = variant.id === currentVariantId;
           const label = variant.colorName ?? 'Màu chưa cập nhật';

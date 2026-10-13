@@ -6,9 +6,10 @@
 
 .hero {
   display: grid;
-  max-width: 54rem;
-  gap: var(--space-4);
-  padding-block: var(--space-6);
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--radius-media);
+  background: var(--color-studio-lavender);
 }
 
 .hero > p {
@@ -16,22 +17,20 @@
   color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .hero h1 {
   margin: 0;
   max-width: 20ch;
-  font-size: clamp(2.25rem, 6vw, 4.5rem);
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  font-size: var(--font-size-page-title);
+  letter-spacing: -0.035em;
+  line-height: var(--line-height-page-title);
 }
 
 .hero > span {
   max-width: 62ch;
   color: var(--color-muted);
-  font-size: 1.0625rem;
+  font-size: var(--font-size-body);
 }
 
 .accountNote {
@@ -41,7 +40,7 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-inline-start: 3px solid var(--color-primary);
+  border-radius: var(--radius-panel);
   background: var(--color-brand-soft);
 }
 
@@ -94,7 +93,7 @@
   border: var(--border-default);
   border-radius: var(--radius-small);
   color: var(--color-ink);
-  background: var(--color-surface-subtle);
+  background: var(--color-studio-cyan);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
 }
@@ -102,6 +101,11 @@
 .card h2,
 .card p {
   margin: 0;
+}
+
+.card h2 {
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
 }
 
 .card div > p {
@@ -217,4 +221,11 @@
   .grid {
     transition: none;
   }
+}
+
+.state button:hover,
+.state a:hover,
+.pagination a:hover {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
 }

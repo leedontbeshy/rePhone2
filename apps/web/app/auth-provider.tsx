@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { browserApiBaseUrl } from '../lib/api';
+import { fetchWithBackofficeTaskUpdates } from '../lib/backoffice-task-events';
 
 export type AuthUser = components['schemas']['AuthUserDto'];
 export type AuthRole = AuthUser['role'];
@@ -271,6 +272,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         getAccessToken: memory.getAccessToken,
         refreshAccessToken,
         onUnauthorized: clearSession,
+        fetch: fetchWithBackofficeTaskUpdates,
       }),
     [clearSession, memory, refreshAccessToken],
   );

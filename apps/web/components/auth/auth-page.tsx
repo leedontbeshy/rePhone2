@@ -1,6 +1,7 @@
 import type { FormHTMLAttributes, ReactNode } from 'react';
-import { AuthShell } from '@/components/shells';
+import { AuthShell } from '@/components/shells/auth-shell';
 import { InlineAlert, Skeleton } from '@/components/ui';
+import { AuthRouteNavigation } from './auth-route-navigation';
 import styles from './auth.module.css';
 
 interface AuthPageProps {
@@ -14,6 +15,7 @@ export function AuthPage({ children, description, title }: Readonly<AuthPageProp
     <AuthShell
       title={title}
       description={description}
+      navigation={<AuthRouteNavigation />}
       footer={
         <p className={styles.shellFooter}>
           rePhone không bao giờ yêu cầu bạn gửi mật khẩu qua tin nhắn.
@@ -54,13 +56,13 @@ export function AuthPending({ children }: Readonly<{ children: ReactNode }>) {
       <div className={styles.pendingForm} aria-hidden="true">
         <div className={styles.pendingField}>
           <Skeleton height="1rem" width="38%" />
-          <Skeleton height="2.75rem" width="100%" />
+          <Skeleton height="3rem" width="100%" />
         </div>
         <div className={styles.pendingField}>
           <Skeleton height="1rem" width="32%" />
-          <Skeleton height="2.75rem" width="100%" />
+          <Skeleton height="3rem" width="100%" />
         </div>
-        <Skeleton height="2.75rem" width="100%" />
+        <Skeleton height="3rem" width="100%" />
         <Skeleton height="1rem" width="46%" />
         <Skeleton height="1rem" width="72%" />
       </div>

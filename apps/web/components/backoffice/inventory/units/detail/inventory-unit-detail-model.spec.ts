@@ -75,6 +75,7 @@ describe('FE-06 inventory unit detail model', () => {
 
 function inventoryUnit(): InventoryUnitDetail {
   return {
+    isFeatured: false,
     activeReservationCount: 0,
     availabilityReadiness: { isReady: false, reasons: ['SALE_PRICE_REQUIRED'] },
     availableActions: ['CREATE_INSPECTION', 'UPLOAD_MEDIA'],

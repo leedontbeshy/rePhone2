@@ -87,6 +87,73 @@ const ORDER = {
 };
 
 describe('fulfillment api adapter', () => {
+  it('preserves current cost source and missing amounts from the admin projection', async () => {
+    const summary = {
+      source: 'CURRENT_INVENTORY',
+      knownCost: '0',
+      totalCost: null,
+      missingQuantity: 1,
+    };
+    const cost = {
+      inventoryUnitId: 'unit-1',
+      acquisitionCost: null,
+      additionalCost: '50000',
+      unitCost: null,
+      lineCost: null,
+    };
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            ...ORDER,
+            currentCostSummary: summary,
+            items: [{ ...ORDER.items[0], currentCost: cost }],
+          },
+        },
+      }),
+    };
+    const result = await getBackofficeOrder(client, ORDER.id);
+    expect(result.currentCostSummary).toEqual(summary);
+    expect(result.items[0]?.currentCost).toEqual(cost);
+    client.GET.mockResolvedValue({ data: { data: ORDER } });
+    const employee = await getBackofficeOrder(client, ORDER.id);
+    expect(employee).not.toHaveProperty('currentCostSummary');
+    expect(employee.items[0]).not.toHaveProperty('currentCost');
+  });
+
+  it('does not accept an unknown cost source or silently replace malformed costs with zero', async () => {
+    const client = {
+      GET: vi.fn().mockResolvedValue({
+        data: {
+          data: {
+            ...ORDER,
+            currentCostSummary: {
+              source: 'HISTORICAL',
+              knownCost: '0',
+              totalCost: '0',
+              missingQuantity: 0,
+            },
+          },
+        },
+      }),
+    };
+    await expect(getBackofficeOrder(client, ORDER.id)).rejects.toThrow('Nguồn');
+    client.GET.mockResolvedValue({
+      data: {
+        data: {
+          ...ORDER,
+          currentCostSummary: {
+            source: 'CURRENT_INVENTORY',
+            knownCost: 'invalid',
+            totalCost: null,
+            missingQuantity: 1,
+          },
+        },
+      },
+    });
+    await expect(getBackofficeOrder(client, ORDER.id)).rejects.toThrow('Giá vốn');
+  });
+
   it('compacts list filters and maps the paginated pickup queue', async () => {
     const client = {
       GET: vi.fn().mockResolvedValue({

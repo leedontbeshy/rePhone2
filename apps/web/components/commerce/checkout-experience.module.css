@@ -5,6 +5,7 @@
 .breadcrumbs {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-block-end: var(--space-6);
   color: var(--color-muted);
@@ -16,6 +17,11 @@
   color: var(--color-primary-hover);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
+}
+
+.breadcrumbs [aria-current='page'] {
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
 }
 
 .layout {
@@ -34,9 +40,10 @@
 .introduction h1 {
   margin: 0;
   color: var(--color-ink);
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  letter-spacing: -0.04em;
-  line-height: 1.12;
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.035em;
+  line-height: var(--line-height-page-title);
 }
 
 .introduction p {
@@ -48,20 +55,20 @@
 .fulfillmentGroup {
   display: grid;
   gap: var(--space-4);
-  margin: 0 0 var(--space-6);
+  margin: 0;
   padding: 0;
   border: 0;
 }
 
 .fulfillmentCard {
   display: grid;
-  min-block-size: 6.75rem;
-  grid-template-columns: 1.25rem 3.5rem minmax(0, 1fr);
+  min-block-size: 6.5rem;
+  grid-template-columns: 1.125rem 2.75rem minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-3);
   border: var(--border-strong);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   cursor: pointer;
   transition:
@@ -95,19 +102,19 @@
 }
 
 .fulfillmentCard input {
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
   margin: 0;
   accent-color: var(--color-primary);
 }
 
 .fulfillmentIcon {
   display: grid;
-  inline-size: 3.5rem;
-  block-size: 3.5rem;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
   place-items: center;
   border-radius: var(--radius-pill);
-  color: var(--color-primary);
+  color: var(--color-on-brand-soft);
   background: var(--color-brand-soft);
 }
 
@@ -118,7 +125,8 @@
 
 .fulfillmentCard strong {
   color: var(--color-ink);
-  font-size: var(--font-size-card-title);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 .fulfillmentCard small {
@@ -137,6 +145,12 @@
   margin: 0 0 var(--space-4);
   color: var(--color-ink);
   font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
+}
+
+.summary h2 {
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
 }
 
 .fieldsGrid {
@@ -182,7 +196,7 @@
 
 .appliedVoucher {
   margin: calc(var(--space-2) * -1) 0 var(--space-4);
-  color: var(--color-success-strong);
+  color: var(--color-muted);
   font-size: var(--font-size-small);
 }
 
@@ -190,36 +204,54 @@
   min-inline-size: 0;
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-floating);
 }
 
 .summaryItems {
   display: grid;
+  gap: var(--space-3);
 }
 
 .summaryItem {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
-  gap: var(--space-4);
-  padding-block: var(--space-4);
-  border-block-end: var(--border-default);
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-studio-cyan);
+}
+
+.summaryImageFrame {
+  display: grid;
+  min-inline-size: 0;
+  min-block-size: 12rem;
+  align-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-small);
 }
 
 .summaryImage {
-  inline-size: 5.5rem;
-  block-size: 5.5rem;
-  border-radius: var(--radius-control);
+  inline-size: 100%;
+  block-size: 12rem;
+  aspect-ratio: auto;
   object-fit: contain;
+  background: transparent;
 }
 
 .summaryImage[role='img'] {
+  align-content: center;
   padding: var(--space-2);
+  overflow-wrap: anywhere;
 }
 
 .summaryImage[role='img'] > span {
-  display: none;
+  max-inline-size: 100%;
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
 }
 
 .summaryItemCopy {
@@ -227,32 +259,39 @@
   min-inline-size: 0;
   align-content: center;
   gap: var(--space-1);
+  overflow-wrap: anywhere;
 }
 
 .summaryItemCopy > strong {
   color: var(--color-ink);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
 }
 
-.summaryItemCopy > span,
-.summaryItemCopy div span {
+.summaryItemCopy > span {
   color: var(--color-muted);
   font-size: var(--font-size-small);
 }
 
-.summaryItemCopy div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-block-start: var(--space-2);
+.summaryItemPrice {
+  display: grid;
+  gap: var(--space-1);
+  margin-block: var(--space-2);
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
+  font-variant-numeric: tabular-nums;
 }
 
-.summaryItemCopy b {
-  color: var(--color-ink);
+.summaryItemPrice small {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-small);
+}
+
+.summaryInventoryCode {
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .pricing {
@@ -293,8 +332,9 @@
 }
 
 .grandTotal strong {
-  color: var(--color-primary);
-  font-size: var(--font-size-page-title);
+  color: var(--color-primary-hover);
+  font-size: var(--font-size-price);
+  line-height: var(--line-height-price);
 }
 
 .voucherSuccess,
@@ -368,8 +408,13 @@
 }
 
 .prePreview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
   padding-block: var(--space-5);
   color: var(--color-muted);
+  font-size: var(--font-size-small);
 }
 
 .prePreview p {
@@ -384,7 +429,7 @@
   padding: var(--space-3) var(--space-4);
   border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border));
   border-radius: var(--radius-control);
-  color: var(--color-primary-hover);
+  color: var(--color-on-brand-soft);
   background: var(--color-brand-soft);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
@@ -392,7 +437,7 @@
 
 .summaryButton {
   inline-size: 100%;
-  min-block-size: 3.5rem;
+  min-block-size: var(--control-height);
   font-size: var(--font-size-body);
 }
 
@@ -412,7 +457,7 @@
 
 .loading div {
   min-block-size: 24rem;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface-subtle);
 }
 
@@ -463,6 +508,100 @@
   border: 0;
 }
 
+.progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0 0 var(--space-6);
+  list-style: none;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.progress li {
+  display: grid;
+  min-inline-size: 0;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.progressNumber {
+  display: grid;
+  inline-size: 2rem;
+  block-size: 2rem;
+  place-items: center;
+  border: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-weight: var(--font-weight-semibold);
+}
+
+.progress li[data-complete='true'] .progressNumber {
+  border-color: transparent;
+  color: var(--color-on-brand-soft);
+  background: var(--color-brand-soft);
+}
+
+.progress li[aria-current='step'] {
+  color: var(--color-primary-hover);
+  font-weight: var(--font-weight-semibold);
+}
+
+.progress li[aria-current='step'] .progressNumber {
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+}
+
+.sectionDescription {
+  margin: calc(var(--space-3) * -1) 0 var(--space-4);
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.noteCount {
+  display: block;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.depositExplanation {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  margin-block: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  background: var(--color-studio-lavender);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.depositExplanation strong {
+  font-weight: var(--font-weight-semibold);
+}
+
+.depositExplanation p {
+  margin: var(--space-1) 0 0;
+  color: var(--color-body);
+}
+
+.depositIcon {
+  display: grid;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
 @media (min-width: 40rem) {
   .fulfillmentGroup,
   .fieldsGrid {
@@ -478,22 +617,27 @@
   }
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 60rem) {
   .layout {
-    grid-template-columns: minmax(0, 1.62fr) minmax(22rem, 0.9fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
     gap: clamp(2rem, 4vw, 3.5rem);
   }
 
   .summary {
-    position: sticky;
-    inset-block-start: calc(var(--storefront-header-offset) + var(--space-4));
     padding: var(--space-6);
   }
 
   .loading {
-    grid-template-columns: minmax(0, 1.62fr) minmax(22rem, 0.9fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
+}
+
+.balanceNote {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
 }
 
 @media (max-width: 24rem) {
@@ -510,16 +654,15 @@
   }
 
   .summaryItem {
-    grid-template-columns: 4.5rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   }
 
   .summaryImage {
-    inline-size: 4.5rem;
-    block-size: 4.5rem;
+    block-size: 10rem;
   }
 
   .grandTotal strong {
-    font-size: var(--font-size-section-title);
+    font-size: var(--font-size-price);
   }
 
   .grandTotal {
@@ -530,6 +673,45 @@
   .grandTotal strong {
     max-inline-size: 100%;
     white-space: normal;
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .progress {
+    gap: var(--space-3);
+  }
+
+  .progress li {
+    align-content: start;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .priceLine {
+    gap: var(--space-2);
+    font-size: var(--font-size-small);
+  }
+}
+
+@media (forced-colors: active) {
+  .fulfillmentCard,
+  .summary,
+  .depositExplanation,
+  .assurance,
+  .previewWarnings,
+  .reviewAlert,
+  .uncertainNotice,
+  .pageError {
+    border: 1px solid CanvasText;
+  }
+
+  .progressNumber {
+    border-color: CanvasText;
+  }
+
+  .fulfillmentCard:has(input:checked) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }
 

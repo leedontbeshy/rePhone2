@@ -20,9 +20,10 @@
 
 .hero {
   display: grid;
-  max-width: 54rem;
-  gap: var(--space-4);
-  padding-block: var(--space-6) var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--radius-media);
+  background: var(--color-studio-cyan);
 }
 
 .eyebrow,
@@ -31,32 +32,31 @@
   color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.06em;
   line-height: var(--line-height-label);
-  text-transform: uppercase;
 }
 
 .hero h1 {
   margin: 0;
   max-width: 18ch;
-  font-size: clamp(2.25rem, 6vw, 4.75rem);
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  font-size: var(--font-size-page-title);
+  letter-spacing: -0.035em;
+  line-height: var(--line-height-page-title);
 }
 
 .hero p:last-child {
   max-width: 62ch;
   margin: 0;
   color: var(--color-muted);
-  font-size: 1.0625rem;
+  font-size: var(--font-size-body);
 }
 
 .desktopFilters {
   display: none;
   padding: var(--space-5);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .filterForm {
@@ -192,7 +192,9 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
-  transition: border-color var(--motion-fast) var(--ease-standard);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
 }
 
 .productCard {
@@ -203,6 +205,7 @@
 .productCard:hover,
 .unitCard:hover {
   border-color: var(--color-border-strong);
+  box-shadow: var(--shadow-hover);
 }
 
 .productMediaLink,
@@ -219,7 +222,7 @@
   aspect-ratio: 4 / 3;
   object-fit: contain;
   padding: var(--space-4);
-  background: var(--color-surface-subtle);
+  background: var(--color-studio-lavender);
 }
 
 .mediaLabel,
@@ -260,6 +263,8 @@
 
 .productTitle {
   margin: 0;
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
 }
 
 .productTitle a {
@@ -413,5 +418,26 @@
   .mediaLabel,
   .actualUnitLabel {
     background: Canvas;
+  }
+}
+
+.applyFilter:hover,
+.cardAction:hover {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+}
+
+.clearFilter:hover,
+.filterButton:hover,
+.dialogClose:hover,
+.paginationLink:hover {
+  border-color: var(--color-primary);
+  background: var(--color-brand-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productCard,
+  .unitCard {
+    transition: none;
   }
 }

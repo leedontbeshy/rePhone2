@@ -28,7 +28,8 @@ describe('frontend design foundation', () => {
     expect(tokens).toContain('--color-canvas: #f7f9fb;');
     expect(tokens).toContain('--color-primary: #007c9f;');
     expect(tokens).toContain('--color-danger: #b4232d;');
-    expect(tokens).toContain('--control-height: 2.75rem;');
+    expect(tokens).toContain('--control-height: 3rem;');
+    expect(tokens).toContain('--control-height-compact: 2.75rem;');
     expect(base).toContain('@media (prefers-reduced-motion: reduce)');
     expect(base).toContain('.rp-surface h1');
     expect(base).not.toMatch(/\nbody\s*\{[^}]*background:/);
@@ -40,6 +41,18 @@ describe('frontend design foundation', () => {
     expect(contrastRatio('#0b6b45', '#e8f7f0')).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio('#9b5b00', '#fff4dd')).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio('#931d25', '#fff0f1')).toBeGreaterThanOrEqual(4.5);
+    for (const [foreground, background] of [
+      ['--color-on-primary', '--color-primary'],
+      ['--color-muted', '--color-studio-cyan'],
+      ['--color-muted', '--color-studio-lavender'],
+      ['--color-on-brand-soft', '--color-studio-cyan'],
+      ['--color-on-brand-soft', '--color-studio-lavender'],
+      ['--color-sidebar-text', '--color-sidebar'],
+    ] as const) {
+      expect(
+        contrastRatio(hexToken(tokens, foreground), hexToken(tokens, background)),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('does not reference undefined global color tokens without a fallback', () => {
@@ -107,6 +120,12 @@ function listCssFiles(directory: string): string[] {
     }
     return entry.name.endsWith('.css') ? [path] : [];
   });
+}
+
+function hexToken(source: string, name: string): string {
+  const value = new RegExp(name + ':\\s*(#[0-9a-f]{6});', 'i').exec(source)?.[1];
+  if (value === undefined) throw new Error('Missing hexadecimal color token: ' + name);
+  return value;
 }
 
 function contrastRatio(foreground: string, background: string) {

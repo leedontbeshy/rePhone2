@@ -15,6 +15,8 @@
 | Tạo/sửa sản phẩm và ảnh | Có | Có | Không |
 | Nhập, kiểm định và chuyển tồn | Có | Có | Không |
 | Xem/sửa giá vốn từng iPhone | Có | Không | Không |
+| Báo cáo doanh thu/doanh số theo tháng | Có | Có | Không |
+| Giá vốn/lãi gộp/vốn tồn kho trong báo cáo | Có | Không | Không |
 | Xử lý đơn và reservation | Có | Có | Chỉ đơn của mình |
 | Xác nhận/từ chối cọc | Có | Có | Chỉ gửi chứng từ |
 | Hoàn tiền/hoàn cọc | Có | Có, phải ghi lý do | Không |

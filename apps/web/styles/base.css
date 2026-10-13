@@ -26,17 +26,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-.rp-surface button,
-.rp-surface input,
-.rp-surface select,
-.rp-surface textarea {
-  font-family: var(--font-sans);
-}
-
-.rp-surface button,
-.rp-surface input,
-.rp-surface select,
-.rp-surface textarea {
+:where(.rp-surface) :is(button, input, select, textarea) {
   font: inherit;
 }
 
@@ -63,17 +53,17 @@ body {
   text-wrap: balance;
 }
 
-.rp-surface h1 {
+:where(.rp-surface) h1 {
   font-size: var(--font-size-page-title);
   line-height: var(--line-height-page-title);
 }
 
-.rp-surface h2 {
+:where(.rp-surface) h2 {
   font-size: var(--font-size-section-title);
   line-height: var(--line-height-section-title);
 }
 
-.rp-surface h3 {
+:where(.rp-surface) h3 {
   font-size: var(--font-size-card-title);
   line-height: var(--line-height-card-title);
 }
@@ -83,14 +73,10 @@ body {
   text-wrap: pretty;
 }
 
-.rp-surface a {
-  color: var(--color-primary);
+:where(.rp-surface) a {
+  color: var(--color-primary-hover);
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.16em;
-}
-
-.rp-surface a:hover {
-  color: var(--color-primary-hover);
 }
 
 :focus-visible {
@@ -170,11 +156,37 @@ body {
   color: var(--color-ink);
 }
 
-@media (min-width: 40rem) {
-  .rp-surface h1 {
-    font-size: var(--font-size-display);
-    line-height: var(--line-height-display);
-  }
+/* Disclosures are complete labelled controls, never native triangle-only affordances. */
+body details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-body);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
+  font-weight: var(--font-weight-semibold);
+  list-style: none;
+  cursor: pointer;
+}
+body details > summary::marker {
+  content: '';
+}
+body details > summary::-webkit-details-marker {
+  display: none;
+}
+body details > summary::after {
+  content: 'Mở';
+  flex: 0 0 auto;
+  font-size: var(--font-size-small);
+  color: var(--color-on-brand-soft);
+}
+body details[open] > summary::after {
+  content: 'Đóng';
 }
 
 @media (prefers-reduced-motion: reduce) {

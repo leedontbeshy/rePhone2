@@ -229,6 +229,20 @@ async function settingsFixture(page: Page): Promise<SettingsProbe> {
       },
     }),
   );
+  await page.route('**/api/v1/backoffice/dealers/configuration', (route) => {
+    if (route.request().method() === 'OPTIONS') return preflight(route);
+    if (route.request().method() === 'GET') {
+      return json(route, { data: { enabled: false, open: false, environment: 'TEST' } });
+    }
+    return json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404);
+  });
+  await page.route('**/api/v1/backoffice/affiliates/policy', (route) => {
+    if (route.request().method() === 'OPTIONS') return preflight(route);
+    if (route.request().method() === 'GET') {
+      return json(route, { data: { ready: false, enabled: false } });
+    }
+    return json(route, errorEnvelope('RESOURCE_NOT_FOUND'), 404);
+  });
   await page.route('**/api/v1/backoffice/settings**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;

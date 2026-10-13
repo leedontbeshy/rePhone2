@@ -18,6 +18,7 @@ import {
   type StockMovementQueryOverrides,
   type StockMovementQueryState,
 } from './stock-model';
+import boardStyles from '../inventory-data-board.module.css';
 import styles from './inventory-stock.module.css';
 
 export interface InventoryStockMovementsViewProps {
@@ -263,15 +264,17 @@ export function InventoryStockMovementsView({
           : `${String(pagination.totalItems)} bản ghi phù hợp`}
       </p>
 
-      <BackofficeDataBoard
-        ariaLabel="Lịch sử thay đổi tồn phụ kiện"
-        columns={columns}
-        emptyDescription="Thay đổi khoảng ngày hoặc bộ lọc để tìm bản ghi khác."
-        emptyTitle="Chưa có lịch sử phù hợp"
-        getRowKey={(movement) => movement.id}
-        loading={loading}
-        rows={movements}
-      />
+      <div className={boardStyles.board}>
+        <BackofficeDataBoard
+          ariaLabel="Lịch sử thay đổi tồn phụ kiện"
+          columns={columns}
+          emptyDescription="Thay đổi khoảng ngày hoặc bộ lọc để tìm bản ghi khác."
+          emptyTitle="Chưa có lịch sử phù hợp"
+          getRowKey={(movement) => movement.id}
+          loading={loading}
+          rows={movements}
+        />
+      </div>
 
       <div
         onClick={(event) => {

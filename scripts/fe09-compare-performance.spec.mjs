@@ -236,6 +236,102 @@ test('CLI uses exit 0 for pass, 1 for regression and 2 for input errors without 
   }
 });
 
+test('distinguishes working-tree source and build identities on the same commit', () => {
+  const baseline = report({ provenance: workingTreeProvenance('a', 'baseline-build') });
+  const after = report({ provenance: workingTreeProvenance('b', 'after-build') });
+  const comparison = comparePerformanceReports(baseline, after);
+  assert.equal(comparison.status, 'pass');
+  assert.equal(comparison.baselineCommitSha, comparison.afterCommitSha);
+  assert.equal(comparison.baselineSourceMode, 'working-tree');
+  assert.equal(comparison.afterSourceMode, 'working-tree');
+  assert.equal(comparison.baselineSourceFingerprint, 'a'.repeat(64));
+  assert.equal(comparison.afterSourceFingerprint, 'b'.repeat(64));
+  assert.equal(comparison.baselineBuildId, 'baseline-build');
+  assert.equal(comparison.afterBuildId, 'after-build');
+  assert.equal(comparison.baselineRuntimeFingerprint, 'c'.repeat(64));
+  const markdown = formatPerformanceComparisonMarkdown(comparison);
+  assert.ok(markdown.includes('a'.repeat(64)));
+  assert.ok(markdown.includes('b'.repeat(64)));
+  assert.match(markdown, /baseline-build|after-build/);
+});
+
+test('rejects incomplete, mismatched or unsafe dirty-source/build metadata', () => {
+  const valid = workingTreeProvenance('a', 'fixture-build');
+  const invalidProvenance = [
+    { workingTreeClean: false },
+    { ...valid, sourceMode: 'bypass' },
+    { ...valid, sourceFingerprint: 'not-a-fingerprint' },
+    { ...valid, sourceFileCount: 0 },
+    { ...valid, buildProvenance: undefined },
+    { ...valid, buildProvenance: { ...valid.buildProvenance, commitSha: AFTER_SHA } },
+    { ...valid, buildProvenance: { ...valid.buildProvenance, sourceFingerprint: 'b'.repeat(64) } },
+    { ...valid, buildProvenance: { ...valid.buildProvenance, sourceFileCount: 43 } },
+    { ...valid, buildProvenance: { ...valid.buildProvenance, buildId: '../private' } },
+    { ...valid, buildProvenance: { ...valid.buildProvenance, runtimeFingerprint: 'invalid' } },
+    { ...valid, sourceMode: 'commit' },
+  ];
+  for (const provenance of invalidProvenance) {
+    assertInputError(
+      () => comparePerformanceReports(report(), report({ provenance })),
+      'PROVENANCE_INVALID',
+    );
+  }
+});
+
+test('keeps legacy clean reports compatible but does not coerce malformed cleanliness', () => {
+  for (const workingTreeClean of [undefined, true]) {
+    const comparison = comparePerformanceReports(
+      report(),
+      report({ provenance: { workingTreeClean } }),
+    );
+    assert.equal(comparison.status, 'pass');
+    assert.equal(comparison.afterSourceFingerprint, null);
+    assert.equal(comparison.afterBuildId, null);
+    assert.match(formatPerformanceComparisonMarkdown(comparison), /legacy clean commit/);
+  }
+  for (const workingTreeClean of [false, null, 'true', 1]) {
+    assertInputError(
+      () => comparePerformanceReports(report(), report({ provenance: { workingTreeClean } })),
+      'PROVENANCE_INVALID',
+    );
+  }
+});
+
+test('allows complete clean provenance and does not copy private build metadata', () => {
+  const provenance = workingTreeProvenance('a', 'fixture-build');
+  provenance.sourceMode = 'commit';
+  provenance.workingTreeClean = true;
+  provenance.buildProvenance.databaseUrl = 'postgresql://secret';
+  provenance.buildProvenance.absolutePath = 'private-build-directory';
+  const comparison = comparePerformanceReports(report(), report({ provenance }));
+  assert.equal(comparison.status, 'pass');
+  assert.equal(comparison.afterSourceMode, 'commit');
+  assert.doesNotMatch(JSON.stringify(comparison), /postgresql|secret|private-build-directory/);
+  assert.doesNotMatch(
+    formatPerformanceComparisonMarkdown(comparison),
+    /postgresql|secret|private-build-directory/,
+  );
+});
+
+function workingTreeProvenance(character, buildId) {
+  const sourceFingerprint = character.repeat(64);
+  return {
+    sourceMode: 'working-tree',
+    workingTreeClean: false,
+    sourceFingerprint,
+    sourceFileCount: 42,
+    buildProvenance: {
+      schema: 'rephone.performance-build',
+      schemaVersion: 1,
+      commitSha: BASELINE_SHA,
+      sourceFingerprint,
+      sourceFileCount: 42,
+      buildId,
+      runtimeFingerprint: 'c'.repeat(64),
+    },
+  };
+}
+
 function report({
   clientJsField = 'clientJsBytes',
   commitSha = BASELINE_SHA,
@@ -243,10 +339,12 @@ function report({
   profile = {},
   route = 'model-detail',
   schemaVersion = 2,
+  provenance = {},
 } = {}) {
   const clientJsMetric = { [clientJsField]: 50_000 };
   return {
     commitSha,
+    ...provenance,
     productionBuild: true,
     profile: {
       cpuSlowdownMultiplier: 4,

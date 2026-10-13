@@ -92,8 +92,9 @@ describe('FE-08 SystemAdminShell', () => {
     const source = readFileSync(shellPath, 'utf8');
 
     expect(source).not.toContain('scrollIntoView');
-    expect(source).toContain("navigation.dataset.systemNavigation = 'true'");
-    expect(source).toContain('systemNavigationOverflowState(navigation)');
+    expect(source).toContain('<BackofficeShell');
+    expect(source).not.toContain('new ResizeObserver');
+    expect(source).not.toContain('navigation.dataset.systemNavigation');
   });
 });
 

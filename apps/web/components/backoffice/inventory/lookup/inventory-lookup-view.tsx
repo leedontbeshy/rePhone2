@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { Button, InlineAlert, Input, Select, StatusChip } from '@/components/ui';
 import styles from './inventory-lookup.module.css';
 
-export type InventoryLookupIdentifierType = 'IMEI' | 'SERIAL' | 'EID';
+export type InventoryLookupIdentifierType = 'IMEI' | 'SERIAL' | 'EID' | 'INVENTORY_CODE';
 export type InventoryMaskedIdentifierType = 'IMEI_1' | 'IMEI_2' | 'SERIAL' | 'EID';
 
 export interface InventoryLookupResult {
@@ -82,7 +82,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
       <header className={styles.header}>
         <p className={styles.eyebrow}>Kho hàng · Bảo vệ định danh</p>
         <h1>Tra cứu mã máy</h1>
-        <p>Tìm đúng máy bằng IMEI, số sê-ri hoặc EID; kết quả chỉ hiển thị mã đã che.</p>
+        <p>Tìm máy bằng mã máy, IMEI, số sê-ri hoặc EID.</p>
       </header>
 
       <div className={styles.layout}>
@@ -116,6 +116,7 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               }}
             >
               <option value="IMEI">IMEI</option>
+              <option value="INVENTORY_CODE">Mã máy</option>
               <option value="SERIAL">Số sê-ri</option>
               <option value="EID">EID</option>
             </Select>
@@ -124,7 +125,11 @@ export function InventoryLookupView({ onLookup }: InventoryLookupViewProps) {
               disabled={pending}
               error={attempted ? validation.identifier : undefined}
               id="inventory-identifier-value"
-              inputMode={identifierType === 'SERIAL' ? 'text' : 'numeric'}
+              inputMode={
+                identifierType === 'SERIAL' || identifierType === 'INVENTORY_CODE'
+                  ? 'text'
+                  : 'numeric'
+              }
               label={identifierInputLabel(identifierType)}
               placeholder={identifierPlaceholder(identifierType)}
               required
@@ -254,7 +259,10 @@ export function validateInventoryLookupInput(input: InventoryLookupInput): {
   const identifier = input.identifier.trim();
   let identifierError: string | undefined;
   if (identifier === '') identifierError = 'Hãy nhập mã cần tra cứu.';
-  else if (input.identifierType === 'IMEI') {
+  else if (input.identifierType === 'INVENTORY_CODE') {
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(identifier))
+      identifierError = 'Mã máy tối đa 64 ký tự chữ, số, dấu gạch ngang hoặc gạch dưới.';
+  } else if (input.identifierType === 'IMEI') {
     if (!/^\d{15}$/.test(identifier.replace(/[\s-]/g, '')))
       identifierError = 'IMEI cần có đúng 15 chữ số.';
   } else if (input.identifierType === 'EID') {
@@ -271,6 +279,7 @@ export function identifierTypeLabel(
   type: InventoryMaskedIdentifierType | InventoryLookupIdentifierType,
 ): string {
   if (type === 'IMEI') return 'IMEI';
+  if (type === 'INVENTORY_CODE') return 'Mã máy';
   if (type === 'IMEI_1') return 'IMEI chính';
   if (type === 'IMEI_2') return 'IMEI phụ';
   if (type === 'SERIAL') return 'Số sê-ri';
@@ -278,10 +287,12 @@ export function identifierTypeLabel(
 }
 
 function identifierInputLabel(type: InventoryLookupIdentifierType): string {
+  if (type === 'INVENTORY_CODE') return 'Mã máy';
   return type === 'SERIAL' ? 'Số sê-ri đầy đủ' : `${identifierTypeLabel(type)} đầy đủ`;
 }
 
 function identifierPlaceholder(type: InventoryLookupIdentifierType): string {
+  if (type === 'INVENTORY_CODE') return 'Ví dụ: RPH-IP17-256-MBL-U01';
   if (type === 'SERIAL') return 'Ví dụ: F2LX1234ABCD';
   if (type === 'EID') return '32 chữ số';
   return '15 chữ số';

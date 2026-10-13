@@ -1,0 +1,68 @@
+.section {
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-strong);
+  border-radius: var(--radius-media);
+  background: linear-gradient(135deg, var(--color-studio-cyan), var(--color-surface));
+  box-shadow: var(--shadow-raised);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+.header h2,
+.header p {
+  margin: 0;
+}
+.header p {
+  color: var(--color-on-brand-soft);
+  font-size: var(--font-size-small);
+  margin-bottom: var(--space-1);
+}
+.header h2 {
+  font-size: var(--font-size-section-title);
+}
+.controls {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 4 * var(--space-3)) / 5);
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  padding-bottom: var(--space-3);
+}
+.slide {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+.slide > article {
+  height: 100%;
+}
+@media (max-width: 74.999rem) {
+  .track {
+    grid-auto-columns: calc((100% - 2 * var(--space-3)) / 3);
+  }
+}
+@media (max-width: 49.999rem) {
+  .track {
+    grid-auto-columns: calc((100% - var(--space-3)) / 2);
+  }
+}
+@media (max-width: 34.999rem) {
+  .section {
+    padding: var(--space-3);
+  }
+  .track {
+    grid-auto-columns: 100%;
+  }
+}

@@ -89,6 +89,14 @@ export const FRONTEND_BROWSER_SUITES = {
     specFile: 'storefront-discovery.spec.ts',
     phase: 'FE-1',
     tests: {
+      'homepage-and-toolbar-refinement': {
+        title:
+          'shows stock and campaigns then filters with keyboard-accessible horizontal controls',
+        ownsRoutes: [],
+        coversRoutes: ['/', '/products', '/products/[slug]'],
+        ownsStates: ['success'],
+        specFile: 'ui-refinement.spec.ts',
+      },
       'public-six-surfaces': {
         title: 'browses the six public surfaces using the seeded iPhone 14 dossier',
         ownsRoutes: [
@@ -184,13 +192,13 @@ export const FRONTEND_BROWSER_SUITES = {
         ownsStates: ['success'],
       },
       'mobile-generation-shelf': {
-        title: 'keeps generation shelves scrollable without overflowing the mobile document',
+        title: 'filters the home grid by generation and keeps mobile pills within the viewport',
         ownsRoutes: [],
         coversRoutes: ['/'],
         ownsStates: ['success'],
       },
       'footer-links': {
-        title: 'exposes generation and store contact links in the shared footer',
+        title: 'keeps compact public footer navigation and the contact destination reachable',
         ownsRoutes: [],
         coversRoutes: ['/'],
         ownsStates: ['success'],
@@ -498,6 +506,13 @@ export const FRONTEND_BROWSER_SUITES = {
     specFile: 'inventory-stock.spec.ts',
     phase: 'FE-6',
     tests: {
+      'featured-and-code-lookup': {
+        title: 'persists a featured star and finds the exact inventory code',
+        ownsRoutes: [],
+        coversRoutes: ['/backoffice/inventory/units', '/backoffice/inventory/lookup', '/'],
+        ownsStates: ['success'],
+        specFile: 'ui-refinement.spec.ts',
+      },
       'employee-cost-privacy': {
         title: 'keeps the employee unit profile free of cost requests and cost UI',
         ownsRoutes: ['/backoffice/inventory/units/[id]'],
@@ -670,6 +685,18 @@ export const FRONTEND_BROWSER_SUITES = {
     specFile: 'system-admin-health.spec.ts',
     phase: 'FE-8',
     tests: {
+      'financial-and-partner-settings': {
+        title: 'shows monthly finance with role-safe costs and partner switches in store settings',
+        ownsRoutes: [],
+        coversRoutes: [
+          '/backoffice',
+          '/backoffice/settings',
+          '/backoffice/dealers',
+          '/backoffice/affiliates',
+        ],
+        ownsStates: ['success'],
+        specFile: 'ui-refinement.spec.ts',
+      },
       'live-admin-route-matrix': {
         title: 'renders six system administration routes from live backend projections',
         ownsRoutes: [],

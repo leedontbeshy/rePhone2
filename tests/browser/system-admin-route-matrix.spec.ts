@@ -1,9 +1,10 @@
+import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
-import { stabilizeVisualPage } from './support/stabilize-visual-page';
+import { stabilizeWp11VisualPage } from './support/wp11-visual';
 
 const EMPLOYEE_ID = '0199d030-0000-7000-8000-000000000001';
 const CUSTOMER_ID = '0199d030-0000-7000-8000-000000000002';
@@ -28,10 +29,10 @@ interface MatrixProbe {
 
 const ROUTES = [
   {
-    active: 'Tổng quan',
-    heading: 'Tổng quan vận hành',
+    active: 'Tài chính',
+    heading: 'Báo cáo tài chính',
     route: '/backoffice',
-    state: 'Tình hình vận hành',
+    state: 'Doanh thu theo ngày',
   },
   {
     active: 'Nhân viên',
@@ -98,11 +99,7 @@ test(
             page.getByRole('heading', { name: route.heading, exact: true }),
           ).toBeVisible();
           await expect(page.locator('main')).toContainText(route.state);
-          const activeNavigation = page.locator(
-            'aside[aria-label="Điều hướng backoffice"] [aria-current="page"]',
-          );
-          await expect(activeNavigation).toContainText(route.active);
-          await expect(activeNavigation).toBeInViewport();
+          await expectCurrentNavigation(page, route.active, viewport.width);
           if (route.route.includes(`/audit-logs/${AUDIT_ID}`)) {
             await expect(page).toHaveURL((url) => {
               return (
@@ -189,11 +186,7 @@ test(
         );
       });
 
-      const activeNavigation = page.locator(
-        'aside[aria-label="Điều hướng backoffice"] [aria-current="page"]',
-      );
-      await expect(activeNavigation).toHaveText('Nhật ký hoạt động');
-      await expect(activeNavigation).toBeInViewport();
+      await expectCurrentNavigation(page, 'Nhật ký hoạt động', viewport.width);
 
       const selectedAudit = page.locator(`main a[href*="selected=${AUDIT_ID}"]`);
       await expect(selectedAudit).toHaveAttribute('aria-current', 'page');
@@ -215,40 +208,14 @@ test(
       await expectNoSeriousAccessibilityViolations(page, routeLabel, viewport.width);
 
       if (viewport.name === 'desktop-1440' || viewport.name === 'mobile-390') {
-        await stabilizeVisualPage(page);
-        if (viewport.name === 'desktop-1440') {
-          const sidebar = page.getByRole('complementary', {
-            name: 'Điều hướng backoffice',
-          });
-          await sidebar.evaluate((element) => {
-            const navigation = element.querySelector<HTMLElement>(':scope > nav');
-            if (navigation === null) throw new Error('Backoffice navigation is missing');
-
-            // A full-page capture resets nested scroll offsets on the CI runner. Preserve the
-            // exact max-scroll appearance in a transform, which the capture does not reset.
-            const maximumScrollTop = Math.max(0, element.scrollHeight - element.clientHeight);
-            element.style.blockSize = `${String(element.getBoundingClientRect().height)}px`;
-            element.style.insetBlockStart = 'auto';
-            element.style.overflow = 'clip';
-            element.style.position = 'static';
-            element.scrollTop = 0;
-            navigation.style.transform = `translateY(-${String(maximumScrollTop)}px)`;
-          });
-          // The shell observes sidebar resizes to keep the active item visible. Let that callback
-          // settle before verifying that snapshot-only clipping kept the visual offset stable.
-          await page.evaluate(
-            () =>
-              new Promise<void>((resolve) => {
-                window.requestAnimationFrame(() => {
-                  window.requestAnimationFrame(() => {
-                    resolve();
-                  });
-                });
-              }),
-          );
-          await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBe(0);
-          await expect(activeNavigation).toBeInViewport();
-        }
+        await stabilizeWp11VisualPage(page);
+        // Opening technical disclosures can scroll the document. Reset immediately so a
+        // smooth scroll cannot move sticky chrome into the middle of the full-page image.
+        await page.evaluate(() => {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        });
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+        await page.mouse.move(0, 0);
         await expect(page).toHaveScreenshot(
           `wp11-system-admin-audit-selected-${viewport.name}.png`,
           {
@@ -261,6 +228,44 @@ test(
     }
   },
 );
+
+async function expectCurrentNavigation(page: Page, activeText: string, width: number) {
+  const activeNavigation = page.locator(
+    'aside[aria-label="Điều hướng backoffice"] [aria-current="page"]',
+  );
+  await expect(activeNavigation).toHaveCount(1);
+  await expect(activeNavigation).toHaveText(activeText);
+  if (width >= 960) {
+    await expect(activeNavigation).toBeInViewport();
+    return;
+  }
+
+  const trigger = page.getByRole('button', { name: 'Mở điều hướng vận hành', exact: true });
+  const drawer = page.getByRole('dialog', { name: 'Điều hướng vận hành', exact: true });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(drawer).not.toBeVisible();
+  await trigger.click();
+  await expect(drawer).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(activeNavigation).toBeInViewport();
+  await expect
+    .poll(() =>
+      activeNavigation.evaluate((element) => {
+        const item = element.getBoundingClientRect();
+        const navigation = element.closest('aside')?.getBoundingClientRect();
+        return (
+          navigation !== undefined &&
+          item.top >= navigation.top - 1 &&
+          item.bottom <= navigation.bottom + 1
+        );
+      }),
+    )
+    .toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(drawer).not.toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(trigger).toBeFocused();
+}
 
 async function installMatrixFixture(page: Page, role: MatrixRole): Promise<MatrixProbe> {
   const probe: MatrixProbe = { childRequests: [] };
@@ -277,8 +282,12 @@ async function installMatrixFixture(page: Page, role: MatrixRole): Promise<Matri
     probe.childRequests.push(`${request.method()} ${requestPath}`);
 
     if (request.method() !== 'GET') return json(route, errorEnvelope('FORBIDDEN'), 403);
-    if (requestPath === '/api/v1/backoffice/overview') {
-      return json(route, { data: overviewSnapshot() });
+    if (requestPath === '/api/v1/backoffice/overview/financial') {
+      return json(route, {
+        data: overviewSnapshot(
+          new URL(route.request().url()).searchParams.get('month') ?? '2026-10',
+        ),
+      });
     }
     if (requestPath === '/api/v1/backoffice/employees') {
       return json(route, paged([employeeProjection()]));
@@ -292,6 +301,10 @@ async function installMatrixFixture(page: Page, role: MatrixRole): Promise<Matri
     if (requestPath === `/api/v1/backoffice/customers/${CUSTOMER_ID}`) {
       return json(route, { data: customerProjection() });
     }
+    if (requestPath === '/api/v1/backoffice/dealers/configuration')
+      return json(route, { data: { enabled: false, open: false, environment: 'TEST' } });
+    if (requestPath === '/api/v1/backoffice/affiliates/policy')
+      return json(route, { data: { ready: false, enabled: false } });
     if (requestPath === '/api/v1/backoffice/settings') {
       return json(route, { data: settingsProjection() });
     }
@@ -309,36 +322,8 @@ async function installMatrixFixture(page: Page, role: MatrixRole): Promise<Matri
   return probe;
 }
 
-function overviewSnapshot() {
-  return {
-    generatedAt: '2026-09-02T03:00:00.000Z',
-    metrics: {
-      activeOrders: 12,
-      lowStockLevels: 2,
-      openAfterSales: 4,
-      paymentsUnderReview: 3,
-    },
-    priorities: [
-      {
-        count: 3,
-        href: '/backoffice/payments',
-        key: 'PAYMENT_REVIEW_OVERDUE',
-        oldestAt: '2026-09-01T03:00:00.000Z',
-      },
-    ],
-    recentOrders: [
-      {
-        customerName: 'Khách hàng Ma trận',
-        fulfillmentStatus: 'IN_TRANSIT',
-        grandTotal: '24500000',
-        id: '0199d030-0000-7000-8000-000000000011',
-        orderNumber: 'RPH-20260902-0030',
-        paymentStatus: 'PARTIALLY_PAID',
-        placedAt: '2026-09-02T02:30:00.000Z',
-        status: 'PROCESSING',
-      },
-    ],
-  };
+function overviewSnapshot(month: string) {
+  return financialReportFixture(month);
 }
 
 function employeeProjection() {

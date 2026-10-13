@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import { NavigationList } from '@/components/shells';
+import { NavigationList } from '@/components/shells/shell-parts';
 import { isStorefrontNavigationCurrent, STOREFRONT_NAVIGATION } from './storefront-navigation';
 import styles from './storefront-desktop-navigation.module.css';
 

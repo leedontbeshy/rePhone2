@@ -70,6 +70,7 @@ function render(unitValue: InventoryUnitDetail): string {
 
 function unit(overrides: Partial<InventoryUnitDetail> = {}): InventoryUnitDetail {
   return {
+    isFeatured: false,
     activeReservationCount: 0,
     availabilityReadiness: {
       isReady: false,

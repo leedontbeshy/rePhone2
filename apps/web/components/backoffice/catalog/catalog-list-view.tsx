@@ -615,15 +615,15 @@ function CatalogProductCard({
               ? ''
               : ` · ${String(product.releaseYear)}`}
           </span>
-          <span className={styles.cardStatus}>
-            <CatalogVoucherStatusChip
-              label={catalogStatusLabel(product.status)}
-              status={product.status}
-            />
-          </span>
         </div>
       </div>
       <div className={styles.productMetrics}>
+        <span className={styles.cardStatus}>
+          <CatalogVoucherStatusChip
+            label={catalogStatusLabel(product.status)}
+            status={product.status}
+          />
+        </span>
         <span className={styles.productMetric}>
           <strong>{String(product.variantCount)} biến thể</strong>
           <span>{formatCatalogDate(product.updatedAt)}</span>

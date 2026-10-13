@@ -6,7 +6,9 @@
 }
 
 .heading {
-  max-width: var(--content-reading-max);
+  padding: var(--space-6);
+  border-radius: var(--radius-media);
+  background: var(--color-studio-cyan);
 }
 
 .heading > p {
@@ -14,13 +16,14 @@
   color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
   line-height: var(--line-height-label);
-  text-transform: uppercase;
 }
 
 .heading h1 {
   margin: 0;
+  font-size: var(--font-size-page-title);
+  line-height: var(--line-height-page-title);
+  letter-spacing: -0.035em;
 }
 
 .heading > span {
@@ -31,12 +34,14 @@
 
 .note {
   padding: var(--space-6);
-  border-inline-start: 3px solid var(--color-primary);
-  background: var(--color-brand-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-studio-mint);
 }
 
 .note h2 {
   margin: 0;
+  font-size: var(--font-size-section-title);
+  line-height: var(--line-height-section-title);
 }
 
 .note p {

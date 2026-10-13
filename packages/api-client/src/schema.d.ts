@@ -2040,6 +2040,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/overview/financial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly completed sales and current financial position; costs are admin-only */
+        get: operations["getBackofficeFinancialReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backoffice/overview/pending-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get role-aware pending task counts for the backoffice sidebar */
+        get: operations["getBackofficePendingTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/payments": {
         parameters: {
             query?: never;
@@ -3529,6 +3563,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Available exact units, optionally prioritizing featured units */
+        get: operations["listPublicInventoryUnits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/store": {
         parameters: {
             query?: never;
@@ -4147,6 +4198,16 @@ export interface components {
             fullName: string;
             phone: string;
         };
+        BackofficeOrderCostSummaryDto: {
+            knownCost: string;
+            missingQuantity: number;
+            /**
+             * @description Current inventory costs, not sale-time snapshots. ADMIN only.
+             * @enum {string}
+             */
+            source: "CURRENT_INVENTORY";
+            totalCost: string | null;
+        };
         BackofficeOrderDetailDto: {
             availableActions: ("CONFIRM" | "START_PREPARING" | "MARK_PICKUP_READY" | "EXTEND_PICKUP_HOLD" | "COMPLETE_PICKUP" | "OVERRIDE_SHIPPING_FEE" | "CREATE_SHIPMENT" | "HAND_OVER_SHIPMENT" | "MARK_SHIPMENT_DELIVERED" | "MARK_SHIPMENT_FAILED" | "MARK_SHIPMENT_RETURNED" | "CANCEL_ORDER" | "CREATE_REFUND")[];
             /** Format: date-time */
@@ -4159,6 +4220,8 @@ export interface components {
             /** Format: date-time */
             confirmedAt?: string | null;
             contact: components["schemas"]["BackofficeOrderContactDto"];
+            /** @description ADMIN only. Absent for other roles. */
+            currentCostSummary?: components["schemas"]["BackofficeOrderCostSummaryDto"];
             customerNote?: string | null;
             dealerId?: string | null;
             fulfillmentStatus: string;
@@ -4194,7 +4257,17 @@ export interface components {
         BackofficeOrderDetailResponse: {
             data: components["schemas"]["BackofficeOrderDetailDto"];
         };
+        BackofficeOrderItemCostDto: {
+            acquisitionCost: string | null;
+            additionalCost: string | null;
+            /** Format: uuid */
+            inventoryUnitId: string | null;
+            lineCost: string | null;
+            unitCost: string | null;
+        };
         BackofficeOrderItemDto: {
+            /** @description ADMIN-only current inventory costs. Absent for other roles. */
+            currentCost?: components["schemas"]["BackofficeOrderItemCostDto"];
             /** Format: uuid */
             id: string;
             inventoryCode?: string | null;
@@ -4214,6 +4287,8 @@ export interface components {
             balanceDue: string;
             /** @enum {string} */
             channel?: "STOREFRONT" | "DEALER";
+            /** @description ADMIN only. Absent for other roles. */
+            currentCostSummary?: components["schemas"]["BackofficeOrderCostSummaryDto"];
             customerName: string;
             dealerId?: string | null;
             firstItemName: string;
@@ -5218,6 +5293,56 @@ export interface components {
             holdUntil: string;
             reason: string;
         };
+        FinancialChannelDto: {
+            /** @enum {string} */
+            channel: "STOREFRONT" | "DEALER";
+            discounts: string;
+            grossRevenue: string;
+            netRevenue: string;
+            orderCount: number;
+            refunds: string;
+            shippingRevenue: string;
+            unitsSold: number;
+        };
+        FinancialCostDto: {
+            estimatedGrossProfit: string | null;
+            knownCost: string;
+            missingCostItems: number;
+            stockCapitalKnown: string;
+            stockCostMissing: number;
+        };
+        FinancialDayDto: {
+            date: string;
+            discounts: string;
+            grossRevenue: string;
+            netRevenue: string;
+            orderCount: number;
+            refunds: string;
+            shippingRevenue: string;
+            unitsSold: number;
+        };
+        FinancialReportDto: {
+            channels: components["schemas"]["FinancialChannelDto"][];
+            costs?: components["schemas"]["FinancialCostDto"];
+            daily: components["schemas"]["FinancialDayDto"][];
+            generatedAt: string;
+            month: string;
+            receivables: string;
+            sales: components["schemas"]["FinancialSalesDto"];
+            stockUnits: number;
+        };
+        FinancialReportResponse: {
+            data: components["schemas"]["FinancialReportDto"];
+        };
+        FinancialSalesDto: {
+            discounts: string;
+            grossRevenue: string;
+            netRevenue: string;
+            orderCount: number;
+            refunds: string;
+            shippingRevenue: string;
+            unitsSold: number;
+        };
         ForgotPasswordDto: {
             /** @example customer@example.com */
             email: string;
@@ -5256,7 +5381,7 @@ export interface components {
         };
         IdentifierLookupDto: {
             /** @enum {string} */
-            type: "IMEI" | "SERIAL" | "EID";
+            type: "IMEI" | "SERIAL" | "EID" | "INVENTORY_CODE";
             value: string;
         };
         InspectionChecklistItemDto: {
@@ -5406,6 +5531,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             inventoryCode: string;
+            isFeatured: boolean;
             /** @enum {string} */
             lifecycleStatus: "RECEIVED" | "INSPECTING" | "AVAILABLE" | "IN_TRANSIT" | "SOLD" | "REPAIRING" | "QUARANTINED" | "WRITTEN_OFF";
             location: components["schemas"]["InventoryLocationDto"];
@@ -5434,6 +5560,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             inventoryCode: string;
+            isFeatured: boolean;
             /** @enum {string} */
             lifecycleStatus: "RECEIVED" | "INSPECTING" | "AVAILABLE" | "IN_TRANSIT" | "SOLD" | "REPAIRING" | "QUARANTINED" | "WRITTEN_OFF";
             location: components["schemas"]["InventoryLocationDto"];
@@ -5830,6 +5957,30 @@ export interface components {
         PaymentReviewResultResponse: {
             data: components["schemas"]["PaymentReviewResultDto"];
         };
+        PendingTaskCountsDto: {
+            /** @description Affiliate tasks; ADMIN only. */
+            affiliates?: number;
+            /** @description Open after-sales requests. */
+            afterSales: number;
+            /** @description Dealer tasks actionable by the current role. */
+            dealers: number;
+            /** @description Units RECEIVED or INSPECTING. */
+            inventory: number;
+            /** @description Orders awaiting confirmation (PLACED). */
+            orders: number;
+            /** @description Payments UNDER_REVIEW. */
+            payments: number;
+            /** @description Storefront refunds REQUESTED or PROCESSING. */
+            refunds: number;
+        };
+        PendingTasksDto: {
+            counts: components["schemas"]["PendingTaskCountsDto"];
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        PendingTasksResponse: {
+            data: components["schemas"]["PendingTasksDto"];
+        };
         PickupStoreSummaryDto: {
             code: string;
             name: string;
@@ -5928,6 +6079,19 @@ export interface components {
         };
         PublicStoreResponse: {
             data: components["schemas"]["PublicStoreDto"];
+        };
+        PublicUnitListResponse: {
+            data: components["schemas"]["PublicUnitOfferDto"][];
+        };
+        PublicUnitOfferDto: {
+            colorHex?: string | null;
+            colorName?: string | null;
+            productName: string;
+            productRamGb?: number | null;
+            productSlug: string;
+            storageCapacityGb?: number | null;
+            unit: components["schemas"]["UsedIphoneCardDto"];
+            variantDisplayName: string;
         };
         PublicVoucherDto: {
             code: string;
@@ -6352,6 +6516,7 @@ export interface components {
             eid?: string;
             imei1?: string;
             imei2?: string;
+            isFeatured?: boolean;
             modelNumber?: string;
             reason?: string;
             regionCode?: string;
@@ -18815,6 +18980,109 @@ export interface operations {
             };
         };
     };
+    getBackofficeFinancialReport: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialReportResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    getBackofficePendingTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingTasksResponse"];
+                };
+            };
+            /** @description AUTH_REQUIRED, ACCESS_TOKEN_INVALID or SESSION_REVOKED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
     listBackofficePayments: {
         parameters: {
             query?: {
@@ -27009,13 +27277,15 @@ export interface operations {
                 productType?: "IPHONE" | "ACCESSORY";
                 releaseYear?: number;
                 storageCapacityGb?: number;
+                ramGb?: number;
+                simLockStatus?: "UNLOCKED" | "CARRIER_LOCKED" | "UNKNOWN";
                 colorName?: string;
                 minPrice?: string;
                 maxPrice?: string;
                 inStock?: boolean;
                 page?: number;
                 pageSize?: number;
-                sortBy?: "createdAt" | "name" | "fromPrice" | "releaseYear";
+                sortBy?: "createdAt" | "name" | "fromPrice" | "releaseYear" | "generation";
                 sortOrder?: "asc" | "desc";
             };
             header?: never;
@@ -27131,6 +27401,46 @@ export interface operations {
             };
             /** @description RESOURCE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listPublicInventoryUnits: {
+        parameters: {
+            query?: {
+                featuredFirst?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUnitListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

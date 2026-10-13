@@ -1,5 +1,6 @@
 'use client';
 import { Button, InlineAlert } from '@/components/ui';
+import Link from 'next/link';
 import type { DealerApi, DealerRecord } from '@/lib/dealer-api';
 import { dealerText } from '@/lib/dealer-api';
 import { DealerForm } from './dealer-primitives';
@@ -16,7 +17,7 @@ export function DealerChannelControl({
   configuration: DealerRecord;
   admin: boolean;
   done: () => Promise<void>;
-  openPricing: () => void;
+  openPricing?: () => void;
 }) {
   if (configuration['enabled'] === undefined) return <p>Đang tải trạng thái cổng đại lý…</p>;
   const ready = configuration['enabled'] === true;
@@ -48,8 +49,7 @@ export function DealerChannelControl({
       ) : null}
       {admin && (!ready || (!pricingReady && !open)) && <Button disabled>Mở cổng đại lý</Button>}
       {admin && ready && (pricingReady || open) && (
-        <details className={styles.profileDisclosure}>
-          <summary>Quản lý trạng thái cổng</summary>
+        <div className={styles.profileDisclosure}>
           <p className={styles.muted}>
             Khi tạm đóng, đại lý vẫn theo dõi đơn cũ, thanh toán, hoàn tiền và bảo hành.
           </p>
@@ -75,13 +75,17 @@ export function DealerChannelControl({
               await done();
             }}
           />
-        </details>
+        </div>
       )}
-      {admin && ready && (
-        <Button variant="secondary" onClick={openPricing}>
-          Cấu hình giá & vận chuyển
-        </Button>
-      )}
+      {admin &&
+        ready &&
+        (openPricing === undefined ? (
+          <Link href="/backoffice/dealers">Cấu hình giá & vận chuyển</Link>
+        ) : (
+          <Button variant="secondary" onClick={openPricing}>
+            Cấu hình giá & vận chuyển
+          </Button>
+        ))}
       {!admin && <p className={styles.muted}>Quản trị viên quản lý việc mở và tạm đóng cổng.</p>}
     </section>
   );

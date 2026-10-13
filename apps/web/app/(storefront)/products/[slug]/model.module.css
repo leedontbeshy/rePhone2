@@ -22,6 +22,9 @@
   display: grid;
   gap: var(--space-6);
   align-items: center;
+  padding: var(--space-6);
+  border-radius: var(--radius-media);
+  background: var(--color-studio-cyan);
 }
 
 .modelMedia {
@@ -44,14 +47,12 @@
   color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .heroImage {
   width: 100%;
   aspect-ratio: 4 / 3;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .heroCopy {
@@ -64,15 +65,13 @@
   color: var(--color-primary-hover);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .heroCopy h1 {
   margin: 0;
-  font-size: clamp(2.25rem, 6vw, 4.75rem);
-  letter-spacing: -0.055em;
-  line-height: 0.98;
+  font-size: var(--font-size-page-title);
+  letter-spacing: -0.035em;
+  line-height: var(--line-height-page-title);
 }
 
 .description {
@@ -126,9 +125,9 @@
 .sectionHeader h2 {
   max-width: 24ch;
   margin: var(--space-2) 0 0;
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
-  letter-spacing: -0.04em;
-  line-height: 1.1;
+  font-size: var(--font-size-section-title);
+  letter-spacing: -0.025em;
+  line-height: var(--line-height-section-title);
 }
 
 .sectionHeader > p {
@@ -149,6 +148,7 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .iphoneVariant {
@@ -189,7 +189,7 @@
 .accessoryImage {
   width: 100%;
   aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: var(--radius-control);
 }
 

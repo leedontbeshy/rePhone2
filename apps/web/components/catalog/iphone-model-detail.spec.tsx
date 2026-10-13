@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { ProductDetail } from '@/lib/catalog-api';
+import type { ProductDetail, ProductListItem } from '@/lib/catalog-api';
 import { IphoneModelDetail } from './iphone-model-detail';
 
 describe('iPhone model detail', () => {
@@ -9,17 +9,15 @@ describe('iPhone model detail', () => {
 
     expect(markup).toContain('<h1 id="model-title">iPhone 15 Pro Max</h1>');
     expect(markup).toContain('Ảnh minh họa dòng máy');
-    expect(markup).toContain(
-      'Khám phá iPhone 15 Pro Max cũ tại rePhone; giá và tình trạng được ghi rõ cho từng máy đang có sẵn.',
-    );
+    expect(markup).toContain('Xem từng máy. Chọn đúng chiếc bạn cần.');
     expect(markup).toContain('Apple A17 Pro');
     expect(markup).toContain('8 GB');
     expect(markup).toContain('6.7 inch');
     expect(markup).toContain('Titan tự nhiên');
-    expect(markup).toContain(
-      'Các máy đang hiển thị đã được kỹ thuật viên kiểm tra kỹ lưỡng trước khi đưa lên bán.',
-    );
-    expect(markup.match(/Các máy đang có sẵn/g)).toHaveLength(1);
+    expect(markup).toContain('Xem kỹ rồi hãy chọn');
+    expect(markup).not.toContain('Giá, pin và tình trạng thuộc riêng từng mã máy.');
+    expect(markup).toContain('Chọn chiếc iPhone 15 Pro Max của bạn');
+    expect(markup).toContain('href="#available-options-title"');
     expect(markup).not.toContain('18 hạng mục');
     expect(markup).not.toContain('20 bước');
     expect(markup).not.toContain('checklist');
@@ -30,6 +28,55 @@ describe('iPhone model detail', () => {
     expect(markup).toContain('Titan tự nhiên');
     expect(markup).toContain('25.490.000');
     expect(markup).toContain('href="/products/iphone-15-pro-max/units/UNIT-15PM-001"');
+  });
+
+  it('uses the matching public catalog price instead of calculating a price from available offers', () => {
+    const source = product();
+    const summary = {
+      ...source,
+      colorOptions: [],
+      storageOptions: [],
+      inStock: true,
+      price: { fromPrice: '19990000' },
+    } satisfies ProductListItem;
+    const markup = renderToStaticMarkup(
+      <IphoneModelDetail product={source} summary={summary} sort="PRICE_ASC" />,
+    );
+    expect(markup).toContain('Giá từ');
+    expect(markup).toContain('19.990.000');
+    expect(markup).toContain('25.490.000');
+    const mismatched = renderToStaticMarkup(
+      <IphoneModelDetail
+        product={source}
+        summary={{ ...summary, slug: 'iphone-15' }}
+        sort="PRICE_ASC"
+      />,
+    );
+    const unavailable = renderToStaticMarkup(
+      <IphoneModelDetail
+        product={source}
+        summary={{ ...summary, inStock: false }}
+        sort="PRICE_ASC"
+      />,
+    );
+    expect(mismatched).not.toContain('Giá từ');
+    expect(mismatched).not.toContain('19.990.000');
+    expect(unavailable).not.toContain('Giá từ');
+    expect(unavailable).toContain('Xem giá của từng máy bên dưới');
+  });
+
+  it('uses studio artwork only for its exact registered model and keeps other DTO media', () => {
+    const source = product();
+    const exact = renderToStaticMarkup(
+      <IphoneModelDetail
+        product={{ ...source, slug: 'iphone-17', name: 'iPhone 17' }}
+        sort="PRICE_ASC"
+      />,
+    );
+    const other = renderToStaticMarkup(<IphoneModelDetail product={source} sort="PRICE_ASC" />);
+    expect(exact).toContain('/ui-studio/model-iphone-17-banner.webp');
+    expect(other).toContain('https://example.test/iphone-15-pro-max.png');
+    expect(other).not.toContain('/ui-studio/model-iphone-15-studio.webp');
   });
 
   it('keeps a useful sold-out model detail instead of turning it into a 404', () => {
@@ -52,7 +99,7 @@ describe('iPhone model detail', () => {
     );
   });
 
-  it('uses the source-backed profile to keep a sparse iPhone 15 Pro at four model facts', () => {
+  it('uses the Apple profile for eleven model facts including battery, charge and cameras', () => {
     const source = product();
     const markup = renderToStaticMarkup(
       <IphoneModelDetail
@@ -76,7 +123,11 @@ describe('iPhone model detail', () => {
     expect(markup).toContain('8 GB');
     expect(markup).toContain('6.1 inch');
     expect(markup).toContain('Titan đen · Titan trắng · Titan xanh · Titan tự nhiên');
-    expect(markup.match(/<dt>/g)).toHaveLength(5);
+    expect(markup.match(/<dt>/g)).toHaveLength(11);
+    expect(markup).toContain('Lên đến 23 giờ');
+    expect(markup).toContain('ProMotion đến 120 Hz');
+    expect(markup).toContain('48 MP');
+    expect(markup).toContain('Thông số từ Apple');
   });
 });
 

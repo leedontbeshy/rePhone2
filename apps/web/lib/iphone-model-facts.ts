@@ -412,6 +412,15 @@ export function getIphoneModelFacts(slug: string): IphoneModelFacts | undefined 
 export function resolveIphoneModelFacts(
   product: Pick<ProductDetail, 'chipset' | 'ramGb' | 'releaseYear' | 'screenSizeInches' | 'slug'>,
 ): IphoneModelDisplayFacts {
+  if (product.slug === 'iphone-18-pro' || product.slug === 'iphone-18-pro-max') {
+    return {
+      chipset: 'Apple A20 Pro',
+      colors: ['Đen', 'Bạc', 'Băng Thanh', 'Đỏ Burgundy'],
+      releaseYear: 2026,
+      ramGb: product.ramGb,
+      screenSizeInches: product.slug === 'iphone-18-pro' ? '6.3' : '6.9',
+    };
+  }
   return (
     getIphoneModelFacts(product.slug) ?? {
       chipset: product.chipset,

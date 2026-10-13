@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { PasswordInput } from '@/components/auth';
+import { PasswordInput } from '@/components/auth/password-fields';
 import { Button, ErrorSummary, InlineAlert, Link, type ErrorSummaryItem } from '@/components/ui';
 import { AccountRequestError, changeAccountPassword, type PasswordChange } from '@/lib/account-api';
 import styles from './account.module.css';
