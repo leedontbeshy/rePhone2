@@ -1,12 +1,9 @@
 import 'reflect-metadata';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { config as loadDotenv } from 'dotenv';
-import { loadWorkspaceEnvironment } from '../config/load-environment.js';
-
-loadWorkspaceEnvironment();
-loadDotenv({ path: resolve(process.cwd(), '../../.env.example'), quiet: true });
-process.env.NODE_ENV = 'development';
+if (process.env.NODE_ENV !== 'test' || process.env.REPHONE_SKIP_ENV_FILE !== 'true') {
+  throw new Error('Use pnpm api:generate to generate the contract with isolated configuration.');
+}
 
 const { createApplication } = await import('../application.js');
 const { createOpenApiDocument, sortOpenApiDocument, validateOpenApiDocument } =

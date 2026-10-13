@@ -1,3 +1,4 @@
+import { installPendingTasksFixture } from './support/pending-tasks';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
@@ -214,6 +215,7 @@ async function settingsFixture(page: Page): Promise<SettingsProbe> {
     uploadPayloads: [],
   };
 
+  await installPendingTasksFixture(page);
   await page.route('**/api/v1/auth/refresh', (route) =>
     json(route, {
       data: {

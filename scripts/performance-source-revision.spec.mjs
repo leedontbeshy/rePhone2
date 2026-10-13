@@ -105,7 +105,7 @@ test('retains default clean-commit enforcement and requires explicit working-tre
     );
     assert.throws(
       () => currentPerformanceRevision({ cwd: root, sourceMode: 'bypass' }),
-      /WP12_SOURCE_MODE/,
+      /PERFORMANCE_SOURCE_MODE/,
     );
   });
 });
@@ -162,16 +162,10 @@ test('binds build manifest to BUILD_ID and source, returning only safe metadata'
 
 test('fails closed for absent or malformed build metadata', async () => {
   await withRepository(async ({ root, put, revision }) => {
-    assert.throws(
-      () => readPerformanceBuildProvenance({ cwd: root }),
-      /Run performance:storefront:build/,
-    );
+    assert.throws(() => readPerformanceBuildProvenance({ cwd: root }), /Run pnpm test:performance/);
     await put('apps/web/.next/BUILD_ID', 'fixture-build\n');
     await put('apps/web/.next/' + PERFORMANCE_BUILD_MANIFEST, '{invalid');
-    assert.throws(
-      () => readPerformanceBuildProvenance({ cwd: root }),
-      /Run performance:storefront:build/,
-    );
+    assert.throws(() => readPerformanceBuildProvenance({ cwd: root }), /Run pnpm test:performance/);
     const valid = createPerformanceBuildProvenance(
       revision(),
       'fixture-build',

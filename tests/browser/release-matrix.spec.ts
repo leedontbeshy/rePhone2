@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import {
@@ -486,6 +487,7 @@ async function removeNextDevPortal(page: Page): Promise<void> {
 
 async function installReleaseFixture(page: Page, role: FixtureRole): Promise<void> {
   await page.route('**/api/v1/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (request.method() === 'OPTIONS') return fulfillPreflight(route);

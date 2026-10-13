@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { Client } from 'pg';
+import { databaseTargetIssue } from '../../src/config/database-target.js';
 
 // An isolated database is created for this run; no existing schema is reset.
 const base = new URL(
-  process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@127.0.0.1:5433/rephone_test',
+  process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@127.0.0.1:5434/rephone_test',
+);
+assert.equal(
+  databaseTargetIssue(base.toString(), 'test'),
+  undefined,
+  'Upgrade requires a local test database',
 );
 assert(base.pathname.endsWith('_test'), 'Upgrade harness requires TEST_DATABASE_URL ending _test');
 const database = `rephone_dealer_upgrade_${randomUUID().replaceAll('-', '')}_test`;

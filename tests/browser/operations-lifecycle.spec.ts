@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -324,6 +325,7 @@ async function fixture(page: Page, role: Role, options: FixtureOptions = {}): Pr
     json(route, { data: { accessToken: `fe09-${role}`, user: staff(role) } }),
   );
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     const apiPath = url.pathname;

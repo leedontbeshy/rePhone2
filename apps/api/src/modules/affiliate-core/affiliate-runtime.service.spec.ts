@@ -29,7 +29,7 @@ describe('Affiliate environment and bank encryption boundaries', () => {
     const config = configuration();
     expect(
       () => new AffiliateRuntime({ ...config, database: { ...config.database, url } }),
-    ).toThrow('local database');
+    ).toThrow('local dev or test database');
   });
 
   it('refuses real email delivery in TEST', () => {

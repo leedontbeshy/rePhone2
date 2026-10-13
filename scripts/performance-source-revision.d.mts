@@ -42,4 +42,5 @@ export function performanceRuntimeFingerprint(options?: { readonly cwd?: string 
 export function readPerformanceBuildProvenance(options?: {
   readonly cwd?: string;
   readonly revision?: PerformanceRevision;
+  readonly distDir?: string;
 }): PerformanceBuildProvenance;

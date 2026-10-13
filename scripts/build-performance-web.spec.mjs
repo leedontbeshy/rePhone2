@@ -57,25 +57,22 @@ test('rejects dirty source before invoking the build without explicit opt-in', a
   });
 });
 
-test('refuses partner distDir flags before it can certify an old standard build', async () => {
-  await withRepository(async ({ root, fakeBuild, manifestPath }) => {
-    fakeBuild('old-standard-build');
-    for (const flag of ['REPHONE_AFFILIATE_TEST', 'REPHONE_SANDBOX_WEB']) {
-      let ran = false;
-      assert.throws(
-        () =>
-          buildPerformanceWeb({
-            cwd: root,
-            env: { [flag]: 'true' },
-            runBuild: () => {
-              ran = true;
-            },
-          }),
-        /standard .next output/,
-      );
-      assert.equal(ran, false);
-      assert.equal(existsSync(manifestPath), false);
-    }
+test('isolates performance output from the development build', async () => {
+  await withRepository(async ({ root, fakeBuild }) => {
+    fakeBuild('development-build');
+    const manifest = buildPerformanceWeb({
+      cwd: root,
+      env: { REPHONE_WEB_DIST_DIR: '.next-performance' },
+      runBuild: () => {
+        mkdirSync(join(root, 'apps/web/.next-performance'), { recursive: true });
+        writeFileSync(join(root, 'apps/web/.next-performance/BUILD_ID'), 'performance-build');
+      },
+    });
+    assert.equal(manifest.buildId, 'performance-build');
+    assert.equal(
+      readPerformanceBuildProvenance({ cwd: root, distDir: '.next-performance' }).buildId,
+      'performance-build',
+    );
   });
 });
 
@@ -116,7 +113,7 @@ test('working-tree build tolerates generated next-env and documentation updates 
     await put('apps/web/app/page.tsx', 'pre-existing user source edit\n');
     const manifest = buildPerformanceWeb({
       cwd: root,
-      env: { WP12_SOURCE_MODE: 'working-tree' },
+      env: { PERFORMANCE_SOURCE_MODE: 'working-tree' },
       runBuild: () => {
         fakeBuild('working-tree-build');
         writeFileSync(join(root, 'apps/web/next-env.d.ts'), 'generated build types\n');
@@ -139,7 +136,7 @@ async function withRepository(callback) {
     await writeFile(target, value, 'utf8');
   };
   try {
-    await put('.gitignore', 'apps/web/.next/\npackages/api-client/dist/\n');
+    await put('.gitignore', 'apps/web/.next*/\npackages/api-client/dist/\n');
     await put('package.json', '{"private":true}\n');
     await put('apps/web/app/page.tsx', 'export default function Page() {}\n');
     await put('packages/api-client/dist/index.js', 'export const fixture = true;\n');

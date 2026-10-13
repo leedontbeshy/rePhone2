@@ -23,6 +23,12 @@ export function databaseUrlSecurityIssue(
   if (!POSTGRES_PROTOCOLS.has(url.protocol)) {
     return 'must use the postgresql:// or postgres:// protocol';
   }
+  if (
+    [...url.searchParams.keys()].some((key) =>
+      /^(host|hostaddr|port|user|password|database|dbname|service|servicefile)$/i.test(key),
+    )
+  )
+    return 'must not override connection fields through query parameters';
 
   if (options.allowUnencryptedLoopback && isLoopbackHost(url.hostname)) {
     return undefined;

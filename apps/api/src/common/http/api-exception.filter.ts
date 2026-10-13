@@ -96,11 +96,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
       }
     }
 
-    const log = request.log;
+    // Errors in middleware may occur before the request logger is installed.
+    const log = (request as Partial<Request>).log;
     if (status >= 500) {
-      log.error({ err: exception, event: 'http.request.failed', requestId, errorCode: code });
+      log?.error({ err: exception, event: 'http.request.failed', requestId, errorCode: code });
     } else {
-      log.warn({ event: 'http.request.rejected', requestId, errorCode: code, statusCode: status });
+      log?.warn({ event: 'http.request.rejected', requestId, errorCode: code, statusCode: status });
     }
 
     response.status(status).json(body);

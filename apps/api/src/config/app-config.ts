@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { z } from 'zod';
+import { databaseTargetIssue } from './database-target.js';
 import { databaseUrlSecurityIssue } from './database-url-security.js';
 
 const integerString = (minimum: number, maximum?: number) => {
@@ -116,7 +117,10 @@ export const environmentSchema = z
 
     const databaseUrlIssue = databaseUrlSecurityIssue(environment.DATABASE_URL, {
       allowUnencryptedLoopback: environment.NODE_ENV !== 'production',
-      allowUnencryptedHostnames: environment.NODE_ENV === 'test' ? ['postgres-test'] : [],
+      allowUnencryptedHostnames:
+        environment.NODE_ENV === 'production'
+          ? []
+          : [environment.NODE_ENV === 'test' ? 'postgres-test' : 'postgres-dev'],
       requireCertificateVerification: environment.NODE_ENV === 'production',
     });
     if (databaseUrlIssue !== undefined) {
@@ -126,6 +130,10 @@ export const environmentSchema = z
         message: databaseUrlIssue,
       });
     }
+
+    const targetIssue = databaseTargetIssue(environment.DATABASE_URL, environment.NODE_ENV);
+    if (targetIssue)
+      context.addIssue({ code: 'custom', path: ['DATABASE_URL'], message: targetIssue });
 
     if (environment.NODE_ENV === 'production') {
       for (const field of [

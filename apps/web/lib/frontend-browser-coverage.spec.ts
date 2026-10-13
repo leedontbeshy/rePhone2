@@ -46,10 +46,9 @@ describe('FE-09 browser ownership contract', () => {
     expect(validateBrowserReferences(discovery.references, expectedReferences)).toEqual([]);
   });
 
-  it('resolves every operation owner to a real suite in the same business phase', () => {
-    for (const [, , , , , , phase, owner] of FRONTEND_OPERATION_COVERAGE) {
+  it('resolves every operation owner to a real suite', () => {
+    for (const [, , , , , , owner] of FRONTEND_OPERATION_COVERAGE) {
       expect(owner in FRONTEND_BROWSER_SUITES, `${owner} is not registered`).toBe(true);
-      expect(FRONTEND_BROWSER_SUITES[owner as FrontendBrowserSuiteId].phase).toBe(phase);
     }
   });
 

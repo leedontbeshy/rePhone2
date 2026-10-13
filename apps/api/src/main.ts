@@ -10,7 +10,7 @@ const { APP_CONFIG } = await import('./config/app-config.module.js');
 try {
   const app = await createApplication();
   const config = app.get<AppConfig>(APP_CONFIG);
-  await app.listen(config.api.port, '0.0.0.0');
+  await app.listen(config.api.port, process.env.API_HOST ?? '0.0.0.0');
 } catch (error) {
   const message = error instanceof Error ? error.message : 'Unknown startup error';
   process.stderr.write(`rephone-api failed to start: ${message}\n`);

@@ -49,9 +49,10 @@ describe('Current OpenAPI artifact', () => {
   it('retains existing operations and adds public units and financial reports alongside partner extensions', () => {
     expect(
       operations.filter(({ operationId }) => !/^(Dealer|Affiliate)/.test(operationId ?? '')),
-    ).toHaveLength(164);
+    ).toHaveLength(165);
     expect(byId.has('listPublicInventoryUnits')).toBe(true);
     expect(byId.has('getBackofficeFinancialReport')).toBe(true);
+    expect(byId.has('getBackofficePendingTasks')).toBe(true);
     expect(operations.filter(({ operationId }) => operationId?.startsWith('Dealer'))).toHaveLength(
       67,
     );

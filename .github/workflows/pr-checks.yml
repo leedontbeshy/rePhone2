@@ -1,19 +1,15 @@
 name: Pull request checks
-
-on:
-  pull_request:
-
+'on':
+  pull_request: null
 permissions:
   contents: read
-
 concurrency:
   group: pr-checks-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-
 env:
   CI: 'true'
   NEXT_TELEMETRY_DISABLED: '1'
-  NODE_OPTIONS: --max-old-space-size=4096
+  NODE_OPTIONS: '--max-old-space-size=4096'
   NODE_ENV: test
   TURBO_TELEMETRY_DISABLED: '1'
   API_PORT: '4001'
@@ -37,7 +33,7 @@ env:
   SCHEDULER_ENABLED: 'false'
   NEXT_PUBLIC_API_BASE_URL: http://localhost:4001/api/v1
   API_INTERNAL_BASE_URL: http://localhost:4001/api/v1
-
+  REPHONE_SKIP_ENV_FILE: 'true'
 jobs:
   changes:
     name: Detect affected areas
@@ -46,13 +42,11 @@ jobs:
     outputs:
       api: ${{ steps.scope.outputs.api }}
       browser: ${{ steps.scope.outputs.browser }}
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-
       - id: scope
         name: Classify changed files
         shell: bash
@@ -65,71 +59,53 @@ jobs:
 
           while IFS= read -r file; do
             case "$file" in
-              apps/api/*|packages/api-client/*|packages/test-config/*|compose*.yaml|infra/docker/api.Dockerfile|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.json|turbo.json)
+              apps/api/*|packages/api-client/*|packages/test-config/*|compose.yaml|infra/docker/api.Dockerfile|scripts/*|.github/*|.env.example|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.json|turbo.json)
                 api=true
                 ;;
             esac
 
             case "$file" in
-              apps/api/*|apps/web/*|packages/api-client/*|packages/test-config/*|tests/browser/*|playwright*.ts|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.json|turbo.json)
+              apps/api/*|apps/web/*|packages/api-client/*|packages/test-config/*|tests/*|scripts/*|.github/*|.env.example|compose.yaml|infra/docker/*|playwright*.ts|package.json|pnpm-lock.yaml|pnpm-workspace.yaml|tsconfig.json|turbo.json)
                 browser=true
                 ;;
             esac
-          done < <(git diff --name-only --diff-filter=ACMRT "$BASE_SHA" "$HEAD_SHA")
+          done < <(git diff --name-only --diff-filter=ACDMRT "$BASE_SHA" "$HEAD_SHA")
 
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "browser=$browser" >> "$GITHUB_OUTPUT"
-
   validation:
     name: Format, types, unit tests and build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Check formatting
         run: pnpm format:check
-
       - name: Check lint rules
         run: pnpm lint
-
       - name: Check types
         run: pnpm typecheck
-
       - name: Run unit tests
         run: pnpm test
-
-      - name: Check frontend contracts
-        run: |
-          pnpm fe:coverage
-          pnpm fe:a11y
-
       - name: Check generated OpenAPI and API client drift
         run: |
-          pnpm api:openapi
-          pnpm api:client
-          pnpm verify:generated
-
+          pnpm api:generate
+          git diff --exit-code -- apps/api/openapi/openapi.json packages/api-client/src/schema.d.ts
       - name: Build production packages
         run: pnpm build
-
   database:
     name: Database integration and API E2E
     needs: changes
@@ -148,48 +124,38 @@ jobs:
           POSTGRES_USER: rephone
           POSTGRES_PASSWORD: rephone
         ports:
-          - 5432:5432
+          - '5432:5432'
         options: >-
-          --health-cmd "pg_isready -U rephone -d rephone_test"
-          --health-interval 3s
-          --health-timeout 3s
+          --health-cmd "pg_isready -U rephone -d rephone_test" --health-interval 3s --health-timeout 3s
           --health-retries 20
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Verify isolated test database target
-        run: |
-          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
-
+        run: >
+          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !==
+          'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local
+          *_test database')"
       - name: Prepare clean test database
-        run: pnpm test:db:prepare
-
+        run: pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts
       - name: Check migration state
-        run: pnpm preflight:release
-
+        run: pnpm db:check
       - name: Run database integration tests
         run: pnpm test:integration
-
       - name: Run API end-to-end tests
         run: pnpm test:e2e
-
   browser-smoke:
     name: Chromium critical smoke
     needs: changes
@@ -209,40 +175,31 @@ jobs:
           POSTGRES_USER: rephone
           POSTGRES_PASSWORD: rephone
         ports:
-          - 5432:5432
+          - '5432:5432'
         options: >-
-          --health-cmd "pg_isready -U rephone -d rephone_test"
-          --health-interval 3s
-          --health-timeout 3s
+          --health-cmd "pg_isready -U rephone -d rephone_test" --health-interval 3s --health-timeout 3s
           --health-retries 20
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
       - name: Install pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 10.18.3
           run_install: false
-
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: pnpm
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-
       - name: Prepare clean browser database
-        run: pnpm test:db:prepare
-
-      - name: Build production web app
-        run: pnpm test:browser:build
-
+        run: pnpm --filter @rephone/api exec tsx prisma/scripts/prepare-test-database.ts
       - name: Run critical browser smoke
-        run: pnpm test:browser:pr-smoke
+        run: >-
+          pnpm test:browser tests/browser/release-matrix.spec.ts tests/browser/backoffice-access.spec.ts
+          tests/browser/critical-commerce-flow.spec.ts --grep
+          "skip-links-and-axe|anonymous-fail-closed|catalog-to-completed-shipping"

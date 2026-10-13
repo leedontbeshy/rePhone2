@@ -1,8 +1,7 @@
 node_modules/
 .turbo/
-.next/
-.next-dealer-sandbox/
-.next-affiliate-test/
+.next*/
+apps/web/next-env.d.ts
 .sandbox-dist/
 dist/
 coverage/
@@ -12,8 +11,7 @@ apps/api/src/generated/prisma/
 .env
 .env.*
 !.env.example
-!.env.test.example
-!.env.docker.example
+!.env.production.example
 
 .local/
 /secrets/
@@ -25,3 +23,16 @@ docs.7z
 .DS_Store
 Thumbs.db
 output/
+
+# Local design notes, development evidence and analysis
+docs/
+uml/
+/plan.md
+/plan-fe.md
+/design.md
+/design-qa.md
+.understand-anything/
+.test-dist/
+apps/web/app/fonts/provenance.json
+apps/web/public/ui-studio/provenance.json
+apps/web/public/ui-studio/auth-studio.provenance.json

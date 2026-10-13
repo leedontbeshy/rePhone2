@@ -1,3 +1,4 @@
+import { fulfillPendingTasks } from './support/pending-tasks';
 import { financialReportFixture } from './support/financial-report';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
@@ -360,7 +361,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
     });
     await expect(page.locator('main [role="alert"]')).toContainText('8 MB');
     await expect(uploadButton).toBeDisabled();
-    await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
+    await fileInput.setInputFiles('tests/fixtures/intake-1440.png');
     await expect(page.getByText('intake-1440.png', { exact: true })).toBeVisible();
     await expect(uploadButton).toBeEnabled();
     await uploadButton.click();
@@ -614,7 +615,7 @@ test.describe('FE-06 inventory and stock workspace', () => {
         page.getByRole('heading', { level: 2, name: 'Ảnh thực tế của máy' }),
       ).toBeVisible();
       const fileInput = page.locator('#inventory-media-file');
-      await fileInput.setInputFiles('docs/assets/ui/fe-06/intake-1440.png');
+      await fileInput.setInputFiles('tests/fixtures/intake-1440.png');
       const uploadButton = page.getByRole('button', { name: 'Tải ảnh lên', exact: true });
       await expect(uploadButton).toBeEnabled();
       await expectSingleMainAndNoOverflow(page);
@@ -677,6 +678,7 @@ async function installFe06Api(
   });
 
   await page.route('**/api/v1/backoffice/**', async (route) => {
+    if (await fulfillPendingTasks(route)) return;
     if (route.request().method() === 'OPTIONS') {
       await fulfillPreflight(route);
       return;

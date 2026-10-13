@@ -10,14 +10,16 @@ ENV PATH=${PNPM_HOME}:${PATH}
 WORKDIR /workspace
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends openssl \
+    && apt-get install --yes --no-install-recommends openssl git \
     && rm -rf /var/lib/apt/lists/* \
     && npm install --global pnpm@10.18.3
 
 COPY --chown=node:node . .
 
 RUN --mount=type=cache,id=rephone-pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile \
+    && chown node:node /workspace \
+    && chown -R node:node apps/api/src/generated packages/api-client/dist
 
 
 FROM workspace AS api-development
@@ -34,18 +36,6 @@ CMD ["pnpm", "--filter", "@rephone/api", "dev"]
 FROM workspace AS api-build
 
 RUN pnpm --filter @rephone/api build
-
-
-FROM api-build AS api-demo
-
-ENV NODE_ENV=development
-ENV API_PORT=4000
-
-USER node
-
-EXPOSE 4000
-
-CMD ["node", "apps/api/dist/main.js"]
 
 
 FROM ${NODE_IMAGE} AS api-production-dependencies
@@ -76,21 +66,6 @@ ENV NODE_ENV=production
 USER node
 
 CMD ["pnpm", "--filter", "@rephone/api", "db:check"]
-
-
-# Local-only adapters, demo assets and persistent uploads for the portable test stack.
-FROM api-build AS api-local
-
-ENV NODE_ENV=test
-
-RUN mkdir -p /workspace/.local/affiliate/storage \
-    && chown -R node:node /workspace/.local
-
-USER node
-
-EXPOSE 4001
-
-CMD ["node", "scripts/affiliate-test-server.mjs"]
 
 
 FROM ${NODE_IMAGE} AS api-runtime

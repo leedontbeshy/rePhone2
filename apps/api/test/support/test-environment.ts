@@ -1,14 +1,15 @@
 export function setTestEnvironment(): void {
   Object.assign(process.env, {
     NODE_ENV: 'test',
+    REPHONE_SKIP_ENV_FILE: 'true',
     API_PORT: '4001',
     API_PUBLIC_URL: 'http://localhost:4001',
     WEB_PUBLIC_URL: 'http://localhost:3001',
     WEB_ORIGIN: 'http://localhost:3001',
     DATABASE_URL:
-      process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5433/rephone_test',
+      process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5434/rephone_test',
     DIRECT_URL:
-      process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5433/rephone_test',
+      process.env.TEST_DATABASE_URL ?? 'postgresql://rephone:rephone@localhost:5434/rephone_test',
     JWT_ACCESS_SECRET: 'test-only-jwt-secret-with-at-least-thirty-two-bytes',
     ARGON2_MEMORY_KIB: '8192',
     ARGON2_TIME_COST: '1',

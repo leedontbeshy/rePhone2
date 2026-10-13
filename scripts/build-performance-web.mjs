@@ -13,7 +13,10 @@ import {
 } from './performance-source-revision.mjs';
 
 function runProductionBuild({ cwd, env }) {
-  for (const args of [['--filter', '@rephone/api-client', 'build'], ['test:browser:build']]) {
+  for (const args of [
+    ['--filter', '@rephone/api-client', 'build'],
+    ['--filter', '@rephone/web', 'build'],
+  ]) {
     const result = spawnSync('pnpm', args, {
       cwd,
       env,
@@ -31,15 +34,10 @@ export function buildPerformanceWeb({
   env = process.env,
   runBuild = runProductionBuild,
 } = {}) {
-  if (env.REPHONE_AFFILIATE_TEST === 'true' || env.REPHONE_SANDBOX_WEB === 'true') {
-    throw new Error(
-      'Performance build requires the standard .next output; partner sandbox flags must be disabled.',
-    );
-  }
-  const sourceMode = env.WP12_SOURCE_MODE ?? 'commit';
+  const sourceMode = env.PERFORMANCE_SOURCE_MODE ?? 'commit';
   const before = currentPerformanceRevision({ cwd, sourceMode });
   assertPerformanceRevisionAllowed(before);
-  const output = join(cwd, 'apps/web/.next');
+  const output = join(cwd, 'apps/web', env.REPHONE_WEB_DIST_DIR ?? '.next');
   const manifestPath = join(output, PERFORMANCE_BUILD_MANIFEST);
   // Invalidate the previous manifest even when a build fails before replacing .next.
   rmSync(manifestPath, { force: true });
