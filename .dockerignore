@@ -15,6 +15,7 @@ node_modules
 **/node_modules
 **/.next
 **/.next-*
+apps/web/next-env.d.ts
 **/.sandbox-dist
 **/.turbo
 **/dist

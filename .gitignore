@@ -1,6 +1,7 @@
 node_modules/
 .turbo/
 .next*/
+apps/web/next-env.d.ts
 .sandbox-dist/
 dist/
 coverage/
