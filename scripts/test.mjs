@@ -36,6 +36,7 @@ try {
     if (ownsDatabase) run('docker', [...compose, 'up', '-d', '--wait', 'postgres-test'], { env });
     const api = (...command) => run('pnpm', ['--filter', '@rephone/api', ...command], { env });
     api('exec', 'tsx', 'prisma/scripts/prepare-test-database.ts');
+    if (['integration', 'coverage'].includes(suite)) api('db:check');
     if (suite === 'container') {
       run('pnpm', ['test'], { env });
       api('test:integration');
