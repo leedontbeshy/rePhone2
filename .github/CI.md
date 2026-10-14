@@ -43,6 +43,8 @@ The shared setup action pins Node/pnpm and uses frozen installs. pnpm's store ca
 
 Database tests and measured performance results are not cached. Next.js restores only `<distDir>/cache`, then builds the current source; whole builds are not transferred between runners. Browser/performance jobs do not save unused Turbo caches.
 
+Turbo also hashes root TypeScript/ESLint/runtime configuration, shared config packages, test-environment setup and CI workflow/actions. A dry-run regression verifies that changing shared configuration invalidates cached type checks.
+
 Before editing workflows, run actionlint and the `scripts/ci-*.spec.mjs` regression tests. Run `pnpm format:check`, `pnpm lint`, `pnpm typecheck` and relevant application suites. Git Bash is required for the generator-failure regression on CI; Windows hosts with another Bash installation can supply `CI_BASH`.
 
 Measure both cold and warm runs using job/step timestamps and cache-hit logs. Compare against the observed pre-change PR validation of 6m16s and full release critical path of roughly 12m. Sum job execution durations separately for runner minutes, excluding queue time. Do not infer speedups from timeouts or a single cached run.
