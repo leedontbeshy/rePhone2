@@ -13,6 +13,7 @@ import {
   listInventoryLocations,
   listInventoryStockLevels,
   listInventoryStockMovements,
+  listInventoryStockVariantOptions,
   listInventoryUnitInspections,
   listInventoryUnits,
   lookupInventoryUnitIdentifier,
@@ -542,6 +543,90 @@ describe('backoffice inventory typed-client adapter', () => {
     expect(options.bodySerializer().get('file')).toBeInstanceOf(Blob);
     expect(options.bodySerializer().get('altText')).toBe('Mặt trước máy');
     expect(options.bodySerializer().get('sortOrder')).toBe('2');
+  });
+
+  it('loads new accessory choices without stock rows, including later catalog pages', async () => {
+    const controller = new AbortController();
+    const newVariant = {
+      ...VARIANT,
+      id: '0199c9aa-a258-74c8-a35f-9cd11c562a09',
+      sku: 'NEW-ACCESSORY',
+      status: 'DRAFT',
+      product: { ...PRODUCT, name: 'Phụ kiện mới', status: 'DRAFT', internalNotes: 'private' },
+      acquisitionCost: 'private',
+    };
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: [{ ...VARIANT, product: PRODUCT }],
+          meta: { pagination: { page: 1, pageSize: 100, totalItems: 101, totalPages: 2 } },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          data: [newVariant],
+          meta: { pagination: { page: 2, pageSize: 100, totalItems: 101, totalPages: 2 } },
+        },
+      });
+
+    const choices = await listInventoryStockVariantOptions(mockClient({ GET: get }), {
+      signal: controller.signal,
+    });
+
+    expect(get.mock.calls).toEqual([
+      [
+        '/api/v1/backoffice/stock-variants',
+        { params: { query: { page: 1, pageSize: 100 } }, signal: controller.signal },
+      ],
+      [
+        '/api/v1/backoffice/stock-variants',
+        { params: { query: { page: 2, pageSize: 100 } }, signal: controller.signal },
+      ],
+    ]);
+    expect(choices).toHaveLength(2);
+    expect(choices[1]).toEqual({
+      id: newVariant.id,
+      sku: 'NEW-ACCESSORY',
+      displayName: VARIANT.displayName,
+      status: 'DRAFT',
+      product: { ...PRODUCT, name: 'Phụ kiện mới', status: 'DRAFT' },
+    });
+    expect(JSON.stringify(choices)).not.toContain('private');
+  });
+
+  it('stops fetching accessory pages when the receiving choices request is cancelled', async () => {
+    const controller = new AbortController();
+    const get = vi.fn(() => {
+      controller.abort();
+      return Promise.resolve({
+        data: {
+          data: [],
+          meta: { pagination: { page: 1, pageSize: 100, totalItems: 101, totalPages: 2 } },
+        },
+      });
+    });
+
+    await expect(
+      listInventoryStockVariantOptions(mockClient({ GET: get }), { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed accessory page instead of silently returning incomplete receiving choices', async () => {
+    const get = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: {
+          data: [{ ...VARIANT, product: PRODUCT }],
+          meta: { pagination: { page: 1, pageSize: 100, totalItems: 101, totalPages: 2 } },
+        },
+      })
+      .mockResolvedValueOnce({ error: { error: { code: 'INTERNAL_ERROR' } } });
+
+    await expect(listInventoryStockVariantOptions(mockClient({ GET: get }))).rejects.toThrow(
+      'Không thể tải danh sách phụ kiện để nhận hàng.',
+    );
   });
 
   it('normalizes both stock lists, supports cancellation and maps additive summaries', async () => {

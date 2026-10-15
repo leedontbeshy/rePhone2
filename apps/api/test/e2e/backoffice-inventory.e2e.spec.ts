@@ -346,6 +346,150 @@ describe('Slice 04 backoffice catalog and inventory HTTP contract', () => {
     expect(audit.metadata).toMatchObject({ reason: 'Sửa serial theo tem máy gốc' });
   });
 
+  it('lists new draft accessories before their first receipt with guarded, paginated summaries', async () => {
+    await request(server).get('/api/v1/backoffice/stock-variants').expect(401);
+    const customer = await login(server, 'CUSTOMER');
+    await request(server)
+      .get('/api/v1/backoffice/stock-variants')
+      .set(bearer(customer))
+      .expect(403);
+
+    const employee = await login(server, 'EMPLOYEE');
+    // Isolate the choices in this reset test database from the seeded catalog.
+    await prisma.productVariant.updateMany({
+      data: { status: 'ARCHIVED', archivedAt: new Date() },
+    });
+    const created = await request(server)
+      .post('/api/v1/backoffice/products')
+      .set(bearer(employee))
+      .send({ type: 'ACCESSORY', name: 'Phụ kiện nhập lần đầu', slug: 'first-accessory-receipt' })
+      .expect(201);
+    const productId = stringProperty(successData(created), 'id');
+    const createdVariant = await request(server)
+      .post(`/api/v1/backoffice/products/${productId}/variants`)
+      .set(bearer(employee))
+      .send({ sku: 'FIRST-RECEIPT-B', displayName: 'Bản B', salePrice: '150000' })
+      .expect(201);
+    const variantId = stringProperty(successData(createdVariant), 'id');
+    const activeVariant = await prisma.productVariant.create({
+      data: {
+        productId,
+        inventoryMode: 'QUANTITY',
+        sku: 'FIRST-RECEIPT-A',
+        displayName: 'Bản A',
+        status: 'ACTIVE',
+        salePrice: '150000',
+      },
+    });
+    await prisma.productVariant.createMany({
+      data: [
+        {
+          productId,
+          inventoryMode: 'QUANTITY',
+          sku: 'ARCHIVED-STATUS',
+          displayName: 'Ẩn',
+          status: 'ARCHIVED',
+          salePrice: '150000',
+        },
+        {
+          productId,
+          inventoryMode: 'QUANTITY',
+          sku: 'ARCHIVED-TIME',
+          displayName: 'Ẩn theo thời gian',
+          archivedAt: new Date(),
+          salePrice: '150000',
+        },
+        {
+          productId,
+          inventoryMode: 'SERIALIZED',
+          sku: 'SERIALIZED-EXCLUDED',
+          displayName: 'Theo số sê ri',
+        },
+      ],
+    });
+    for (const [slug, type, status, archivedAt] of [
+      ['archived-product-status', 'ACCESSORY', 'ARCHIVED', null],
+      ['archived-product-time', 'ACCESSORY', 'ACTIVE', new Date()],
+      ['iphone-stock-choice', 'IPHONE', 'ACTIVE', null],
+    ] as const) {
+      await prisma.product.create({
+        data: {
+          name: slug,
+          slug,
+          type,
+          status,
+          archivedAt,
+          variants: {
+            create: {
+              sku: slug,
+              displayName: 'Không được chọn',
+              inventoryMode: 'QUANTITY',
+              salePrice: '150000',
+            },
+          },
+        },
+      });
+    }
+    expect(await prisma.stockLevel.count({ where: { variantId } })).toBe(0);
+
+    const firstPage = await request(server)
+      .get('/api/v1/backoffice/stock-variants')
+      .set(bearer(employee))
+      .query({ page: 1, pageSize: 1 })
+      .expect(200);
+    expect(successArray(firstPage)).toMatchObject([{ id: activeVariant.id, status: 'ACTIVE' }]);
+    expect(firstPage.body as unknown).toMatchObject({
+      meta: { pagination: { page: 1, pageSize: 1, totalItems: 2, totalPages: 2 } },
+    });
+    const secondPage = await request(server)
+      .get('/api/v1/backoffice/stock-variants')
+      .set(bearer(employee))
+      .query({ page: 2, pageSize: 1 })
+      .expect(200);
+    expect(successArray(secondPage)).toEqual([
+      {
+        id: variantId,
+        sku: 'FIRST-RECEIPT-B',
+        displayName: 'Bản B',
+        status: 'DRAFT',
+        product: {
+          id: productId,
+          name: 'Phụ kiện nhập lần đầu',
+          slug: 'first-accessory-receipt',
+          status: 'DRAFT',
+        },
+      },
+    ]);
+    expect(JSON.stringify(secondPage.body)).not.toMatch(
+      /salePrice|accessoryAttributes|stockLevels/,
+    );
+    for (const query of [{ page: 0 }, { pageSize: 101 }]) {
+      await request(server)
+        .get('/api/v1/backoffice/stock-variants')
+        .set(bearer(employee))
+        .query(query)
+        .expect(400);
+    }
+
+    const location = await prisma.inventoryLocation.findFirstOrThrow({
+      where: { status: 'ACTIVE' },
+    });
+    await stockCommand(server, employee, 'receive', {
+      variantId,
+      locationId: location.id,
+      quantity: 5,
+    });
+    expect(await stockOnHand(prisma, variantId, location.id)).toBe(5);
+    const levelList = await request(server)
+      .get('/api/v1/backoffice/stock-levels')
+      .set(bearer(employee))
+      .query({ variantId })
+      .expect(200);
+    expect(successArray(levelList)).toMatchObject([
+      { quantityOnHand: 5, variant: { id: variantId } },
+    ]);
+  });
+
   it('keeps accessory counters and movements atomic across every stock command', async () => {
     const employee = await login(server, 'EMPLOYEE');
     const variant = await prisma.productVariant.findFirstOrThrow({

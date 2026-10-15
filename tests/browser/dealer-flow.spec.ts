@@ -137,6 +137,33 @@ test(
 );
 
 test(bt('browser:dealer-flow', 'public-docs'), async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  await page.route('**/api/v1/**', async (route) => {
+    const request = route.request();
+    const headers = {
+      'Access-Control-Allow-Origin': request.headers()['origin'] ?? '*',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers':
+        request.headers()['access-control-request-headers'] ?? 'Content-Type, Authorization',
+      Vary: 'Origin',
+    };
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers });
+      return;
+    }
+    await route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      headers,
+      body: JSON.stringify({
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Public documentation does not require a session.',
+        },
+      }),
+    });
+  });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/dealer');
   await expect(
@@ -151,6 +178,108 @@ test(bt('browser:dealer-flow', 'public-docs'), async ({ page }, testInfo) => {
   await accessible(page);
   await page.goto('/dealer/api-guide');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Gọi API đầu tiên trong 4 bước', exact: true }),
+  ).toBeVisible();
+  const firstRequest = page.getByLabel('Bash / WSL · Kết nối đầu tiên bằng cURL', { exact: true });
+  await expect(firstRequest).toContainText('X-Dealer-Api-Key');
+  await expect(firstRequest).toContainText('/dealer/catalog?page=1&pageSize=1');
+  await expect(page.getByLabel('HTTP 200 · Ví dụ kho chưa có máy phù hợp')).toContainText(
+    '"items": []',
+  );
+  const overview = page.getByRole('table', { name: 'Danh sách API đại lý', exact: true });
+  await expect(overview.locator('tbody tr')).toHaveCount(16);
+  await expect(page.locator('#reference details')).toHaveCount(16);
+  await expect(overview).toContainText('catalog:read');
+  await expect(overview).toContainText('after-sales:write');
+
+  await page.getByRole('button', { name: 'Sandbox · TEST', exact: true }).click();
+  const testConfiguration = await page
+    .getByLabel('Cấu hình trên máy chủ website của bạn · TEST', { exact: true })
+    .innerText();
+  await expect(firstRequest).toContainText('rp_test_');
+  const testBase = testConfiguration.match(/^REPHONE_API_BASE_URL=(.+)$/m)?.[1];
+  expect(testBase).toBeTruthy();
+  if (testBase && !testBase.startsWith('<')) await expect(firstRequest).toContainText(testBase);
+  await page.getByRole('button', { name: 'Thực tế · LIVE', exact: true }).click();
+  const liveConfiguration = await page
+    .getByLabel('Cấu hình trên máy chủ website của bạn · LIVE', { exact: true })
+    .innerText();
+  await expect(firstRequest).toContainText('rp_live_');
+  await expect(firstRequest).not.toContainText('rp_test_');
+  const liveBase = liveConfiguration.match(/^REPHONE_API_BASE_URL=(.+)$/m)?.[1];
+  expect(liveBase).toBeTruthy();
+  if (liveBase && !liveBase.startsWith('<')) {
+    await expect(firstRequest).toContainText(liveBase);
+  } else {
+    await expect(page.locator('#connect').getByRole('status')).toContainText(
+      'Chưa có địa chỉ API Live',
+    );
+  }
+  await page.getByRole('button', { name: 'Sandbox · TEST', exact: true }).click();
+
+  // Keep the test independent of clipboard permissions and the user's system clipboard.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: (value: string) => {
+          document.documentElement.setAttribute('data-dealer-copied-code', value);
+          return Promise.resolve();
+        },
+      },
+    });
+  });
+  const firstRequestText = await firstRequest.innerText();
+  await firstRequest.locator('..').getByRole('button', { name: 'Sao chép', exact: true }).click();
+  await expect(
+    firstRequest.locator('..').getByRole('button', { name: 'Đã chép', exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-dealer-copied-code', firstRequestText);
+
+  await overview.locator('a[href="#endpoint-orders-create"]').click();
+  const createOrder = page.locator('#endpoint-orders-create');
+  await expect(createOrder).toHaveAttribute('open', '');
+  await expect(createOrder.locator('summary')).toBeFocused();
+  await expect(createOrder.getByLabel('JSON body minh họa · Tạo đơn và giữ một máy')).toContainText(
+    'previewFingerprint',
+  );
+  await expect(
+    createOrder.getByLabel('cURL · Bash/WSL · POST /dealer/orders', { exact: true }),
+  ).toContainText('Idempotency-Key');
+  await expect(
+    createOrder.getByLabel('Phản hồi minh họa · HTTP 201 · Tạo đơn và giữ một máy'),
+  ).toContainText('"order"');
+
+  const search = page.getByLabel('Tìm API', { exact: true });
+  const group = page.getByLabel('Nhóm API', { exact: true });
+  await group.selectOption('payments');
+  await expect(overview.locator('tbody tr')).toHaveCount(3);
+  await expect(page.locator('#reference details')).toHaveCount(3);
+  await search.fill('/payment-requests/{id}/proofs');
+  await expect(overview.locator('tbody tr')).toHaveCount(1);
+  await overview
+    .getByRole('link', { name: '/dealer/payment-requests/{id}/proofs', exact: true })
+    .click();
+  const proofUpload = page.locator('#endpoint-payments-proof');
+  await expect(proofUpload).toHaveAttribute('open', '');
+  await expect(proofUpload.getByRole('table')).toContainText('Tệp multipart');
+  await expect(
+    proofUpload.getByLabel('cURL · Bash/WSL · POST /dealer/payment-requests/{id}/proofs'),
+  ).toContainText('--form');
+  await search.fill('khong-co-api-nay-12345');
+  await expect(page.locator('#reference').getByRole('status')).toHaveText('Hiển thị 0/16 endpoint');
+  await expect(page.getByText('Không tìm thấy API phù hợp.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Hiển thị tất cả API', exact: true }).click();
+  await expect(search).toHaveValue('');
+  await expect(group).toHaveValue('');
+  await expect(overview.locator('tbody tr')).toHaveCount(16);
+  await search.fill('lay danh sach may va gia dai ly');
+  await expect(overview.locator('tbody tr')).toHaveCount(1);
+  await expect(overview).toContainText('/dealer/catalog');
+  await page.getByRole('button', { name: 'Xóa bộ lọc API', exact: true }).click();
+  await overview.locator('a[href="#endpoint-orders-create"]').click();
+  await overview.locator('a[href="#endpoint-payments-proof"]').click();
   await captureStablePage(page, {
     path: testInfo.outputPath('dealer-guide-desktop.png'),
     fullPage: true,
@@ -161,6 +290,9 @@ test(bt('browser:dealer-flow', 'public-docs'), async ({ page }, testInfo) => {
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth))
       .toBe(true);
     for (const name of [
+      'Danh sách API đại lý',
+      'Tham số POST /dealer/orders',
+      'Tham số POST /dealer/payment-requests/{id}/proofs',
       'Quyền truy cập API',
       'Tình huống đặt hàng',
       'Thanh toán và hậu mãi',

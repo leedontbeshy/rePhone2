@@ -26,6 +26,7 @@ type InspectionStatus = 'DRAFT' | 'COMPLETED';
 type InspectionType = 'INTAKE' | 'PRE_SALE' | 'WARRANTY' | 'RETURN';
 
 interface Fe06ApiOptions {
+  readonly initialStockQuantity?: number;
   readonly inspectionType?: InspectionType;
   readonly lookupOutcome?: 'success' | 'not-found' | 'provider-error';
   readonly mediaCount?: number;
@@ -474,6 +475,63 @@ test.describe('FE-06 inventory and stock workspace', () => {
     await expect(page.getByText('Nhận hàng kiểm thử FE06')).toBeVisible();
     await expect(page.getByText('Nhân viên kho FE06').first()).toBeVisible();
     await expectSingleMainAndNoOverflow(page);
+
+    const firstReceiptPage = await page.context().newPage();
+    const firstReceiptProbe = await installFe06Api(firstReceiptPage, 'EMPLOYEE', {
+      initialStockQuantity: 0,
+    });
+    await firstReceiptPage.goto('/backoffice/inventory/stock', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(firstReceiptPage.getByText('Chưa có dòng tồn phù hợp')).toBeVisible();
+    await expect(
+      firstReceiptPage.getByRole('row', { name: new RegExp(ACCESSORY_NAME) }),
+    ).toHaveCount(0);
+    const firstLevelsBefore = firstReceiptProbe.stockLevelRequests;
+    const firstMovementsBefore = firstReceiptProbe.stockMovementRequests;
+
+    await firstReceiptPage.getByRole('button', { name: 'Nhận hàng', exact: true }).click();
+    const firstReceiptDialog = firstReceiptPage.getByRole('dialog', { name: 'Nhận hàng' });
+    await expect(
+      firstReceiptDialog.getByLabel('Phụ kiện').locator(`option[value="${ACCESSORY_VARIANT_ID}"]`),
+    ).toHaveCount(1);
+    await firstReceiptDialog.getByLabel('Phụ kiện').selectOption(ACCESSORY_VARIANT_ID);
+    await firstReceiptDialog.getByLabel('Nhận tại').selectOption(STORE_ID);
+    await firstReceiptDialog.getByLabel('Số lượng').fill('3');
+    await firstReceiptDialog
+      .getByRole('button', { name: 'Xác nhận nhận hàng', exact: true })
+      .click();
+
+    await expect(
+      firstReceiptPage.getByText('Nhận hàng đã được ghi vào lịch sử kho.'),
+    ).toBeVisible();
+    expect(firstReceiptProbe.stockCommandBodies).toEqual([
+      {
+        body: { locationId: STORE_ID, quantity: 3, variantId: ACCESSORY_VARIANT_ID },
+        path: '/api/v1/backoffice/stock/receive',
+      },
+    ]);
+    await expect
+      .poll(() => firstReceiptProbe.stockLevelRequests)
+      .toBeGreaterThan(firstLevelsBefore);
+    await expect
+      .poll(() => firstReceiptProbe.stockMovementRequests)
+      .toBeGreaterThan(firstMovementsBefore);
+    expect(firstReceiptProbe.stockQuantity).toBe(3);
+    const firstStockRow = firstReceiptPage.getByRole('row', { name: new RegExp(ACCESSORY_NAME) });
+    await expect(firstStockRow).toBeVisible();
+    await expect(firstStockRow.getByRole('cell').nth(2)).toHaveText('3');
+    await expect(firstStockRow.getByRole('cell').nth(4)).toHaveText('3');
+
+    await firstReceiptPage.goto('/backoffice/inventory/stock/movements', {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(firstReceiptPage.getByText('Nhận hàng kiểm thử FE06')).toBeVisible();
+    await expect(firstReceiptPage.getByText('Kiểm đếm đầu ngày')).toHaveCount(0);
+    expect(firstReceiptProbe.movements).toEqual([
+      expect.objectContaining({ quantity: 3, type: 'RECEIPT' }),
+    ]);
+    await firstReceiptPage.close();
   });
 
   test(bt('browser:inventory-stock', 'inventory-responsive'), async ({ page }) => {
@@ -640,6 +698,7 @@ async function installFe06Api(
   options: Fe06ApiOptions = {},
 ): Promise<Fe06Probe> {
   let nextResumeInspection: ResumeRequestGate | undefined;
+  const initialStockQuantity = options.initialStockQuantity ?? 10;
   const probe: Fe06Probe = {
     costRequests: 0,
     holdNextResumeInspection() {
@@ -655,19 +714,22 @@ async function installFe06Api(
     lookupBody: null,
     lookupRequests: [],
     mediaCount: Math.max(0, options.mediaCount ?? 0),
-    movements: [
-      {
-        createdAt: '2026-08-28T06:30:00.000Z',
-        id: '0199d006-0000-7000-8000-000000000011',
-        quantity: 10,
-        reason: 'Kiểm đếm đầu ngày',
-        type: 'ADJUSTMENT_IN',
-      },
-    ],
+    movements:
+      initialStockQuantity === 0
+        ? []
+        : [
+            {
+              createdAt: '2026-08-28T06:30:00.000Z',
+              id: '0199d006-0000-7000-8000-000000000011',
+              quantity: initialStockQuantity,
+              reason: 'Kiểm đếm đầu ngày',
+              type: 'ADJUSTMENT_IN',
+            },
+          ],
     stockCommandBodies: [],
     stockLevelRequests: 0,
     stockMovementRequests: 0,
-    stockQuantity: 10,
+    stockQuantity: initialStockQuantity,
     unitListQueries: [],
   };
 
@@ -811,11 +873,24 @@ async function installFe06Api(
       await fulfillJson(route, { data: inspectionDetail(probe) });
       return;
     }
+    if (pathname.endsWith('/backoffice/stock-variants') && method === 'GET') {
+      await fulfillJson(
+        route,
+        paged(
+          [{ ...accessoryVariant(), product: accessoryProduct() }],
+          Number(url.searchParams.get('pageSize')) || 20,
+        ),
+      );
+      return;
+    }
     if (pathname.endsWith('/backoffice/stock-levels') && method === 'GET') {
       probe.stockLevelRequests += 1;
       await fulfillJson(
         route,
-        paged([stockLevel(probe.stockQuantity)], Number(url.searchParams.get('pageSize')) || 20),
+        paged(
+          probe.stockQuantity === 0 ? [] : [stockLevel(probe.stockQuantity)],
+          Number(url.searchParams.get('pageSize')) || 20,
+        ),
       );
       return;
     }

@@ -13,6 +13,11 @@ export class StockActorDto {
   @ApiPropertyOptional({ type: String, nullable: true }) public employeeCode!: string | null;
 }
 
+export class StockVariantDto extends InventoryVariantSummaryDto {
+  @ApiProperty({ type: () => InventoryProductSummaryDto })
+  public product!: InventoryProductSummaryDto;
+}
+
 export class StockLevelDto {
   @ApiProperty({ type: String, format: 'uuid' }) public id!: string;
   @ApiPropertyOptional({ type: () => InventoryProductSummaryDto })
@@ -66,6 +71,10 @@ export class StockCommandResultDto {
 
 export class StockListMetaDto {
   @ApiProperty({ type: () => PaginationDto }) public pagination!: PaginationDto;
+}
+export class StockVariantListResponse {
+  @ApiProperty({ type: () => [StockVariantDto] }) public data!: StockVariantDto[];
+  @ApiProperty({ type: () => StockListMetaDto }) public meta!: StockListMetaDto;
 }
 export class StockLevelListResponse {
   @ApiProperty({ type: () => [StockLevelDto] }) public data!: StockLevelDto[];

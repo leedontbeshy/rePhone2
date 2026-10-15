@@ -35,12 +35,14 @@ import {
   ReturnStockDto,
   StockLevelListQueryDto,
   StockMovementListQueryDto,
+  StockPaginationDto,
   TransferStockDto,
 } from './stock.dto.js';
 import {
   StockCommandResponse,
   StockLevelListResponse,
   StockMovementListResponse,
+  StockVariantListResponse,
 } from './stock-response.dto.js';
 import { StockService } from './stock.service.js';
 
@@ -64,6 +66,23 @@ const STOCK_ERRORS = [
 @Controller('backoffice')
 export class StockController {
   public constructor(@Inject(StockService) private readonly service: StockService) {}
+
+  @Get('stock-variants')
+  @ApiOperation({ operationId: 'listBackofficeStockVariants' })
+  @ApiQuery({ name: 'page', required: false, type: Number, minimum: 1, default: 1 })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    type: Number,
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
+  @ApiOkResponse({ type: StockVariantListResponse })
+  @ApiErrorResponses(...STOCK_ERRORS)
+  public listVariants(@Query() query: StockPaginationDto) {
+    return this.service.listVariants(query);
+  }
 
   @Get('stock-levels')
   @ApiOperation({ operationId: 'listBackofficeStockLevels' })

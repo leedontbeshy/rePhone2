@@ -8,10 +8,14 @@ import {
   ShieldCheckIcon as ShieldCheck,
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui';
+import { dealerApiGuidePortalUrl } from '@/lib/dealer-api-guide-config';
 import { DealerCode, DealerWorkspaceHeader } from './dealer-workspace';
+import { DealerApiReference } from './dealer-api-reference';
 import styles from './dealer.module.css';
 
 const sections = [
+  ['connect', 'Gọi API đầu tiên'],
+  ['reference', 'Danh sách 16 API'],
   ['start', 'Bắt đầu'],
   ['environments', 'Thử nghiệm & bán thật'],
   ['keys', 'Tạo khóa kết nối'],
@@ -35,25 +39,47 @@ export function DealerApiGuide({
   liveApiUrl,
   sandboxApiUrl,
   sandboxWebUrl,
+  initialEnvironment,
+  currentEnvironment = liveApiUrl === '' ? 'TEST' : 'LIVE',
 }: {
   liveApiUrl: string;
   sandboxApiUrl: string;
   sandboxWebUrl: string;
+  initialEnvironment?: 'TEST' | 'LIVE';
+  currentEnvironment?: 'TEST' | 'LIVE';
 }) {
-  const [sandbox, setSandbox] = useState(true);
+  const [sandbox, setSandbox] = useState(
+    initialEnvironment === undefined
+      ? sandboxApiUrl !== '' || liveApiUrl === ''
+      : initialEnvironment === 'TEST',
+  );
   const base = sandbox ? sandboxApiUrl : liveApiUrl;
   const prefix = sandbox ? 'rp_test_' : 'rp_live_';
+  const connectionBase = base || '<DIA_CHI_API_DO_REPHONE_CAP>/api/v1';
+  const portalUrl = dealerApiGuidePortalUrl(
+    currentEnvironment,
+    sandbox ? 'TEST' : 'LIVE',
+    sandboxWebUrl,
+  );
   return (
     <div className={styles.page}>
       <DealerWorkspaceHeader
         title="Tích hợp API đại lý"
-        description="Kết nối website bán hàng của bạn với kho máy rePhone. Tìm hiểu cách bắt đầu, thử nghiệm và quản lý đơn hàng qua API."
+        description="Tạo khóa, gọi yêu cầu đầu tiên, sau đó tra cứu đầy đủ 16 API để đọc kho, đặt đơn, thanh toán và hậu mãi."
         test={sandbox}
       >
         <Link href="/dealer" className={styles.secondaryLink}>
           <ArrowLeftIcon size={18} aria-hidden /> Cổng đại lý
         </Link>
       </DealerWorkspaceHeader>
+      <div className={styles.actions}>
+        <a href="#connect" className={styles.primaryLink}>
+          Kết nối lần đầu
+        </a>
+        <a href="#reference" className={styles.secondaryLink}>
+          Tra cứu danh sách API
+        </a>
+      </div>
       <div className={styles.guideLayout}>
         <nav className={styles.guideNavigation} aria-label="Mục lục hướng dẫn">
           <span>
@@ -68,8 +94,104 @@ export function DealerApiGuide({
           ))}
         </nav>
         <article className={styles.guideArticle}>
+          <section id="connect" className={styles.guideSection}>
+            <span className={styles.eyebrow}>Bắt đầu tại đây</span>
+            <h2>Gọi API đầu tiên trong 4 bước</h2>
+            <p>
+              Bạn đang kết nối hệ thống của cửa hàng mình với rePhone. Thực hiện các bước dưới đây
+              trên máy chủ hoặc máy phát triển của bạn; chưa cần tạo đơn hay cấu hình webhook để
+              kiểm tra khóa đọc kho.
+            </p>
+            <ol>
+              <li>
+                <strong>Lấy tài khoản và địa chỉ API đúng môi trường.</strong>{' '}
+                {portalUrl ? (
+                  <>
+                    Mở <Link href={portalUrl}>Cổng đại lý {sandbox ? 'Sandbox' : 'Live'}</Link> để
+                    đăng nhập và tạo khóa cho môi trường đang chọn.{' '}
+                  </>
+                ) : (
+                  <>
+                    Chưa có địa chỉ cổng {sandbox ? 'Sandbox' : 'Live'} trên trang này; liên hệ
+                    rePhone để được cấp đường dẫn đăng nhập trước khi tạo khóa.{' '}
+                  </>
+                )}
+                Nếu chưa có tài khoản hoặc hồ sơ chưa được duyệt hoạt động, liên hệ rePhone trước
+                khi tạo khóa. Xem <a href="#environments">địa chỉ Sandbox và Live</a> bên dưới.
+              </li>
+              <li>
+                <strong>Tạo khóa trong Kết nối website → Tạo khóa API.</strong> Để thử đọc kho, chọn{' '}
+                <strong>Chỉ đọc kho và đơn</strong>. Để thực hiện tiếp toàn bộ ví dụ đặt hàng, chọn{' '}
+                <strong>Đặt hàng, thanh toán và hậu mãi</strong>. Xác nhận mật khẩu, sao chép toàn
+                bộ khóa vừa hiện và lưu trên máy chủ của bạn.
+              </li>
+              <li>
+                <strong>Chạy lệnh bên dưới.</strong> Thay giá trị mẫu của{' '}
+                <code>REPHONE_DEALER_KEY</code> bằng toàn bộ khóa vừa tạo. URL đã gồm{' '}
+                <code>/api/v1</code>; đừng nối tiền tố này thêm lần nữa.
+              </li>
+              <li>
+                <strong>Kiểm tra HTTP 200 và đối tượng data.</strong> Như vậy URL và khóa đã dùng
+                được cho API đọc kho. Sau đó dùng <code>inventoryUnitId</code> của một máy trong{' '}
+                <code>data.items</code> để thực hiện <a href="#orders">luồng tạo đơn</a>.
+              </li>
+            </ol>
+            <p>
+              Ví dụ hiện dùng <strong>{sandbox ? 'Sandbox · TEST' : 'Live · LIVE'}</strong>.{' '}
+              <a href="#environments">Đổi môi trường và xem URL</a>.
+            </p>
+            {base === '' ? (
+              <p role="status">
+                Chưa có địa chỉ API {sandbox ? 'Sandbox' : 'Live'} được cấu hình trên trang này. Hãy
+                lấy URL từ rePhone trước khi chạy lệnh; phần địa chỉ mẫu bên dưới chưa dùng để kết
+                nối được.
+              </p>
+            ) : null}
+            {base.includes('localhost') || base.includes('127.0.0.1') ? (
+              <p>
+                Đây là địa chỉ chạy trên máy phát triển. <code>localhost</code> chỉ trỏ đến máy đang
+                chạy lệnh; website trên máy chủ khác cần URL công khai do rePhone cung cấp.
+              </p>
+            ) : null}
+            <DealerCode
+              label="Bash / WSL · Kết nối đầu tiên bằng cURL"
+              code={`export REPHONE_API_BASE_URL=${shellQuote(connectionBase)}
+export REPHONE_DEALER_KEY='${prefix}THAY_BANG_TOAN_BO_KHOA_DUOC_CAP'
+
+curl --include \\
+  --header "X-Dealer-Api-Key: $REPHONE_DEALER_KEY" \\
+  "$REPHONE_API_BASE_URL/dealer/catalog?page=1&pageSize=1"`}
+            />
+            <DealerCode
+              label="HTTP 200 · Ví dụ kho chưa có máy phù hợp"
+              code={JSON.stringify(
+                { data: { items: [], page: 1, pageSize: 1, revision: 12, hasMore: false } },
+                null,
+                2,
+              )}
+            />
+            <ul>
+              <li>
+                <code>data.items: []</code> vẫn là kết nối thành công; hiện không có máy phù hợp.
+              </li>
+              <li>
+                <code>401</code>: kiểm tra toàn bộ khóa, hạn dùng và đúng cặp URL/khóa TEST hoặc
+                LIVE.
+              </li>
+              <li>
+                <code>403</code>: kiểm tra scope và trạng thái hồ sơ; gửi API key trực tiếp từ trình
+                duyệt cũng bị từ chối.
+              </li>
+              <li>
+                Không cần đăng nhập API bằng mật khẩu hay gửi cookie để dùng API key từ máy chủ.
+              </li>
+            </ul>
+          </section>
+          <section id="reference" className={styles.guideSection}>
+            <DealerApiReference />
+          </section>
           <section id="start" className={styles.guideSection}>
-            <span className={styles.eyebrow}>01 · Tổng quan</span>
+            <span className={styles.eyebrow}>Tổng quan</span>
             <h2>Website của bạn, nguồn máy từ rePhone</h2>
             <p>
               API giúp website của bạn lấy thông tin máy, giá đại lý và gửi đơn hàng đến rePhone.
@@ -111,7 +233,7 @@ export function DealerApiGuide({
             </ol>
           </section>
           <section id="environments" className={styles.guideSection}>
-            <span className={styles.eyebrow}>02 · Chọn môi trường</span>
+            <span className={styles.eyebrow}>Chọn môi trường</span>
             <h2>Thử kết nối với Sandbox trước khi bán thật</h2>
             <p>
               Sandbox là môi trường để bạn làm quen với API bằng dữ liệu và đơn hàng thử. Live là
@@ -168,7 +290,7 @@ export function DealerApiGuide({
             </p>
           </section>
           <section id="keys" className={styles.guideSection}>
-            <span className={styles.eyebrow}>03 · Xác thực</span>
+            <span className={styles.eyebrow}>Xác thực</span>
             <h2>Tạo khóa API cho website của bạn</h2>
             <p>
               Mở <strong>Kết nối website → Tạo khóa API</strong> trong cổng của môi trường đã chọn.
@@ -209,7 +331,7 @@ export function DealerApiGuide({
             </p>
           </section>
           <section id="catalog" className={styles.guideSection}>
-            <span className={styles.eyebrow}>04 · Lấy sản phẩm</span>
+            <span className={styles.eyebrow}>Lấy sản phẩm</span>
             <h2>Đọc kho máy và giá đại lý</h2>
             <DealerCode
               label="Node.js · Lấy danh sách máy từ máy chủ website của bạn"
@@ -265,13 +387,69 @@ const { items, hasMore, page, revision } = payload.data;`}
             </p>
           </section>
           <section id="orders" className={styles.guideSection}>
-            <span className={styles.eyebrow}>05 · Tạo đơn</span>
+            <span className={styles.eyebrow}>Tạo đơn</span>
             <h2>Xem lại giá và phí giao trước khi đặt máy</h2>
             <p>
               Mỗi đơn gồm một máy. Gọi bước xem lại đơn (preview) để nhận giá, phí giao và tình
               trạng máy mới nhất. Sau khi thông tin được xác nhận, website gửi yêu cầu tạo đơn. Nếu
               giá hoặc tình trạng máy thay đổi, hãy thông báo để người mua xem lại lựa chọn.
             </p>
+            <div
+              className={styles.tableWrap}
+              role="region"
+              aria-label="Lấy mã ở đâu để gọi API tiếp theo"
+              tabIndex={0}
+            >
+              <table className={styles.table} aria-label="Lấy mã ở đâu để gọi API tiếp theo">
+                <thead>
+                  <tr>
+                    <th scope="col">Giá trị cần lưu</th>
+                    <th scope="col">Lấy từ phản hồi</th>
+                    <th scope="col">Dùng cho bước nào</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <code>inventoryUnitId</code>
+                    </td>
+                    <td>
+                      <code>data.items[].inventoryUnitId</code> của API đọc kho
+                    </td>
+                    <td>Preview và tạo đơn cho đúng chiếc máy đã chọn.</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>previewFingerprint</code>
+                    </td>
+                    <td>
+                      <code>data.previewFingerprint</code> của preview
+                    </td>
+                    <td>Gửi nguyên giá trị khi tạo đơn; không tự tạo hoặc sửa.</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>orderId</code>
+                    </td>
+                    <td>
+                      <code>data.order.id</code> khi tạo đơn thành công
+                    </td>
+                    <td>Đọc đơn, lấy yêu cầu thanh toán, hủy đơn và đọc bảo hành.</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>paymentRequestId</code>
+                    </td>
+                    <td>
+                      <code>data[].id</code> của danh sách yêu cầu thanh toán
+                    </td>
+                    <td>
+                      Chọn yêu cầu thanh toán hiện tại để nộp chứng từ; đây là mã khác với mã đơn.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <DealerCode
               label="Node.js · Preview và tạo đơn"
               code={`import { randomUUID } from 'node:crypto';
@@ -352,7 +530,7 @@ const { order, replayed } = await rephone('/dealer/orders', command, idempotency
             </p>
           </section>
           <section id="payments" className={styles.guideSection}>
-            <span className={styles.eyebrow}>06 · Sau khi đặt đơn</span>
+            <span className={styles.eyebrow}>Sau khi đặt đơn</span>
             <h2>Thanh toán, giao hàng và hậu mãi</h2>
             <p>
               Sau khi tạo đơn, lấy hướng dẫn thanh toán bằng{' '}
@@ -411,7 +589,7 @@ const { order, replayed } = await rephone('/dealer/orders', command, idempotency
             </details>
           </section>
           <section id="webhooks" className={styles.guideSection}>
-            <span className={styles.eyebrow}>07 · Đồng bộ trạng thái</span>
+            <span className={styles.eyebrow}>Đồng bộ trạng thái</span>
             <h2>Nhận và xác thực webhook</h2>
             <p>
               Webhook giúp website của bạn nhận thông báo khi đơn hàng, thanh toán hoặc hậu mãi thay
@@ -491,7 +669,7 @@ export function validWebhook(rawBody, headers, secretsByKeyId) {
             </ul>
           </section>
           <section id="errors" className={styles.guideSection}>
-            <span className={styles.eyebrow}>08 · Hoàn tất kết nối</span>
+            <span className={styles.eyebrow}>Hoàn tất kết nối</span>
             <h2>Xử lý lỗi và kiểm tra trước khi bán thật</h2>
             <p>
               Khi một yêu cầu không thành công, API trả về mã lỗi và nội dung giúp bạn xác định bước
@@ -505,6 +683,7 @@ export function validWebhook(rawBody, headers, secretsByKeyId) {
                     code: 'INVENTORY_NOT_AVAILABLE',
                     message: 'Máy không còn khả dụng.',
                     details: [],
+                    requestId: 'request-id-do-api-tra-ve',
                   },
                 },
                 null,
@@ -559,7 +738,8 @@ export function validWebhook(rawBody, headers, secretsByKeyId) {
             <p>
               Hạn mức chung cho mỗi đại lý: 60 yêu cầu đọc/phút, 10 yêu cầu ghi/phút và 5 lần nộp
               chứng từ/10 phút. Nếu lỗi vẫn tiếp diễn, gửi mã đơn, thời điểm xảy ra và mã lỗi cho
-              rePhone để được hỗ trợ; giữ bí mật khóa API và mật khẩu của bạn.
+              rePhone kèm <code>error.requestId</code> để được hỗ trợ; giữ bí mật khóa API và mật
+              khẩu của bạn.
             </p>
             <h3>Trước khi chuyển sang Live</h3>
             <ul>
@@ -592,4 +772,8 @@ export function validWebhook(rawBody, headers, secretsByKeyId) {
       </div>
     </div>
   );
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }

@@ -129,6 +129,204 @@
   overflow-x: auto;
   max-width: 100%;
 }
+.apiReference,
+.apiReferenceGroup {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+}
+.apiReferenceHeading h2 {
+  margin-top: var(--space-2);
+}
+.apiReferenceHeading p {
+  color: var(--color-muted);
+}
+.apiReferenceFilters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+.apiReferenceFilters > * {
+  min-width: 0;
+}
+.apiReferenceCount {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+.apiReferenceTable {
+  min-width: 660px;
+}
+.apiReferenceTable td,
+.apiParameterTable td {
+  vertical-align: top;
+}
+.apiReferenceTable th:nth-child(2) {
+  width: 33%;
+}
+.apiEndpointLink {
+  display: inline-block;
+  color: var(--color-primary);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.apiEndpointLink:hover {
+  color: var(--color-primary-hover);
+}
+.apiEndpointLink:focus-visible,
+.apiEndpointSummary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+.apiReferenceGroup {
+  gap: var(--space-3);
+}
+.apiReferenceGroup h3 {
+  margin: var(--space-4) 0 var(--space-1);
+}
+.apiMethod {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 2px 6px;
+  background: var(--color-brand-soft);
+  color: var(--color-primary-active);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.apiEndpoint {
+  min-width: 0;
+  border: var(--border-default);
+  border-radius: 10px;
+  scroll-margin-top: calc(var(--storefront-header-offset) + var(--space-6));
+}
+.apiEndpointSummary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-hit-target);
+  padding: var(--space-4);
+  border-radius: inherit;
+  cursor: pointer;
+  list-style: none;
+}
+.apiEndpointSummary::-webkit-details-marker {
+  display: none;
+}
+.apiEndpointSummary::after {
+  content: '+';
+  color: var(--color-primary);
+  font-size: 22px;
+  line-height: 1;
+}
+.apiEndpoint[open] > .apiEndpointSummary {
+  background: var(--color-surface-subtle);
+  border-bottom: var(--border-default);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.apiEndpoint[open] > .apiEndpointSummary::after {
+  content: '−';
+}
+.apiEndpointSummary:hover {
+  background: var(--color-brand-soft);
+}
+.apiEndpointSummaryText {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.apiEndpointSummaryText strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.apiEndpointSummaryText code {
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.apiEndpointBody {
+  padding: 0 var(--space-4) var(--space-4);
+  min-width: 0;
+}
+.apiEndpointBody h4 {
+  margin: var(--space-5) 0 var(--space-3);
+  font-size: 14px;
+}
+.apiEndpointBody > p {
+  color: var(--color-muted);
+}
+.apiEndpointMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+.apiEndpointMeta dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.apiEndpointMeta dd {
+  margin: var(--space-1) 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.apiEndpointNotice {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-info-soft);
+}
+.apiParameterTable {
+  min-width: 620px;
+}
+.apiFieldType {
+  display: block;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.apiEndpointNotes {
+  padding-left: var(--space-5);
+}
+.apiReferenceEmpty {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-5);
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-subtle);
+}
+.apiReferenceEmpty p {
+  margin: 0;
+}
+@container dealer-workspace (max-width: 760px) {
+  .apiReferenceFilters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .apiReferenceFilters > button {
+    justify-self: start;
+  }
+}
+@container dealer-workspace (max-width: 440px) {
+  .apiEndpointSummary {
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+  .apiEndpointBody {
+    padding: 0 var(--space-3) var(--space-3);
+  }
+  .apiEndpointMeta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @container dealer-workspace (max-width: 1000px) {
   .guideLayout {
     grid-template-columns: minmax(0, 1fr);
