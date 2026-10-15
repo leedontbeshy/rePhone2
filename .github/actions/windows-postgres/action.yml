@@ -1,0 +1,32 @@
+name: Start Windows test PostgreSQL
+description: Start runner-local PostgreSQL 17 and create a dedicated test database
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      run: |
+        Set-Service -Name postgresql-x64-17 -StartupType Manual
+        Start-Service -Name postgresql-x64-17
+        $env:Path = "${env:PGBIN};${env:Path}"
+        $env:PGPASSWORD = 'root'
+        $ready = $false
+        for ($attempt = 1; $attempt -le 30; $attempt++) {
+          & "${env:PGBIN}\pg_isready.exe" -h localhost -p 5432 -U postgres
+          if ($LASTEXITCODE -eq 0) {
+            $ready = $true
+            break
+          }
+          Start-Sleep -Seconds 2
+        }
+        if (-not $ready) {
+          throw 'PostgreSQL 17 did not become ready in time'
+        }
+        $databaseExists = & "${env:PGBIN}\psql.exe" -h localhost -p 5432 -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'rephone_test'"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not inspect test database' }
+
+        if ($databaseExists -ne '1') {
+          & "${env:PGBIN}\createdb.exe" -h localhost -p 5432 -U postgres rephone_test
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Could not create the isolated performance test database'
+          }
+        }

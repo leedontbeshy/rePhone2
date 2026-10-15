@@ -1,6 +1,21 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env", ".env.*", ".env.example"],
+  "globalDependencies": [
+    ".env",
+    ".env.*",
+    ".env.example",
+    ".nvmrc",
+    ".npmrc",
+    "pnpm-workspace.yaml",
+    "tsconfig*.json",
+    "eslint.config.*",
+    "packages/typescript-config/**",
+    "packages/eslint-config/**",
+    "packages/test-config/**",
+    "scripts/environment.mjs",
+    ".github/actions/**",
+    ".github/workflows/**"
+  ],
   "globalEnv": [
     "REPHONE_SKIP_ENV_FILE",
     "REPHONE_ENV_FILE",

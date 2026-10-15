@@ -66,6 +66,8 @@ Khi đổi mật khẩu PostgreSQL của dev, phải đổi cả role trong data
 
 ## Kiểm thử
 
+Quy tắc PR/release, required checks, artifact và review visual baseline: [hướng dẫn CI](.github/CI.md).
+
 ```bash
 pnpm format:check
 pnpm lint

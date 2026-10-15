@@ -1,0 +1,93 @@
+name: Visual baseline candidates
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+env:
+  CI: 'true'
+  NEXT_TELEMETRY_DISABLED: '1'
+  NODE_OPTIONS: --max-old-space-size=4096
+  NODE_ENV: test
+  TURBO_TELEMETRY_DISABLED: '1'
+  API_PORT: '4001'
+  API_PUBLIC_URL: http://localhost:4001
+  WEB_PUBLIC_URL: http://localhost:3001
+  WEB_ORIGIN: http://localhost:3001
+  JWT_ACCESS_SECRET: test-only-jwt-secret-with-at-least-thirty-two-bytes
+  IDENTIFIER_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  IDENTIFIER_HMAC_KEY: YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=
+  SUPABASE_URL: https://example.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY: test-placeholder-service-role-key
+  SUPABASE_PUBLIC_BUCKET: rephone-public-test
+  SUPABASE_PRIVATE_BUCKET: rephone-private-test
+  SUPABASE_STORE_BUCKET: rephone-store-assets-test
+  SMTP_HOST: localhost
+  SMTP_PORT: '1025'
+  SMTP_SECURE: 'false'
+  SMTP_REQUIRE_TLS: 'false'
+  MAIL_FROM: rePhone Test <no-reply@rephone.local>
+  LOG_LEVEL: silent
+  SCHEDULER_ENABLED: 'false'
+  NEXT_PUBLIC_API_BASE_URL: http://localhost:4001/api/v1
+  API_INTERNAL_BASE_URL: http://localhost:4001/api/v1
+  REPHONE_SKIP_ENV_FILE: 'true'
+jobs:
+  candidates:
+    name: Generate Windows baseline candidates
+    runs-on: windows-2025
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
+      DIRECT_URL: postgresql://postgres:root@localhost:5432/rephone_test
+      TEST_DATABASE_URL: postgresql://postgres:root@localhost:5432/rephone_test
+      PLAYWRIGHT_WEB_SERVER: production
+      PLAYWRIGHT_SHARED_REPORT: 'true'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up workspace
+        uses: ./.github/actions/setup-workspace
+        with:
+          next-kind: .next-test
+      - name: Start isolated PostgreSQL 17 database
+        uses: ./.github/actions/windows-postgres
+      - name: Verify isolated test database target
+        run: |
+          node --input-type=module -e "const u = new URL(process.env.TEST_DATABASE_URL); if (u.hostname !== 'localhost' || !u.pathname.endsWith('_test')) throw new Error('CI database target must be a local *_test database')"
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium firefox webkit
+      - id: baseline
+        name: Generate candidate PNGs with deterministic fixtures
+        run: pnpm test:browser --update-snapshots=changed
+      - id: stage
+        name: Stage PNGs and source manifest
+        run: node scripts/ci-baseline-candidates.mjs
+      - name: Upload baseline candidates for review
+        if: "!cancelled() && steps.stage.outcome == 'success'"
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: visual-baseline-candidates-${{ github.run_attempt }}
+          path: .local/ci-artifacts/visual-baselines
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+      - name: Write sanitized job summary
+        if: always()
+        env:
+          CI_STEPS: ${{ toJSON(steps) }}
+        run: node scripts/ci-job-summary.mjs visual-baselines
+      - name: Upload job summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: visual-baselines-summary-${{ runner.os }}-${{ github.run_attempt }}
+          path: .local/ci-summary/visual-baselines.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+    concurrency:
+      group: visual-baselines-${{ github.ref }}
+      cancel-in-progress: true
