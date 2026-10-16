@@ -1,13 +1,24 @@
 .page {
   display: grid;
   min-inline-size: 0;
-  gap: var(--space-8);
+  gap: var(--space-5);
   max-inline-size: 70rem;
 }
 
 .accountSurface {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-4);
+}
+
+.profileLayout {
+  display: grid;
+  min-inline-size: 0;
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.passwordPanel {
+  max-inline-size: 42rem;
 }
 
 .sessionControls {
@@ -70,11 +81,10 @@
 .emptyState,
 .loadingCard {
   min-inline-size: 0;
-  padding: var(--space-6);
+  padding: var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .panel,
@@ -85,7 +95,7 @@
 
 .panel {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .pageHeader h1 {
@@ -135,6 +145,10 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+}
+
+.formActions {
+  padding-block-start: var(--space-2);
 }
 
 .formGrid {
@@ -209,6 +223,21 @@
 
 .card {
   block-size: 100%;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+}
+
+.card h2 {
+  font-size: var(--font-size-card-title);
+  line-height: var(--line-height-card-title);
+}
+
+.cardBody {
+  align-content: space-between;
+}
+
+.cardActions {
+  margin-block-start: var(--space-1);
 }
 
 .cardHeader {
@@ -281,10 +310,22 @@
 }
 
 @media (min-width: 60rem) {
+  .profileLayout {
+    grid-template-columns: minmax(0, 7fr) minmax(18rem, 5fr);
+  }
+
+  .profileLayout .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .profileLayout .formGrid {
+    grid-template-columns: 1fr;
+  }
+
   .panel,
   .emptyState,
   .loadingCard {
-    padding: var(--space-8);
+    padding: var(--space-6);
   }
 }
 

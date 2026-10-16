@@ -1,5 +1,5 @@
 import type { SyntheticEvent } from 'react';
-import { Button } from '@/components/ui';
+import { DisclosureSummary, Button } from '@/components/ui';
 import type {
   BackofficeOrderDetail,
   BackofficeOrderLocation,
@@ -47,9 +47,9 @@ export function OrderActionPanel({
           />
           {selectedAction === null ? null : (
             <details className={styles.actionDisclosure} key={selectedAction}>
-              <summary>
+              <DisclosureSummary>
                 <span>Chi tiết {orderActionLabel(selectedAction).toLocaleLowerCase('vi-VN')}</span>
-              </summary>
+              </DisclosureSummary>
               <form
                 aria-busy={busy !== null || undefined}
                 className={styles.actionForm}

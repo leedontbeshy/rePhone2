@@ -9,7 +9,6 @@
   border: var(--border-strong);
   border-radius: var(--radius-media);
   background: linear-gradient(155deg, var(--color-studio-cyan), var(--color-surface) 65%);
-  box-shadow: var(--shadow-hover);
   color: var(--color-ink);
   text-decoration: none;
 }
@@ -39,7 +38,6 @@
   border: var(--border-default);
   border-radius: var(--radius-panel);
   object-fit: cover;
-  box-shadow: var(--shadow-raised);
 }
 .action {
   min-height: var(--control-height);

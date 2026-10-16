@@ -5,7 +5,6 @@
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .section > h2 {
@@ -23,7 +22,7 @@
 }
 
 .groups {
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .group {
@@ -31,7 +30,7 @@
 }
 
 .group + .group {
-  padding-block-start: var(--space-5);
+  padding-block-start: var(--space-4);
   border-block-start: var(--border-default);
 }
 

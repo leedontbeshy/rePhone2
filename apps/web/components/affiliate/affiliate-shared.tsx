@@ -28,10 +28,7 @@ export function Form({
   }
   return (
     <form className={styles.form} onSubmit={onSubmit}>
-      <fieldset
-        disabled={busy}
-        style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 16 }}
-      >
+      <fieldset disabled={busy} className={styles.formFields}>
         {children}
         <div>
           <Button type="submit" loading={busy}>
@@ -183,7 +180,7 @@ export function PayoutHistory({ dashboard }: { dashboard: Row }) {
     <section className={styles.card}>
       <h2>Lịch sử rút tiền</h2>
       {rows(dashboard['payouts']).map((p) => (
-        <div className={styles.card} key={text(p['id'])}>
+        <div className={styles.payoutRecord} key={text(p['id'])}>
           <div className={styles.actions}>
             <strong>{currency(p['amount'])}</strong>
             <Status value={p['status']} />

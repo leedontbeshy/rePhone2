@@ -31,9 +31,6 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
 }
-.filterButton {
-  box-shadow: var(--shadow-raised);
-}
 .filterButton[aria-pressed='true'],
 .filterButton[data-active='true'],
 .option[aria-pressed='true'],
@@ -84,6 +81,7 @@
 }
 .search input {
   min-width: 0;
+  min-height: var(--control-height);
   width: 100%;
   border: var(--border-strong);
   border-radius: var(--radius-control);
@@ -97,8 +95,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
   border-top: var(--border-default);
 }
 .sortRow > span,
@@ -128,6 +126,7 @@
   }
   .search {
     flex-basis: 100%;
+    order: -1;
   }
   .sortRow {
     gap: var(--space-2);

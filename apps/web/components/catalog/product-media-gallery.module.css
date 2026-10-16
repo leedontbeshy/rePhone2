@@ -5,7 +5,7 @@
   border: var(--border-default);
   border-radius: var(--radius-media);
   background: var(--color-surface);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-raised);
 }
 
 .galleryLabel {
@@ -19,7 +19,6 @@
   border-radius: var(--radius-small);
   color: var(--color-on-primary);
   background: var(--color-primary-hover);
-  box-shadow: var(--shadow-raised);
   font-size: var(--font-size-label);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-label);

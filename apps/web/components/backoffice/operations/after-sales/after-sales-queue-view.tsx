@@ -17,6 +17,7 @@ import {
 } from '../queue-read-model';
 import { OperationsShell } from '../operations-shell';
 import {
+  DisclosureSummary,
   Button,
   ErrorSummary,
   InlineAlert,
@@ -253,7 +254,7 @@ export function AfterSalesQueueView() {
               className={styles.advancedFilters}
               open={draft.createdFrom !== '' || draft.createdTo !== ''}
             >
-              <summary>Thêm khoảng thời gian</summary>
+              <DisclosureSummary>Thêm khoảng thời gian</DisclosureSummary>
               <div className={styles.advancedFields}>
                 <Input
                   error={filterErrors.createdFrom}

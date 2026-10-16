@@ -1,11 +1,24 @@
+.page {
+  display: grid;
+  min-inline-size: 0;
+  align-content: start;
+  gap: var(--space-5);
+}
+
+.page > header,
+.page > .notice,
+.page > .refreshStatus {
+  margin-block-end: 0;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
-  margin-block-end: var(--space-5);
+  align-items: end;
   padding: var(--space-4);
   border: var(--border-default);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-panel);
   background: var(--color-surface);
 }
 .filters label {
@@ -36,8 +49,8 @@
   min-inline-size: 0;
   grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.1fr);
   align-items: center;
-  gap: var(--space-5);
-  padding: var(--space-5) var(--space-6);
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
 }
 .row > * {
   min-inline-size: 0;
@@ -92,7 +105,7 @@
 .stack {
   display: grid;
   min-inline-size: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .paymentJump {
@@ -315,7 +328,7 @@
 .loadingActions {
   display: grid;
   align-content: start;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 .loadingPanelRows {
   display: grid;

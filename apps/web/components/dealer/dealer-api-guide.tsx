@@ -7,7 +7,7 @@ import {
   ArrowRightIcon as ArrowRight,
   ShieldCheckIcon as ShieldCheck,
 } from '@phosphor-icons/react';
-import { Button } from '@/components/ui';
+import { DisclosureSummary, Button } from '@/components/ui';
 import { dealerApiGuidePortalUrl } from '@/lib/dealer-api-guide-config';
 import { DealerCode, DealerWorkspaceHeader } from './dealer-workspace';
 import { DealerApiReference } from './dealer-api-reference';
@@ -579,7 +579,9 @@ const { order, replayed } = await rephone('/dealer/orders', command, idempotency
               minh; bạn thực hiện hoàn tiền cho khách theo giao dịch bán lẻ.
             </p>
             <details className={styles.profileDisclosure}>
-              <summary>Thử theo dõi thanh toán và giao hàng trong Sandbox</summary>
+              <DisclosureSummary>
+                Thử theo dõi thanh toán và giao hàng trong Sandbox
+              </DisclosureSummary>
               <p>
                 Tạo một đơn thử và gửi mã đơn cho rePhone khi cần hỗ trợ mô phỏng các tình huống như
                 đã thanh toán, giao thành công, giao thất bại hoặc hoàn tiền. Sau khi trạng thái

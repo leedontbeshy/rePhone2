@@ -46,12 +46,20 @@
 }
 
 .filters {
-  gap: var(--space-4);
-  padding: var(--space-5);
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   box-shadow: var(--shadow-raised);
+}
+
+.filterControls {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
 }
 
 .filterGrid,
@@ -62,6 +70,7 @@
 }
 
 .filterGrid {
+  flex: 1 1 38rem;
   grid-template-columns: minmax(0, 1.55fr) repeat(2, minmax(0, 0.72fr));
 }
 
@@ -71,6 +80,7 @@
 
 .advancedFilters {
   border-block-start: var(--border-default);
+  padding-block-start: var(--space-3);
 }
 
 .advancedFilters summary {
@@ -82,6 +92,10 @@
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
+}
+
+.filterControls .filterActions {
+  margin-inline-start: auto;
 }
 
 .advancedGrid {

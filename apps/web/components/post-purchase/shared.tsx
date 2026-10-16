@@ -94,8 +94,11 @@ export function DetailPanel({
   );
 }
 
-export function DetailGrid({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className={styles.detailGrid}>{children}</div>;
+export function DetailGrid({
+  children,
+  className,
+}: Readonly<{ children: ReactNode; className?: string | undefined }>) {
+  return <div className={[styles.detailGrid, className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
 export function ProductTextSummary({

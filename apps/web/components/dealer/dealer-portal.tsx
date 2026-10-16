@@ -14,7 +14,7 @@ import { DealerCatalog } from './dealer-catalog';
 import { DealerWorkspaceHeader, DealerEnvironmentPanel, DealerCode } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { PartnerLanding } from '@/components/partners/partner-landing';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerApi,
   dealerDate,
@@ -506,7 +506,7 @@ function DealerProfilePanel({
                 </div>
                 {!bank['emailConfirmedAt'] && (
                   <details className={styles.profileDisclosure}>
-                    <summary>Gửi lại email xác nhận</summary>
+                    <DisclosureSummary>Gửi lại email xác nhận</DisclosureSummary>
                     <p className={styles.muted}>
                       Email được gửi tới địa chỉ đăng nhập, không phải email hỗ trợ của cửa hàng.
                       Liên kết mới thay thế liên kết cũ và có hiệu lực 30 phút.
@@ -533,7 +533,7 @@ function DealerProfilePanel({
             ))}
           {dealerRows(profile['bankAccounts']).some((bank) => Boolean(bank['disabledAt'])) && (
             <details className={styles.profileDisclosure}>
-              <summary>Tài khoản đã ngừng sử dụng</summary>
+              <DisclosureSummary>Tài khoản đã ngừng sử dụng</DisclosureSummary>
               {dealerRows(profile['bankAccounts'])
                 .filter((bank) => Boolean(bank['disabledAt']))
                 .map((bank) => (
@@ -560,7 +560,7 @@ function DealerProfilePanel({
             />
           )}
           <details>
-            <summary>Thêm hoặc thay tài khoản nhận hoàn</summary>
+            <DisclosureSummary>Thêm hoặc thay tài khoản nhận hoàn</DisclosureSummary>
             <p className={styles.muted}>
               Yêu cầu cần xác nhận qua email đăng nhập và được quản trị viên kiểm tra. Tài khoản
               thay thế có thời gian chờ 24 giờ. Khoản hoàn đang xử lý giữ nguyên tài khoản đã chốt.
@@ -643,7 +643,7 @@ function DealerCase({
       )}
       {row['status'] === 'REQUESTED' && (
         <details>
-          <summary>Hủy yêu cầu</summary>
+          <DisclosureSummary>Hủy yêu cầu</DisclosureSummary>
           <DealerForm
             fields={[{ name: 'reason', label: 'Lý do' }]}
             submit="Hủy yêu cầu hậu mãi"
@@ -849,10 +849,10 @@ function DealerIntegration({
             </div>
             {dealerRows(endpoint['deliveries']).map((delivery) => (
               <details key={dealerText(delivery['id'])}>
-                <summary>
+                <DisclosureSummary>
                   {dealerStatus(delivery['status'])} · {dealerDate(delivery['dueAt'])} · HTTP{' '}
                   {dealerText(delivery['lastStatusCode']) || '—'}
-                </summary>
+                </DisclosureSummary>
                 <p>
                   Số lần gửi: {dealerText(delivery['attempts'])} ·{' '}
                   {dealerText(delivery['lastError'])}

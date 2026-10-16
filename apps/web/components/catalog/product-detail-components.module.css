@@ -38,7 +38,6 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .specSection h2 {
@@ -65,12 +64,11 @@
 }
 
 .cards > div {
-  min-height: 5.5rem;
-  padding: var(--space-4);
+  min-height: 5rem;
+  padding: var(--space-3);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .rows > div {

@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import { CaretDownIcon } from '@phosphor-icons/react/dist/ssr/CaretDown';
 import { classNames } from './class-names';
 import { formatVnd } from './money';
 import type { VndAmount } from './money';
@@ -54,4 +55,15 @@ export type DividerProps = HTMLAttributes<HTMLHRElement>;
 
 export function Divider({ className, ...props }: DividerProps) {
   return <hr {...props} className={classNames(styles.divider, className)} />;
+}
+
+export type DisclosureSummaryProps = HTMLAttributes<HTMLElement>;
+
+export function DisclosureSummary({ children, className, ...props }: DisclosureSummaryProps) {
+  return (
+    <summary {...props} className={classNames(styles.disclosureSummary, className)}>
+      <span className={styles.disclosureContent}>{children}</span>
+      <CaretDownIcon aria-hidden="true" className={styles.disclosureIcon} size={18} />
+    </summary>
+  );
 }

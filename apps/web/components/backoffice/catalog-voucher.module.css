@@ -1,7 +1,7 @@
 .surface {
   display: grid;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .actor {

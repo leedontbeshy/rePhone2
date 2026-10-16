@@ -11,7 +11,7 @@ import {
 import { useAuth } from '@/app/auth-provider';
 import { PartnerLanding } from '@/components/partners/partner-landing';
 import { useAffiliateMembership } from './affiliate-membership';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import { affiliateApi, currency, date, record, rows, text, type Row } from '@/lib/affiliate-api';
 import {
   CommissionTable,
@@ -487,7 +487,7 @@ function Portal() {
                         </div>
                       ))}
                       <details>
-                        <summary>Thêm hoặc thay đổi tài khoản</summary>
+                        <DisclosureSummary>Thêm hoặc thay đổi tài khoản</DisclosureSummary>
                         <Form
                           busy={busy}
                           label="Lưu và gửi email xác nhận"

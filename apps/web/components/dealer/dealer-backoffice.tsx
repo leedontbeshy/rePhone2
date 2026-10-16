@@ -17,7 +17,7 @@ import {
 import { DealerWorkspaceHeader, DealerEnvironmentPanel } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerApi,
   dealerDate,
@@ -367,7 +367,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
             </div>
           </section>
           <details className={styles.card}>
-            <summary>Báo phí giao hàng theo địa chỉ</summary>
+            <DisclosureSummary>Báo phí giao hàng theo địa chỉ</DisclosureSummary>
             <ShippingQuote api={api} done={changed} />
           </details>
         </>
@@ -386,7 +386,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
           </div>
           {admin && (
             <details className={styles.card}>
-              <summary>Tiếp nhận thay đại lý ngừng hoạt động</summary>
+              <DisclosureSummary>Tiếp nhận thay đại lý ngừng hoạt động</DisclosureSummary>
               <DealerForm
                 fields={[
                   { name: 'orderItemId', label: 'Mã dòng máy trong đơn' },
@@ -447,7 +447,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       {tab === 'refunds' && (
         <>
           <details className={styles.card}>
-            <summary>Tạo yêu cầu hoàn tiền</summary>
+            <DisclosureSummary>Tạo yêu cầu hoàn tiền</DisclosureSummary>
             <DealerForm
               fields={[
                 { name: 'dealerId', label: 'Mã đại lý' },
@@ -658,7 +658,7 @@ function ProofReview({
         proof={dealerText(row['id'])}
       />
       <details>
-        <summary>Từ chối chứng từ</summary>
+        <DisclosureSummary>Từ chối chứng từ</DisclosureSummary>
         <DealerForm
           fields={[reason]}
           submit="Từ chối và tiếp tục thời hạn còn lại"
@@ -703,7 +703,7 @@ function ReceiptRow({
           </span>
           {admin && (
             <details>
-              <summary>Đảo phân bổ ghi nhầm</summary>
+              <DisclosureSummary>Đảo phân bổ ghi nhầm</DisclosureSummary>
               <DealerForm
                 fields={[reason]}
                 submit="Đảo phân bổ và giữ đơn để đối soát"
@@ -736,7 +736,7 @@ function ReceiptRow({
       )}
       {admin && (
         <details>
-          <summary>Ghi bút toán điều chỉnh</summary>
+          <DisclosureSummary>Ghi bút toán điều chỉnh</DisclosureSummary>
           <DealerForm
             fields={[{ name: 'amount', label: 'Số tiền điều chỉnh có dấu (ví dụ -50000)' }, reason]}
             submit="Ghi điều chỉnh / mở đối soát"
@@ -858,7 +858,7 @@ function RefundRow({
         row['transferState'] === 'NOT_SENT' &&
         ['REQUESTED', 'PROCESSING'].includes(dealerText(row['status'])) && (
           <details>
-            <summary>Thay tài khoản đã khóa cho khoản chưa chuyển</summary>
+            <DisclosureSummary>Thay tài khoản đã khóa cho khoản chưa chuyển</DisclosureSummary>
             <DealerForm
               fields={[{ name: 'id', label: 'Mã tài khoản mới đã xác minh' }, reason]}
               submit="Thay tài khoản và giữ chi trả để kiểm tra"

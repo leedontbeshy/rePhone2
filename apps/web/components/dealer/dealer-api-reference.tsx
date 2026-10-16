@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Button, Input, Select } from '@/components/ui';
+import { DisclosureSummary, Button, Input, Select } from '@/components/ui';
 import { classNames } from '@/components/ui/class-names';
 import {
   DEALER_API_ENDPOINTS,
@@ -205,13 +205,13 @@ export function DealerApiReference() {
                       else detailRefs.current.delete(endpoint.id);
                     }}
                   >
-                    <summary className={styles.apiEndpointSummary}>
+                    <DisclosureSummary className={styles.apiEndpointSummary}>
                       <span className={styles.apiMethod}>{endpoint.method}</span>
                       <span className={styles.apiEndpointSummaryText}>
                         <strong>{endpoint.title}</strong>
                         <code>{endpoint.path}</code>
                       </span>
-                    </summary>
+                    </DisclosureSummary>
                     <div className={styles.apiEndpointBody}>
                       <p>{endpoint.description}</p>
                       <dl className={styles.apiEndpointMeta}>

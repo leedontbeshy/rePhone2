@@ -4,8 +4,27 @@ import { Button } from './button';
 import { Checkbox, FilePicker, Input, RadioCard, RadioGroup, Select, Textarea } from './field';
 import { ErrorSummary } from './feedback';
 import { Link } from './link';
+import { DisclosureSummary } from './display';
 
 describe('frontend primitive accessibility contracts', () => {
+  it('keeps disclosures native and the caret decorative', () => {
+    const markup = renderToStaticMarkup(
+      <details open>
+        <DisclosureSummary className="profile-summary" aria-describedby="profile-hint">
+          Quản lý hồ sơ
+        </DisclosureSummary>
+        <p id="profile-hint">Các thao tác quản trị</p>
+      </details>,
+    );
+
+    expect(markup).toContain('<details open="">');
+    expect(markup).toMatch(/<summary[^>]*aria-describedby="profile-hint"/);
+    expect(markup).toContain('profile-summary');
+    expect(markup).toContain('Quản lý hồ sơ');
+    expect(markup).toMatch(/<svg[^>]*aria-hidden="true"/);
+    expect(markup).not.toContain('role="button"');
+  });
+
   it('announces loading buttons without exposing duplicate spinner content', () => {
     const markup = renderToStaticMarkup(<Button loading>Đặt hàng</Button>);
 

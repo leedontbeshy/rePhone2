@@ -6,11 +6,5 @@
 
 .content {
   min-inline-size: 0;
-  padding-block-start: var(--space-8);
-}
-
-@media (min-width: 60rem) {
-  .content {
-    padding-block-start: var(--space-10);
-  }
+  padding-block-start: var(--space-6);
 }

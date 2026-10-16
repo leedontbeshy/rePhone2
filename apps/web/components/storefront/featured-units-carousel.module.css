@@ -4,14 +4,13 @@
   border: var(--border-strong);
   border-radius: var(--radius-media);
   background: linear-gradient(135deg, var(--color-studio-cyan), var(--color-surface));
-  box-shadow: var(--shadow-raised);
 }
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-4);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
 .header h2,

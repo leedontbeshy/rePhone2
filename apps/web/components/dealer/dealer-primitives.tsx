@@ -1,6 +1,6 @@
 'use client';
 import { useId, useState, type SyntheticEvent, type ReactNode } from 'react';
-import { Button, InlineAlert, Input, Select, Textarea } from '@/components/ui';
+import { Button, InlineAlert, Input, Select, Textarea, type ButtonVariant } from '@/components/ui';
 import type { DealerApi, DealerRecord } from '@/lib/dealer-api';
 import { DealerApiError, dealerRecord, dealerText } from '@/lib/dealer-api';
 import styles from './dealer.module.css';
@@ -34,6 +34,7 @@ export function DealerForm({
   onChange,
   fieldsClassName,
   disabled = false,
+  submitVariant = 'primary',
 }: {
   fields: DealerField[];
   submit: string;
@@ -42,6 +43,7 @@ export function DealerForm({
   onChange?: () => void;
   fieldsClassName?: string | undefined;
   disabled?: boolean;
+  submitVariant?: ButtonVariant;
 }) {
   const id = useId();
   const [busy, setBusy] = useState(false);
@@ -153,7 +155,7 @@ export function DealerForm({
         </InlineAlert>
       )}
       <div>
-        <Button type="submit" loading={busy} disabled={disabled}>
+        <Button type="submit" loading={busy} disabled={disabled} variant={submitVariant}>
           {submit}
         </Button>
       </div>

@@ -1,6 +1,6 @@
 .workspace {
   display: grid;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
   min-width: 0;
   max-width: 1320px;
@@ -13,7 +13,7 @@
   gap: 24px;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-8);
+  padding: var(--space-6);
   border: var(--border-default);
   border-radius: var(--radius-media);
   background: var(--color-studio-cyan);
@@ -79,11 +79,10 @@
   box-shadow: none;
 }
 .card {
-  padding: var(--space-6);
+  padding: var(--space-5);
   background: white;
   border: var(--border-default);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-raised);
   min-width: 0;
   display: grid;
   gap: 16px;
@@ -107,6 +106,9 @@
   color: var(--color-muted);
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
+}
+.card > p {
+  margin: 0;
 }
 .stats {
   display: grid;
@@ -192,7 +194,7 @@
 }
 .form {
   display: grid;
-  gap: 16px;
+  gap: var(--space-3);
 }
 .form label {
   display: grid;
@@ -237,15 +239,19 @@
 .form fieldset {
   min-width: 0;
 }
+.formFields {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
 .form input:not([type='checkbox']),
 .form select {
   height: 46px;
 }
 .card details {
-  padding: 16px;
-  border: 1px solid #dbe5eb;
-  border-radius: 12px;
-  background: #f8fafb;
+  min-width: 0;
 }
 .card summary {
   cursor: pointer;
@@ -254,7 +260,20 @@
   color: #244c60;
 }
 .card details[open] > summary {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-3);
+}
+.payoutRecord {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-default);
+  border-radius: var(--radius-control);
+}
+.payoutRecord p {
+  margin: 0;
+  font-size: var(--font-size-small);
+  overflow-wrap: anywhere;
 }
 .offerCard {
   border-top: 3px solid #9bd0dc;
@@ -458,7 +477,7 @@
   }
 }
 .backofficeWorkspace .hero {
-  padding: var(--space-6);
+  padding: var(--space-5);
   border-radius: var(--radius-panel);
 }
 .backofficeWorkspace .hero h1 {
@@ -522,10 +541,32 @@
   .backofficeWorkspace .card {
     padding: var(--space-4);
   }
+  .tabs {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-padding-inline: var(--space-2);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) var(--color-surface-subtle);
+  }
   .tabs button {
-    flex: 1 1 9rem;
+    flex: 0 0 auto;
     justify-content: center;
-    padding: var(--space-3);
+    min-height: var(--control-hit-target);
+    padding: var(--space-2) var(--space-3);
+    white-space: nowrap;
+  }
+  .tabs::-webkit-scrollbar {
+    height: 6px;
+  }
+  .tabs::-webkit-scrollbar-track {
+    background: var(--color-surface-subtle);
+  }
+  .tabs::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--color-border-strong);
   }
   .stat {
     padding: var(--space-4);

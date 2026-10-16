@@ -19,6 +19,7 @@ import {
 } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import {
+  DisclosureSummary,
   Button,
   InlineAlert,
   Input,
@@ -294,63 +295,85 @@ function OrderFilters({
 
   return (
     <form className={styles.filters} onSubmit={onSubmit}>
-      <div className={styles.filterGrid}>
-        <Input
-          containerClassName={styles.searchField ?? ''}
-          id="order-search"
-          label="Tìm đơn hàng"
-          maxLength={100}
-          placeholder="Mã đơn, tên, email hoặc số điện thoại"
-          value={draft.q}
-          onChange={(event) => {
-            setDraft((current) => ({ ...current, q: event.target.value }));
-          }}
-        />
-        <Select
-          id="order-fulfillment-type"
-          label="Cách nhận hàng"
-          value={draft.fulfillmentType}
-          onChange={(event) => {
-            setDraft((current) => ({
-              ...current,
-              fulfillmentType: event.target.value as OrderFilterDraft['fulfillmentType'],
-              pickupOverdue: event.target.value === 'SHIPPING' ? '' : current.pickupOverdue,
-              sortBy:
-                event.target.value === 'SHIPPING' && current.sortBy === 'pickupHoldUntil'
-                  ? 'placedAt'
-                  : current.sortBy,
-            }));
-          }}
-        >
-          <option value="">Tất cả</option>
-          <option value="PICKUP">Nhận tại cửa hàng</option>
-          <option value="SHIPPING">Giao tận nơi</option>
-        </Select>
-        <Select
-          id="order-status"
-          label="Trạng thái đơn"
-          value={draft.status}
-          onChange={(event) => {
-            setDraft((current) => ({
-              ...current,
-              status: event.target.value as OrderFilterDraft['status'],
-            }));
-          }}
-        >
-          <option value="">Tất cả</option>
-          <option value="PLACED">Đã đặt hàng</option>
-          <option value="CONFIRMED">Đã xác nhận</option>
-          <option value="PROCESSING">Đang xử lý</option>
-          <option value="COMPLETED">Đã hoàn tất</option>
-          <option value="CANCELLED">Đã hủy</option>
-        </Select>
+      <div className={styles.filterControls}>
+        <div className={styles.filterGrid}>
+          <Input
+            containerClassName={styles.searchField ?? ''}
+            id="order-search"
+            label="Tìm đơn hàng"
+            maxLength={100}
+            placeholder="Mã đơn, tên, email hoặc số điện thoại"
+            value={draft.q}
+            onChange={(event) => {
+              setDraft((current) => ({ ...current, q: event.target.value }));
+            }}
+          />
+          <Select
+            id="order-fulfillment-type"
+            label="Cách nhận hàng"
+            value={draft.fulfillmentType}
+            onChange={(event) => {
+              setDraft((current) => ({
+                ...current,
+                fulfillmentType: event.target.value as OrderFilterDraft['fulfillmentType'],
+                pickupOverdue: event.target.value === 'SHIPPING' ? '' : current.pickupOverdue,
+                sortBy:
+                  event.target.value === 'SHIPPING' && current.sortBy === 'pickupHoldUntil'
+                    ? 'placedAt'
+                    : current.sortBy,
+              }));
+            }}
+          >
+            <option value="">Tất cả</option>
+            <option value="PICKUP">Nhận tại cửa hàng</option>
+            <option value="SHIPPING">Giao tận nơi</option>
+          </Select>
+          <Select
+            id="order-status"
+            label="Trạng thái đơn"
+            value={draft.status}
+            onChange={(event) => {
+              setDraft((current) => ({
+                ...current,
+                status: event.target.value as OrderFilterDraft['status'],
+              }));
+            }}
+          >
+            <option value="">Tất cả</option>
+            <option value="PLACED">Đã đặt hàng</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="PROCESSING">Đang xử lý</option>
+            <option value="COMPLETED">Đã hoàn tất</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </Select>
+        </div>
+
+        <div className={styles.filterActions}>
+          <Button
+            disabled={loading}
+            id="order-filter-submit"
+            iconLeading={<MagnifyingGlassIcon aria-hidden="true" size={18} />}
+            type="submit"
+          >
+            Lọc đơn hàng
+          </Button>
+          <Button
+            disabled={loading}
+            id="order-filter-reset"
+            type="button"
+            variant="secondary"
+            onClick={onReset}
+          >
+            Đặt lại
+          </Button>
+        </div>
       </div>
 
       <details className={styles.advancedFilters} open={hasAdvancedFilters || undefined}>
-        <summary>
+        <DisclosureSummary>
           <FunnelSimpleIcon aria-hidden="true" size={18} />
           Bộ lọc nâng cao
-        </summary>
+        </DisclosureSummary>
         <div className={styles.advancedGrid}>
           <Select
             id="order-fulfillment-status"
@@ -441,26 +464,6 @@ function OrderFilters({
           </Select>
         </div>
       </details>
-
-      <div className={styles.filterActions}>
-        <Button
-          disabled={loading}
-          id="order-filter-submit"
-          iconLeading={<MagnifyingGlassIcon aria-hidden="true" size={18} />}
-          type="submit"
-        >
-          Lọc đơn hàng
-        </Button>
-        <Button
-          disabled={loading}
-          id="order-filter-reset"
-          type="button"
-          variant="secondary"
-          onClick={onReset}
-        >
-          Đặt lại
-        </Button>
-      </div>
     </form>
   );
 }

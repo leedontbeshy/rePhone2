@@ -66,7 +66,6 @@
   justify-content: center;
   padding: var(--space-2);
   border: var(--border-default);
-  box-shadow: var(--shadow-raised);
   border-radius: var(--radius-pill);
   color: var(--color-ink);
   background: var(--color-surface-subtle);
@@ -133,12 +132,11 @@
   margin-bottom: var(--space-2);
 }
 .family {
-  padding: var(--space-6);
+  padding: var(--space-5);
   margin-top: var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-media);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 .family h3 {
   font-size: var(--font-size-section-title);
@@ -158,7 +156,6 @@
   background: var(--color-surface);
   font-weight: var(--font-weight-semibold);
   text-decoration: none;
-  box-shadow: var(--shadow-raised);
 }
 @media (min-width: 90rem) {
   .layout {

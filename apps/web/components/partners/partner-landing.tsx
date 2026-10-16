@@ -1,5 +1,7 @@
 'use client';
 
+import { DisclosureSummary } from '@/components/ui';
+
 import Link from 'next/link';
 import { ArrowRightIcon, ArrowUpRightIcon } from '@phosphor-icons/react';
 import styles from './partner.module.css';
@@ -170,7 +172,7 @@ export function PartnerLanding({
         <div className={styles.faqs}>
           {faqs.map(([question, answer]) => (
             <details key={question}>
-              <summary>{question}</summary>
+              <DisclosureSummary>{question}</DisclosureSummary>
               <p>{answer}</p>
             </details>
           ))}

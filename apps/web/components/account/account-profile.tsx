@@ -222,8 +222,7 @@ function ProfileEditor({
   }
 
   return (
-    <>
-      <AccountSummary account={account} />
+    <div className={styles.profileLayout}>
       <section className={styles.panel} aria-labelledby="profile-form-title">
         <div className={styles.sectionHeading}>
           <div>
@@ -285,7 +284,8 @@ function ProfileEditor({
           </div>
         </form>
       </section>
-    </>
+      <AccountSummary account={account} />
+    </div>
   );
 }
 
