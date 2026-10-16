@@ -18,6 +18,7 @@ import {
   inventoryLifecyclePresentation,
 } from '@/components/backoffice';
 import {
+  DisclosureSummary,
   Button,
   FilePicker,
   InlineAlert,
@@ -780,7 +781,7 @@ function IdentifierSection({
       )}
 
       <details className={styles.correctionPanel}>
-        <summary>Điều chỉnh mã bị nhập sai</summary>
+        <DisclosureSummary>Điều chỉnh mã bị nhập sai</DisclosureSummary>
         <p>Chỉ nhập mã mới cần thay thế. Hệ thống không điền lại mã đầy đủ hiện tại.</p>
         <form className={styles.formGrid} onSubmit={(event) => void submit(event)}>
           <Input

@@ -1,7 +1,13 @@
 export { Button, IconButton } from './button';
 export type { ButtonProps, ButtonSize, ButtonVariant, IconButtonProps } from './button';
-export { Badge, Divider, Price, StatusChip } from './display';
-export type { BadgeProps, DividerProps, PriceProps, StatusChipProps } from './display';
+export { Badge, DisclosureSummary, Divider, Price, StatusChip } from './display';
+export type {
+  BadgeProps,
+  DisclosureSummaryProps,
+  DividerProps,
+  PriceProps,
+  StatusChipProps,
+} from './display';
 export {
   Checkbox,
   Field,

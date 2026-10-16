@@ -1,9 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../database/prisma.service.js';
-import type { StockLevelListQueryDto, StockMovementListQueryDto } from './stock.dto.js';
+import type {
+  StockLevelListQueryDto,
+  StockMovementListQueryDto,
+  StockPaginationDto,
+} from './stock.dto.js';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
+
+const stockVariantSelect = {
+  id: true,
+  sku: true,
+  displayName: true,
+  status: true,
+  product: { select: { id: true, name: true, slug: true, status: true } },
+} satisfies Prisma.ProductVariantSelect;
 
 const stockLevelInclude = {
   variant: { include: { product: true } },
@@ -18,6 +30,9 @@ const stockMovementInclude = {
 } satisfies Prisma.StockMovementInclude;
 
 export type StockLevelRecord = Prisma.StockLevelGetPayload<{ include: typeof stockLevelInclude }>;
+export type StockVariantRecord = Prisma.ProductVariantGetPayload<{
+  select: typeof stockVariantSelect;
+}>;
 export type StockMovementRecord = Prisma.StockMovementGetPayload<{
   include: typeof stockMovementInclude;
 }>;
@@ -25,6 +40,31 @@ export type StockMovementRecord = Prisma.StockMovementGetPayload<{
 @Injectable()
 export class StockRepository {
   public constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  public async listVariants(query: StockPaginationDto) {
+    const where: Prisma.ProductVariantWhereInput = {
+      inventoryMode: 'QUANTITY',
+      status: { not: 'ARCHIVED' },
+      archivedAt: null,
+      product: { type: 'ACCESSORY', status: { not: 'ARCHIVED' }, archivedAt: null },
+    };
+    const [items, totalItems] = await Promise.all([
+      this.prisma.productVariant.findMany({
+        where,
+        select: stockVariantSelect,
+        orderBy: [
+          { product: { name: 'asc' } },
+          { displayName: 'asc' },
+          { sku: 'asc' },
+          { id: 'asc' },
+        ],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.productVariant.count({ where }),
+    ]);
+    return { items, totalItems };
+  }
 
   public async listLevels(query: StockLevelListQueryDto) {
     const where: Prisma.StockLevelWhereInput = {

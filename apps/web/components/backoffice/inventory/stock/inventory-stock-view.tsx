@@ -60,6 +60,9 @@ export interface InventoryStockViewProps {
   readonly onQueryChange: (overrides: StockLevelQueryOverrides) => void;
   readonly pagination: InventoryStockPagination;
   readonly query: StockLevelQueryState;
+  readonly receiveVariants?: readonly StockVariantOption[];
+  readonly receiveVariantsError?: string | null;
+  readonly receiveVariantsLoading?: boolean;
   readonly variants: readonly StockVariantOption[];
 }
 
@@ -75,6 +78,9 @@ export function InventoryStockView({
   pagination,
   query,
   variants,
+  receiveVariants = variants,
+  receiveVariantsError = null,
+  receiveVariantsLoading = false,
 }: InventoryStockViewProps) {
   const [activeCommand, setActiveCommand] = useState<StockCommandKind | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -156,13 +162,14 @@ export function InventoryStockView({
         </div>
         <div className={styles.commandActions}>
           <Button
+            disabled={receiveVariantsLoading || receiveVariantsError !== null}
             iconLeading={<PackageIcon aria-hidden="true" size={18} />}
             size="compact"
             onClick={() => {
               openCommand('receive');
             }}
           >
-            Nhận hàng
+            {receiveVariantsLoading ? 'Đang tải phụ kiện…' : 'Nhận hàng'}
           </Button>
           <Button
             iconLeading={<ArrowsLeftRightIcon aria-hidden="true" size={18} />}
@@ -196,6 +203,12 @@ export function InventoryStockView({
           </Button>
         </div>
       </section>
+
+      {receiveVariantsError === null ? null : (
+        <InlineAlert title="Chưa tải được danh sách nhận hàng" tone="danger">
+          {receiveVariantsError} Hãy tải lại trang để thử lại.
+        </InlineAlert>
+      )}
 
       <section className={styles.filters} aria-label="Bộ lọc tồn phụ kiện">
         <Select
@@ -291,7 +304,7 @@ export function InventoryStockView({
       <StockCommandDialog
         command={activeCommand}
         locations={locations}
-        variants={variants}
+        variants={activeCommand === 'receive' ? receiveVariants : variants}
         {...(query.locationId === undefined ? {} : { defaultLocationId: query.locationId })}
         {...(query.variantId === undefined ? {} : { defaultVariantId: query.variantId })}
         onClose={() => {

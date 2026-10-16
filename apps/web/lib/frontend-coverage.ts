@@ -994,6 +994,15 @@ export const FRONTEND_OPERATION_COVERAGE = [
     'browser:operations-lifecycle',
   ],
   [
+    'listBackofficeStockVariants',
+    'GET',
+    '/api/v1/backoffice/stock-variants',
+    'EMPLOYEE hoặc ADMIN Bearer',
+    '/backoffice/inventory/stock',
+    'Đọc lựa chọn nhận hàng, gồm phụ kiện chưa có tồn; loading, empty, error',
+    'browser:inventory-stock',
+  ],
+  [
     'listBackofficeStockLevels',
     'GET',
     '/api/v1/backoffice/stock-levels',

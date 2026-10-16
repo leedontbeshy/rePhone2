@@ -195,7 +195,6 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .emptyState h3,

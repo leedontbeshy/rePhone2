@@ -11,13 +11,12 @@ import {
   ShieldCheckIcon as ShieldCheck,
   TagIcon as Tag,
   WarningCircleIcon as WarningCircle,
-  FlaskIcon as Flask,
   ArrowClockwiseIcon as ArrowClockwise,
 } from '@phosphor-icons/react';
-import { DealerWorkspaceHeader, DealerEnvironmentPanel } from './dealer-workspace';
+import { DealerWorkspaceHeader } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerApi,
   dealerDate,
@@ -32,11 +31,7 @@ import {
 import { DealerEmpty, DealerForm, DealerUpload, type DealerField } from './dealer-primitives';
 import { DealerOrderView } from './dealer-order-view';
 import styles from './dealer.module.css';
-import {
-  DealerSimulation,
-  DealerReturnFees,
-  DealerAfterSalesOperations,
-} from './dealer-operations-extras';
+import { DealerReturnFees, DealerAfterSalesOperations } from './dealer-operations-extras';
 import { DealerProfileAdmin } from './dealer-profile-admin';
 import Link from 'next/link';
 
@@ -60,7 +55,6 @@ const tabs = [
   ['after-sales', 'Hậu mãi'],
   ['pricing', 'Giá & vận chuyển'],
   ['reconciliation', 'Sai lệch cần xử lý'],
-  ['sandbox', 'Sandbox'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 const tabIcons = {
@@ -72,7 +66,6 @@ const tabIcons = {
   'after-sales': ShieldCheck,
   pricing: Tag,
   reconciliation: WarningCircle,
-  sandbox: Flask,
 };
 const tabDescriptions: Record<Tab, string> = {
   profiles: 'Duyệt hồ sơ và quản lý đối tác bán hàng.',
@@ -83,7 +76,6 @@ const tabDescriptions: Record<Tab, string> = {
   'after-sales': 'Tiếp nhận bảo hành, đổi trả và theo dõi xử lý.',
   pricing: 'Thiết lập giá đại lý và phạm vi giao hàng.',
   reconciliation: 'Xử lý sai lệch tiền và các đơn cần đối soát.',
-  sandbox: 'Thử kết nối API với dữ liệu riêng trước khi vận hành thật.',
 };
 
 export function DealerBackoffice() {
@@ -120,10 +112,6 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       if (config['enabled'] !== true) {
         setRows([]);
         setSelected(null);
-        return;
-      }
-      if (tab === 'sandbox') {
-        setRows([]);
         return;
       }
       const value = await api.get(
@@ -229,7 +217,6 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
           </div>
         </div>
       )}
-      {tab === 'sandbox' && <DealerEnvironmentPanel configuration={configuration} admin={admin} />}
       {error && <InlineAlert tone="danger">{error}</InlineAlert>}
       {notice && <InlineAlert tone="success">{notice}</InlineAlert>}
       {tab === 'profiles' && !selected && (
@@ -306,12 +293,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       )}
       {tab === 'orders' && (
         <>
-          {selected && admin && (
-            <>
-              <DealerSimulation api={api} orderId={dealerText(selected['id'])} done={changed} />
-              <DealerReturnFees api={api} order={selected} done={changed} />
-            </>
-          )}
+          {selected && admin && <DealerReturnFees api={api} order={selected} done={changed} />}
           {selected && (
             <DealerOrderView
               key={dealerText(selected['id'])}
@@ -367,7 +349,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
             </div>
           </section>
           <details className={styles.card}>
-            <summary>Báo phí giao hàng theo địa chỉ</summary>
+            <DisclosureSummary>Báo phí giao hàng theo địa chỉ</DisclosureSummary>
             <ShippingQuote api={api} done={changed} />
           </details>
         </>
@@ -386,7 +368,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
           </div>
           {admin && (
             <details className={styles.card}>
-              <summary>Tiếp nhận thay đại lý ngừng hoạt động</summary>
+              <DisclosureSummary>Tiếp nhận thay đại lý ngừng hoạt động</DisclosureSummary>
               <DealerForm
                 fields={[
                   { name: 'orderItemId', label: 'Mã dòng máy trong đơn' },
@@ -447,7 +429,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       {tab === 'refunds' && (
         <>
           <details className={styles.card}>
-            <summary>Tạo yêu cầu hoàn tiền</summary>
+            <DisclosureSummary>Tạo yêu cầu hoàn tiền</DisclosureSummary>
             <DealerForm
               fields={[
                 { name: 'dealerId', label: 'Mã đại lý' },
@@ -539,7 +521,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
         </>
       )}
       {busy && <DealerEmpty>Đang tải…</DealerEmpty>}
-      {!busy && rows.length === 0 && tab !== 'pricing' && tab !== 'sandbox' && !error && (
+      {!busy && rows.length === 0 && tab !== 'pricing' && !error && (
         <DealerEmpty>Chưa có bản ghi trong mục này.</DealerEmpty>
       )}
       {['profiles', 'orders'].includes(tab) && !(tab === 'profiles' && selected) && (
@@ -658,7 +640,7 @@ function ProofReview({
         proof={dealerText(row['id'])}
       />
       <details>
-        <summary>Từ chối chứng từ</summary>
+        <DisclosureSummary>Từ chối chứng từ</DisclosureSummary>
         <DealerForm
           fields={[reason]}
           submit="Từ chối và tiếp tục thời hạn còn lại"
@@ -703,7 +685,7 @@ function ReceiptRow({
           </span>
           {admin && (
             <details>
-              <summary>Đảo phân bổ ghi nhầm</summary>
+              <DisclosureSummary>Đảo phân bổ ghi nhầm</DisclosureSummary>
               <DealerForm
                 fields={[reason]}
                 submit="Đảo phân bổ và giữ đơn để đối soát"
@@ -736,7 +718,7 @@ function ReceiptRow({
       )}
       {admin && (
         <details>
-          <summary>Ghi bút toán điều chỉnh</summary>
+          <DisclosureSummary>Ghi bút toán điều chỉnh</DisclosureSummary>
           <DealerForm
             fields={[{ name: 'amount', label: 'Số tiền điều chỉnh có dấu (ví dụ -50000)' }, reason]}
             submit="Ghi điều chỉnh / mở đối soát"
@@ -858,7 +840,7 @@ function RefundRow({
         row['transferState'] === 'NOT_SENT' &&
         ['REQUESTED', 'PROCESSING'].includes(dealerText(row['status'])) && (
           <details>
-            <summary>Thay tài khoản đã khóa cho khoản chưa chuyển</summary>
+            <DisclosureSummary>Thay tài khoản đã khóa cho khoản chưa chuyển</DisclosureSummary>
             <DealerForm
               fields={[{ name: 'id', label: 'Mã tài khoản mới đã xác minh' }, reason]}
               submit="Thay tài khoản và giữ chi trả để kiểm tra"

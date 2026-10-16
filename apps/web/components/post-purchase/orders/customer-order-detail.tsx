@@ -226,14 +226,14 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
     return <CustomerOrderDetailSkeleton />;
   if (notFound)
     return (
-      <section>
+      <section className={styles.page}>
         <PostPurchasePageHeader title="Chi tiết đơn hàng" />
         <SafeNotFoundState title="Không mở được đơn hàng" />
       </section>
     );
 
   return (
-    <section>
+    <section className={styles.page}>
       {!order ? (
         <PostPurchasePageHeader
           title="Chi tiết đơn hàng"
@@ -589,7 +589,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
 export function CustomerOrderDetailSkeleton() {
   return (
     <section
-      className={styles.detailLoading}
+      className={[styles.page, styles.detailLoading].join(' ')}
       aria-busy="true"
       aria-label="Đang tải chi tiết đơn hàng"
       role="status"

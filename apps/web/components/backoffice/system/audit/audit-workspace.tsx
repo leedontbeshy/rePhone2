@@ -16,7 +16,15 @@ import {
 } from 'react';
 import { useAuth } from '@/app/auth-provider';
 import { SystemAdminShell } from '@/components/backoffice';
-import { Button, ErrorSummary, InlineAlert, Input, Select, Skeleton } from '@/components/ui';
+import {
+  DisclosureSummary,
+  Button,
+  ErrorSummary,
+  InlineAlert,
+  Input,
+  Select,
+  Skeleton,
+} from '@/components/ui';
 import {
   getAuditLog,
   listAuditLogs,
@@ -443,14 +451,14 @@ function AuditFilters({
           setAdvancedOpen(event.currentTarget.open);
         }}
       >
-        <summary>
+        <DisclosureSummary>
           <span>Bộ lọc chi tiết</span>
           <small>
             {advancedFilterCount > 0
               ? `${String(advancedFilterCount)} điều kiện đang nhập`
               : 'Theo đối tượng, mã yêu cầu hoặc thời gian'}
           </small>
-        </summary>
+        </DisclosureSummary>
         <div className={styles.advancedGrid}>
           <Input
             error={errors.resourceType}
@@ -672,7 +680,7 @@ function AuditPayloadSection({
       ))}
       {value.fallbackJson === undefined ? null : (
         <details className={styles.payloadFallback}>
-          <summary>Dữ liệu kỹ thuật khác</summary>
+          <DisclosureSummary>Dữ liệu kỹ thuật khác</DisclosureSummary>
           <pre>{value.fallbackJson}</pre>
         </details>
       )}

@@ -8,13 +8,12 @@ import {
   PackageIcon as Package,
   ShieldCheckIcon as ShieldCheck,
   PlugsConnectedIcon as PlugsConnected,
-  FlaskIcon as Flask,
 } from '@phosphor-icons/react';
 import { DealerCatalog } from './dealer-catalog';
-import { DealerWorkspaceHeader, DealerEnvironmentPanel, DealerCode } from './dealer-workspace';
+import { DealerWorkspaceHeader, DealerCode } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { PartnerLanding } from '@/components/partners/partner-landing';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerApi,
   dealerDate,
@@ -38,7 +37,6 @@ const tabs = [
   ['orders', 'Đơn hàng'],
   ['after-sales', 'Hậu mãi'],
   ['integration', 'Kết nối website'],
-  ['sandbox', 'Sandbox'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 const tabIcons = {
@@ -47,7 +45,6 @@ const tabIcons = {
   orders: Package,
   'after-sales': ShieldCheck,
   integration: PlugsConnected,
-  sandbox: Flask,
 };
 
 export function DealerPortal() {
@@ -162,20 +159,18 @@ function PortalContent({ client }: { client: unknown }) {
       ) : configuration['enabled'] !== true ? (
         <div id="dang-ky">
           <DealerEmpty>
-            Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình thử nghiệm.
+            Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình đại lý.
           </DealerEmpty>
         </div>
       ) : (
         <>
+          {!profile && configuration['environment'] === 'TEST' && (
+            <InlineAlert tone="info">Dữ liệu phát triển — không chuyển tiền thật</InlineAlert>
+          )}
           {configuration['open'] !== true && (
             <InlineAlert tone="info">
               Cổng đại lý đang tạm đóng đăng ký và đặt hàng mới. Đơn đã tạo, thanh toán và hậu mãi
               vẫn được xử lý bình thường.
-            </InlineAlert>
-          )}
-          {configuration['environment'] === 'TEST' && (
-            <InlineAlert tone="info">
-              Đây là môi trường thử nghiệm. Không chuyển tiền thật theo thông tin tại đây.
             </InlineAlert>
           )}
           {profile && (
@@ -303,7 +298,6 @@ function PortalContent({ client }: { client: unknown }) {
               reload={loadProfile}
             />
           )}
-          {tab === 'sandbox' && <DealerEnvironmentPanel configuration={configuration} />}
           {['orders', 'after-sales'].includes(tab) && (
             <>
               {busy ? (
@@ -506,7 +500,7 @@ function DealerProfilePanel({
                 </div>
                 {!bank['emailConfirmedAt'] && (
                   <details className={styles.profileDisclosure}>
-                    <summary>Gửi lại email xác nhận</summary>
+                    <DisclosureSummary>Gửi lại email xác nhận</DisclosureSummary>
                     <p className={styles.muted}>
                       Email được gửi tới địa chỉ đăng nhập, không phải email hỗ trợ của cửa hàng.
                       Liên kết mới thay thế liên kết cũ và có hiệu lực 30 phút.
@@ -533,7 +527,7 @@ function DealerProfilePanel({
             ))}
           {dealerRows(profile['bankAccounts']).some((bank) => Boolean(bank['disabledAt'])) && (
             <details className={styles.profileDisclosure}>
-              <summary>Tài khoản đã ngừng sử dụng</summary>
+              <DisclosureSummary>Tài khoản đã ngừng sử dụng</DisclosureSummary>
               {dealerRows(profile['bankAccounts'])
                 .filter((bank) => Boolean(bank['disabledAt']))
                 .map((bank) => (
@@ -560,7 +554,7 @@ function DealerProfilePanel({
             />
           )}
           <details>
-            <summary>Thêm hoặc thay tài khoản nhận hoàn</summary>
+            <DisclosureSummary>Thêm hoặc thay tài khoản nhận hoàn</DisclosureSummary>
             <p className={styles.muted}>
               Yêu cầu cần xác nhận qua email đăng nhập và được quản trị viên kiểm tra. Tài khoản
               thay thế có thời gian chờ 24 giờ. Khoản hoàn đang xử lý giữ nguyên tài khoản đã chốt.
@@ -643,7 +637,7 @@ function DealerCase({
       )}
       {row['status'] === 'REQUESTED' && (
         <details>
-          <summary>Hủy yêu cầu</summary>
+          <DisclosureSummary>Hủy yêu cầu</DisclosureSummary>
           <DealerForm
             fields={[{ name: 'reason', label: 'Lý do' }]}
             submit="Hủy yêu cầu hậu mãi"
@@ -713,11 +707,6 @@ function DealerIntegration({
             <h2>Kết nối website của bạn</h2>
             <p>Tạo API key và đồng bộ đơn hàng với rePhone.</p>
           </div>
-          <span
-            className={configuration['environment'] === 'TEST' ? styles.testPill : styles.livePill}
-          >
-            {configuration['environment'] === 'TEST' ? 'Key TEST' : 'Key LIVE'}
-          </span>
         </div>
         <p>API chỉ được gọi từ máy chủ của đại lý. Không đưa khóa vào mã JavaScript trình duyệt.</p>
         <p className={styles.muted}>
@@ -849,10 +838,10 @@ function DealerIntegration({
             </div>
             {dealerRows(endpoint['deliveries']).map((delivery) => (
               <details key={dealerText(delivery['id'])}>
-                <summary>
+                <DisclosureSummary>
                   {dealerStatus(delivery['status'])} · {dealerDate(delivery['dueAt'])} · HTTP{' '}
                   {dealerText(delivery['lastStatusCode']) || '—'}
-                </summary>
+                </DisclosureSummary>
                 <p>
                   Số lần gửi: {dealerText(delivery['attempts'])} ·{' '}
                   {dealerText(delivery['lastError'])}

@@ -128,7 +128,7 @@ export function CustomerOrdersView() {
   };
 
   return (
-    <section>
+    <section className={styles.page}>
       <PostPurchasePageHeader
         title="Đơn hàng của bạn"
         description="Theo dõi thanh toán, nhận hàng và các hỗ trợ liên quan đến từng đơn."

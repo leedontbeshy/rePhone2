@@ -11,17 +11,20 @@ import type {
   ReturnStockDto,
   StockLevelListQueryDto,
   StockMovementListQueryDto,
+  StockPaginationDto,
   TransferStockDto,
 } from './stock.dto.js';
 import type {
   StockCommandResultDto,
   StockLevelDto,
   StockMovementDto,
+  StockVariantDto,
 } from './stock-response.dto.js';
 import {
   StockRepository,
   type StockLevelRecord,
   type StockMovementRecord,
+  type StockVariantRecord,
 } from './stock.repository.js';
 
 @Injectable()
@@ -32,6 +35,16 @@ export class StockService {
     private readonly transactions: SerializableTransactionRunner,
     @Inject(AuditWriter) private readonly audit: AuditWriter,
   ) {}
+
+  public async listVariants(query: StockPaginationDto) {
+    const result = await this.repository.listVariants(query);
+    return new PaginatedApiResult(result.items.map(toStockVariant), {
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems: result.totalItems,
+      totalPages: Math.ceil(result.totalItems / query.pageSize),
+    });
+  }
 
   public async listLevels(query: StockLevelListQueryDto) {
     const result = await this.repository.listLevels(query);
@@ -369,6 +382,21 @@ async function assertStockTarget(
   ) {
     throw validation('variantId', 'INVALID_STOCK_TARGET');
   }
+}
+
+function toStockVariant(variant: StockVariantRecord): StockVariantDto {
+  return {
+    id: variant.id,
+    sku: variant.sku,
+    displayName: variant.displayName,
+    status: variant.status,
+    product: {
+      id: variant.product.id,
+      name: variant.product.name,
+      slug: variant.product.slug,
+      status: variant.product.status,
+    },
+  };
 }
 
 function commandResult(

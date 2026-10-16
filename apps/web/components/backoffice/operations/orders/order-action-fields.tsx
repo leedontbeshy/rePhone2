@@ -1,4 +1,4 @@
-import { Input, Select, Textarea, formatVnd } from '@/components/ui';
+import { DisclosureSummary, Input, Select, Textarea, formatVnd } from '@/components/ui';
 import type {
   BackofficeOrderDetail,
   BackofficeOrderLocation,
@@ -316,7 +316,7 @@ export function ActionFields({
             ))}
         </Select>
         <details open={detail.hasAffiliateCommission}>
-          <summary>Phân bổ tiền hoàn theo sản phẩm và phí</summary>
+          <DisclosureSummary>Phân bổ tiền hoàn theo sản phẩm và phí</DisclosureSummary>
           <p className={styles.actionHint}>
             Bắt buộc với đơn có hoa hồng cộng tác viên. Nhập đúng khoản hoàn từng sản phẩm; tổng
             phải bằng số tiền hoàn. Bỏ trống khoản không hoàn.

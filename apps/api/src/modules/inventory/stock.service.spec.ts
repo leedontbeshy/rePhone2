@@ -34,6 +34,44 @@ const afterSalesInput: ReturnStockDto = {
 };
 
 describe('StockService shipment return', () => {
+  it('lists a new draft accessory without stock and returns only summaries with pagination', async () => {
+    const variant = {
+      ...stockLevel().variant,
+      status: 'DRAFT',
+      salePrice: '250000',
+      accessoryAttributes: { internalNote: 'Not part of receiving choices' },
+      stockLevels: [],
+      product: { ...stockLevel().variant.product, status: 'DRAFT', description: 'Private draft' },
+    };
+    const listVariants = vi.fn().mockResolvedValue({ items: [variant], totalItems: 3 });
+    const service = new StockService(
+      { listVariants } as unknown as StockRepository,
+      runnerFixture().runner,
+      { write: vi.fn() },
+    );
+
+    const result = await service.listVariants({ page: 2, pageSize: 2 });
+
+    expect(result).toEqual({
+      items: [
+        {
+          id: VARIANT_ID,
+          sku: 'CASE-001',
+          displayName: 'Op lung den',
+          status: 'DRAFT',
+          product: {
+            id: cryptoId(7),
+            name: 'Ốp lưng MagSafe',
+            slug: 'op-lung-magsafe',
+            status: 'DRAFT',
+          },
+        },
+      ],
+      pagination: { page: 2, pageSize: 2, totalItems: 3, totalPages: 2 },
+    });
+    expect(listVariants).toHaveBeenCalledWith({ page: 2, pageSize: 2 });
+  });
+
   it('projects product, variant, location and staff summaries for stock screens', async () => {
     const repository = {
       listLevels: vi.fn(async () => ({ items: [stockLevel()], totalItems: 1 })),

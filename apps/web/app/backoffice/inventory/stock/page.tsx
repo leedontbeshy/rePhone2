@@ -26,6 +26,7 @@ import {
   listInventoryLocations,
   listInventoryStockLevels,
   listInventoryStockMovements,
+  listInventoryStockVariantOptions,
   receiveInventoryStock,
   returnInventoryStock,
   transferInventoryStock,
@@ -44,11 +45,15 @@ export default function InventoryStockPage() {
   const [levels, setLevels] = useState<readonly InventoryStockLevel[]>([]);
   const [locations, setLocations] = useState<readonly InventoryLocation[]>([]);
   const [variants, setVariants] = useState<readonly StockVariantOption[]>([]);
+  const [receiveVariants, setReceiveVariants] = useState<readonly StockVariantOption[]>([]);
+  const [receiveVariantsLoading, setReceiveVariantsLoading] = useState(false);
+  const [receiveVariantsError, setReceiveVariantsError] = useState<string | null>(null);
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const levelRequestRef = useRef(0);
   const optionRequestRef = useRef(0);
+  const receiveOptionRequestRef = useRef(0);
 
   useEffect(() => {
     const syncFromBrowser = () => {
@@ -78,6 +83,43 @@ export default function InventoryStockPage() {
       .catch((cause: unknown) => {
         if (isCurrentStockRequest(request, optionRequestRef.current, controller.signal)) {
           setError(messageOf(cause, 'Không thể tải lựa chọn tồn kho.'));
+        }
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [canLoad, client]);
+
+  useEffect(() => {
+    if (!canLoad) return;
+    const controller = new AbortController();
+    const request = ++receiveOptionRequestRef.current;
+    setReceiveVariants([]);
+    setReceiveVariantsLoading(true);
+    setReceiveVariantsError(null);
+    void listInventoryStockVariantOptions(client, { signal: controller.signal })
+      .then((nextReceiveVariants) => {
+        if (!isCurrentStockRequest(request, receiveOptionRequestRef.current, controller.signal))
+          return;
+        setReceiveVariants(
+          sortStockVariantOptions(
+            nextReceiveVariants.map(({ product, ...variant }) => ({
+              ...variant,
+              productName: product.name,
+            })),
+          ),
+        );
+      })
+      .catch((cause: unknown) => {
+        if (isCurrentStockRequest(request, receiveOptionRequestRef.current, controller.signal)) {
+          setReceiveVariantsError(
+            messageOf(cause, 'Không thể tải danh sách phụ kiện để nhận hàng.'),
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrentStockRequest(request, receiveOptionRequestRef.current, controller.signal)) {
+          setReceiveVariantsLoading(false);
         }
       });
     return () => {
@@ -207,6 +249,9 @@ export default function InventoryStockPage() {
         locations={locations}
         pagination={pagination}
         query={query}
+        receiveVariants={receiveVariants}
+        receiveVariantsError={receiveVariantsError}
+        receiveVariantsLoading={receiveVariantsLoading}
         variants={variants}
         onCommand={executeCommand}
         onQueryChange={updateQuery}

@@ -8,7 +8,7 @@ export default function Page() {
       <div className={partnerStyles.page}>
         <Link href="/dealer">← Cổng đại lý</Link>
         <article className={styles.document}>
-          <h1>Điều khoản chương trình đại lý thử nghiệm</h1>
+          <h1>Điều khoản chương trình đại lý</h1>
           <p>Phiên bản dealer-v1.0</p>
           <h2>Vai trò và thanh toán</h2>
           <p>
@@ -54,11 +54,11 @@ export default function Page() {
             phạm điều khoản. Các nghĩa vụ với đơn cũ vẫn được xử lý. Khi có rủi ro bảo mật, quyền
             truy cập bị thu hồi và nhân viên rePhone tiếp quản đơn đang mở.
           </p>
-          <h2>Phạm vi thử nghiệm</h2>
+          <h2>Điều kiện vận hành</h2>
           <p>
-            Dữ liệu TEST không có giá trị mua bán và không được chuyển tiền thật. Trước khi mở bán
-            LIVE, hai bên phải hoàn tất duyệt hồ sơ và thỏa thuận vận hành về chứng từ, phí giao /
-            hoàn, bảo hành, tiếp nhận khi đại lý ngừng hoạt động và bảo vệ dữ liệu khách.
+            Trước khi nhận đơn, hai bên phải hoàn tất duyệt hồ sơ và thỏa thuận vận hành về chứng
+            từ, phí giao / hoàn, bảo hành, tiếp nhận khi đại lý ngừng hoạt động và bảo vệ dữ liệu
+            khách.
           </p>
         </article>
       </div>

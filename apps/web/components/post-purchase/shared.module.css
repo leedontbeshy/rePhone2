@@ -4,8 +4,8 @@
   align-items: flex-start;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: var(--space-6);
-  margin-block-end: var(--space-8);
+  gap: var(--space-4);
+  margin-block-end: var(--space-5);
 }
 
 .pageHeader > div:first-child {
@@ -85,7 +85,6 @@
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .collection {
@@ -105,10 +104,10 @@
 
 .collectionFooter {
   display: flex;
-  min-block-size: 4.75rem;
+  min-block-size: var(--control-height);
   align-items: center;
   justify-content: flex-end;
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-5);
   border-block-start: var(--border-default);
 }
 
@@ -118,12 +117,12 @@
 
 .detailPanel {
   min-inline-size: 0;
-  padding: var(--space-6);
+  padding: var(--space-5);
   border-radius: var(--radius-panel);
 }
 
 .detailPanel > h2 {
-  margin-block-end: var(--space-5);
+  margin-block-end: var(--space-4);
   font-size: var(--font-size-section-title);
   line-height: var(--line-height-section-title);
 }
@@ -131,8 +130,7 @@
 .detailGrid {
   display: grid;
   min-inline-size: 0;
-  gap: var(--space-6);
-  margin-block-start: var(--space-6);
+  gap: var(--space-5);
 }
 
 .productSummary {
@@ -182,7 +180,7 @@
 }
 
 .statePanel {
-  padding: var(--space-10) var(--space-6);
+  padding: var(--space-8) var(--space-5);
   text-align: center;
 }
 
@@ -248,7 +246,7 @@
 
 @media (min-width: 60rem) {
   .detailGrid {
-    grid-template-columns: minmax(0, 7fr) minmax(18rem, 5fr);
+    grid-template-columns: var(--post-purchase-detail-columns, minmax(0, 7fr) minmax(18rem, 5fr));
     align-items: start;
   }
 }

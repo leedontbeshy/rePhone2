@@ -2538,6 +2538,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backoffice/stock-variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listBackofficeStockVariants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backoffice/stock/adjust": {
         parameters: {
             query?: never;
@@ -6362,6 +6378,19 @@ export interface components {
         };
         StockMovementListResponse: {
             data: components["schemas"]["StockMovementDto"][];
+            meta: components["schemas"]["StockListMetaDto"];
+        };
+        StockVariantDto: {
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            product: components["schemas"]["InventoryProductSummaryDto"];
+            sku: string;
+            /** @enum {string} */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED";
+        };
+        StockVariantListResponse: {
+            data: components["schemas"]["StockVariantDto"][];
             meta: components["schemas"]["StockListMetaDto"];
         };
         StoreSettingsActorDto: {
@@ -22108,6 +22137,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StockMovementListResponse"];
+                };
+            };
+            /** @description VALIDATION_FAILED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description AUTH_REQUIRED or ACCESS_TOKEN_INVALID */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description FORBIDDEN */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description DUPLICATE_RESOURCE, INVENTORY_NOT_AVAILABLE or CONCURRENT_MODIFICATION */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description RATE_LIMITED */
+            429: {
+                headers: {
+                    /** @description Seconds until the current rate-limit window permits a retry. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description INTERNAL_ERROR */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+        };
+    };
+    listBackofficeStockVariants: {
+        parameters: {
+            query?: {
+                pageSize?: number;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockVariantListResponse"];
                 };
             };
             /** @description VALIDATION_FAILED */

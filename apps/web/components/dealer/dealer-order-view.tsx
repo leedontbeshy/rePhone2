@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerDate,
   dealerMoney,
@@ -165,7 +165,7 @@ export function DealerOrderView({
       )}
       {['PLACED', 'CONFIRMED', 'PROCESSING'].includes(dealerText(order['status'])) && (
         <details>
-          <summary>Yêu cầu hủy đơn</summary>
+          <DisclosureSummary>Yêu cầu hủy đơn</DisclosureSummary>
           <DealerForm
             fields={[{ name: 'reason', label: 'Lý do hủy', type: 'textarea' }]}
             submit="Hủy đơn và xử lý khoản đã nhận"
@@ -198,7 +198,7 @@ export function DealerOrderView({
             Xem phiếu bảo hành cho khách
           </Button>
           <details>
-            <summary>Gửi yêu cầu hậu mãi</summary>
+            <DisclosureSummary>Gửi yêu cầu hậu mãi</DisclosureSummary>
             <DealerForm
               fields={[
                 {

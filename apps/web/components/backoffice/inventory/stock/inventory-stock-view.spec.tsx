@@ -131,6 +131,31 @@ describe('inventory stock views', () => {
     expect(markup).not.toContain('>Xóa<');
   });
 
+  it('keeps other stock actions available when receiving choices fail to load', () => {
+    const markup = renderToStaticMarkup(
+      <InventoryStockView
+        levels={[LEVEL]}
+        locations={[STORE, WAREHOUSE]}
+        pagination={{ page: 1, pageSize: 20, totalItems: 1, totalPages: 1 }}
+        query={{ page: 1, pageSize: 20 }}
+        receiveVariants={[]}
+        receiveVariantsError="Không thể tải danh sách phụ kiện để nhận hàng."
+        variants={[VARIANT]}
+        onCommand={vi.fn().mockResolvedValue({ ok: true })}
+        onQueryChange={vi.fn()}
+      />,
+    );
+    const buttons = [...markup.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)];
+    const receive = buttons.find((button) => visibleText(button[2] ?? '') === 'Nhận hàng');
+    const transfer = buttons.find((button) => visibleText(button[2] ?? '') === 'Chuyển kho');
+
+    expect(receive?.[1]).toContain('disabled');
+    expect(transfer).toBeDefined();
+    expect(transfer?.[1]).not.toContain('disabled');
+    expect(visibleText(markup)).toContain('Chưa tải được danh sách nhận hàng');
+    expect(visibleText(markup)).toContain('Ốp lưng MagSafe');
+  });
+
   it('keeps stock rows visible while only the requested result area refreshes', () => {
     const markup = renderToStaticMarkup(
       <InventoryStockView

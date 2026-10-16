@@ -1,3 +1,26 @@
+.disclosureSummary {
+  min-width: 0;
+}
+
+.disclosureContent {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.disclosureIcon {
+  flex: 0 0 auto;
+  color: var(--color-primary-hover);
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+details[open] > .disclosureSummary > .disclosureIcon {
+  transform: rotate(180deg);
+}
+
 .button {
   position: relative;
   display: inline-flex;

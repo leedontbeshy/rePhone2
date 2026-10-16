@@ -69,12 +69,11 @@
 .card {
   display: grid;
   min-width: 0;
-  gap: var(--space-5);
+  gap: var(--space-4);
   padding: var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .cardTop {
@@ -122,7 +121,7 @@
 
 .card dl {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin: 0;
 }
 
@@ -188,6 +187,7 @@
 
 .pagination {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);

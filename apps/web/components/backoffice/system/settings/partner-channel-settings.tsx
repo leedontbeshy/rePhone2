@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/app/auth-provider';
-import { Button, InlineAlert } from '@/components/ui';
+import { Button, InlineAlert, StatusChip } from '@/components/ui';
 import { DealerChannelControl } from '@/components/dealer/dealer-channel-control';
 import { dealerApi, dealerRecord, type DealerRecord } from '@/lib/dealer-api';
 import { affiliateApi, record, type Row } from '@/lib/affiliate-api';
@@ -86,7 +86,19 @@ export function PartnerChannelSettings() {
       <div className={styles.partnerGrid}>
         <DealerChannelControl api={dealer} configuration={configuration} admin done={load} />
         <section className={styles.partnerCard} aria-label="Điều khiển cộng tác viên">
-          <h3>Cộng tác viên</h3>
+          <div className={styles.partnerCardHeader}>
+            <h3>Cộng tác viên</h3>
+            <StatusChip
+              label={
+                policy === undefined
+                  ? 'Đang tải'
+                  : policy['enabled'] === true
+                    ? 'Đang mở'
+                    : 'Tạm ngừng'
+              }
+              tone={policy?.['enabled'] === true ? 'success' : 'neutral'}
+            />
+          </div>
           <p>
             {policy === undefined
               ? 'Đang tải trạng thái…'
@@ -103,14 +115,19 @@ export function PartnerChannelSettings() {
               Lưu mức hoa hồng và giá sàn trong chính sách cộng tác viên trước khi bật chương trình.
             </InlineAlert>
           )}
-          <Button
-            disabled={policy?.['ready'] !== true || !affiliatePolicyReady}
-            loading={busy}
-            onClick={() => void toggleAffiliate()}
-          >
-            {policy?.['enabled'] === true ? 'Tạm tắt cộng tác viên' : 'Bật cộng tác viên'}
-          </Button>
-          <Link href="/backoffice/affiliates">Quản lý chính sách hoa hồng</Link>
+          <div className={styles.partnerActions}>
+            <Link className={styles.partnerPolicyLink} href="/backoffice/affiliates">
+              Quản lý chính sách hoa hồng
+            </Link>
+            <Button
+              disabled={policy?.['ready'] !== true || !affiliatePolicyReady}
+              loading={busy}
+              variant={policy?.['enabled'] === true ? 'secondary' : 'primary'}
+              onClick={() => void toggleAffiliate()}
+            >
+              {policy?.['enabled'] === true ? 'Tạm tắt cộng tác viên' : 'Bật cộng tác viên'}
+            </Button>
+          </div>
         </section>
       </div>
     </section>

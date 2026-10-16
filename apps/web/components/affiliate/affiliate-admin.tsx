@@ -11,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAuth } from '@/app/auth-provider';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   affiliateApi,
   currency,
@@ -370,7 +370,7 @@ function Member({
       </p>
       <p>{text(r['promotionChannels'])}</p>
       <details>
-        <summary>Duyệt / cập nhật hồ sơ</summary>
+        <DisclosureSummary>Duyệt / cập nhật hồ sơ</DisclosureSummary>
         <Form
           busy={busy}
           label="Cập nhật hồ sơ"
@@ -608,7 +608,7 @@ function Payout({
       )}
       {['PROCESSING', 'NEEDS_REVIEW'].includes(text(r['status'])) && (
         <details>
-          <summary>Ghi nhận đã chuyển tiền thành công</summary>
+          <DisclosureSummary>Ghi nhận đã chuyển tiền thành công</DisclosureSummary>
           <p>
             Chỉ hoàn tất sau khi ngân hàng xác nhận chuyển tiền thành công. Đối chiếu đúng số tiền
             và tài khoản phía trên.

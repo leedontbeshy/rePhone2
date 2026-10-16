@@ -44,6 +44,7 @@ type ApiReturnStock =
 type ApiInventoryUnitListItem = components['schemas']['InventoryUnitListItemDto'];
 type ApiInventoryUnitDetail = components['schemas']['InventoryUnitDetailDto'];
 type ApiInventoryLocation = components['schemas']['InventoryLocationDto'];
+type ApiStockVariant = components['schemas']['StockVariantDto'];
 type ApiInventoryCost = components['schemas']['InventoryCostDto'];
 type ApiInspectionSummary = components['schemas']['InspectionSummaryDto'];
 type ApiInspectionDetail = components['schemas']['InspectionDetailDto'];
@@ -300,6 +301,10 @@ export interface InventoryStockLevel {
   reorderThreshold: number;
   lowStock: boolean;
   updatedAt: string;
+}
+
+export interface InventoryStockVariant extends InventoryVariantSummary {
+  product: InventoryProductSummary;
 }
 
 export interface InventoryStockLevelPage {
@@ -754,6 +759,31 @@ export async function uploadInventoryUnitMedia(
   return toUnitMedia(result.data.data);
 }
 
+export async function listInventoryStockVariantOptions(
+  client: InventoryApiClient,
+  options: InventoryRequestOptions = {},
+): Promise<InventoryStockVariant[]> {
+  const variants = new Map<string, InventoryStockVariant>();
+  let page = 1;
+  let totalPages = 1;
+  do {
+    options.signal?.throwIfAborted();
+    const result = await client.GET('/api/v1/backoffice/stock-variants', {
+      params: { query: { page, pageSize: 100 } },
+      ...signalOptions(options),
+    });
+    if (result.data === undefined) {
+      throw inventoryAdminError(result.error, 'Không thể tải danh sách phụ kiện để nhận hàng.');
+    }
+    for (const variant of result.data.data) {
+      variants.set(variant.id, toStockVariant(variant));
+    }
+    totalPages = result.data.meta.pagination.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+  return [...variants.values()];
+}
+
 export async function listInventoryStockLevels(
   client: InventoryApiClient,
   query: InventoryStockLevelListQuery,
@@ -1036,6 +1066,13 @@ function toInspectionDetail(inspection: ApiInspectionDetail): InventoryInspectio
     repairHistoryStatus: inspection.repairHistoryStatus,
     repairNotes: inspection.repairNotes ?? null,
     replacedParts: isRecord(inspection.replacedParts) ? inspection.replacedParts : null,
+  };
+}
+
+function toStockVariant(variant: ApiStockVariant): InventoryStockVariant {
+  return {
+    ...toVariant(variant),
+    product: toProduct(variant.product),
   };
 }
 

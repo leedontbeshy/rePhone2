@@ -1,14 +1,13 @@
 .panel {
   min-inline-size: 0;
-  padding: var(--space-6);
+  padding: var(--space-5);
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .title {
-  margin-block-end: var(--space-6);
+  margin-block-end: var(--space-4);
   font-size: var(--font-size-section-title);
   line-height: var(--line-height-section-title);
 }
@@ -124,7 +123,7 @@
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: var(--space-4);
-    margin-block-end: var(--space-6);
+    margin-block-end: var(--space-4);
   }
 
   .mobileSummary > svg {

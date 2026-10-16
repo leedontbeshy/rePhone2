@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import type { AuthUser } from '@/app/auth-provider';
 import { BackofficeActionDialog } from '@/components/backoffice/backoffice-action-dialog';
 import { OperationsActionRail } from '../operations-primitives';
-import { Button, InlineAlert, Select, Textarea } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert, Select, Textarea } from '@/components/ui';
 import {
   approveAfterSales,
   assignAfterSales,
@@ -247,7 +247,7 @@ export function AfterSalesActionPanel({
               setSupportingOpen(event.currentTarget.open);
             }}
           >
-            <summary>Phân công người phụ trách</summary>
+            <DisclosureSummary>Phân công người phụ trách</DisclosureSummary>
             <AssignmentForm
               busy={busy}
               detail={detail}

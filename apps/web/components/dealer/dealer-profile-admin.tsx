@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Button, InlineAlert } from '@/components/ui';
+import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
 import {
   dealerDate,
   dealerRecord,
@@ -43,6 +43,18 @@ export function DealerProfileAdmin({
   const currentTerms = row['termsVersion'] === termsVersion;
   const ready = effective && currentTerms && row['securityStatus'] === 'NORMAL';
   const metrics = dealerRecord(row['metrics']);
+  const histories = dealerRows(row['histories']);
+  const domains = Array.isArray(row['approvedDomains'])
+    ? row['approvedDomains'].map(dealerText).filter(Boolean)
+    : [];
+  const riskLabel =
+    (
+      { NORMAL: 'Bình thường', ELEVATED: 'Cần theo dõi', BLOCKED: 'Chặn đơn mới' } as Record<
+        string,
+        string
+      >
+    )[dealerText(row['riskLevel'])] || 'Chưa có thông tin';
+  const maximumUnfundedOrders = dealerText(row['maximumUnfundedOrders']);
   const nextStep = !activeBanks.length
     ? 'Đại lý cần thêm tài khoản ngân hàng nhận hoàn trong cổng đại lý.'
     : !confirmed
@@ -135,7 +147,9 @@ export function DealerProfileAdmin({
           ))}
           {archivedBanks.length > 0 && (
             <details className={styles.profileDisclosure}>
-              <summary>Tài khoản đã ngừng sử dụng ({archivedBanks.length})</summary>
+              <DisclosureSummary>
+                Tài khoản đã ngừng sử dụng ({archivedBanks.length})
+              </DisclosureSummary>
               {archivedBanks.map((account) => (
                 <AdminBank
                   key={dealerText(account['id'])}
@@ -220,116 +234,140 @@ export function DealerProfileAdmin({
         </p>
       </section>
 
-      <section className={styles.card}>
-        <h3>Thông tin bổ sung & quản lý</h3>
-        <details className={styles.profileDisclosure}>
-          <summary>Điều khoản, website và mã hồ sơ</summary>
+      <div className={admin ? styles.profileColumns : styles.list}>
+        <section className={styles.card}>
+          <h3>Thông tin hồ sơ</h3>
           <dl className={styles.profileFacts}>
             <div>
               <dt>Mã hồ sơ</dt>
-              <dd>{id}</dd>
+              <dd className={styles.profileIdentifier}>{id}</dd>
             </div>
             <div>
               <dt>Điều khoản đã chấp nhận</dt>
               <dd>
-                {dealerText(row['termsVersion'])} · {dealerDate(row['termsAcceptedAt'])}
+                {dealerText(row['termsVersion']) || 'Chưa chấp nhận'}
+                {row['termsAcceptedAt'] ? ` · ${dealerDate(row['termsAcceptedAt'])}` : ''}
               </dd>
             </div>
             <div>
               <dt>Website đã đăng ký</dt>
-              <dd>
-                {Array.isArray(row['approvedDomains']) && row['approvedDomains'].length
-                  ? row['approvedDomains'].map(dealerText).join(', ')
-                  : 'Chưa đăng ký'}
-              </dd>
+              <dd>{domains.length ? domains.join(', ') : 'Chưa đăng ký'}</dd>
             </div>
           </dl>
-        </details>
-        {admin && transitions.length > 0 && (
-          <details className={styles.profileDisclosure}>
-            <summary>{pending ? 'Từ chối hồ sơ' : 'Thay đổi trạng thái kinh doanh'}</summary>
-            <DealerForm
-              fields={[
-                {
-                  name: 'action',
-                  label: 'Thao tác',
-                  options: transitions.map(([value, label]) => ({ value, label })),
-                },
-                reason,
-              ]}
-              submit="Lưu trạng thái"
-              onSubmit={async (data) => {
-                await api.post(`${base}/${id}/status`, {
-                  ...data,
-                  expectedVersion: row['version'],
-                });
-                await done();
-              }}
-            />
-          </details>
-        )}
+        </section>
         {admin && (
-          <details className={styles.profileDisclosure}>
-            <summary>Giới hạn đặt hàng & mức rủi ro</summary>
-            <DealerForm
-              fields={[
-                {
-                  name: 'riskLevel',
-                  label: 'Mức rủi ro',
-                  value: dealerText(row['riskLevel']),
-                  options: [
-                    { value: 'NORMAL', label: 'Bình thường' },
-                    { value: 'ELEVATED', label: 'Cần theo dõi' },
-                    { value: 'BLOCKED', label: 'Chặn đơn mới' },
-                  ],
-                },
-                {
-                  name: 'maximumUnfundedOrders',
-                  label: 'Số đơn chưa đủ tiền tối đa',
-                  type: 'number',
-                  value: dealerText(row['maximumUnfundedOrders']),
-                },
-                reason,
-              ]}
-              submit="Cập nhật giới hạn"
-              onSubmit={async (data) => {
-                await api.post(`${base}/${id}/risk`, {
-                  ...data,
-                  maximumUnfundedOrders: Number(data['maximumUnfundedOrders']),
-                  expectedVersion: row['version'],
-                });
-                await done();
-              }}
-            />
-          </details>
+          <section className={[styles.card, styles.profileManagement].filter(Boolean).join(' ')}>
+            <h3>Quản lý hồ sơ</h3>
+            {transitions.length > 0 && (
+              <details className={styles.profileDisclosure}>
+                <DisclosureSummary>
+                  <span className={styles.disclosureCopy}>
+                    <strong>{pending ? 'Từ chối hồ sơ' : 'Trạng thái kinh doanh'}</strong>
+                    <small>{dealerStatus(row['businessStatus'])}</small>
+                  </span>
+                </DisclosureSummary>
+                <DealerForm
+                  fields={[
+                    {
+                      name: 'action',
+                      label: 'Thao tác',
+                      options: transitions.map(([value, label]) => ({ value, label })),
+                    },
+                    reason,
+                  ]}
+                  submit="Lưu trạng thái"
+                  onSubmit={async (data) => {
+                    await api.post(`${base}/${id}/status`, {
+                      ...data,
+                      expectedVersion: row['version'],
+                    });
+                    await done();
+                  }}
+                />
+              </details>
+            )}
+            <details className={styles.profileDisclosure}>
+              <DisclosureSummary>
+                <span className={styles.disclosureCopy}>
+                  <strong>Giới hạn đặt hàng & mức rủi ro</strong>
+                  <small>
+                    {riskLabel}
+                    {maximumUnfundedOrders !== ''
+                      ? ` · Tối đa ${maximumUnfundedOrders} đơn chưa đủ tiền`
+                      : ''}
+                  </small>
+                </span>
+              </DisclosureSummary>
+              <DealerForm
+                fields={[
+                  {
+                    name: 'riskLevel',
+                    label: 'Mức rủi ro',
+                    value: dealerText(row['riskLevel']),
+                    options: [
+                      { value: 'NORMAL', label: 'Bình thường' },
+                      { value: 'ELEVATED', label: 'Cần theo dõi' },
+                      { value: 'BLOCKED', label: 'Chặn đơn mới' },
+                    ],
+                  },
+                  {
+                    name: 'maximumUnfundedOrders',
+                    label: 'Số đơn chưa đủ tiền tối đa',
+                    type: 'number',
+                    value: dealerText(row['maximumUnfundedOrders']),
+                  },
+                  reason,
+                ]}
+                submit="Cập nhật giới hạn"
+                onSubmit={async (data) => {
+                  await api.post(`${base}/${id}/risk`, {
+                    ...data,
+                    maximumUnfundedOrders: Number(data['maximumUnfundedOrders']),
+                    expectedVersion: row['version'],
+                  });
+                  await done();
+                }}
+              />
+            </details>
+            <details className={styles.profileDisclosure}>
+              <DisclosureSummary>
+                <span className={styles.disclosureCopy}>
+                  <strong>Bảo mật truy cập</strong>
+                  <small>{dealerStatus(row['securityStatus'])}</small>
+                </span>
+              </DisclosureSummary>
+              <p className={styles.muted}>
+                Khóa bảo mật thu hồi phiên đăng nhập và API key của đại lý.
+              </p>
+              <DealerForm
+                fields={[reason]}
+                submit={
+                  row['securityStatus'] === 'SECURITY_LOCKED' ? 'Gỡ khóa bảo mật' : 'Khóa truy cập'
+                }
+                onSubmit={async (data) => {
+                  await api.post(`${base}/${id}/status`, {
+                    ...data,
+                    action: row['securityStatus'] === 'SECURITY_LOCKED' ? 'UNLOCK' : 'LOCK',
+                    expectedVersion: row['version'],
+                  });
+                  await done();
+                }}
+              />
+            </details>
+          </section>
         )}
-        {admin && (
-          <details className={styles.profileDisclosure}>
-            <summary>
-              {row['securityStatus'] === 'SECURITY_LOCKED' ? 'Gỡ khóa bảo mật' : 'Khóa bảo mật'}
-            </summary>
-            <p className={styles.muted}>
-              Khóa bảo mật thu hồi phiên đăng nhập và API key của đại lý.
-            </p>
-            <DealerForm
-              fields={[reason]}
-              submit={
-                row['securityStatus'] === 'SECURITY_LOCKED' ? 'Gỡ khóa bảo mật' : 'Khóa truy cập'
-              }
-              onSubmit={async (data) => {
-                await api.post(`${base}/${id}/status`, {
-                  ...data,
-                  action: row['securityStatus'] === 'SECURITY_LOCKED' ? 'UNLOCK' : 'LOCK',
-                  expectedVersion: row['version'],
-                });
-                await done();
-              }}
-            />
-          </details>
-        )}
-        <details className={styles.profileDisclosure}>
-          <summary>Lịch sử xử lý hồ sơ</summary>
-          {dealerRows(row['histories']).map((history) => (
+      </div>
+      <section className={styles.card}>
+        <details className={styles.profileHistory}>
+          <DisclosureSummary>
+            <span className={styles.disclosureCopy}>
+              <strong>Lịch sử xử lý hồ sơ</strong>
+              <small>
+                {histories.length ? `${histories.length.toString()} lần xử lý` : 'Chưa có lịch sử'}
+              </small>
+            </span>
+          </DisclosureSummary>
+          {histories.map((history) => (
             <div className={styles.line} key={dealerText(history['id'])}>
               <div>
                 <strong>
@@ -352,6 +390,7 @@ export function DealerProfileAdmin({
               <span className={styles.muted}>{dealerDate(history['createdAt'])}</span>
             </div>
           ))}
+          {histories.length === 0 && <p className={styles.muted}>Chưa có lịch sử xử lý hồ sơ.</p>}
         </details>
       </section>
     </div>
@@ -449,7 +488,7 @@ function AdminBank({
             )}
           {!account['disabledAt'] && (
             <details className={styles.profileDisclosure}>
-              <summary>Ngừng sử dụng tài khoản này</summary>
+              <DisclosureSummary>Ngừng sử dụng tài khoản này</DisclosureSummary>
               <DealerForm
                 fields={[reason]}
                 submit="Khóa tài khoản nhận hoàn"

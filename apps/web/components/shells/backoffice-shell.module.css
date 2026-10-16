@@ -7,6 +7,7 @@
   --line-height-section-title: 1.75rem;
   --control-height: var(--control-height-compact);
   --radius-card: var(--radius-panel);
+  --shadow-raised: none;
   --backoffice-topbar-height: 72px;
 
   display: grid;

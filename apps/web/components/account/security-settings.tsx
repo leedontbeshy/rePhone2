@@ -147,7 +147,10 @@ function PasswordForm({
   }
 
   return (
-    <section className={styles.panel} aria-labelledby="password-form-title">
+    <section
+      className={[styles.panel, styles.passwordPanel].join(' ')}
+      aria-labelledby="password-form-title"
+    >
       <div className={styles.sectionHeading}>
         <div>
           <h2 id="password-form-title">Đổi mật khẩu</h2>

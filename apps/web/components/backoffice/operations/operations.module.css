@@ -171,7 +171,7 @@
   min-width: 0;
   grid-template-columns: minmax(0, 2fr) minmax(18rem, 0.78fr);
   align-items: start;
-  gap: var(--space-6);
+  gap: var(--space-5);
   grid-template-areas: 'main rail';
 }
 
@@ -194,7 +194,7 @@
 
 .panel {
   min-width: 0;
-  padding: var(--space-5);
+  padding: var(--space-4);
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);

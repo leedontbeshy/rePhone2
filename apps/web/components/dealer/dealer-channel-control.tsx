@@ -1,5 +1,5 @@
 'use client';
-import { Button, InlineAlert } from '@/components/ui';
+import { Button, InlineAlert, StatusChip } from '@/components/ui';
 import Link from 'next/link';
 import type { DealerApi, DealerRecord } from '@/lib/dealer-api';
 import { dealerText } from '@/lib/dealer-api';
@@ -24,17 +24,27 @@ export function DealerChannelControl({
   const open = configuration['open'] === true;
   const pricingReady = configuration['pricingReady'] === true;
   return (
-    <section className={styles.card} aria-label="Điều khiển cổng đại lý">
-      <div className={styles.header}>
-        <h2>Cổng đại lý · {configuration['environment'] === 'TEST' ? 'Sandbox' : 'Thực tế'}</h2>
-        <span className={styles.badge}>
-          {!ready ? 'Chưa sẵn sàng' : open ? 'Đang mở' : 'Tạm đóng'}
-        </span>
+    <section
+      className={[styles.card, styles.channelCard].filter(Boolean).join(' ')}
+      aria-label="Điều khiển cổng đại lý"
+    >
+      <div className={styles.channelHeader}>
+        <div>
+          <h3>Cổng đại lý</h3>
+          {configuration['environment'] === 'TEST' && (
+            <p className={styles.channelEnvironment}>Dữ liệu phát triển — không chuyển tiền thật</p>
+          )}
+        </div>
+        <StatusChip
+          label={!ready ? 'Chưa sẵn sàng' : open ? 'Đang mở' : 'Tạm đóng'}
+          tone={!ready ? 'warning' : open ? 'success' : 'neutral'}
+        />
       </div>
       <p className={styles.muted}>
-        {open
-          ? 'Đang nhận hồ sơ đăng ký và đơn hàng mới.'
-          : 'Tạm ngừng nhận hồ sơ và đơn mới. Đơn đã có vẫn được xử lý.'}
+        {open ? 'Đang nhận hồ sơ đăng ký và đơn hàng mới.' : 'Tạm ngừng nhận hồ sơ và đơn mới.'}
+      </p>
+      <p className={styles.muted}>
+        Đơn đã có, thanh toán, hoàn tiền và bảo hành tiếp tục được xử lý khi tạm đóng.
       </p>
       {!ready ? (
         <InlineAlert tone="warning">
@@ -47,23 +57,34 @@ export function DealerChannelControl({
           trước khi mở cổng.
         </InlineAlert>
       ) : null}
+      {admin && ready && (
+        <div className={styles.channelActions}>
+          {openPricing === undefined ? (
+            <Link className={styles.channelPolicyLink} href="/backoffice/dealers">
+              Cấu hình giá & vận chuyển
+            </Link>
+          ) : (
+            <Button variant="ghost" onClick={openPricing}>
+              Cấu hình giá & vận chuyển
+            </Button>
+          )}
+        </div>
+      )}
       {admin && (!ready || (!pricingReady && !open)) && <Button disabled>Mở cổng đại lý</Button>}
       {admin && ready && (pricingReady || open) && (
-        <div className={styles.profileDisclosure}>
-          <p className={styles.muted}>
-            Khi tạm đóng, đại lý vẫn theo dõi đơn cũ, thanh toán, hoàn tiền và bảo hành.
-          </p>
+        <div className={styles.channelChange}>
           <DealerForm
             key={dealerText(configuration['version'])}
             fields={[
               {
                 name: 'reason',
-                label: 'Ghi chú thay đổi trạng thái cổng',
+                label: 'Ghi chú thay đổi trạng thái',
                 required: false,
                 hint: 'Ghi chú được lưu trong lịch sử quản trị.',
               },
             ]}
             submit={open ? 'Tạm đóng cổng đại lý' : 'Mở cổng đại lý'}
+            submitVariant={open ? 'secondary' : 'primary'}
             onSubmit={async (data) => {
               await api.post('backoffice/dealers/configuration', {
                 open: !open,
@@ -77,15 +98,6 @@ export function DealerChannelControl({
           />
         </div>
       )}
-      {admin &&
-        ready &&
-        (openPricing === undefined ? (
-          <Link href="/backoffice/dealers">Cấu hình giá & vận chuyển</Link>
-        ) : (
-          <Button variant="secondary" onClick={openPricing}>
-            Cấu hình giá & vận chuyển
-          </Button>
-        ))}
       {!admin && <p className={styles.muted}>Quản trị viên quản lý việc mở và tạm đóng cổng.</p>}
     </section>
   );

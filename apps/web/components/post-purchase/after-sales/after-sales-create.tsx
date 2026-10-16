@@ -389,7 +389,7 @@ export function AfterSalesCreate() {
       {submitError ? <InlineAlert tone="danger">{submitError}</InlineAlert> : null}
 
       {!loading && visibleItem !== null && !isStaff ? (
-        <DetailGrid>
+        <DetailGrid className={styles.createGrid}>
           <DetailPanel title="Sản phẩm cần hỗ trợ">
             <div className={styles.stack}>
               <AfterSalesProductSummary

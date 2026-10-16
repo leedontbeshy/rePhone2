@@ -3,15 +3,14 @@
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .summary {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
   align-items: start;
-  gap: var(--space-8);
-  padding: var(--space-8);
+  gap: var(--space-6);
+  padding: var(--space-6);
 }
 
 .summary[data-compact='true'] {
@@ -34,7 +33,7 @@
 .information {
   display: grid;
   min-width: 0;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .label {
@@ -183,7 +182,6 @@
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
 }
 
 .channelLinks {
