@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   IdentificationCardIcon as IdentificationCard,
@@ -8,6 +8,11 @@ import {
   PackageIcon as Package,
   ShieldCheckIcon as ShieldCheck,
   PlugsConnectedIcon as PlugsConnected,
+  StorefrontIcon as Storefront,
+  ArrowRightIcon as ArrowRight,
+  BookOpenIcon as BookOpen,
+  CreditCardIcon as CreditCard,
+  CheckCircleIcon as CheckCircle,
 } from '@phosphor-icons/react';
 import { DealerCatalog } from './dealer-catalog';
 import { DealerWorkspaceHeader, DealerCode } from './dealer-workspace';
@@ -29,7 +34,7 @@ import { DealerEmpty, DealerForm, DealerSecret, DealerUpload } from './dealer-pr
 import { DealerCheckout } from './dealer-checkout';
 import { DealerOrderView } from './dealer-order-view';
 import styles from './dealer.module.css';
-import { bankDeliveryNotice, bankStatus } from './dealer-bank-status';
+import { bankDeliveryNotice, bankIsEffective, bankStatus } from './dealer-bank-status';
 
 const tabs = [
   ['profile', 'Hồ sơ'],
@@ -135,6 +140,14 @@ function PortalContent({ client }: { client: unknown }) {
     }
   }
   const active = profile?.['businessStatus'] === 'ACTIVE';
+  function selectTab(next: Tab) {
+    setTab(next);
+    setPage(1);
+    setRows([]);
+    setOrder(null);
+    setOffer(null);
+    setError('');
+  }
   return (
     <div className={[styles.page, styles.portalPage].join(' ')}>
       {loaded && !profile ? (
@@ -142,15 +155,28 @@ function PortalContent({ client }: { client: unknown }) {
       ) : (
         <DealerWorkspaceHeader
           title={dealerText(profile?.['displayName']) || 'Cổng đại lý'}
-          description="Chọn máy, quản lý đơn và kết nối website bán hàng của bạn."
+          description="Quản lý cửa hàng và kết nối bán hàng."
           test={configuration['environment'] === 'TEST'}
+          variant={profile ? 'portal' : 'default'}
+          status={dealerStatus(profile?.['businessStatus']) || 'Đăng ký đối tác'}
         >
-          <span className={styles.badge}>
-            {dealerStatus(profile?.['businessStatus']) || 'Đăng ký đối tác'}
-          </span>
-          <Link className={styles.secondaryLink} href="/dealer/api-guide">
-            Hướng dẫn API →
-          </Link>
+          {profile && active && configuration['open'] === true ? (
+            <Button
+              className={styles.portalHeroAction}
+              variant="secondary"
+              onClick={() => {
+                selectTab('catalog');
+              }}
+            >
+              <Package size={22} aria-hidden />
+              Xem kho máy
+              <ArrowRight size={18} aria-hidden />
+            </Button>
+          ) : (
+            <Link className={styles.secondaryLink} href="/dealer/api-guide">
+              Hướng dẫn API <ArrowRight size={18} aria-hidden />
+            </Link>
+          )}
         </DealerWorkspaceHeader>
       )}
       {error && <InlineAlert tone="danger">{error}</InlineAlert>}
@@ -181,12 +207,7 @@ function PortalContent({ client }: { client: unknown }) {
                   variant={tab === key ? 'primary' : 'secondary'}
                   aria-current={tab === key ? 'page' : undefined}
                   onClick={() => {
-                    setTab(key);
-                    setPage(1);
-                    setRows([]);
-                    setOrder(null);
-                    setOffer(null);
-                    setError('');
+                    selectTab(key);
                   }}
                 >
                   {(() => {
@@ -356,7 +377,11 @@ function DealerProfilePanel({
   reload: () => Promise<void>;
 }) {
   const [bankToken, setBankToken] = useState('');
+  const [bankFormOpen, setBankFormOpen] = useState(false);
+  const bankFormId = useId();
   const [notice, setNotice] = useState<ReturnType<typeof bankDeliveryNotice> | null>(null);
+  const existingProfile = profile !== null && profile['businessStatus'] !== 'REJECTED';
+  const activeBanks = dealerRows(profile?.['bankAccounts']).filter((bank) => !bank['disabledAt']);
   useEffect(() => {
     const token = new URLSearchParams(window.location.hash.slice(1)).get('confirmBankToken');
     if (token) {
@@ -367,215 +392,301 @@ function DealerProfilePanel({
   return (
     <div className={styles.list}>
       {notice && <InlineAlert tone={notice.tone}>{notice.message}</InlineAlert>}
-      {(!profile || profile['businessStatus'] === 'REJECTED') && configuration['open'] !== true ? (
-        <DealerEmpty>rePhone đang tạm ngừng nhận hồ sơ đại lý mới.</DealerEmpty>
-      ) : !profile || profile['businessStatus'] === 'REJECTED' ? (
-        <section className={styles.card}>
-          <h2>Đăng ký trở thành đại lý</h2>
-          <p className={styles.muted}>
-            Đại lý là bên bán và thu tiền khách. rePhone cung cấp máy, giao hàng và thực hiện bảo
-            hành; các khoản hoàn từ rePhone được trả cho đại lý.
-          </p>
-          <DealerForm
-            fieldsClassName={styles.applicationFields}
-            fields={[
-              {
-                name: 'legalName',
-                label: 'Tên hộ kinh doanh / doanh nghiệp',
-                hint: 'Tên theo đăng ký kinh doanh.',
-              },
-              {
-                name: 'businessType',
-                label: 'Loại hình',
-                hint: 'Chọn loại hình đã đăng ký.',
-                options: [
-                  { value: 'HOUSEHOLD', label: 'Hộ kinh doanh' },
-                  { value: 'COMPANY', label: 'Doanh nghiệp' },
-                  ...(configuration['environment'] === 'TEST'
-                    ? [{ value: 'INDIVIDUAL', label: 'Cá nhân (thử nghiệm)' }]
-                    : []),
-                ],
-              },
-              {
-                name: 'taxCode',
-                label: 'Mã số thuế',
-                hint: '8–20 ký tự: số và dấu gạch ngang.',
-                required: configuration['environment'] !== 'TEST',
-              },
-              {
-                name: 'representativeName',
-                label: 'Người đại diện',
-                hint: 'Họ tên người đại diện.',
-              },
-              {
-                name: 'businessAddress',
-                label: 'Địa chỉ kinh doanh',
-                hint: 'Số nhà, đường, phường/xã, tỉnh/thành.',
-              },
-              {
-                name: 'displayName',
-                label: 'Tên cửa hàng hiển thị cho khách',
-                hint: 'Tên trên đơn hàng và phiếu bảo hành.',
-              },
-              {
-                name: 'contactEmail',
-                label: 'Email hỗ trợ',
-                type: 'email',
-                hint: 'Email để khách liên hệ hỗ trợ.',
-              },
-              {
-                name: 'contactPhone',
-                label: 'Điện thoại hỗ trợ',
-                type: 'tel',
-                hint: 'Số điện thoại hỗ trợ khách.',
-              },
-              {
-                name: 'approvedDomains',
-                label: 'Tên miền website',
-                hint: 'VD: shop.vn. Cách nhau bằng dấu phẩy; có thể bỏ trống.',
-                required: false,
-              },
-            ]}
-            submit="Gửi hồ sơ đăng ký"
-            onSubmit={async (data) => {
-              await api.post('dealer-portal/application', {
-                ...data,
-                taxCode: data['taxCode'] || undefined,
-                approvedDomains: (data['approvedDomains'] ?? '')
-                  .split(',')
-                  .map((value) => value.trim())
-                  .filter(Boolean),
-                termsVersion: configuration['termsVersion'],
-              });
-              await reload();
-            }}
-          >
-            <label>
-              <input type="checkbox" required /> Tôi đã đọc{' '}
-              <Link href="/dealer/terms" target="_blank">
-                điều khoản đại lý {dealerText(configuration['termsVersion'])}
-              </Link>{' '}
-              và đồng ý trách nhiệm bên bán, hậu mãi và dòng hoàn tiền.
-            </label>
-          </DealerForm>
-        </section>
-      ) : (
-        <section className={styles.card}>
-          <h2>{dealerText(profile['legalName'])}</h2>
-          <span className={styles.badge}>{dealerStatus(profile['businessStatus'])}</span>
-          <p>{dealerText(profile['businessAddress'])}</p>
-          <p>
-            {dealerText(profile['contactEmail'])} · {dealerText(profile['contactPhone'])}
-          </p>
-          <p className={styles.muted}>
-            Tối đa {dealerText(profile['maximumUnfundedOrders'])} đơn chưa thanh toán đủ. Giá bán
-            cho khách do đại lý quyết định.
-          </p>
-          {profile['businessStatus'] === 'PENDING' && (
-            <InlineAlert tone="info">
-              Hồ sơ đang chờ duyệt. Tài khoản nhận hoàn cần được bạn xác nhận qua email đăng nhập,
-              sau đó admin kiểm tra và xác minh.
-            </InlineAlert>
-          )}
-        </section>
-      )}
-      {profile && (
-        <section className={styles.card}>
-          <h2>Tài khoản nhận hoàn</h2>
-          <p className={styles.muted}>
-            Nhập tài khoản → Xác nhận email đăng nhập → Admin xác minh.
-          </p>
-          {dealerRows(profile['bankAccounts'])
-            .filter((bank) => !bank['disabledAt'])
-            .map((bank) => (
-              <div className={styles.bankItem} key={dealerText(bank['id'])}>
-                <div className={styles.header}>
-                  <div>
-                    <strong>
-                      {dealerText(bank['bankName'])} · ****{dealerText(bank['accountLastFour'])}
-                    </strong>
-                    <p className={styles.muted}>{dealerText(bank['accountHolder'])}</p>
-                  </div>
-                  <span className={styles.badge}>{bankStatus(bank)}</span>
+      <div className={existingProfile ? styles.portalProfileLayout : styles.list}>
+        <div className={styles.portalProfileMain}>
+          {(!profile || profile['businessStatus'] === 'REJECTED') &&
+          configuration['open'] !== true ? (
+            <DealerEmpty>rePhone đang tạm ngừng nhận hồ sơ đại lý mới.</DealerEmpty>
+          ) : !profile || profile['businessStatus'] === 'REJECTED' ? (
+            <section className={styles.card}>
+              <h2>Đăng ký trở thành đại lý</h2>
+              <p className={styles.muted}>
+                Đại lý là bên bán và thu tiền khách. rePhone cung cấp máy, giao hàng và thực hiện
+                bảo hành; các khoản hoàn từ rePhone được trả cho đại lý.
+              </p>
+              <DealerForm
+                fieldsClassName={styles.applicationFields}
+                fields={[
+                  {
+                    name: 'legalName',
+                    label: 'Tên hộ kinh doanh / doanh nghiệp',
+                    hint: 'Tên theo đăng ký kinh doanh.',
+                  },
+                  {
+                    name: 'businessType',
+                    label: 'Loại hình',
+                    hint: 'Chọn loại hình đã đăng ký.',
+                    options: [
+                      { value: 'HOUSEHOLD', label: 'Hộ kinh doanh' },
+                      { value: 'COMPANY', label: 'Doanh nghiệp' },
+                      ...(configuration['environment'] === 'TEST'
+                        ? [{ value: 'INDIVIDUAL', label: 'Cá nhân (thử nghiệm)' }]
+                        : []),
+                    ],
+                  },
+                  {
+                    name: 'taxCode',
+                    label: 'Mã số thuế',
+                    hint: '8–20 ký tự: số và dấu gạch ngang.',
+                    required: configuration['environment'] !== 'TEST',
+                  },
+                  {
+                    name: 'representativeName',
+                    label: 'Người đại diện',
+                    hint: 'Họ tên người đại diện.',
+                  },
+                  {
+                    name: 'businessAddress',
+                    label: 'Địa chỉ kinh doanh',
+                    hint: 'Số nhà, đường, phường/xã, tỉnh/thành.',
+                  },
+                  {
+                    name: 'displayName',
+                    label: 'Tên cửa hàng hiển thị cho khách',
+                    hint: 'Tên trên đơn hàng và phiếu bảo hành.',
+                  },
+                  {
+                    name: 'contactEmail',
+                    label: 'Email hỗ trợ',
+                    type: 'email',
+                    hint: 'Email để khách liên hệ hỗ trợ.',
+                  },
+                  {
+                    name: 'contactPhone',
+                    label: 'Điện thoại hỗ trợ',
+                    type: 'tel',
+                    hint: 'Số điện thoại hỗ trợ khách.',
+                  },
+                  {
+                    name: 'approvedDomains',
+                    label: 'Tên miền website',
+                    hint: 'VD: shop.vn. Cách nhau bằng dấu phẩy; có thể bỏ trống.',
+                    required: false,
+                  },
+                ]}
+                submit="Gửi hồ sơ đăng ký"
+                onSubmit={async (data) => {
+                  await api.post('dealer-portal/application', {
+                    ...data,
+                    taxCode: data['taxCode'] || undefined,
+                    approvedDomains: (data['approvedDomains'] ?? '')
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean),
+                    termsVersion: configuration['termsVersion'],
+                  });
+                  await reload();
+                }}
+              >
+                <label>
+                  <input type="checkbox" required /> Tôi đã đọc{' '}
+                  <Link href="/dealer/terms" target="_blank">
+                    điều khoản đại lý {dealerText(configuration['termsVersion'])}
+                  </Link>{' '}
+                  và đồng ý trách nhiệm bên bán, hậu mãi và dòng hoàn tiền.
+                </label>
+              </DealerForm>
+            </section>
+          ) : (
+            <section className={[styles.card, styles.portalProfileCard].join(' ')}>
+              <h2>Thông tin cửa hàng</h2>
+              <div className={styles.portalIdentity}>
+                <span className={styles.portalSectionIcon}>
+                  <Storefront size={30} weight="duotone" aria-hidden />
+                </span>
+                <div>
+                  <h3>{dealerText(profile['legalName'])}</h3>
+                  <p>Đối tác của rePhone</p>
                 </div>
-                {!bank['emailConfirmedAt'] && (
-                  <details className={styles.profileDisclosure}>
-                    <DisclosureSummary>Gửi lại email xác nhận</DisclosureSummary>
-                    <p className={styles.muted}>
-                      Email được gửi tới địa chỉ đăng nhập, không phải email hỗ trợ của cửa hàng.
-                      Liên kết mới thay thế liên kết cũ và có hiệu lực 30 phút.
-                    </p>
-                    <DealerForm
-                      fields={[
-                        { name: 'currentPassword', label: 'Mật khẩu hiện tại', type: 'password' },
-                      ]}
-                      submit="Gửi lại email"
-                      onSubmit={async (data) => {
-                        const result = dealerRecord(
-                          await api.post(
-                            `dealer-portal/bank-accounts/${dealerText(bank['id'])}/resend-confirmation`,
-                            data,
-                          ),
-                        );
-                        setNotice(bankDeliveryNotice(result));
-                        await reload();
-                      }}
-                    />
-                  </details>
-                )}
               </div>
-            ))}
-          {dealerRows(profile['bankAccounts']).some((bank) => Boolean(bank['disabledAt'])) && (
-            <details className={styles.profileDisclosure}>
-              <DisclosureSummary>Tài khoản đã ngừng sử dụng</DisclosureSummary>
-              {dealerRows(profile['bankAccounts'])
-                .filter((bank) => Boolean(bank['disabledAt']))
-                .map((bank) => (
-                  <p key={dealerText(bank['id'])} className={styles.muted}>
-                    {dealerText(bank['bankName'])} · ****{dealerText(bank['accountLastFour'])} ·{' '}
-                    {dealerText(bank['accountHolder'])}
-                  </p>
+              <dl className={styles.portalContactFacts}>
+                {(
+                  [
+                    ['displayName', 'Tên cửa hàng'],
+                    ['contactEmail', 'Email liên hệ'],
+                    ['contactPhone', 'Số điện thoại'],
+                    ['businessAddress', 'Địa chỉ kinh doanh'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key}>
+                    <dt>{label}</dt>
+                    <dd>{dealerText(profile[key]) || 'Chưa cung cấp'}</dd>
+                  </div>
                 ))}
-            </details>
+              </dl>
+              {profile['businessStatus'] === 'PENDING' && (
+                <InlineAlert tone="info">
+                  Hồ sơ đang chờ duyệt. Tài khoản nhận hoàn cần được bạn xác nhận qua email đăng
+                  nhập, sau đó admin kiểm tra và xác minh.
+                </InlineAlert>
+              )}
+            </section>
           )}
-          {bankToken && (
-            <DealerForm
-              fields={[{ name: 'token', label: 'Mã xác nhận từ email', value: bankToken }]}
-              submit="Xác nhận yêu cầu tài khoản"
-              onSubmit={async (data) => {
-                await api.post('dealer-portal/bank-accounts/confirm', data);
-                setBankToken('');
-                setNotice({
-                  tone: 'success',
-                  message: 'Đã xác nhận email. Tài khoản đang chờ admin kiểm tra và xác minh.',
-                });
-                await reload();
-              }}
-            />
+          {profile && (
+            <section className={[styles.card, styles.portalBankCard].join(' ')}>
+              <div className={styles.portalBankHeading}>
+                <h2>Tài khoản nhận hoàn tiền</h2>
+                <Button
+                  variant="secondary"
+                  size="compact"
+                  aria-expanded={bankFormOpen}
+                  aria-controls={bankFormId}
+                  onClick={() => {
+                    setBankFormOpen((value) => !value);
+                  }}
+                >
+                  {bankFormOpen
+                    ? 'Đóng biểu mẫu'
+                    : activeBanks.length
+                      ? 'Thay tài khoản'
+                      : 'Thêm tài khoản'}
+                </Button>
+              </div>
+              {activeBanks.length === 0 && (
+                <p className={styles.muted}>
+                  Chưa có tài khoản nhận hoàn. Thêm tài khoản và xác nhận qua email đăng nhập để
+                  rePhone kiểm tra, xác minh.
+                </p>
+              )}
+              {activeBanks.map((bank) => (
+                <div className={styles.portalBankItem} key={dealerText(bank['id'])}>
+                  <div className={styles.portalBankSummary}>
+                    <span className={styles.portalSectionIcon}>
+                      <CreditCard size={30} weight="duotone" aria-hidden />
+                    </span>
+                    <div className={styles.portalBankDetails}>
+                      <div className={styles.portalBankAccount}>
+                        <strong>•••• {dealerText(bank['accountLastFour'])}</strong>
+                        <span
+                          className={[
+                            styles.badge,
+                            bankIsEffective(bank)
+                              ? styles.portalVerified
+                              : styles.portalBankPending,
+                          ].join(' ')}
+                        >
+                          {bankIsEffective(bank) && (
+                            <CheckCircle size={16} weight="fill" aria-hidden />
+                          )}
+                          {bankStatus(bank)}
+                        </span>
+                      </div>
+                      <p className={styles.portalBankHolder}>
+                        {dealerText(bank['accountHolder'])} · {dealerText(bank['bankName'])}
+                      </p>
+                      <p className={styles.muted}>
+                        Nhận hoàn tiền cho các giao dịch đủ điều kiện từ rePhone.
+                      </p>
+                    </div>
+                  </div>
+                  {!bank['emailConfirmedAt'] && (
+                    <details className={styles.profileDisclosure}>
+                      <DisclosureSummary>Gửi lại email xác nhận</DisclosureSummary>
+                      <p className={styles.muted}>
+                        Email được gửi tới địa chỉ đăng nhập, không phải email hỗ trợ của cửa hàng.
+                        Liên kết mới thay thế liên kết cũ và có hiệu lực 30 phút.
+                      </p>
+                      <DealerForm
+                        fields={[
+                          { name: 'currentPassword', label: 'Mật khẩu hiện tại', type: 'password' },
+                        ]}
+                        submit="Gửi lại email"
+                        onSubmit={async (data) => {
+                          const result = dealerRecord(
+                            await api.post(
+                              `dealer-portal/bank-accounts/${dealerText(bank['id'])}/resend-confirmation`,
+                              data,
+                            ),
+                          );
+                          setNotice(bankDeliveryNotice(result));
+                          await reload();
+                        }}
+                      />
+                    </details>
+                  )}
+                </div>
+              ))}
+              {dealerRows(profile['bankAccounts']).some((bank) => Boolean(bank['disabledAt'])) && (
+                <details className={styles.profileDisclosure}>
+                  <DisclosureSummary>Tài khoản đã ngừng sử dụng</DisclosureSummary>
+                  {dealerRows(profile['bankAccounts'])
+                    .filter((bank) => Boolean(bank['disabledAt']))
+                    .map((bank) => (
+                      <p key={dealerText(bank['id'])} className={styles.muted}>
+                        {dealerText(bank['bankName'])} · ****{dealerText(bank['accountLastFour'])} ·{' '}
+                        {dealerText(bank['accountHolder'])}
+                      </p>
+                    ))}
+                </details>
+              )}
+              {bankToken && (
+                <DealerForm
+                  fields={[{ name: 'token', label: 'Mã xác nhận từ email', value: bankToken }]}
+                  submit="Xác nhận yêu cầu tài khoản"
+                  onSubmit={async (data) => {
+                    await api.post('dealer-portal/bank-accounts/confirm', data);
+                    setBankToken('');
+                    setNotice({
+                      tone: 'success',
+                      message: 'Đã xác nhận email. Tài khoản đang chờ admin kiểm tra và xác minh.',
+                    });
+                    await reload();
+                  }}
+                />
+              )}
+              <div id={bankFormId} hidden={!bankFormOpen} className={styles.portalBankForm}>
+                <h3>Thêm hoặc thay tài khoản nhận hoàn</h3>
+                <p className={styles.muted}>
+                  Yêu cầu cần xác nhận qua email đăng nhập và được quản trị viên kiểm tra. Tài khoản
+                  thay thế có thời gian chờ 24 giờ. Khoản hoàn đang xử lý giữ nguyên tài khoản đã
+                  chốt.
+                </p>
+                <DealerForm
+                  fields={[
+                    { name: 'bankName', label: 'Ngân hàng' },
+                    { name: 'accountNumber', label: 'Số tài khoản' },
+                    { name: 'accountHolder', label: 'Tên chủ tài khoản' },
+                    { name: 'currentPassword', label: 'Mật khẩu hiện tại', type: 'password' },
+                  ]}
+                  submit="Gửi yêu cầu xác minh"
+                  onSubmit={async (data) => {
+                    const result = dealerRecord(
+                      await api.post('dealer-portal/bank-accounts', data),
+                    );
+                    setNotice(bankDeliveryNotice(result));
+                    await reload();
+                  }}
+                />
+              </div>
+            </section>
           )}
-          <details>
-            <DisclosureSummary>Thêm hoặc thay tài khoản nhận hoàn</DisclosureSummary>
-            <p className={styles.muted}>
-              Yêu cầu cần xác nhận qua email đăng nhập và được quản trị viên kiểm tra. Tài khoản
-              thay thế có thời gian chờ 24 giờ. Khoản hoàn đang xử lý giữ nguyên tài khoản đã chốt.
-            </p>
-            <DealerForm
-              fields={[
-                { name: 'bankName', label: 'Ngân hàng' },
-                { name: 'accountNumber', label: 'Số tài khoản' },
-                { name: 'accountHolder', label: 'Tên chủ tài khoản' },
-                { name: 'currentPassword', label: 'Mật khẩu hiện tại', type: 'password' },
-              ]}
-              submit="Gửi yêu cầu xác minh"
-              onSubmit={async (data) => {
-                const result = dealerRecord(await api.post('dealer-portal/bank-accounts', data));
-                setNotice(bankDeliveryNotice(result));
-                await reload();
-              }}
-            />
-          </details>
-        </section>
-      )}
+        </div>
+        {existingProfile && (
+          <aside className={styles.portalProfileAside} aria-label="Hỗ trợ đại lý">
+            <section className={[styles.card, styles.portalLimitCard].join(' ')}>
+              <h2>Giới hạn đặt hàng</h2>
+              <div className={styles.portalLimitValue}>
+                <strong>{dealerText(profile['maximumUnfundedOrders']) || '—'}</strong>
+                <p>
+                  Tối đa {dealerText(profile['maximumUnfundedOrders']) || '—'} đơn
+                  <br /> chưa thanh toán đủ.
+                </p>
+              </div>
+              <p className={styles.portalLimitNote}>Giá bán cho khách do đại lý quyết định.</p>
+            </section>
+            <Link className={styles.portalGuideCard} href="/dealer/api-guide">
+              <span className={styles.portalSectionIcon}>
+                <BookOpen size={25} aria-hidden />
+              </span>
+              <span>
+                <strong>Hướng dẫn kết nối API</strong>
+                <span>Xem hướng dẫn tích hợp và kết nối website bán hàng.</span>
+              </span>
+              <ArrowRight size={22} aria-hidden />
+            </Link>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
