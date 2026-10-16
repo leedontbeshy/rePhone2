@@ -12,6 +12,7 @@ describe('partner landing destinations and disclosures', () => {
       expect(html.match(/<details>/g)).toHaveLength(4);
       expect(html.match(/<summary\b/g)).toHaveLength(4);
       expect(html).toContain('aria-hidden="true"');
+      expect(html).not.toMatch(/sandbox|môi trường thực tế/i);
     }
   });
 

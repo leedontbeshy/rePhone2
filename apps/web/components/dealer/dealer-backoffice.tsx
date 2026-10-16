@@ -11,10 +11,9 @@ import {
   ShieldCheckIcon as ShieldCheck,
   TagIcon as Tag,
   WarningCircleIcon as WarningCircle,
-  FlaskIcon as Flask,
   ArrowClockwiseIcon as ArrowClockwise,
 } from '@phosphor-icons/react';
-import { DealerWorkspaceHeader, DealerEnvironmentPanel } from './dealer-workspace';
+import { DealerWorkspaceHeader } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { OperationsShell } from '@/components/backoffice/operations/operations-shell';
 import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
@@ -32,11 +31,7 @@ import {
 import { DealerEmpty, DealerForm, DealerUpload, type DealerField } from './dealer-primitives';
 import { DealerOrderView } from './dealer-order-view';
 import styles from './dealer.module.css';
-import {
-  DealerSimulation,
-  DealerReturnFees,
-  DealerAfterSalesOperations,
-} from './dealer-operations-extras';
+import { DealerReturnFees, DealerAfterSalesOperations } from './dealer-operations-extras';
 import { DealerProfileAdmin } from './dealer-profile-admin';
 import Link from 'next/link';
 
@@ -60,7 +55,6 @@ const tabs = [
   ['after-sales', 'Hậu mãi'],
   ['pricing', 'Giá & vận chuyển'],
   ['reconciliation', 'Sai lệch cần xử lý'],
-  ['sandbox', 'Sandbox'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 const tabIcons = {
@@ -72,7 +66,6 @@ const tabIcons = {
   'after-sales': ShieldCheck,
   pricing: Tag,
   reconciliation: WarningCircle,
-  sandbox: Flask,
 };
 const tabDescriptions: Record<Tab, string> = {
   profiles: 'Duyệt hồ sơ và quản lý đối tác bán hàng.',
@@ -83,7 +76,6 @@ const tabDescriptions: Record<Tab, string> = {
   'after-sales': 'Tiếp nhận bảo hành, đổi trả và theo dõi xử lý.',
   pricing: 'Thiết lập giá đại lý và phạm vi giao hàng.',
   reconciliation: 'Xử lý sai lệch tiền và các đơn cần đối soát.',
-  sandbox: 'Thử kết nối API với dữ liệu riêng trước khi vận hành thật.',
 };
 
 export function DealerBackoffice() {
@@ -120,10 +112,6 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       if (config['enabled'] !== true) {
         setRows([]);
         setSelected(null);
-        return;
-      }
-      if (tab === 'sandbox') {
-        setRows([]);
         return;
       }
       const value = await api.get(
@@ -229,7 +217,6 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
           </div>
         </div>
       )}
-      {tab === 'sandbox' && <DealerEnvironmentPanel configuration={configuration} admin={admin} />}
       {error && <InlineAlert tone="danger">{error}</InlineAlert>}
       {notice && <InlineAlert tone="success">{notice}</InlineAlert>}
       {tab === 'profiles' && !selected && (
@@ -306,12 +293,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
       )}
       {tab === 'orders' && (
         <>
-          {selected && admin && (
-            <>
-              <DealerSimulation api={api} orderId={dealerText(selected['id'])} done={changed} />
-              <DealerReturnFees api={api} order={selected} done={changed} />
-            </>
-          )}
+          {selected && admin && <DealerReturnFees api={api} order={selected} done={changed} />}
           {selected && (
             <DealerOrderView
               key={dealerText(selected['id'])}
@@ -539,7 +521,7 @@ function Dashboard({ client, admin }: { client: unknown; admin: boolean }) {
         </>
       )}
       {busy && <DealerEmpty>Đang tải…</DealerEmpty>}
-      {!busy && rows.length === 0 && tab !== 'pricing' && tab !== 'sandbox' && !error && (
+      {!busy && rows.length === 0 && tab !== 'pricing' && !error && (
         <DealerEmpty>Chưa có bản ghi trong mục này.</DealerEmpty>
       )}
       {['profiles', 'orders'].includes(tab) && !(tab === 'profiles' && selected) && (

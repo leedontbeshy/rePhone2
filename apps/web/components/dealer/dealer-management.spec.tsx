@@ -85,7 +85,8 @@ describe('dealer management presentation boundaries', () => {
       pricingReady: true,
       environment: 'TEST',
     });
-    expect(html).toContain('Sandbox · Dữ liệu thử');
+    expect(html).toContain('Dữ liệu phát triển — không chuyển tiền thật');
+    expect(html).not.toContain('Sandbox');
     expect(html).toContain('Đang mở');
     expect(html.indexOf('Cấu hình giá &amp; vận chuyển')).toBeLessThan(
       html.indexOf('Ghi chú thay đổi trạng thái'),
@@ -95,6 +96,7 @@ describe('dealer management presentation boundaries', () => {
     const employee = renderChannel({ enabled: true, open: true, pricingReady: true }, false);
     expect(employee).not.toContain('<form');
     expect(employee).not.toContain('Cấu hình giá &amp; vận chuyển');
+    expect(employee).not.toContain('Dữ liệu phát triển');
   });
 
   it('keeps opening disabled until setup is ready and preserves pricing resolution', () => {

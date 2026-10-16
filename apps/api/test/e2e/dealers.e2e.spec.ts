@@ -22,6 +22,7 @@ import { CheckoutCatalogReader } from '../../src/modules/catalog/checkout-catalo
 import { sendDealerWebhook } from '../../src/modules/dealers/dealer-webhook.transport.js';
 import { createHmac } from 'node:crypto';
 import type * as DealerWebhookTransport from '../../src/modules/dealers/dealer-webhook.transport.js';
+import { createOpenApiDocument } from '../../src/openapi/openapi.js';
 
 vi.mock('../../src/modules/dealers/dealer-webhook.transport.js', async (importOriginal) => ({
   ...(await importOriginal<typeof DealerWebhookTransport>()),
@@ -152,6 +153,22 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
     process.env['DEALER_ENABLED'] = 'false';
     await prisma.$disconnect();
     await app.close();
+  });
+
+  it('does not expose removed simulator routes or contracts when TEST dealer access is enabled', async () => {
+    expect(app.get(DealerRuntime)).toMatchObject({ enabled: true, mode: 'TEST' });
+    await request(server)
+      .get('/api/v1/backoffice/dealers/sandbox/configuration')
+      .set(adminHeaders())
+      .expect(404);
+    await request(server)
+      .post(`/api/v1/backoffice/dealers/sandbox/orders/${randomUUID()}/simulate`)
+      .set(adminHeaders())
+      .send({ action: 'PAYMENT', reason: 'Removed route regression' })
+      .expect(404);
+    const document = createOpenApiDocument(app);
+    expect(Object.keys(document.paths).some((path) => path.includes('/sandbox'))).toBe(false);
+    expect(document.components?.schemas).not.toHaveProperty('DealerSimulationDto');
   });
 
   it('lists eligible offers before pagination, batches details and supports search, price sorting and condition filters', async () => {
@@ -405,6 +422,8 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
       pricingReady: true,
       environment: 'TEST',
     });
+    expect(config).not.toHaveProperty('simulationEnabled');
+    expect(config['connection']).toEqual({ apiBaseUrl: 'http://localhost:4001/api/v1' });
     const body = {
       open: false,
       expectedVersion: config['version'],
@@ -736,15 +755,17 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
   it('settles failed shipping once and keeps returned inventory under inspection before refunding', async () => {
     const order = await createOrder();
     const id = string(order['id']);
-    const simulate = (action: string) =>
-      request(server)
-        .post(`/api/v1/backoffice/dealers/sandbox/orders/${id}/simulate`)
-        .set(adminHeaders())
-        .send({ action, reason: 'Diễn tập hoàn hàng' });
-    await simulate('PAYMENT').expect(200);
-    await simulate('FAIL').expect(200);
-    await simulate('RETURN').expect(200);
-    await simulate('CANCEL').expect(409);
+    await fundOrder(order, 'RETURNED-ORDER');
+    const shipmentId = await handOverOrder(id);
+    await shipmentCommand(shipmentId, 'mark-failed', { reason: 'Khách từ chối nhận máy' }).expect(
+      200,
+    );
+    const saved = await prisma.order.findUniqueOrThrow({ where: { id } });
+    await shipmentCommand(shipmentId, 'mark-returned', {
+      reason: 'Đã nhận lại máy từ đơn vị vận chuyển',
+      returnedToLocationId: string(saved.fulfillmentLocationId),
+    }).expect(200);
+    await cancelDealerOrder(id).expect(409);
     await request(server)
       .post(`/api/v1/backoffice/dealers/orders/${id}/return-settlement`)
       .set(adminHeaders())
@@ -756,8 +777,8 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
         reason: 'Khách từ chối nhận máy',
       })
       .expect(200);
-    await simulate('CANCEL').expect(200);
-    await simulate('CANCEL').expect(200);
+    await cancelDealerOrder(id).expect(200);
+    await cancelDealerOrder(id).expect(200);
     const refunds = await prisma.refund.findMany({ where: { orderId: id } });
     expect(refunds).toHaveLength(1);
     const firstRefund = refunds[0];
@@ -768,7 +789,17 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
     expect(
       (await prisma.inventoryUnit.findUniqueOrThrow({ where: { id: unitId } })).lifecycleStatus,
     ).toBe('INSPECTING');
-    await simulate('REFUND').expect(200);
+    for (const action of ['START', 'MARK_SENT'])
+      await request(server)
+        .post(`/api/v1/backoffice/dealers/refunds/${firstRefund.id}/actions`)
+        .set(adminHeaders())
+        .send({ action, reason: 'Đã đối chiếu và xử lý hoàn tiền cho đại lý' })
+        .expect(200);
+    await request(server)
+      .post(`/api/v1/backoffice/dealers/refunds/${firstRefund.id}/complete`)
+      .set(adminHeaders())
+      .attach('file', PROOF, { filename: 'refund.png', contentType: 'image/png' })
+      .expect(200);
     expect((await prisma.refund.findUniqueOrThrow({ where: { id: firstRefund.id } })).status).toBe(
       'COMPLETED',
     );
@@ -1086,20 +1117,15 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
     expect(await prisma.dealerPaymentProof.count()).toBe(0);
   });
 
-  it('runs funded shipping and protected warranty intake through TEST simulation', async () => {
+  it('runs funded dealer shipping and protected warranty intake through normal admin commands', async () => {
     const order = await createOrder();
     const id = string(order['id']);
-    const simulate = (action: string) =>
-      request(server)
-        .post(`/api/v1/backoffice/dealers/sandbox/orders/${id}/simulate`)
-        .set(adminHeaders())
-        .send({ action, reason: 'Diễn tập TEST qua engine chung' });
-    const unfunded = await simulate('DELIVER');
-    expect(unfunded.status).not.toBe(200);
+    await orderCommand(id, 'start-preparing').expect(409);
     expect(await prisma.shipment.count()).toBe(0);
-    await simulate('PAYMENT').expect(200);
-    await simulate('DELIVER').expect(200);
-    await simulate('DELIVER').expect(200);
+    await fundOrder(order, 'WARRANTY-INTAKE');
+    const shipmentId = await handOverOrder(id);
+    await shipmentCommand(shipmentId, 'mark-delivered', { confirmCodCollected: false }).expect(200);
+    await shipmentCommand(shipmentId, 'mark-delivered', { confirmCodCollected: false }).expect(200);
     expect((await prisma.order.findUniqueOrThrow({ where: { id } })).status).toBe('COMPLETED');
     expect(await prisma.payment.count()).toBe(0);
     expect(await prisma.warranty.count()).toBe(1);
@@ -1281,12 +1307,9 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
   it('requires dealer fault assessment and extends repaired warranty once across retries', async () => {
     const order = await createOrder();
     const id = string(order['id']);
-    for (const action of ['PAYMENT', 'DELIVER'])
-      await request(server)
-        .post(`/api/v1/backoffice/dealers/sandbox/orders/${id}/simulate`)
-        .set(adminHeaders())
-        .send({ action, reason: 'Kiểm thử bảo hành đại lý' })
-        .expect(200);
+    await fundOrder(order, 'WARRANTY-REPAIR');
+    const shipmentId = await handOverOrder(id);
+    await shipmentCommand(shipmentId, 'mark-delivered', { confirmCodCollected: false }).expect(200);
     const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: id } });
     const warranty = await prisma.warranty.findUniqueOrThrow({ where: { orderItemId: item.id } });
     const unit = await prisma.inventoryUnit.findUniqueOrThrow({ where: { id: unitId } });
@@ -1383,6 +1406,41 @@ describe('Dealer commerce: real PostgreSQL and HTTP', () => {
   }
   function adminHeaders() {
     return { Authorization: `Bearer ${adminToken}` };
+  }
+  async function fundOrder(order: Record<string, unknown>, bankReference: string) {
+    await request(server)
+      .post('/api/v1/backoffice/dealers/receipts')
+      .set(adminHeaders())
+      .send(receipt(string(order['id']), string(order['grandTotal']), bankReference))
+      .expect(201);
+  }
+  function orderCommand(id: string, action: string, body: object = {}) {
+    return request(server)
+      .post(`/api/v1/backoffice/orders/${id}/${action}`)
+      .set(adminHeaders())
+      .send(body);
+  }
+  async function handOverOrder(id: string) {
+    await orderCommand(id, 'start-preparing').expect(200);
+    const response = await orderCommand(id, 'shipment', {
+      carrierName: 'Test carrier',
+      trackingCode: `TEST-${id}`,
+    }).expect(201);
+    const shipmentId = string(data(response.body)['id']);
+    await shipmentCommand(shipmentId, 'hand-over').expect(200);
+    return shipmentId;
+  }
+  function shipmentCommand(id: string, action: string, body: object = {}) {
+    return request(server)
+      .post(`/api/v1/backoffice/shipments/${id}/${action}`)
+      .set(adminHeaders())
+      .send(body);
+  }
+  function cancelDealerOrder(id: string) {
+    return request(server)
+      .post(`/api/v1/backoffice/dealers/orders/${id}/cancel`)
+      .set(adminHeaders())
+      .send({ reason: 'Hủy đơn sau khi đã đối chiếu nghiệp vụ hoàn hàng' });
   }
   async function quote(externalOrderId: string) {
     const preview = data(

@@ -22,8 +22,6 @@ const nextConfig: NextConfig = {
   // Only public connection metadata belongs in the guide and client bundle.
   env: {
     DEALER_ENVIRONMENT: process.env.DEALER_ENVIRONMENT ?? 'LIVE',
-    DEALER_SANDBOX_WEB_URL: process.env.DEALER_SANDBOX_WEB_URL ?? '',
-    DEALER_SANDBOX_API_URL: process.env.DEALER_SANDBOX_API_URL ?? '',
     API_PUBLIC_URL: process.env.API_PUBLIC_URL ?? '',
   },
   distDir: process.env.REPHONE_WEB_DIST_DIR ?? '.next',

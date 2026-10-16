@@ -76,45 +76,9 @@ export class DealerRuntime implements OnModuleInit {
   }
 
   public connectionInfo() {
-    const publicUrl = (value: string | undefined) => {
-      if (!value) return null;
-      try {
-        const url = new URL(value);
-        if (
-          url.username ||
-          url.password ||
-          url.search ||
-          url.hash ||
-          !(
-            url.protocol === 'https:' ||
-            (url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))
-          )
-        )
-          return null;
-        return url.toString().replace(/\/$/, '');
-      } catch {
-        return null;
-      }
-    };
     return {
       apiBaseUrl: `${this.config.api.publicUrl.replace(/\/$/, '')}/api/v1`,
-      liveWebUrl: publicUrl(process.env['DEALER_LIVE_WEB_URL']),
-      sandbox: {
-        webUrl:
-          this.mode === 'TEST'
-            ? this.config.api.webPublicUrl
-            : publicUrl(process.env['DEALER_SANDBOX_WEB_URL']),
-        apiBaseUrl:
-          this.mode === 'TEST'
-            ? `${this.config.api.publicUrl.replace(/\/$/, '')}/api/v1`
-            : publicUrl(process.env['DEALER_SANDBOX_API_URL']),
-      },
     };
-  }
-
-  public assertSandbox(): void {
-    this.assertEnabled();
-    if (this.mode !== 'TEST') throw new ApiError('RESOURCE_NOT_FOUND');
   }
 
   public encrypt(value: string): string {

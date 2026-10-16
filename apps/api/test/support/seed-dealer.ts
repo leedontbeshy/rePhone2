@@ -19,7 +19,8 @@ try {
   await app.init();
   const prisma = app.get(PrismaService);
   const runtime = app.get(DealerRuntime);
-  runtime.assertSandbox();
+  runtime.assertEnabled();
+  if (runtime.mode !== 'TEST') throw new Error('Dealer fixtures require TEST mode');
   await seedDatabase(prisma);
   const owner = await prisma.user.findUniqueOrThrow({
     where: { normalizedEmail: (process.env['SEED_CUSTOMER_EMAIL'] ?? '').toLowerCase() },
@@ -100,7 +101,7 @@ try {
       },
     });
   process.stdout.write(
-    `TEST dealer ready: ${dealer.id}. Sign in with the configured seed customer; use the configured seed admin for simulation. No API secrets were generated.\n`,
+    `TEST dealer ready: ${dealer.id}. Sign in with the configured seed customer; use the configured seed admin to process orders through the normal backoffice workflow. No API secrets were generated.\n`,
   );
 } finally {
   await app.close();

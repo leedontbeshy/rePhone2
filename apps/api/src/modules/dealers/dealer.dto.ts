@@ -272,11 +272,6 @@ export class DealerRiskDto extends DealerReasonDto {
 export class DealerWebhookDto extends DealerReauthDto {
   @ApiProperty({ type: String }) @IsString() @Length(10, 2000) public url!: string;
 }
-export class DealerSimulationDto extends DealerReasonDto {
-  @ApiProperty({ enum: ['PAYMENT', 'DELIVER', 'FAIL', 'RETURN', 'CANCEL', 'REFUND'] })
-  @IsIn(['PAYMENT', 'DELIVER', 'FAIL', 'RETURN', 'CANCEL', 'REFUND'])
-  public action!: string;
-}
 export class DealerAssessmentDto {
   @ApiProperty({ type: String })
   @Transform(trim)

@@ -47,7 +47,6 @@ export class DealerCatalogService {
       enabled: this.runtime.enabled,
       open: policy?.enabled === true,
       environment: this.runtime.mode,
-      simulationEnabled: this.runtime.enabled && this.runtime.mode === 'TEST',
       pricingReady:
         policy?.reserveAmount != null &&
         policy.minimumProfit != null &&

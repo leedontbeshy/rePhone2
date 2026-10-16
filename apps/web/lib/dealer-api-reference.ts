@@ -191,7 +191,7 @@ const afterSalesExcerpt = {
   availableActions: ['UPLOAD_ATTACHMENT', 'CANCEL'],
 };
 
-/** Public server-to-server commerce endpoints; excludes portal, backoffice and sandbox administration. */
+/** Public server-to-server commerce endpoints; excludes portal and backoffice administration. */
 export const DEALER_API_ENDPOINTS: readonly DealerApiEndpoint[] = [
   {
     id: 'catalog-list',

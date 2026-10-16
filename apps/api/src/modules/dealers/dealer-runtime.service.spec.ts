@@ -53,7 +53,7 @@ describe('Dealer environment isolation', () => {
         ),
     ).toThrow('storage buckets');
   });
-  it('requires a separate LIVE key and prevents cross-environment decryption and simulation', () => {
+  it('requires a separate LIVE key and prevents cross-environment decryption', () => {
     const input = config();
     vi.stubEnv('DEALER_ENABLED', 'true');
     vi.stubEnv('DEALER_ENVIRONMENT', 'TEST');
@@ -66,9 +66,20 @@ describe('Dealer environment isolation', () => {
     vi.stubEnv('DEALER_ENCRYPTION_KEY', input.identifiers.encryptionKey);
     const live = new DealerRuntime(input, prisma);
     expect(() => live.decrypt(cipher)).toThrow();
-    expect(() => {
-      live.assertSandbox();
-    }).toThrow();
+  });
+  it.each(['TEST', 'LIVE'])('publishes only the current API address in %s', (mode) => {
+    const input = config();
+    vi.stubEnv('DEALER_ENABLED', 'true');
+    vi.stubEnv('DEALER_ENVIRONMENT', mode);
+    vi.stubEnv('DEALER_ENCRYPTION_KEY', input.identifiers.encryptionKey);
+    vi.stubEnv('DEALER_SANDBOX_WEB_URL', 'https://retired.example.test');
+    vi.stubEnv('DEALER_SANDBOX_API_URL', 'https://retired-api.example.test/api/v1');
+    vi.stubEnv('DEALER_LIVE_WEB_URL', 'https://another.example.test');
+    const runtime = new DealerRuntime(
+      { ...input, api: { ...input.api, publicUrl: 'https://current.example.test/' } },
+      prisma,
+    );
+    expect(runtime.connectionInfo()).toEqual({ apiBaseUrl: 'https://current.example.test/api/v1' });
   });
   it('rejects an environment marker from another deployment', async () => {
     const input = config();

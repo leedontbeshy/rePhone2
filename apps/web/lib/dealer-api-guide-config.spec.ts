@@ -1,78 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import { dealerApiGuideConfiguration, dealerApiGuidePortalUrl } from './dealer-api-guide-config';
+import { dealerApiGuideConfiguration } from './dealer-api-guide-config';
 
 describe('dealer API guide connection configuration', () => {
-  it('uses the current TEST API when no separate sandbox address is configured', () => {
+  it('uses the current API without changing an internal TEST environment', () => {
     expect(
       dealerApiGuideConfiguration({
         dealerEnvironment: 'TEST',
         apiPublicUrl: 'http://localhost:4000/',
       }),
-    ).toMatchObject({
-      liveApiUrl: '',
-      sandboxApiUrl: 'http://localhost:4000/api/v1',
-      initialEnvironment: 'TEST',
-    });
+    ).toEqual({ apiBaseUrl: 'http://localhost:4000/api/v1', currentEnvironment: 'TEST' });
   });
 
-  it('keeps Live and Sandbox addresses separate and does not duplicate the API prefix', () => {
+  it('uses the current production API and adds the version prefix only once', () => {
     expect(
       dealerApiGuideConfiguration({
         dealerEnvironment: 'LIVE',
         apiPublicUrl: 'https://api.example.test/api/v1/',
-        sandboxApiUrl: 'https://sandbox.example.test/api/v1/',
-        sandboxWebUrl: 'https://sandbox-web.example.test/',
+        publicApiBaseUrl: 'https://other.example.test/api/v1',
       }),
-    ).toEqual({
-      liveApiUrl: 'https://api.example.test/api/v1',
-      sandboxApiUrl: 'https://sandbox.example.test/api/v1',
-      sandboxWebUrl: 'https://sandbox-web.example.test',
-      currentEnvironment: 'LIVE',
-      initialEnvironment: 'TEST',
-    });
+    ).toEqual({ apiBaseUrl: 'https://api.example.test/api/v1', currentEnvironment: 'LIVE' });
   });
 
-  it('selects Live when it is the only configured environment', () => {
+  it('falls back to an absolute public client API address', () => {
     expect(
       dealerApiGuideConfiguration({
         dealerEnvironment: 'LIVE',
         publicApiBaseUrl: 'https://api.example.test/api/v1',
       }),
-    ).toMatchObject({
-      liveApiUrl: 'https://api.example.test/api/v1',
-      sandboxApiUrl: '',
-      initialEnvironment: 'LIVE',
+    ).toEqual({ apiBaseUrl: 'https://api.example.test/api/v1', currentEnvironment: 'LIVE' });
+  });
+
+  it('does not invent a public API address from a relative URL or missing configuration', () => {
+    expect(dealerApiGuideConfiguration({ publicApiBaseUrl: '/api/v1' }).apiBaseUrl).toBe('');
+    expect(dealerApiGuideConfiguration({}).apiBaseUrl).toBe('');
+  });
+
+  it.each([
+    'https://user:password@example.test',
+    'https://api.example.test?key=private',
+    'https://api.example.test#private',
+    'file:///api/v1',
+    'not a URL',
+  ])('does not expose an invalid or secret-bearing connection address: %s', (apiPublicUrl) => {
+    expect(dealerApiGuideConfiguration({ apiPublicUrl, dealerEnvironment: 'TEST' })).toEqual({
+      apiBaseUrl: '',
+      currentEnvironment: 'TEST',
     });
-  });
-
-  it('keeps a TEST site on its current API instead of another configured sandbox instance', () => {
-    expect(
-      dealerApiGuideConfiguration({
-        dealerEnvironment: 'TEST',
-        apiPublicUrl: 'https://current-test.example.test',
-        sandboxApiUrl: 'https://other-test.example.test/api/v1',
-      }),
-    ).toMatchObject({ sandboxApiUrl: 'https://current-test.example.test/api/v1' });
-  });
-
-  it('directs API-key creation to the portal of the selected environment', () => {
-    expect(dealerApiGuidePortalUrl('LIVE', 'TEST', 'https://sandbox.example.test/')).toBe(
-      'https://sandbox.example.test/dealer',
-    );
-    expect(dealerApiGuidePortalUrl('LIVE', 'LIVE', 'https://sandbox.example.test')).toBe('/dealer');
-    expect(dealerApiGuidePortalUrl('TEST', 'TEST', '')).toBe('/dealer');
-    expect(dealerApiGuidePortalUrl('LIVE', 'TEST', '')).toBe('');
-    expect(dealerApiGuidePortalUrl('TEST', 'LIVE', '')).toBe('');
-  });
-
-  it('does not present relative URLs or embedded credentials as customer connection addresses', () => {
-    expect(
-      dealerApiGuideConfiguration({
-        dealerEnvironment: 'TEST',
-        apiPublicUrl: 'https://user:password@example.test',
-        publicApiBaseUrl: '/api/v1',
-        sandboxApiUrl: 'https://sandbox.example.test?key=private',
-      }),
-    ).toMatchObject({ liveApiUrl: '', sandboxApiUrl: '' });
   });
 });

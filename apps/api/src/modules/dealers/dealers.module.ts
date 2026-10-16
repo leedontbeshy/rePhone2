@@ -25,9 +25,6 @@ import { DealerAfterSalesService } from './dealer-after-sales.service.js';
 import { AfterSalesRepository } from '../after-sales/after-sales.repository.js';
 import { DealerReconciliationService } from './dealer-reconciliation.service.js';
 import { DealerEnabledGuard } from './dealer-enabled.guard.js';
-import { DealerSandboxController } from './dealer-sandbox.controller.js';
-import { DealerSandboxService } from './dealer-sandbox.service.js';
-import { FulfillmentModule } from '../fulfillment/fulfillment.module.js';
 
 const controllers = [
   DealerConfigurationController,
@@ -35,13 +32,9 @@ const controllers = [
   DealerPortalController,
   DealerBackofficeController,
   DealerAfterSalesController,
-  ...(process.env['DEALER_ENVIRONMENT'] === 'TEST' && process.env['DEALER_ENABLED'] === 'true'
-    ? [DealerSandboxController]
-    : []),
 ];
 @Module({
   imports: [
-    FulfillmentModule,
     AuthModule,
     AuditModule,
     CatalogModule,
@@ -52,7 +45,6 @@ const controllers = [
   ],
   controllers,
   providers: [
-    DealerSandboxService,
     DealerEnabledGuard,
     DealerReconciliationService,
     DealerAfterSalesService,

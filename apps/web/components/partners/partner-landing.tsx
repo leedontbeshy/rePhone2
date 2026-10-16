@@ -71,7 +71,7 @@ export function PartnerLanding({
         ],
         [
           'Chưa có website thì có tham gia được không?',
-          'Có. Bạn có thể chọn máy và đặt hàng ngay trên cổng đại lý. Khi có website riêng, bạn có thể tích hợp API để đồng bộ kho máy và đơn hàng, thử kết nối trong sandbox trước khi dùng môi trường thực tế.',
+          'Có. Bạn có thể chọn máy và đặt hàng ngay trên cổng đại lý. Khi có website riêng, bạn có thể tích hợp API để đồng bộ kho máy và đơn hàng. Hướng dẫn tích hợp có đầy đủ danh sách API, cách tạo khóa và gọi yêu cầu đầu tiên.',
         ],
         [
           'Tôi thanh toán đơn hàng như thế nào?',

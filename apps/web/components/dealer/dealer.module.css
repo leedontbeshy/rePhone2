@@ -396,8 +396,7 @@
   gap: 10px;
   flex-shrink: 0;
 }
-.livePill,
-.testPill {
+.developmentNotice {
   display: inline-flex;
   gap: 7px;
   align-items: center;
@@ -407,21 +406,8 @@
   font-size: 12px;
   font-weight: 650;
   line-height: 1.4;
-}
-.livePill {
-  background: var(--color-brand-soft);
-  color: var(--color-primary-active);
-}
-.testPill {
   background: var(--color-warning-soft);
   color: var(--color-warning);
-}
-.livePill > span,
-.testPill > span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
 }
 .tabs > button {
   box-shadow: none;
@@ -654,40 +640,6 @@
   font-size: 12px;
   margin: 10px 0 20px;
 }
-.environmentGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-.environmentCard {
-  padding: 20px;
-  border: var(--border-default);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-}
-.environmentCard h3 {
-  margin: 20px 0 10px;
-  font-size: 20px;
-}
-.environmentCard p,
-.environmentCard li {
-  font-size: 14px;
-  color: var(--color-muted);
-  line-height: 1.8;
-}
-.environmentCard p {
-  margin: 0;
-}
-.environmentCard ul {
-  padding-left: 18px;
-  margin: 16px 0 24px;
-}
-.environmentCard > a {
-  margin-top: auto;
-}
 .primaryLink,
 .secondaryLink {
   display: inline-flex;
@@ -723,39 +675,6 @@
 .profileDisclosure summary:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 3px;
-}
-.integrationSteps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 24px;
-}
-.integrationSteps li {
-  display: flex;
-  gap: 18px;
-}
-.integrationSteps li > span {
-  color: var(--color-primary);
-  background: var(--color-brand-soft);
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-}
-.integrationSteps strong {
-  font-size: 15px;
-  line-height: 1.5;
-}
-.integrationSteps p {
-  margin: 5px 0 0;
-  color: var(--color-muted);
-  font-size: 14px;
-  line-height: 1.7;
 }
 .note {
   display: flex;
@@ -820,8 +739,7 @@
   .heroIcon {
     display: none;
   }
-  .overviewGrid,
-  .environmentGrid {
+  .overviewGrid {
     grid-template-columns: minmax(0, 1fr);
   }
   .metricCard {
@@ -844,9 +762,6 @@
   }
   .sectionHeading {
     flex-wrap: wrap;
-  }
-  .environmentCard {
-    padding: 20px;
   }
 }
 .header {
@@ -1345,8 +1260,7 @@
   .profileMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .overviewGrid,
-  .environmentGrid {
+  .overviewGrid {
     grid-template-columns: minmax(0, 1fr);
   }
   .backofficePage .metricCard + .metricCard {
@@ -1405,6 +1319,16 @@
   .primaryLink,
   .secondaryLink {
     white-space: normal;
+  }
+}
+@container dealer-workspace (min-width: 561px) {
+  .portalPage .tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .portalPage .tabs > button {
+    min-width: 0;
+    padding-inline: var(--space-2);
   }
 }
 @container dealer-workspace (max-width: 560px) {

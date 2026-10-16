@@ -31,11 +31,9 @@ export function DealerChannelControl({
       <div className={styles.channelHeader}>
         <div>
           <h3>Cổng đại lý</h3>
-          <p className={styles.channelEnvironment}>
-            {configuration['environment'] === 'TEST'
-              ? 'Sandbox · Dữ liệu thử'
-              : 'Live · Kinh doanh thực tế'}
-          </p>
+          {configuration['environment'] === 'TEST' && (
+            <p className={styles.channelEnvironment}>Dữ liệu phát triển — không chuyển tiền thật</p>
+          )}
         </div>
         <StatusChip
           label={!ready ? 'Chưa sẵn sàng' : open ? 'Đang mở' : 'Tạm đóng'}

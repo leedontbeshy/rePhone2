@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { stabilizeWp11VisualPage } from './support/wp11-visual';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { browserTestTitle as bt } from '../../apps/web/lib/frontend-browser-coverage';
 
 test.use({ actionTimeout: 15000 });
@@ -44,7 +44,15 @@ test(
     await expect(
       page.getByRole('heading', { name: 'Xác nhận thông tin đã xem lại' }),
     ).toBeVisible();
+    const createdOrder = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/dealer/orders' &&
+        response.request().method() === 'POST',
+    );
     await page.getByRole('button', { name: 'Tạo đơn và giữ máy 30 phút' }).click();
+    const created = (await (await createdOrder).json()) as {
+      data: { order: { id: string; grandTotal: string } };
+    };
     await expect(page.getByRole('heading', { name: 'Thanh toán cho rePhone' })).toBeVisible();
     await expect(
       page.getByText('TEST BANK — KHÔNG CHUYỂN TIỀN', { exact: false }).first(),
@@ -97,12 +105,69 @@ test(
       .filter({ hasText: externalId })
       .getByRole('button', { name: 'Xem đơn' })
       .click();
-    await admin.getByLabel('Tình huống mô phỏng').selectOption('PAYMENT');
-    await admin.getByRole('button', { name: 'Chạy tình huống TEST' }).click();
-    await expect(admin.getByText('Đã xác nhận', { exact: true }).first()).toBeVisible();
-    await admin.getByLabel('Tình huống mô phỏng').selectOption('DELIVER');
-    await admin.getByRole('button', { name: 'Chạy tình huống TEST' }).click();
-    await expect(admin.getByText('Hoàn tất', { exact: true }).first()).toBeVisible();
+    await expect(admin.getByLabel('Tình huống mô phỏng')).toHaveCount(0);
+    const fulfillmentLink = admin.getByRole('link', {
+      name: 'Mở màn hình chuẩn bị và giao hàng',
+      exact: false,
+    });
+    await expect(fulfillmentLink).toHaveAttribute(
+      'href',
+      `/backoffice/orders/${created.data.order.id}`,
+    );
+    await admin.getByRole('button', { name: 'Giao dịch ngân hàng', exact: true }).click();
+    const receipt = admin.locator('form').filter({
+      has: admin.getByRole('button', { name: 'Xác nhận khoản thực nhận', exact: true }),
+    });
+    await receipt
+      .getByLabel('Mã đơn nội bộ (nếu đã xác định)', { exact: false })
+      .fill(created.data.order.id);
+    await receipt
+      .getByLabel('Mã tài khoản ngân hàng nhận tiền', { exact: false })
+      .fill('TEST-BANK');
+    await receipt.getByLabel('Mã giao dịch trên sổ phụ', { exact: false }).fill(externalId);
+    await receipt
+      .getByLabel('Số tiền thực nhận (đồng)', { exact: false })
+      .fill(created.data.order.grandTotal);
+    const receivedAt = await admin.evaluate(() => {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+      return local.toISOString().slice(0, 16);
+    });
+    await receipt.getByLabel('Thời điểm tiền vào', { exact: false }).fill(receivedAt);
+    await receipt.getByLabel('Lý do', { exact: false }).fill('Xác nhận khoản nhận trong kiểm thử');
+    const receiptResponse = admin.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/backoffice/dealers/receipts' &&
+        response.request().method() === 'POST',
+    );
+    await receipt.getByRole('button', { name: 'Xác nhận khoản thực nhận', exact: true }).click();
+    expect((await receiptResponse).status()).toBe(201);
+    await expect(admin.getByText('Đã cập nhật thành công.', { exact: true })).toBeVisible();
+    await admin.goto(`/backoffice/orders/${created.data.order.id}`);
+    const prepare = await openOrderAction(admin, 'Bắt đầu chuẩn bị hàng');
+    await prepare.locator('button[type="submit"]').click();
+    await expect(admin.getByText('Đã bắt đầu chuẩn bị hàng.', { exact: true })).toBeVisible();
+    const shipment = await openOrderAction(admin, 'Tạo vận đơn');
+    await shipment.locator('#carrier-name').fill('rePhone Browser');
+    await shipment.locator('#tracking-code').fill(externalId);
+    await shipment.locator('button[type="submit"]').click();
+    await expect(admin.getByText('Đã tạo vận đơn.', { exact: true })).toBeVisible();
+    const handover = await openOrderAction(admin, 'Bàn giao cho đơn vị vận chuyển');
+    await handover.locator('button[type="submit"]').click();
+    await expect(
+      admin.getByText('Đã bàn giao kiện hàng cho đơn vị vận chuyển.', { exact: true }),
+    ).toBeVisible();
+    const delivered = await openOrderAction(admin, 'Xác nhận giao thành công');
+    await expect(
+      delivered.getByText('Đơn đã thanh toán đủ; hệ thống không ghi nhận thêm khoản thu hộ.', {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await delivered.locator('button[type="submit"]').click();
+    await expect(
+      admin.getByText('Đã xác nhận giao hàng thành công.', { exact: true }),
+    ).toBeVisible();
+    await expect(admin.getByText('Đã hoàn tất', { exact: true }).first()).toBeVisible();
     await captureStablePage(admin, {
       path: testInfo.outputPath('dealer-backoffice-desktop.png'),
       fullPage: true,
@@ -193,30 +258,15 @@ test(bt('browser:dealer-flow', 'public-docs'), async ({ page }, testInfo) => {
   await expect(overview).toContainText('catalog:read');
   await expect(overview).toContainText('after-sales:write');
 
-  await page.getByRole('button', { name: 'Sandbox · TEST', exact: true }).click();
-  const testConfiguration = await page
-    .getByLabel('Cấu hình trên máy chủ website của bạn · TEST', { exact: true })
+  const configuration = await page
+    .getByLabel('Cấu hình trên máy chủ website của bạn', { exact: true })
     .innerText();
-  await expect(firstRequest).toContainText('rp_test_');
-  const testBase = testConfiguration.match(/^REPHONE_API_BASE_URL=(.+)$/m)?.[1];
-  expect(testBase).toBeTruthy();
-  if (testBase && !testBase.startsWith('<')) await expect(firstRequest).toContainText(testBase);
-  await page.getByRole('button', { name: 'Thực tế · LIVE', exact: true }).click();
-  const liveConfiguration = await page
-    .getByLabel('Cấu hình trên máy chủ website của bạn · LIVE', { exact: true })
-    .innerText();
-  await expect(firstRequest).toContainText('rp_live_');
-  await expect(firstRequest).not.toContainText('rp_test_');
-  const liveBase = liveConfiguration.match(/^REPHONE_API_BASE_URL=(.+)$/m)?.[1];
-  expect(liveBase).toBeTruthy();
-  if (liveBase && !liveBase.startsWith('<')) {
-    await expect(firstRequest).toContainText(liveBase);
-  } else {
-    await expect(page.locator('#connect').getByRole('status')).toContainText(
-      'Chưa có địa chỉ API Live',
-    );
-  }
-  await page.getByRole('button', { name: 'Sandbox · TEST', exact: true }).click();
+  const apiBase = configuration.match(/^REPHONE_API_BASE_URL=(.+)$/m)?.[1];
+  expect(apiBase).toBeTruthy();
+  if (apiBase && !apiBase.startsWith('<')) await expect(firstRequest).toContainText(apiBase);
+  await expect(firstRequest).toContainText('<TOAN_BO_KHOA_API_DUOC_CAP>');
+  await expect(page.getByRole('button', { name: /Sandbox|Thực tế · LIVE/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Sandbox/i })).toHaveCount(0);
 
   // Keep the test independent of clipboard permissions and the user's system clipboard.
   await page.evaluate(() => {
@@ -321,6 +371,17 @@ async function captureStablePage(page: Page, options: Parameters<Page['screensho
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   await page.mouse.move(0, 0);
   await page.screenshot(options);
+}
+
+async function openOrderAction(page: Page, label: string): Promise<Locator> {
+  await page
+    .getByRole('group', { name: 'Thao tác đang được phép' })
+    .getByRole('button', { name: label, exact: true })
+    .click();
+  const details = page.locator('details').filter({ hasText: label });
+  await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+  return details;
 }
 
 async function login(page: Page, email: string, password: string, destination: string) {

@@ -8,10 +8,9 @@ import {
   PackageIcon as Package,
   ShieldCheckIcon as ShieldCheck,
   PlugsConnectedIcon as PlugsConnected,
-  FlaskIcon as Flask,
 } from '@phosphor-icons/react';
 import { DealerCatalog } from './dealer-catalog';
-import { DealerWorkspaceHeader, DealerEnvironmentPanel, DealerCode } from './dealer-workspace';
+import { DealerWorkspaceHeader, DealerCode } from './dealer-workspace';
 import { useAuth } from '@/app/auth-provider';
 import { PartnerLanding } from '@/components/partners/partner-landing';
 import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
@@ -38,7 +37,6 @@ const tabs = [
   ['orders', 'Đơn hàng'],
   ['after-sales', 'Hậu mãi'],
   ['integration', 'Kết nối website'],
-  ['sandbox', 'Sandbox'],
 ] as const;
 type Tab = (typeof tabs)[number][0];
 const tabIcons = {
@@ -47,7 +45,6 @@ const tabIcons = {
   orders: Package,
   'after-sales': ShieldCheck,
   integration: PlugsConnected,
-  sandbox: Flask,
 };
 
 export function DealerPortal() {
@@ -162,20 +159,18 @@ function PortalContent({ client }: { client: unknown }) {
       ) : configuration['enabled'] !== true ? (
         <div id="dang-ky">
           <DealerEmpty>
-            Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình thử nghiệm.
+            Cổng đại lý chưa mở. Vui lòng liên hệ rePhone để đăng ký chương trình đại lý.
           </DealerEmpty>
         </div>
       ) : (
         <>
+          {!profile && configuration['environment'] === 'TEST' && (
+            <InlineAlert tone="info">Dữ liệu phát triển — không chuyển tiền thật</InlineAlert>
+          )}
           {configuration['open'] !== true && (
             <InlineAlert tone="info">
               Cổng đại lý đang tạm đóng đăng ký và đặt hàng mới. Đơn đã tạo, thanh toán và hậu mãi
               vẫn được xử lý bình thường.
-            </InlineAlert>
-          )}
-          {configuration['environment'] === 'TEST' && (
-            <InlineAlert tone="info">
-              Đây là môi trường thử nghiệm. Không chuyển tiền thật theo thông tin tại đây.
             </InlineAlert>
           )}
           {profile && (
@@ -303,7 +298,6 @@ function PortalContent({ client }: { client: unknown }) {
               reload={loadProfile}
             />
           )}
-          {tab === 'sandbox' && <DealerEnvironmentPanel configuration={configuration} />}
           {['orders', 'after-sales'].includes(tab) && (
             <>
               {busy ? (
@@ -713,11 +707,6 @@ function DealerIntegration({
             <h2>Kết nối website của bạn</h2>
             <p>Tạo API key và đồng bộ đơn hàng với rePhone.</p>
           </div>
-          <span
-            className={configuration['environment'] === 'TEST' ? styles.testPill : styles.livePill}
-          >
-            {configuration['environment'] === 'TEST' ? 'Key TEST' : 'Key LIVE'}
-          </span>
         </div>
         <p>API chỉ được gọi từ máy chủ của đại lý. Không đưa khóa vào mã JavaScript trình duyệt.</p>
         <p className={styles.muted}>

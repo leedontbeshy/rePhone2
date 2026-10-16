@@ -1,7 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { InlineAlert } from '@/components/ui';
 import {
   dealerDate,
   dealerMoney,
@@ -12,62 +10,6 @@ import {
 } from '@/lib/dealer-api';
 import { DealerForm } from './dealer-primitives';
 import styles from './dealer.module.css';
-
-export function DealerSimulation({
-  api,
-  orderId,
-  done,
-}: {
-  api: DealerApi;
-  orderId: string;
-  done: () => Promise<void>;
-}) {
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void api
-      .get('backoffice/dealers/configuration')
-      .then((value) => {
-        if (active) setEnabled(dealerRecord(value)['simulationEnabled'] === true);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [api]);
-  if (!enabled) return null;
-  return (
-    <section className={styles.card}>
-      <h2>Diễn tập trên TEST</h2>
-      <InlineAlert tone="info">
-        Chỉ dùng dữ liệu và tiền giả. Các bước vẫn kiểm tra giữ máy, tiền và trạng thái như đơn
-        thật.
-      </InlineAlert>
-      <DealerForm
-        fields={[
-          {
-            name: 'action',
-            label: 'Tình huống mô phỏng',
-            options: [
-              { value: 'PAYMENT', label: 'Nhận đủ tiền' },
-              { value: 'DELIVER', label: 'Bàn giao và giao thành công' },
-              { value: 'FAIL', label: 'Giao thất bại' },
-              { value: 'RETURN', label: 'Nhận máy hoàn về' },
-              { value: 'CANCEL', label: 'Hủy đơn' },
-              { value: 'REFUND', label: 'Chuyển hoàn một khoản đang chờ' },
-            ],
-          },
-          { name: 'reason', label: 'Ghi chú diễn tập', value: 'Diễn tập luồng đại lý trên TEST' },
-        ]}
-        submit="Chạy tình huống TEST"
-        onSubmit={async (data) => {
-          await api.post(`backoffice/dealers/sandbox/orders/${orderId}/simulate`, data);
-          await done();
-        }}
-      />
-    </section>
-  );
-}
 
 export function DealerReturnFees({
   api,
