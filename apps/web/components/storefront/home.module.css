@@ -159,7 +159,7 @@
 }
 @media (min-width: 90rem) {
   .layout {
-    grid-template-columns: 8.5rem minmax(0, 1fr) 8.5rem;
+    grid-template-columns: 11.5rem minmax(0, 1fr) 11.5rem;
     gap: var(--space-4);
   }
   .home {
@@ -168,7 +168,7 @@
 }
 @media (min-width: 120rem) {
   .layout {
-    grid-template-columns: 10rem minmax(0, 1fr) 10rem;
+    grid-template-columns: 13rem minmax(0, 1fr) 13rem;
     width: calc(100% + 23rem);
     margin-inline: -11.5rem;
   }

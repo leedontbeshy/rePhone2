@@ -12,22 +12,35 @@ export function DealerWorkspaceHeader({
   title,
   description,
   test,
+  variant = 'default',
+  status,
   children,
 }: {
   title: string;
   description: string;
   test: boolean;
+  variant?: 'default' | 'portal';
+  status?: string;
   children?: ReactNode;
 }) {
   return (
-    <header className={styles.workspaceHero}>
+    <header
+      className={[styles.workspaceHero, variant === 'portal' && styles.portalHero]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className={styles.heroLead}>
         <span className={styles.heroIcon}>
           <Storefront size={28} weight="duotone" aria-hidden />
         </span>
         <div>
-          <span className={styles.eyebrow}>rePhone Partners</span>
-          <h1>{title}</h1>
+          <span className={styles.eyebrow}>
+            {variant === 'portal' ? 'Cổng đại lý' : 'rePhone Partners'}
+          </span>
+          <div className={styles.heroTitle}>
+            <h1>{title}</h1>
+            {status && <span className={styles.badge}>{status}</span>}
+          </div>
           <p>{description}</p>
         </div>
       </div>

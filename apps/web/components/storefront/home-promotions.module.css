@@ -59,11 +59,11 @@
     padding-top: 6rem;
   }
   .banner {
-    padding: var(--space-4) var(--space-3);
+    padding: var(--space-5) var(--space-4);
     gap: var(--space-3);
   }
   .banner strong {
-    font-size: var(--font-size-body);
+    font-size: var(--font-size-card-title);
   }
 }
 @media (max-width: 89.999rem) {
@@ -78,7 +78,7 @@
   }
   .banner {
     display: grid;
-    grid-template-columns: 1fr 6rem;
+    grid-template-columns: minmax(0, 1fr) clamp(6rem, 10vw, 8rem);
     height: 100%;
   }
   .banner strong,
