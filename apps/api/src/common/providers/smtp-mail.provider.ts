@@ -43,3 +43,21 @@ export class NoopMailProvider implements MailProvider {
     return Promise.resolve();
   }
 }
+
+export class MailDisabledError extends Error {
+  public constructor() {
+    super('Email is disabled for this demo.');
+    this.name = 'MailDisabledError';
+  }
+}
+
+export class DisabledMailProvider implements MailProvider {
+  public probe(): Promise<'not-configured'> {
+    return Promise.resolve('not-configured');
+  }
+
+  public send(message: MailMessage): Promise<void> {
+    void message;
+    return Promise.reject(new MailDisabledError());
+  }
+}

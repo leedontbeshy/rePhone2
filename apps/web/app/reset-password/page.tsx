@@ -20,6 +20,7 @@ import {
   type AuthFieldErrors,
 } from '@/components/auth';
 import { Button, ErrorSummary, InlineAlert, Link } from '@/components/ui';
+import { demoMode } from '@/lib/demo';
 
 export default function ResetPasswordPage() {
   const { client, logout } = useAuth();
@@ -84,6 +85,13 @@ export default function ResetPasswordPage() {
       setSubmitting(false);
     }
   }
+
+  if (demoMode)
+    return (
+      <AuthPage title="Đặt mật khẩu mới" description="Email đang tắt trong bản demo.">
+        <Link href="/login">Quay lại đăng nhập</Link>
+      </AuthPage>
+    );
 
   return (
     <AuthPage

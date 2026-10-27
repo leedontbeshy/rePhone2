@@ -8669,6 +8669,15 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorResponseDto"];
                 };
             };
+            /** @description SERVICE_UNAVAILABLE when email flows are disabled */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
         };
     };
     forgotPassword: {
@@ -8706,6 +8715,15 @@ export interface operations {
                 headers: {
                     /** @description Seconds until the current rate-limit window permits a retry. */
                     "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when email flows are disabled */
+            503: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {
@@ -8939,6 +8957,15 @@ export interface operations {
                 headers: {
                     /** @description Seconds until the current rate-limit window permits a retry. */
                     "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorResponseDto"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when email flows are disabled */
+            503: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {

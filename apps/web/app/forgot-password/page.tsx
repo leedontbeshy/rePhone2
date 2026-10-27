@@ -17,6 +17,7 @@ import {
   type AuthFieldErrors,
 } from '@/components/auth';
 import { Button, ErrorSummary, InlineAlert, Input, Link } from '@/components/ui';
+import { demoMode } from '@/lib/demo';
 
 const description = 'Nhập email tài khoản để yêu cầu một liên kết đặt lại mật khẩu.';
 
@@ -80,6 +81,10 @@ export default function ForgotPasswordPage() {
             </Link>
           </AuthFormActions>
         </div>
+      ) : demoMode ? (
+        <InlineAlert tone="info" title="Email đang tắt trong bản demo">
+          Luồng đặt lại mật khẩu không khả dụng. Vui lòng dùng tài khoản demo đã được cung cấp.
+        </InlineAlert>
       ) : (
         <AuthForm onSubmit={(event) => void submit(event)} aria-busy={submitting || undefined}>
           <ErrorSummary ref={summaryRef} errors={issue.errors} />

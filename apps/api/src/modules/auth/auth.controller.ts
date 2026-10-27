@@ -36,6 +36,7 @@ import {
 import { AuthService } from './auth.service.js';
 import type { RequestMetadata, SessionIssueResult, SessionPayload } from './auth.types.js';
 import { CsrfGuard } from './csrf.guard.js';
+import { ApiError } from '../../common/errors/api-error.js';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -134,8 +135,10 @@ export class AuthController {
   @ApiErrorResponses(
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
     { status: 429, description: 'RATE_LIMITED' },
+    { status: 503, description: 'SERVICE_UNAVAILABLE when email flows are disabled' },
   )
   public forgotPassword(@Body() input: ForgotPasswordDto, @Req() request: Request) {
+    this.assertMailEnabled();
     return this.authService.forgotPassword(input.email, requestMetadata(request));
   }
 
@@ -151,8 +154,10 @@ export class AuthController {
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
     { status: 422, description: 'ONE_TIME_TOKEN_INVALID' },
     { status: 429, description: 'RATE_LIMITED' },
+    { status: 503, description: 'SERVICE_UNAVAILABLE when email flows are disabled' },
   )
   public resetPassword(@Body() input: ResetPasswordDto, @Req() request: Request): Promise<void> {
+    this.assertMailEnabled();
     return this.authService.resetPassword(input.token, input.newPassword, requestMetadata(request));
   }
 
@@ -168,11 +173,13 @@ export class AuthController {
     { status: 400, description: 'VALIDATION_FAILED or MALFORMED_JSON' },
     { status: 422, description: 'ONE_TIME_TOKEN_INVALID' },
     { status: 429, description: 'RATE_LIMITED' },
+    { status: 503, description: 'SERVICE_UNAVAILABLE when email flows are disabled' },
   )
   public acceptEmployeeInvitation(
     @Body() input: AcceptEmployeeInvitationDto,
     @Req() request: Request,
   ): Promise<void> {
+    this.assertMailEnabled();
     return this.authService.acceptEmployeeInvitation(
       input.token,
       input.password,
@@ -186,6 +193,12 @@ export class AuthController {
       expires: result.refreshExpiresAt,
       maxAge: Math.max(0, result.refreshExpiresAt.getTime() - Date.now()),
     });
+  }
+
+  private assertMailEnabled(): void {
+    if (this.config.mail.enabled === false) {
+      throw new ApiError('SERVICE_UNAVAILABLE', 'Luồng email đang tắt trong bản demo.');
+    }
   }
 
   private cookieOptions(): CookieOptions {

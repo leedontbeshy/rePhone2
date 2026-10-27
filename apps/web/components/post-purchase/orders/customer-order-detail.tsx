@@ -1,5 +1,7 @@
 'use client';
 
+import { demoMode } from '@/lib/demo';
+
 import { DeviceMobileIcon, PackageIcon, UploadSimpleIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -419,7 +421,7 @@ export function CustomerOrderDetail({ orderNumber }: Readonly<{ orderNumber: str
                               <dd>{formatCustomerDateTime(payment.submittedAt)}</dd>
                             </div>
                           ) : null}
-                          {payment.bankTransferInstructions ? (
+                          {!demoMode && payment.bankTransferInstructions ? (
                             <>
                               <div>
                                 <dt>Ngân hàng</dt>

@@ -4,6 +4,10 @@ import { loadWorkspaceEnvironment } from './config/load-environment.js';
 
 loadWorkspaceEnvironment();
 
+if (process.env.DEMO_MODE === 'true' && process.env.DEALER_WORKER_ENABLED !== 'false') {
+  throw new Error('DEALER_WORKER_ENABLED must be false in demo mode.');
+}
+
 const { createApplication } = await import('./application.js');
 const { APP_CONFIG } = await import('./config/app-config.module.js');
 

@@ -26,6 +26,29 @@ function validEnvironment(): NodeJS.ProcessEnv {
 }
 
 describe('loadConfig', () => {
+  it('requires deliberate demo settings without weakening production secret checks', () => {
+    const environment: NodeJS.ProcessEnv = {
+      ...validEnvironment(),
+      DEMO_MODE: 'true',
+      MAIL_ENABLED: 'false',
+      SCHEDULER_ENABLED: 'false',
+      IDENTIFIER_KEY_VERSION: '2',
+    };
+    delete environment.SMTP_HOST;
+    delete environment.MAIL_FROM;
+    expect(loadConfig(environment)).toMatchObject({
+      demo: true,
+      mail: { enabled: false },
+      identifiers: { keyVersion: 2 },
+    });
+    expect(() =>
+      loadConfig({ ...environment, DEMO_MODE: 'false', NODE_ENV: 'development' }),
+    ).toThrow(/MAIL_ENABLED/);
+    expect(() => loadConfig({ ...environment, SCHEDULER_ENABLED: 'true' })).toThrow(
+      /SCHEDULER_ENABLED/,
+    );
+    expect(() => loadConfig({ ...environment, MAIL_ENABLED: 'true' })).toThrow(/MAIL_ENABLED/);
+  });
   it('parses required values and applies P0 defaults', () => {
     const environment = validEnvironment();
     environment.SUPABASE_URL = 'https://example.supabase.co/rest/v1/';

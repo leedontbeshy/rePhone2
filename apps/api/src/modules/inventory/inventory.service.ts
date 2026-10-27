@@ -141,7 +141,7 @@ export class InventoryService {
             carrierName: input.simLockStatus === 'UNLOCKED' ? null : (input.carrierName ?? null),
             simConfiguration: input.simConfiguration,
             ...protectedData(protectedInput),
-            identifierKeyVersion: 1,
+            identifierKeyVersion: this.identifiers.keyVersion,
             lifecycleStatus: 'RECEIVED',
             ...(input.salePrice === undefined ? {} : { salePrice: input.salePrice }),
             ...(input.compareAtPrice === undefined ? {} : { compareAtPrice: input.compareAtPrice }),

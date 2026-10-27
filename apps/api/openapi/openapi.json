@@ -14523,6 +14523,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when email flows are disabled"
           }
         },
         "summary": "Consume an employee invitation and activate the account",
@@ -14584,6 +14594,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when email flows are disabled"
           }
         },
         "summary": "Request a password-reset email",
@@ -14910,6 +14930,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when email flows are disabled"
           }
         },
         "summary": "Consume a reset token and set a password",

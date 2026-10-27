@@ -20,6 +20,7 @@ import {
   type AuthFieldErrors,
 } from '@/components/auth';
 import { Button, ErrorSummary, InlineAlert, Link } from '@/components/ui';
+import { demoMode } from '@/lib/demo';
 
 export default function AcceptInvitationPage() {
   const { client } = useAuth();
@@ -78,6 +79,16 @@ export default function AcceptInvitationPage() {
       setSubmitting(false);
     }
   }
+
+  if (demoMode)
+    return (
+      <AuthPage
+        title="Kích hoạt tài khoản nhân viên"
+        description="Email đang tắt trong bản demo. Dùng tài khoản nhân viên đã có."
+      >
+        <Link href="/login">Quay lại đăng nhập</Link>
+      </AuthPage>
+    );
 
   return (
     <AuthPage

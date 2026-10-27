@@ -13,7 +13,7 @@ export interface ProtectedIdentifier {
   encrypted: string;
   hmac: string;
   suffix: string;
-  keyVersion: 1;
+  keyVersion: 1 | 2;
 }
 
 export class IdentifierValidationError extends Error {
@@ -27,7 +27,12 @@ export class IdentifierCodec {
   private readonly encryptionKey: Buffer;
   private readonly hmacKey: Buffer;
 
-  public constructor(encryptionKeyBase64: string, hmacKeyBase64: string) {
+  public constructor(
+    encryptionKeyBase64: string,
+    hmacKeyBase64: string,
+    public readonly keyVersion: 1 | 2 = 1,
+  ) {
+    if (![1, 2].includes(keyVersion)) throw new TypeError('Unsupported identifier key version');
     this.encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
     this.hmacKey = Buffer.from(hmacKeyBase64, 'base64');
     if (this.encryptionKey.length !== 32 || this.hmacKey.length < 32) {
@@ -51,7 +56,7 @@ export class IdentifierCodec {
       encrypted: Buffer.concat([nonce, ciphertext, tag]).toString('base64url'),
       hmac: this.lookupHmac(type, normalized),
       suffix: normalized.slice(-4),
-      keyVersion: 1,
+      keyVersion: this.keyVersion,
     };
   }
 
@@ -61,7 +66,7 @@ export class IdentifierCodec {
   }
 
   public decrypt(encrypted: string, keyVersion: number): string {
-    if (keyVersion !== 1) {
+    if (keyVersion !== this.keyVersion) {
       throw new TypeError(`Unsupported identifier key version ${keyVersion.toString()}`);
     }
     if (encrypted.startsWith('v1:')) {
@@ -96,6 +101,12 @@ export class IdentifierCodec {
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
   }
+}
+
+export function parseIdentifierKeyVersion(value: string | undefined): 1 | 2 {
+  if (value === undefined || value === '1') return 1;
+  if (value === '2') return 2;
+  throw new TypeError('IDENTIFIER_KEY_VERSION must be 1 or 2');
 }
 
 export function normalizeIdentifier(type: IdentifierType, plaintext: string): string {

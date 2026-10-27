@@ -10,6 +10,7 @@ import { buildOneTimeAuthLink } from './auth-one-time-link.js';
 import { AuthSessionsRepository } from './repositories/auth-sessions.repository.js';
 import { AuthTokensRepository } from './repositories/auth-tokens.repository.js';
 import { TokenService } from './token.service.js';
+import { ApiError } from '../../common/errors/api-error.js';
 
 export interface PendingEmployeeInvitation {
   rawToken: string;
@@ -37,6 +38,12 @@ export class EmployeeIdentityGateway {
     userId: string,
     issuedAt: Date,
   ): Promise<PendingEmployeeInvitation> {
+    if (this.config.mail.enabled === false) {
+      throw new ApiError(
+        'SERVICE_UNAVAILABLE',
+        'Email đang tắt trong bản demo. Dùng tài khoản nhân viên đã có.',
+      );
+    }
     const rawToken = this.tokens.createOpaqueToken();
     const tokenHash = this.tokens.digestOpaqueToken(rawToken);
     const expiresAt = new Date(

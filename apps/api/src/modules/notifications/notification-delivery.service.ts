@@ -4,6 +4,7 @@ import {
   type MailMessage,
   type MailProvider,
 } from '../../common/providers/mail-provider.js';
+import { MailDisabledError } from '../../common/providers/smtp-mail.provider.js';
 
 export type NotificationDelivery = 'SENT' | 'FAILED';
 
@@ -37,6 +38,7 @@ export class NotificationDeliveryService {
         await withTimeout(this.mail.send(input.message), Math.min(ATTEMPT_TIMEOUT_MS, remainingMs));
         return 'SENT';
       } catch (error) {
+        if (error instanceof MailDisabledError) return 'FAILED';
         lastError = error;
       }
     }

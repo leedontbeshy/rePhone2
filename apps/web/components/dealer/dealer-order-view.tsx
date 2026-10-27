@@ -1,5 +1,7 @@
 'use client';
 
+import { demoMode } from '@/lib/demo';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { DisclosureSummary, Button, InlineAlert } from '@/components/ui';
@@ -112,13 +114,19 @@ export function DealerOrderView({
             <section className={styles.card} key={dealerText(row['id'])}>
               <h3>{row['purpose'] === 'BALANCE' ? 'Chuyển bổ sung' : 'Thanh toán cho rePhone'}</h3>
               <p className={styles.price}>{dealerMoney(row['requiredAmount'])}</p>
-              <p>
-                {dealerText(bank['bankName'])} · {dealerText(bank['bankAccountNumber'])} ·{' '}
-                {dealerText(bank['bankAccountHolder'])}
-              </p>
-              <p>
-                Nội dung: <strong>{dealerText(row['transferContent'])}</strong>
-              </p>
+              {demoMode ? (
+                <p>Giao dịch thử nghiệm — không chuyển tiền thật.</p>
+              ) : (
+                <>
+                  <p>
+                    {dealerText(bank['bankName'])} · {dealerText(bank['bankAccountNumber'])} ·{' '}
+                    {dealerText(bank['bankAccountHolder'])}
+                  </p>
+                  <p>
+                    Nội dung: <strong>{dealerText(row['transferContent'])}</strong>
+                  </p>
+                </>
+              )}
               <p className={styles.muted}>
                 Hạn thanh toán: {dealerDate(row['dueAt'])}. Chỉ khoản tiền đã được đối chiếu mới
                 được xác nhận.

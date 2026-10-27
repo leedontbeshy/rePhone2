@@ -385,6 +385,15 @@ describe('InventoryService intake and update', () => {
     );
   });
 
+  it('uses the active codec version when creating inventory after key rotation', async () => {
+    const fixture = serviceFixture({ keyVersion: 2 });
+    await fixture.service.intake(intakeInput(), actor);
+    expect(fixture.repository.createUnit).toHaveBeenCalledWith(
+      expect.objectContaining({ identifierKeyVersion: 2 }),
+      expect.anything(),
+    );
+  });
+
   it('maps a Prisma unique violation from intake and preserves unrelated failures', async () => {
     const unique = serviceFixture({
       createUnit: vi.fn(async () => {
@@ -872,6 +881,7 @@ function serviceFixture(overrides: Record<string, unknown> = {}) {
     ...withoutFixtureOnlyOverrides(overrides),
   } as unknown as InventoryRepository;
   const identifiers = {
+    keyVersion: overrides['keyVersion'] ?? 1,
     protect: vi.fn((type: 'IMEI' | 'SERIAL' | 'EID', value: string) =>
       protectedIdentifier(`${type}:${value}`),
     ),
@@ -906,6 +916,7 @@ function withoutFixtureOnlyOverrides(overrides: Record<string, unknown>) {
   delete result['protect'];
   delete result['lookupHmac'];
   delete result['decrypt'];
+  delete result['keyVersion'];
   return result;
 }
 

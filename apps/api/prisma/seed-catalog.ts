@@ -1,5 +1,8 @@
 import { Prisma, type PrismaClient } from '../src/generated/prisma/client.js';
-import { IdentifierCodec } from '../src/modules/inventory/identifier-protection.js';
+import {
+  IdentifierCodec,
+  parseIdentifierKeyVersion,
+} from '../src/modules/inventory/identifier-protection.js';
 import { DEMO_CATALOG_ASSETS, type DemoCatalogAssetKey } from './demo-catalog-assets.js';
 
 const PASSED_CHECK_KEYS = [
@@ -297,6 +300,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
   const identifierCodec = new IdentifierCodec(
     requiredEnvironment('IDENTIFIER_ENCRYPTION_KEY'),
     requiredEnvironment('IDENTIFIER_HMAC_KEY'),
+    parseIdentifierKeyVersion(process.env.IDENTIFIER_KEY_VERSION),
   );
   const publicBucket = requiredEnvironment('SUPABASE_PUBLIC_BUCKET');
   const iphonePolicy = await prisma.warrantyPolicy.findUniqueOrThrow({
@@ -468,7 +472,7 @@ export async function seedPublicCatalog(prisma: PrismaClient): Promise<void> {
         serialEncrypted: protectedSerial.encrypted,
         serialHmac: protectedSerial.hmac,
         serialSuffix: protectedSerial.suffix,
-        identifierKeyVersion: 1,
+        identifierKeyVersion: protectedSerial.keyVersion,
         lifecycleStatus: 'AVAILABLE',
         salePrice: definition.salePrice,
         compareAtPrice: definition.compareAtPrice,

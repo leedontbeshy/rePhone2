@@ -22,4 +22,6 @@ uml/
 /design-qa.md
 .understand-anything/
 .local/
+secrets/
+handbook/
 output/

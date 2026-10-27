@@ -13,6 +13,20 @@ const ENCRYPTION_KEY = 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=';
 const HMAC_KEY = 'YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=';
 
 describe('IdentifierCodec', () => {
+  it('writes version two with fresh keys and refuses a mismatched key version', () => {
+    const codec = new IdentifierCodec(
+      Buffer.alloc(32, 3).toString('base64'),
+      Buffer.alloc(32, 4).toString('base64'),
+      2,
+    );
+    const value = codec.protect('SERIAL', 'SERIAL123');
+    expect(value.keyVersion).toBe(2);
+    expect(codec.decrypt(value.encrypted, 2)).toBe('SERIAL123');
+    expect(() => codec.decrypt(value.encrypted, 1)).toThrow(/key version/);
+    expect(() =>
+      new IdentifierCodec(ENCRYPTION_KEY, HMAC_KEY).decrypt(value.encrypted, 2),
+    ).toThrow();
+  });
   const codec = new IdentifierCodec(ENCRYPTION_KEY, HMAC_KEY);
 
   it('normalizes and validates each identifier type', () => {

@@ -1,0 +1,71 @@
+# Import secrets privately in Render. Do not add DIRECT_URL to API runtime.
+services:
+  - type: web
+    name: rephone-demo-api
+    branch: deploy
+    runtime: docker
+    plan: free
+    region: singapore
+    autoDeployTrigger: 'off'
+    dockerfilePath: ./infra/docker/api.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REPHONE_SKIP_ENV_FILE
+        value: 'true'
+      - key: DEMO_MODE
+        value: 'true'
+      - key: MAIL_ENABLED
+        value: 'false'
+      - key: SCHEDULER_ENABLED
+        value: 'false'
+      - key: DEALER_WORKER_ENABLED
+        value: 'false'
+      - key: DEALER_ENABLED
+        value: 'true'
+      - key: AFFILIATE_ENABLED
+        value: 'true'
+      - key: DEALER_ENVIRONMENT
+        value: LIVE
+      - key: AFFILIATE_ENVIRONMENT
+        value: LIVE
+      - key: API_PORT
+        value: '10000'
+      - key: TRUST_PROXY
+        value: 'true'
+      - key: DB_POOL_MAX
+        value: '5'
+      - key: IDENTIFIER_KEY_VERSION
+        value: '2'
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=256
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: WEB_PUBLIC_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: IDENTIFIER_ENCRYPTION_KEY
+        sync: false
+      - key: IDENTIFIER_HMAC_KEY
+        sync: false
+      - key: DEALER_ENCRYPTION_KEY
+        sync: false
+      - key: AFFILIATE_ENCRYPTION_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_PUBLIC_BUCKET
+        sync: false
+      - key: SUPABASE_PRIVATE_BUCKET
+        sync: false
+      - key: SUPABASE_STORE_BUCKET
+        sync: false

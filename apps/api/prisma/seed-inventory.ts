@@ -1,6 +1,9 @@
 import { Prisma, type PrismaClient } from '../src/generated/prisma/client.js';
 import { IPHONE_CHECKLIST_V1 } from '../src/common/domain/iphone-inspection-checklist.js';
-import { IdentifierCodec } from '../src/modules/inventory/identifier-protection.js';
+import {
+  IdentifierCodec,
+  parseIdentifierKeyVersion,
+} from '../src/modules/inventory/identifier-protection.js';
 import { RICH_AVAILABLE_UNITS, RICH_IPHONE_VARIANTS } from './rich-catalog-data.js';
 import { RICH_CATALOG_ASSETS, type RichCatalogAssetDefinition } from './rich-catalog-assets.js';
 
@@ -11,7 +14,11 @@ export async function seedDevelopmentInventory(prisma: PrismaClient): Promise<vo
   const hmacKey = process.env.IDENTIFIER_HMAC_KEY;
   if (!bucket || !encryptionKey || !hmacKey)
     throw new Error('Development inventory configuration is missing');
-  const codec = new IdentifierCodec(encryptionKey, hmacKey);
+  const codec = new IdentifierCodec(
+    encryptionKey,
+    hmacKey,
+    parseIdentifierKeyVersion(process.env.IDENTIFIER_KEY_VERSION),
+  );
   const inspector = await prisma.user.findUniqueOrThrow({
     where: { normalizedEmail: process.env.SEED_EMPLOYEE_EMAIL?.trim().toLowerCase() ?? '' },
   });

@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { cloudProxyConfig } from './lib/cloud-proxy.mjs';
 
 // Host development shares the root configuration with the API. Container
 // environment variables and Next's app-local configuration take precedence.
@@ -19,6 +20,7 @@ if (
 }
 
 const nextConfig: NextConfig = {
+  ...cloudProxyConfig(process.env),
   // Only public connection metadata belongs in the guide and client bundle.
   env: {
     DEALER_ENVIRONMENT: process.env.DEALER_ENVIRONMENT ?? 'LIVE',

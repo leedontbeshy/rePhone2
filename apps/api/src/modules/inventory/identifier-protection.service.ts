@@ -6,6 +6,10 @@ import { IdentifierCodec } from './identifier-protection.js';
 @Injectable()
 export class IdentifierProtectionService extends IdentifierCodec {
   public constructor(@Inject(APP_CONFIG) config: AppConfig) {
-    super(config.identifiers.encryptionKey, config.identifiers.hmacKey);
+    super(
+      config.identifiers.encryptionKey,
+      config.identifiers.hmacKey,
+      config.identifiers.keyVersion ?? 1,
+    );
   }
 }

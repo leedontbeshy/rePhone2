@@ -1,5 +1,7 @@
 'use client';
 
+import { demoMode } from '@/lib/demo';
+
 import {
   ArrowLeftIcon,
   ArrowCounterClockwiseIcon,
@@ -427,7 +429,7 @@ export function EmployeeAdminView() {
         <UserAdminPageHeader
           action={
             <Button
-              disabled={formLocked || mode === 'create' || mode === 'edit'}
+              disabled={demoMode || formLocked || mode === 'create' || mode === 'edit'}
               iconLeading={<PlusIcon aria-hidden="true" size={18} />}
               onClick={startCreate}
             >
@@ -731,7 +733,7 @@ export function EmployeeDetailPanel({
       <div className={styles.detailActions}>
         {employee.status === 'PENDING_VERIFICATION' ? (
           <Button
-            disabled={busy}
+            disabled={busy || demoMode}
             iconLeading={<EnvelopeSimpleIcon aria-hidden="true" size={18} />}
             onClick={onResend}
           >

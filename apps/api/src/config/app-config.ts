@@ -38,6 +38,7 @@ const base64Bytes = (minimum: number, exact = false) =>
 export const environmentSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']),
+    DEMO_MODE: strictBoolean.default(false),
     API_PORT: integerString(1, 65_535),
     API_PUBLIC_URL: z.url(),
     WEB_PUBLIC_URL: z.url(),
@@ -59,19 +60,24 @@ export const environmentSchema = z
     GUEST_CART_TTL_DAYS: integerString(1).default(30),
     IDENTIFIER_ENCRYPTION_KEY: base64Bytes(32, true),
     IDENTIFIER_HMAC_KEY: base64Bytes(32),
+    IDENTIFIER_KEY_VERSION: z.coerce
+      .number()
+      .pipe(z.union([z.literal(1), z.literal(2)]))
+      .default(1),
     SUPABASE_URL: z.url(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     SUPABASE_PUBLIC_BUCKET: z.string().trim().min(1),
     SUPABASE_PRIVATE_BUCKET: z.string().trim().min(1),
     SUPABASE_STORE_BUCKET: z.string().trim().min(1),
     SIGNED_URL_TTL_SECONDS: integerString(1).default(300),
-    SMTP_HOST: z.string().trim().min(1),
-    SMTP_PORT: integerString(1, 65_535),
-    SMTP_SECURE: strictBoolean,
+    MAIL_ENABLED: strictBoolean.default(true),
+    SMTP_HOST: z.string().trim().default(''),
+    SMTP_PORT: integerString(1, 65_535).default(587),
+    SMTP_SECURE: strictBoolean.default(false),
     SMTP_REQUIRE_TLS: strictBoolean.default(false),
     SMTP_USER: optionalTrimmed,
     SMTP_PASSWORD: optionalTrimmed,
-    MAIL_FROM: z.string().trim().min(3),
+    MAIL_FROM: z.string().trim().default(''),
     LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).optional(),
     SCHEDULER_ENABLED: strictBoolean.default(true),
     SCHEDULER_BATCH_SIZE: integerString(1, 500).default(100),
@@ -85,6 +91,34 @@ export const environmentSchema = z
     APP_VERSION: z.string().trim().min(1).default('dev'),
   })
   .superRefine((environment, context) => {
+    if (!environment.MAIL_ENABLED && !environment.DEMO_MODE && environment.NODE_ENV !== 'test') {
+      context.addIssue({
+        code: 'custom',
+        path: ['MAIL_ENABLED'],
+        message: 'may only be disabled in demo or test mode',
+      });
+    }
+    if (environment.MAIL_ENABLED && (!environment.SMTP_HOST || environment.MAIL_FROM.length < 3)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['SMTP_HOST'],
+        message: 'SMTP_HOST and MAIL_FROM are required when mail is enabled',
+      });
+    }
+    if (environment.DEMO_MODE && environment.SCHEDULER_ENABLED) {
+      context.addIssue({
+        code: 'custom',
+        path: ['SCHEDULER_ENABLED'],
+        message: 'must be false in demo mode',
+      });
+    }
+    if (environment.DEMO_MODE && environment.MAIL_ENABLED) {
+      context.addIssue({
+        code: 'custom',
+        path: ['MAIL_ENABLED'],
+        message: 'must be false in demo mode',
+      });
+    }
     if (environment.IDENTIFIER_ENCRYPTION_KEY === environment.IDENTIFIER_HMAC_KEY) {
       context.addIssue({
         code: 'custom',
@@ -191,6 +225,7 @@ type ValidEnvironment = z.infer<typeof environmentSchema>;
 
 export interface AppConfig {
   environment: ValidEnvironment['NODE_ENV'];
+  demo?: boolean;
   api: {
     port: number;
     publicUrl: string;
@@ -221,6 +256,7 @@ export interface AppConfig {
   identifiers: {
     encryptionKey: string;
     hmacKey: string;
+    keyVersion?: 1 | 2;
   };
   storage: {
     url: string;
@@ -231,6 +267,7 @@ export interface AppConfig {
     signedUrlTtlSeconds: number;
   };
   mail: {
+    enabled?: boolean;
     host: string;
     port: number;
     secure: boolean;
@@ -270,6 +307,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
 
   return {
     environment: environment.NODE_ENV,
+    demo: environment.DEMO_MODE,
     api: {
       port: environment.API_PORT,
       publicUrl: environment.API_PUBLIC_URL,
@@ -300,6 +338,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
     identifiers: {
       encryptionKey: environment.IDENTIFIER_ENCRYPTION_KEY,
       hmacKey: environment.IDENTIFIER_HMAC_KEY,
+      keyVersion: environment.IDENTIFIER_KEY_VERSION,
     },
     storage: {
       url: new URL(environment.SUPABASE_URL).origin,
@@ -310,6 +349,7 @@ export function loadConfig(source: NodeJS.ProcessEnv): AppConfig {
       signedUrlTtlSeconds: environment.SIGNED_URL_TTL_SECONDS,
     },
     mail: {
+      enabled: environment.MAIL_ENABLED,
       host: environment.SMTP_HOST,
       port: environment.SMTP_PORT,
       secure: environment.SMTP_SECURE,
